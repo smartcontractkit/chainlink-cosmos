@@ -8,3 +8,5 @@ export const CATEGORIES = {
   OCR: 'OCR',
   ACCESS_CONTROLLER: 'Access Controller',
 }
+
+export const ORACLES_MAX_LENGTH = 31

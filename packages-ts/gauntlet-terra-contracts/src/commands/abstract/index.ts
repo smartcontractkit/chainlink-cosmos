@@ -1,5 +1,5 @@
 import { ICommand, Result } from '@chainlink/gauntlet-core'
-import { logger } from '@chainlink/gauntlet-core/dist/utils'
+import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TransactionResponse, TerraCommand } from '@chainlink/gauntlet-terra'
 import { Contract, CONTRACT_LIST, getContract, TerraABI, TERRA_OPERATIONS } from '../../lib/contracts'
 import schema from '../../lib/schema'
@@ -18,17 +18,17 @@ export const makeAbstractCommand = async (
   instruction: string,
   flags: any,
   args: string[],
+  input?: any,
 ): Promise<ICommand | undefined> => {
   try {
     const commandOpts = parseInstruction(instruction)
     if (!commandOpts) return
 
-    const params = parseParams(commandOpts, flags)
+    const params = parseParams(commandOpts, input || flags)
     if (!params) return
 
     return new AbstractCommand(flags, args, commandOpts, params)
   } catch (e) {
-    console.log(e)
     logger.error(e)
     return
   }
@@ -110,7 +110,7 @@ const parseParams = (commandOpts: AbstractOpts, params: any): AbstractParams | u
     throw new Error(`Error validating parameters for function ${commandOpts.function}`)
   }
 
-  return data
+  return params
 }
 
 type AbstractExecute = (params: any, address?: string) => Promise<Result<TransactionResponse>>
@@ -149,6 +149,8 @@ export default class AbstractCommand extends TerraCommand {
 
   abstractExecute: AbstractExecute = async (params: any, address: string) => {
     logger.loading(`Executing ${this.opts.function} from contract ${this.opts.contract.id} at ${address}`)
+    logger.log('Input Params:', params)
+    await prompt(`Continue?`)
     const tx = await this.call(address, {
       [this.opts.function]: params,
     })
@@ -196,8 +198,6 @@ export default class AbstractCommand extends TerraCommand {
       [TERRA_OPERATIONS.EXECUTE]: this.abstractExecute,
       help: this.abstractHelp,
     }
-
-    logger.log('Params: ', this.params)
 
     const address = this.args[0]
     return operations[this.opts.action](this.params, address)

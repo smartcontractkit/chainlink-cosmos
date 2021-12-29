@@ -1,9 +1,6 @@
 {
-  "flags": 14425,
-  "deviation_flagging_validator": 14426,
-  "flux_aggregator": 14428,
-  "aggregator_proxy": 14429,
-  "cw20_base": 14427,
-  "ocr2": 14559,
-  "access_controller": 14560
+  "flags": 29720,
+  "ocr2": 29723,
+  "access_controller": 29722,
+  "deviation_flagging_validator": 29721
 }

@@ -1,6 +1,7 @@
 import Upload from './tooling/upload'
-import LinkFlow from './contracts/link/flow'
-import DeployLink from './contracts/link/deployLink'
-import DeployOCR2Flow from './contracts/ocr/deployOcr2.flow'
+import TransferLink from './contracts/link/transfer'
+import DeployLink from './contracts/link/deploy'
+import OCR2 from './contracts/ocr2'
+import ProxyOCR2 from './contracts/proxyOcr2'
 
-export default [Upload, LinkFlow, DeployLink, DeployOCR2Flow]
+export default [Upload, DeployLink, TransferLink, ...OCR2, ...ProxyOCR2]
