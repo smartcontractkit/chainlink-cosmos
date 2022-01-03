@@ -2,6 +2,7 @@ package terra
 
 import (
 	"errors"
+	"time"
 
 	uuid "github.com/satori/go.uuid"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
+//go:generate mockery --name Logger --output ./mocks/
 type Logger interface {
 	Tracef(format string, values ...interface{})
 	Debugf(format string, values ...interface{})
@@ -32,9 +34,14 @@ type OCR2Spec struct {
 	IsBootstrap bool
 
 	// network data
-	NodeEndpointHTTP string
-	NodeEndpointWS   string
-	ChainID          string
+	NodeEndpointHTTP    string
+	NodeEndpointWS      string
+	FCDNodeEndpointHTTP string // FCD nodes have /v1/txs/gas_prices
+	ChainID             string
+	HTTPTimeout         time.Duration
+
+	FallbackGasPrice   string
+	GasLimitMultiplier string
 
 	// on-chain data
 	ContractID string

@@ -1,10 +1,16 @@
 package terra
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+	"github.com/pkg/errors"
+	"github.com/terra-money/core/app"
+	"io/ioutil"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -38,33 +44,52 @@ type RpcMessage struct {
 }
 
 type Client struct {
-	close     chan struct{}
-	codec     *codec.LegacyAmino
-	httpURL   string
-	chainID   string
-	wsURL     string
+	close chan struct{}
+	codec *codec.LegacyAmino
+
+	fallbackGasPrice   msg.Dec
+	gasLimitMultiplier msg.Dec
+	httpClient         *http.Client
+	httpURL            string
+	fcdhttpURL         string
+	chainID            string
+	wsURL              string
+
 	ws        WsConn
 	wsStarted bool
 	subs      map[string]subscription
 	subUnsub  map[string]chan<- Events
-	queryCh   chan RpcMessage
-	txCh      chan RpcMessage
-	Height    uint64
-	Log       Logger
+	// TODO(connor): If we use http we don't need this queryCh
+	queryCh chan RpcMessage
+
+	Height uint64
+	Log    Logger
 }
 
 func NewClient(spec OCR2Spec, lggr Logger) (Client, error) {
+	fallbackGasPrice, err := msg.NewDecFromStr(spec.FallbackGasPrice)
+	if err != nil {
+		return Client{}, errors.Wrapf(err, "invalid fallback gas price %v", spec.FallbackGasPrice)
+	}
+	gasLimitMultiplier, err := msg.NewDecFromStr(spec.GasLimitMultiplier)
+	if err != nil {
+		return Client{}, errors.Wrapf(err, "invalid gas limit multiplier %v", spec.GasLimitMultiplier)
+	}
+
 	return Client{
-		close:    make(chan struct{}),
-		codec:    codec.NewLegacyAmino(),
-		chainID:  spec.ChainID,
-		httpURL:  spec.NodeEndpointHTTP,
-		wsURL:    spec.NodeEndpointWS,
-		subs:     make(map[string]subscription),
-		subUnsub: make(map[string]chan<- Events),
-		queryCh:  make(chan RpcMessage),
-		txCh:     make(chan RpcMessage),
-		Log:      lggr,
+		close:              make(chan struct{}),
+		codec:              codec.NewLegacyAmino(),
+		chainID:            spec.ChainID,
+		httpClient:         &http.Client{Timeout: spec.HTTPTimeout},
+		httpURL:            spec.NodeEndpointHTTP,
+		wsURL:              spec.NodeEndpointWS,
+		fcdhttpURL:         spec.FCDNodeEndpointHTTP,
+		fallbackGasPrice:   fallbackGasPrice,
+		gasLimitMultiplier: gasLimitMultiplier,
+		subs:               make(map[string]subscription),
+		subUnsub:           make(map[string]chan<- Events),
+		queryCh:            make(chan RpcMessage),
+		Log:                lggr,
 	}, nil
 }
 
@@ -72,47 +97,61 @@ func (c Client) LCD(gasPrice msg.DecCoin, gasAdjustment msg.Dec, signer key.Priv
 	return client.NewLCDClient(c.httpURL, c.chainID, gasPrice, gasAdjustment, signer, timeout)
 }
 
-type BroadcastTxMethod string
+// Always returns a gas price,
+func (c Client) GasPrice() msg.DecCoin {
+	var fallback = msg.NewDecCoinFromDec("uluna", c.fallbackGasPrice)
+	url := fmt.Sprintf("%s%s", c.fcdhttpURL, "/v1/txs/gas_prices")
+	resp, err := c.httpClient.Get(url)
+	if err != nil {
+		c.Log.Errorf("error querying %s, err %v", url, err)
+		return fallback
+	}
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		c.Log.Errorf("error reading body, err %v", url, err)
+		return fallback
+	}
+	defer resp.Body.Close()
+	var prices struct {
+		Uluna string `json:"uluna"`
+	}
+	if err := json.Unmarshal(b, &prices); err != nil {
+		c.Log.Errorf("error unmarshalling, err %v", url, err)
+		return fallback
+	}
+	p, err := msg.NewDecFromStr(prices.Uluna)
+	if err != nil {
+		c.Log.Errorf("error parsing, err %v", url, err)
+		return fallback
+	}
+	return msg.NewDecCoinFromDec("uluna", p)
+}
 
-const (
-	// Returns with response from CheckTx, does not wait for DeliverTx
-	BroadcastSync BroadcastTxMethod = "broadcast_tx_sync"
-	// Returns right away with no response
-	BroadcastAsync BroadcastTxMethod = "broadcast_tx_async"
-	// Returns with response from CheckTx and DeliverTx
-	BroadcastBlock BroadcastTxMethod = "broadcast_tx_commit"
-)
-
-// Send Terra transaction to blockchain
-func (c Client) Send(ctx context.Context, txBytes []byte, method BroadcastTxMethod) (*BroadcastTxResponse, error) {
-	err := c.ensureWsConnection()
+func (c Client) Send(ctx context.Context, txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
+	broadcastReq := txtypes.BroadcastTxRequest{
+		TxBytes: txBytes,
+		Mode:    mode,
+	}
+	reqBytes, err := json.Marshal(broadcastReq)
 	if err != nil {
 		return nil, err
 	}
-
-	c.Log.Infof("[broadcast transaction] %s,", string(method))
-
-	payload := RpcRequest{
-		Jsonrpc: "2.0",
-		Method:  string(method),
-		Params:  []interface{}{txBytes},
-		ID:      string(method),
-	}
-
-	if err := c.ws.conn.WriteJSON(payload); err != nil {
+	r, err := c.httpClient.Post(c.httpURL+"/cosmos/tx/v1beta1/txs", "encoding/json", bytes.NewBuffer(reqBytes))
+	if err != nil {
 		return nil, err
 	}
-
-	message := <-c.txCh
-	if message.Error != "" {
-		return nil, fmt.Errorf("Broadcast error: %s", message.Error)
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
 	}
-
-	var tx BroadcastTxResponse
-	if err = json.Unmarshal(message.Data, &tx); err != nil {
-		return nil, fmt.Errorf("Broadcast error: %s", err)
+	defer r.Body.Close()
+	if r.StatusCode != 200 {
+		return nil, errors.Errorf("got status code %v broadcasting tx, expected 200. Body %v", r.StatusCode, string(b))
 	}
-
+	var tx txtypes.BroadcastTxResponse
+	if err = app.MakeEncodingConfig().Marshaler.UnmarshalJSON(b, &tx); err != nil {
+		return nil, err
+	}
 	return &tx, nil
 }
 
@@ -173,6 +212,10 @@ func (c Client) parseParameters(method QueryType, params []interface{}) ([]inter
 	return params, nil
 }
 
+// TODO(connor): there must be a way
+// to just use the http client here
+// and possibly even a helper client in tendermint/cosmos repos
+// to do the querying we want to do.
 func (c Client) Query(method QueryType, params []interface{}) ([]byte, error) {
 	err := c.ensureWsConnection()
 	if err != nil {
@@ -387,34 +430,6 @@ func (c *Client) listen() {
 			response := gjson.Get(message, "result")
 
 			c.queryCh <- RpcMessage{Data: []byte(response.Raw)}
-			continue
-		}
-
-		if strings.Contains(jobID.Str, "broadcast_tx") {
-			errorMessage := gjson.Get(message, "error")
-			if errorMessage.Raw != "" {
-				c.txCh <- RpcMessage{Error: errorMessage.Raw}
-				continue
-			}
-
-			// for BrodcastBlock need to check the result of deliver_tx
-			if jobID.Str == string(BroadcastBlock) {
-				responseCode := gjson.Get(message, "result.deliver_tx.code").Int()
-				if responseCode != 0 {
-					responseLog := gjson.Get(message, "result.log")
-					c.queryCh <- RpcMessage{Error: responseLog.Raw}
-				}
-			}
-
-			responseCode := gjson.Get(message, "result.code").Int()
-			if responseCode != 0 {
-				responseLog := gjson.Get(message, "result.log")
-				c.queryCh <- RpcMessage{Error: responseLog.Raw}
-			}
-
-			response := gjson.Get(message, "result")
-
-			c.txCh <- RpcMessage{Data: []byte(response.Raw)}
 			continue
 		}
 

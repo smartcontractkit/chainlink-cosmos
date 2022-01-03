@@ -3,8 +3,7 @@ package terra
 import (
 	"context"
 	"encoding/json"
-	"time"
-
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/pkg/errors"
 	"github.com/terra-money/terra.go/msg"
 
@@ -51,9 +50,7 @@ func (ct *Contract) Transmit(
 	}
 
 	// need LCD for fetching sequence, account number, + setting gas prices, etc
-	gasPrice := msg.NewDecCoinFromDec("uluna", msg.NewDecFromIntWithPrec(msg.NewInt(16), 3))
-	defaultGasAdjustment := msg.NewDecFromIntWithPrec(msg.NewInt(15), 1) // default gas adjustmnet
-	lcd := ct.terra.LCD(gasPrice, defaultGasAdjustment, WrappedPrivKey{ct.Transmitter}, 5*time.Second)
+	lcd := ct.terra.LCD(ct.terra.GasPrice(), ct.terra.gasLimitMultiplier, WrappedPrivKey{ct.Transmitter}, ct.terra.httpClient.Timeout)
 	txBuilder, err := lcd.CreateAndSignTx(context.TODO(), options)
 	if err != nil {
 		return errors.Wrap(err, "error in Transmit.NewTxBuilder")
@@ -64,12 +61,11 @@ func (ct *Contract) Transmit(
 		return errors.Wrap(err, "error in Transmit.GetTxBytes")
 	}
 
-	// Transmit TX
-	txResponse, err := ct.terra.Send(ctx, txBytes, BroadcastSync)
+	txResponse, err := ct.terra.Send(ctx, txBytes, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 	if err != nil {
 		return errors.Wrap(err, "error in Transmit.Send")
 	}
-	ct.terra.Log.Infof("[%s] TX Hash: %s", ct.JobID, txResponse.Hash)
+	ct.terra.Log.Infof("[%s] TX Hash: %s", ct.JobID, txResponse.TxResponse.TxHash)
 	return nil
 }
 
