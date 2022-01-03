@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "required": [
+    "billing_access_controller",
+    "decimals",
+    "description",
+    "link_token",
+    "max_answer",
+    "min_answer",
+    "requester_access_controller"
+  ],
+  "properties": {
+    "billing_access_controller": {
+      "description": "Billing access controller address",
+      "type": "string"
+    },
+    "decimals": {
+      "type": "integer",
+      "format": "uint8",
+      "minimum": 0.0
+    },
+    "description": {
+      "type": "string"
+    },
+    "link_token": {
+      "description": "LINK token contract address",
+      "type": "string"
+    },
+    "max_answer": {
+      "type": "string"
+    },
+    "min_answer": {
+      "type": "string"
+    },
+    "requester_access_controller": {
+      "description": "RequestNewRound access controller address",
+      "type": "string"
+    }
+  }
+}

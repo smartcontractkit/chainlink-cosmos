@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QueryMsg",
+  "oneOf": [
+    {
+      "type": "string",
+      "enum": [
+        "latest_config_details",
+        "transmitters",
+        "latest_transmission_details",
+        "latest_config_digest_and_epoch",
+        "description",
+        "decimals",
+        "latest_round_data",
+        "link_token",
+        "billing",
+        "billing_access_controller",
+        "requester_access_controller",
+        "link_available_for_payment",
+        "owner"
+      ]
+    },
+    {
+      "type": "object",
+      "required": [
+        "round_data"
+      ],
+      "properties": {
+        "round_data": {
+          "type": "object",
+          "required": [
+            "round_id"
+          ],
+          "properties": {
+            "round_id": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "owed_payment"
+      ],
+      "properties": {
+        "owed_payment": {
+          "type": "object",
+          "required": [
+            "transmitter"
+          ],
+          "properties": {
+            "transmitter": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "oracle_observation_count"
+      ],
+      "properties": {
+        "oracle_observation_count": {
+          "type": "object",
+          "required": [
+            "transmitter"
+          ],
+          "properties": {
+            "transmitter": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

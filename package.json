@@ -1,0 +1,50 @@
+{
+  "name": "gauntlet-terra",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Gauntlet Terra",
+  "workspaces": [
+    "packages-ts/**"
+  ],
+  "keywords": [
+    "typescript",
+    "cli"
+  ],
+  "main": "packages-ts/gauntlet-terra-contracts/dist/index.js",
+  "bin": "packages-ts/gauntlet-terra-contracts/dist/index.js",
+  "scripts": {
+    "preinstall": "node scripts/require-yarn.js",
+    "gauntlet": "yarn build && node ./packages-ts/gauntlet-terra-contracts/dist/index.js",
+    "lint": "tsc -b ./tsconfig.json",
+    "test": "yarn build && SKIP_PROMPTS=true jest --runInBand",
+    "test:coverage": "yarn build && yarn test --collectCoverage",
+    "test:ci": "yarn build && yarn test --ci",
+    "lint:format": "yarn prettier --check .",
+    "format": "yarn prettier --write .",
+    "clean": "tsc -b --clean ./tsconfig.json",
+    "build": "yarn clean && tsc -b ./tsconfig.json",
+    "bundle": "yarn build && pkg .",
+    "release": "yarn changeset publish"
+  },
+  "pkg": {
+    "scripts": [
+      "packages-ts/gauntlet-terra-contracts/dist/index.js"
+    ],
+    "targets": [
+      "linux",
+      "macos"
+    ],
+    "outputPath": "bin"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.17.0",
+    "@types/jest": "^26.0.15",
+    "@types/node": "^14.11.2",
+    "jest": "^26.6.3",
+    "pkg": "^5.2.1",
+    "prettier": "2.1.1",
+    "ts-jest": "^26.4.3",
+    "ts-node": "^8.3.0",
+    "typescript": "4.3.5"
+  }
+}

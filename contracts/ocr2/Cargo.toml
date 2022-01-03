@@ -1,0 +1,45 @@
+[package]
+name = "ocr2"
+version = "0.1.0"
+authors = ["Blaž Hrastnik <blaz@smartcontract.com>"]
+edition = "2018"
+
+exclude = [
+  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  "contract.wasm",
+  "hash.txt",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+cosmwasm-std = { version = "0.16.2" }
+cosmwasm-storage = { version = "0.16.0" }
+cw-storage-plus = "0.9.0"
+cw2 = "0.9.0"
+cw20 = "0.9.0"
+schemars = "0.8.3"
+serde = { version = "1.0.127", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0.26" }
+blake2 = "0.9.2"
+hex = "0.4.3"
+access-controller = { version = "0.1", path = "../access-controller", default-features = false, features = ["library"] }
+deviation-flagging-validator = { version = "0.1", path = "../deviation-flagging-validator", default-features = false, features = ["library"] }
+owned = { version = "0.1", path = "../../crates/owned" }
+
+[dev-dependencies]
+cosmwasm-schema = { version = "0.16.0" }
+ed25519-zebra = "3.0.0"
+rand = "0.8"
+cw-multi-test = "0.9.1"
+cw20-base = "0.9.1"
+cosmwasm-vm = { version = "0.16.0", features = ["iterator"] }

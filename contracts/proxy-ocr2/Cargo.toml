@@ -1,0 +1,27 @@
+[package]
+name = "proxy-ocr2"
+version = "0.1.0"
+authors = ["Blaž Hrastnik <blaz@smartcontract.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+library = []
+
+[dependencies]
+ocr2 = { path = "../ocr2", default-features = false }
+query-proxy = { path = "../../crates/query-proxy", default-features = false }
+cosmwasm-std = { version = "0.16.2" }
+cw2 = "0.9.0"
+
+schemars = "0.8.3"
+serde = { version = "1.0.127", default-features = false, features = ["derive"] }
+
+[dev-dependencies]
+cosmwasm-schema = { version = "0.16.0" }
+cw-multi-test = "0.9.1"
+cw-storage-plus = "0.9.0"

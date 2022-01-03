@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QueryMsg",
+  "oneOf": [
+    {
+      "type": "string",
+      "enum": [
+        "flagging_threshold",
+        "owner"
+      ]
+    },
+    {
+      "description": "Check whether the parameters count is valid by comparing the difference change to the flagging threshold Response: [`bool`]",
+      "type": "object",
+      "required": [
+        "is_valid"
+      ],
+      "properties": {
+        "is_valid": {
+          "type": "object",
+          "required": [
+            "answer",
+            "previous_answer"
+          ],
+          "properties": {
+            "answer": {
+              "description": "Current answer which is compared for a ration of change to make sure it has not exceeded the flagging threshold",
+              "type": "string"
+            },
+            "previous_answer": {
+              "description": "Previous answer, used as the median of difference with the current answer to determine if the deviation threshold has been exceeded",
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

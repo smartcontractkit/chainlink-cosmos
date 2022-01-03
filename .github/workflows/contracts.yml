@@ -1,0 +1,71 @@
+# Based on https://github.com/actions-rs/example/blob/master/.github/workflows/quickstart.yml
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+name: Contracts
+
+jobs:
+
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    # defaults:
+    #   run:
+    #     working-directory: ./contracts
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v14
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      # TODO: We probably want cachix enabled heres
+      # https://github.com/smartcontractkit/chainlink-terra/issues/15
+
+      - name: Run unit tests
+        run: nix develop -c cargo unit-test --locked
+        env:
+          RUST_BACKTRACE: 1
+
+      - name: Compile WASM contract
+        run: nix develop -c cargo wasm --locked
+        env:
+          RUSTFLAGS: "-C link-arg=-s"
+
+  lints:
+    name: Lints
+    runs-on: ubuntu-latest
+    # defaults:
+    #   run:
+    #     working-directory: ./contracts
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v14
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+  
+      # TODO: Run cargo clippy
+      # https://github.com/smartcontractkit/chainlink-terra/issues/16
+
+      - name: Run cargo fmt
+        run: nix develop -c cargo fmt --all -- --check
+
+      # TODO: Add schema checks
+      # https://github.com/smartcontractkit/chainlink-terra/issues/17

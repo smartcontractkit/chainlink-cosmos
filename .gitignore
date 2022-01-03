@@ -1,0 +1,11 @@
+.direnv
+target/
+artifacts/
+tarpaulin-report.html
+
+# TS
+node_modules
+**/tsconfig.tsbuildinfo
+dist
+.env
+flow-report.json

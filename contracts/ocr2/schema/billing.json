@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Billing",
+  "type": "object",
+  "required": [
+    "observation_payment",
+    "recommended_gas_price"
+  ],
+  "properties": {
+    "observation_payment": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "recommended_gas_price": {
+      "description": "Should match https://fcd.terra.dev/v1/txs/gas_prices NOTE: needs to be scaled to the same amount of decimals places as LINK token",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    }
+  }
+}
