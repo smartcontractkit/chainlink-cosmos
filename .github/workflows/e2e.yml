@@ -1,0 +1,96 @@
+name: e2e_tests
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache cargo registry
+        uses: actions/cache@v2.1.7
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-v2-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v2.1.7
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-v2-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build Artifacts
+        run: |
+          docker run --rm -v "$(pwd)":/code \
+          --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+          --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+          cosmwasm/workspace-optimizer:0.12.4
+      - uses: actions/upload-artifact@master
+        with:
+          name: artifacts
+          path: artifacts
+  smoke:
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      CGO_ENABLED: 1
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+      - name: Setup go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.17
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.QA_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.QA_AWS_SECRET_KEY }}
+          aws-region: ${{ secrets.QA_AWS_REGION }}
+          role-to-assume: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
+          role-duration-seconds: 3600
+      - name: Set Kubernetes Context
+        uses: azure/k8s-set-context@v1
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.QA_KUBECONFIG }}
+      - name: Cache Vendor Packages
+        uses: actions/cache@v2
+        id: cache-packages
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Download Go Vendor Packages
+        if: steps.cache-packages.outputs.cache-hit != 'true'
+        run: go mod download
+      - name: Install Ginkgo CLI
+        run: |
+          go get github.com/onsi/ginkgo/v2/ginkgo/generators@v2.0.0-rc2
+          go get github.com/onsi/ginkgo/v2/ginkgo/internal@v2.0.0-rc2
+          go get github.com/onsi/ginkgo/v2/ginkgo/labels@v2.0.0-rc2
+          go install github.com/onsi/ginkgo/v2/ginkgo
+      - uses: actions/download-artifact@master
+        with:
+          name: artifacts
+          path: artifacts
+      - name: Run Tests
+        env:
+          SELECTED_NETWORKS: localterra
+          NETWORK_SETTINGS: /home/runner/work/chainlink-terra/chainlink-terra/tests/e2e/networks.yaml
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          ginkgo tests/e2e/smoke
+      - name: Publish Test Results
+        uses: mikepenz/action-junit-report@v2
+        if: always()
+        with:
+          report_paths: "./tests-smoke-report.xml"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          check_name: Smoke Test Results
+      - name: Publish Artifacts
+        if: failure()
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: test-logs
+          path: ./logs
