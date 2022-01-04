@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -19,9 +20,9 @@ type Contract struct {
 	terra       *Client
 	Transmitter TransmissionSigner
 	stop        chan struct{}
-	data        chan Events
-	newConfig   chan struct{}
-	log         Logger
+	//data        chan Events
+	newConfig chan struct{}
+	log       Logger
 }
 
 func NewContractTracker(spec OCR2Spec, jobID string, client *Client, lggr Logger) (*Contract, error) {
@@ -36,30 +37,40 @@ func NewContractTracker(spec OCR2Spec, jobID string, client *Client, lggr Logger
 		ContractID:  addr,
 		terra:       client,
 		Transmitter: spec.TransmissionSigner,
-		data:        make(chan Events),
-		stop:        make(chan struct{}),
-		log:         lggr,
+		//data:        make(chan Events),
+		stop: make(chan struct{}),
+		log:  lggr,
 	}
 
 	// begin websocket subscription using terra.Subscribe
-	return &contract, contract.terra.Subscribe(context.TODO(), jobID, contract.ContractID, contract.data)
+	//return &contract,w contract.terra.Subscribe(context.TODO(), jobID, contract.ContractID, contract.data)
+	return &contract, nil
 }
 
 // Start creates a loop with handler for different event types
-func (ct *Contract) Start() {
-	for {
-		select {
-		case data := <-ct.data:
-			// process received data
-			for _, event := range data.Events {
-				if event == "wasm-set_config" {
-					ct.newConfig <- struct{}{}
-				}
-			}
-		case <-ct.stop:
-			return
-		}
+func (ct *Contract) Start() error {
+	// TODO:; timeout
+	txes, err := ct.terra.clientCtx.Client.Subscribe(context.TODO(), ct.JobID,
+		fmt.Sprintf("tm.event='Tx' AND execute_contract.contract_address='%s'", ct.ContractID))
+	if err != nil {
+		return err
 	}
+	go func() {
+		for {
+			select {
+			case data := <-txes:
+				// process received data
+				for event := range data.Events {
+					if event == "wasm-set_config" {
+						ct.newConfig <- struct{}{}
+					}
+				}
+			case <-ct.stop:
+				return
+			}
+		}
+	}()
+	return nil
 }
 
 // Close stops the event channel listener loop and unsubscribes the job from the websocket
@@ -67,7 +78,8 @@ func (ct *Contract) Close() error {
 	// stop listening loops
 	defer close(ct.stop)
 	// unsubscribe websocket
-	return ct.terra.Unsubscribe(context.TODO(), ct.JobID)
+	return ct.terra.clientCtx.Client.Unsubscribe(context.TODO(), ct.JobID,
+		fmt.Sprintf("tm.event='Tx' AND execute_contract.contract_address='%s'", ct.ContractID))
 }
 
 // ContractConfigTracker interface implemented below
@@ -79,23 +91,24 @@ func (ct *Contract) Notify() <-chan struct{} {
 
 // LatestConfigDetails returns data by reading the contract state and is called when Notify is triggered or the config poll timer is triggered
 func (ct *Contract) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
-	// query state
 	queryParams := NewAbciQueryParams(ct.ContractID.String(), []byte(`"latest_config_details"`))
-
-	raw, err := ct.terra.Query(
-		ABCI,
-		[]interface{}{"custom/wasm/contractStore", queryParams},
-	)
+	data, err := ct.terra.codec.MarshalJSON(queryParams)
 	if err != nil {
 		return
 	}
-
-	// unmarshal
-	var config ConfigDetails
-	if err = json.Unmarshal(raw, &config); err != nil {
+	resp, err := ct.terra.clientCtx.QueryABCI(abci.RequestQuery{
+		Data:   data,
+		Path:   "custom/wasm/contractStore",
+		Height: 0,
+		Prove:  false,
+	})
+	if err != nil {
 		return
 	}
-
+	var config ConfigDetails
+	if err = json.Unmarshal(resp.Value, &config); err != nil {
+		return
+	}
 	changedInBlock = config.BlockNumber
 	configDigest = config.ConfigDigest
 	return
@@ -104,22 +117,13 @@ func (ct *Contract) LatestConfigDetails(ctx context.Context) (changedInBlock uin
 // LatestConfig returns data by searching emitted events and is called in the same scenario as LatestConfigDetails
 func (ct *Contract) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
 	queryStr := fmt.Sprintf("tx.height=%d AND wasm-set_config.contract_address='%s'", changedInBlock, ct.ContractID)
-	raw, err := ct.terra.Query(
-		TX,
-		[]interface{}{queryStr},
-	)
+	res, err := ct.terra.clientCtx.Client.TxSearch(ctx, queryStr, false, nil, nil, "desc")
 	if err != nil {
 		return types.ContractConfig{}, err
 	}
-
-	// unmarshal
-	var res TxResponse
-	if err := json.Unmarshal(raw, &res); err != nil {
-		return types.ContractConfig{}, err
-	} else if len(res.Txs) == 0 {
+	if len(res.Txs) == 0 {
 		return types.ContractConfig{}, fmt.Errorf("No transactions found for block %d", changedInBlock)
 	}
-
 	// fetch event and process (use first tx and \first log set)
 	if len(res.Txs[0].TxResult.Events) == 0 {
 		return types.ContractConfig{}, fmt.Errorf("No events found for tx %s", res.Txs[0].Hash)

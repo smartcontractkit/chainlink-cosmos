@@ -11,8 +11,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/pelletier/go-toml"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmtypes "github.com/tendermint/tendermint/rpc/core/types"
+	//tmjson "github.com/tendermint/tendermint/libs/json"
+	//tmtypes "github.com/tendermint/tendermint/rpc/core/types"
+	//rpcclient "github.com/tendermint/tendermint/rpc/client"
 	"github.com/terra-money/terra.go/client"
 	"github.com/terra-money/terra.go/key"
 	"github.com/terra-money/terra.go/msg"
@@ -104,13 +105,14 @@ func setup(t *testing.T) []Account {
 
 func TestTerraClient(t *testing.T) {
 	// Local only for now, could maybe run on CI if we install terrad there?
-	if os.Getenv("TEST_CLIENT") == "" {
-		t.Skip()
-	}
+	//if os.Getenv("TEST_CLIENT") == "" {
+	//	t.Skip()
+	//}
 	accounts := setup(t)
 	time.Sleep(10 * time.Second) // Wait for api server to boot
 	url := "http://127.0.0.1:1317"
-	wsurl := "ws://127.0.0.1:26657/websocket"
+	//wsurl := "ws://127.0.0.1:26657/websocket"
+	tendermintURL := "http://127.0.0.1:26657"
 	fcdurl := "https://fcd.terra.dev/" // TODO we can mock this
 
 	// https://lcd.terra.dev/swagger/#/
@@ -131,18 +133,22 @@ func TestTerraClient(t *testing.T) {
 	lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Maybe()
 	lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Maybe()
 	tc, err := NewClient(OCR2Spec{
-		NodeEndpointWS:      wsurl,
-		NodeEndpointHTTP:    url,
+		//NodeEndpointWS:      wsurl,
+		//NodeEndpointHTTP:    url,
 		FCDNodeEndpointHTTP: fcdurl,
+		TendermintRPC:       tendermintURL,
+		CosmosRPC:           url,
 		ChainID:             "42",
 		FallbackGasPrice:    "0.01",
 		GasLimitMultiplier:  "1.3",
 	}, lggr)
 	require.NoError(t, err)
+	require.NoError(t, tc.Start())
+	defer tc.Close()
 
-	c := make(chan Events, 100)
-	require.NoError(t, tc.Subscribe(context.Background(), "1", "todo", c))
-	defer tc.Unsubscribe(context.Background(), "1")
+	//c := make(chan Events, 100)
+	//require.NoError(t, tc.Subscribe(context.Background(), "1", cosmostypes.AccAddress{}, c))
+	//defer tc.Unsubscribe(context.Background(), "1")
 
 	gp := tc.GasPrice()
 	// Should not use fallback
@@ -159,13 +165,13 @@ func TestTerraClient(t *testing.T) {
 	require.NoError(t, err)
 	b, err := tx.GetTxBytes()
 	require.NoError(t, err)
-	resp, err := tc.Send(context.Background(), b, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+	resp, err := tc.clientCtx.WithBroadcastMode("block").BroadcastTx(b)
 	require.NoError(t, err)
 
 	// Note even the blocking command doesn't let you query for the tx right away
 	time.Sleep(1 * time.Second)
 
-	b = get(url, "/cosmos/tx/v1beta1/txs/"+resp.TxResponse.TxHash)
+	b = get(url, "/cosmos/tx/v1beta1/txs/"+resp.TxHash)
 	var tx2 txtypes.GetTxResponse
 	require.NoError(t, app.MakeEncodingConfig().Marshaler.UnmarshalJSON(b, &tx2))
 	t.Log(tx.GetTx().GetFee().String())
@@ -179,10 +185,16 @@ func TestTerraClient(t *testing.T) {
 	//assert.Equal(t, "89997733", balances.GetBalances().AmountOf("uluna").String()) // 0.01 gas price
 
 	// Ensure we can read back the tx with Query
-	b, err = tc.Query(TX, []interface{}{fmt.Sprintf("tx.height=%v", tx2.TxResponse.Height)})
+	tr, err := tc.clientCtx.Client.TxSearch(context.Background(), fmt.Sprintf("tx.height=%v", tx2.TxResponse.Height), false, nil, nil, "desc")
 	require.NoError(t, err)
-	var tr tmtypes.ResultTxSearch
-	require.NoError(t, tmjson.Unmarshal(b, &tr))
 	assert.Equal(t, 1, tr.TotalCount)
 	assert.Equal(t, tx2.TxResponse.TxHash, tr.Txs[0].Hash.String())
+
+	//clientCtx.QueryABCI(abci.RequestQuery{
+	//	Data:   nil,
+	//	Path:   "",
+	//	Height: 0,
+	//	Prove:  false,
+	//})
+
 }

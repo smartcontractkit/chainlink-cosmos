@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	abci "github.com/tendermint/tendermint/abci/types"
 
 	"math/big"
 	"strconv"
@@ -30,13 +31,17 @@ func (ct *Contract) LatestTransmissionDetails(
 	latestTimestamp time.Time,
 	err error,
 ) {
-	// fetch
 	queryParams := NewAbciQueryParams(ct.ContractID.String(), []byte(`"latest_transmission_details"`))
-
-	raw, err := ct.terra.Query(
-		ABCI,
-		[]interface{}{"custom/wasm/contractStore", queryParams},
-	)
+	data, err := ct.terra.codec.MarshalJSON(queryParams)
+	if err != nil {
+		return
+	}
+	resp, err := ct.terra.clientCtx.QueryABCI(abci.RequestQuery{
+		Data:   data,
+		Path:   "custom/wasm/contractStore",
+		Height: 0,
+		Prove:  false,
+	})
 	if err != nil {
 		// TODO: Verify if this is still necessary
 		// https://github.com/smartcontractkit/chainlink-terra/issues/23
@@ -59,7 +64,7 @@ func (ct *Contract) LatestTransmissionDetails(
 
 	// unmarshal
 	var details LatestTransmissionDetails
-	if err := json.Unmarshal(raw, &details); err != nil {
+	if err := json.Unmarshal(resp.Value, &details); err != nil {
 		return types.ConfigDigest{}, 0, 0, big.NewInt(0), time.Now(), err
 	}
 
@@ -81,22 +86,12 @@ func (ct *Contract) LatestRoundRequested(ctx context.Context, lookback time.Dura
 ) {
 	// calculate start block
 	blockNum := ct.terra.Height - uint64(lookback.Seconds())/BlockRate
-
 	queryStr := fmt.Sprintf("tx.height > %d AND wasm-new_round.contract_address='%s'", blockNum, ct.ContractID)
-	raw, err := ct.terra.Query(
-		TX,
-		[]interface{}{queryStr},
-	)
+	res, err := ct.terra.clientCtx.Client.TxSearch(ctx, queryStr, false, nil, nil, "desc")
 	if err != nil {
 		return
 	}
-	// unmarshal
-	var res TxResponse
-	if err = json.Unmarshal(raw, &res); err != nil {
-		return
-	}
-	// if no txs exist, return empty
-	if len(res.Txs) == 0 || res.Count == 0 {
+	if len(res.Txs) == 0 || res.TotalCount == 0 {
 		return
 	}
 

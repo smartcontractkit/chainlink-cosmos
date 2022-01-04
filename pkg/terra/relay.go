@@ -34,8 +34,10 @@ type OCR2Spec struct {
 	IsBootstrap bool
 
 	// network data
-	NodeEndpointHTTP    string
-	NodeEndpointWS      string
+	//NodeEndpointHTTP    string
+	//NodeEndpointWS      string
+	TendermintRPC       string // URL exposing tendermint RPC (default port is 26657)
+	CosmosRPC           string // URL exposing cosmos endpoints (port is 1317, needs to be enabled in terra node config)
 	FCDNodeEndpointHTTP string // FCD nodes have /v1/txs/gas_prices
 	ChainID             string
 	HTTPTimeout         time.Duration
@@ -91,6 +93,9 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	if err != nil {
 		return nil, err
 	}
+	if err := client.Start(); err != nil {
+		return nil, err
+	}
 	tracker, err := NewContractTracker(spec, externalJobID.String(), &client, r.lggr)
 	if err != nil {
 		return nil, err
@@ -112,6 +117,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	reportCodec := ReportCodec{}
 
 	return ocr2Provider{
+		client:                 client,
 		offchainConfigDigester: digester,
 		reportCodec:            reportCodec,
 		tracker:                tracker,
@@ -121,6 +127,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 }
 
 type ocr2Provider struct {
+	client                 Client
 	offchainConfigDigester types.OffchainConfigDigester
 	reportCodec            median.ReportCodec
 	tracker                types.ContractConfigTracker
@@ -133,7 +140,7 @@ func (p ocr2Provider) Start() error {
 }
 
 func (p ocr2Provider) Close() error {
-	return nil
+	return p.client.Close()
 }
 
 func (p ocr2Provider) Ready() error {
