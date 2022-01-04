@@ -94,7 +94,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	if err := client.Start(); err != nil {
 		return nil, err
 	}
-	tracker, err := NewContractTracker(spec, externalJobID.String(), &client, r.lggr)
+	tracker, err := NewContractTracker(spec, externalJobID.String(), client, r.lggr)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 }
 
 type ocr2Provider struct {
-	client                 Client
+	client                 *Client
 	offchainConfigDigester types.OffchainConfigDigester
 	reportCodec            median.ReportCodec
 	tracker                types.ContractConfigTracker
