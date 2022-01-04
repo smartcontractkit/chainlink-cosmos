@@ -86,7 +86,12 @@ func (ct *Contract) LatestRoundRequested(ctx context.Context, lookback time.Dura
 	err error,
 ) {
 	// calculate start block
-	blockNum := ct.terra.Height - uint64(lookback.Seconds())/BlockRate
+	latestBlock, blkErr := ct.terra.clientCtx.Client.Block(ctx, nil)
+	if blkErr != nil {
+		err = blkErr
+		return
+	}
+	blockNum := uint64(latestBlock.Block.Height) - uint64(lookback.Seconds())/BlockRate
 	queryStr := fmt.Sprintf("tx.height > %d AND wasm-new_round.contract_address='%s'", blockNum, ct.ContractAddress)
 	res, err := ct.terra.clientCtx.Client.TxSearch(ctx, queryStr, false, nil, nil, "desc")
 	if err != nil {
