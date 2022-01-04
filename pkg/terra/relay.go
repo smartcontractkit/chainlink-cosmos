@@ -34,13 +34,11 @@ type OCR2Spec struct {
 	IsBootstrap bool
 
 	// network data
-	//NodeEndpointHTTP    string
-	//NodeEndpointWS      string
-	TendermintRPC       string // URL exposing tendermint RPC (default port is 26657)
-	CosmosRPC           string // URL exposing cosmos endpoints (port is 1317, needs to be enabled in terra node config)
-	FCDNodeEndpointHTTP string // FCD nodes have /v1/txs/gas_prices
-	ChainID             string
-	HTTPTimeout         time.Duration
+	TendermintURL      string // URL exposing tendermint RPC (default port is 26657)
+	CosmosURL          string // URL exposing cosmos endpoints (port is 1317, needs to be enabled in terra node config)
+	FCDNodeEndpointURL string // FCD nodes have /v1/txs/gas_prices
+	ChainID            string
+	HTTPTimeout        time.Duration
 
 	FallbackGasPrice   string
 	GasLimitMultiplier string

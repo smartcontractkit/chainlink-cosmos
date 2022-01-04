@@ -20,9 +20,8 @@ type Contract struct {
 	terra       *Client
 	Transmitter TransmissionSigner
 	stop        chan struct{}
-	//data        chan Events
-	newConfig chan struct{}
-	log       Logger
+	newConfig   chan struct{}
+	log         Logger
 }
 
 func NewContractTracker(spec OCR2Spec, jobID string, client *Client, lggr Logger) (*Contract, error) {
@@ -37,13 +36,10 @@ func NewContractTracker(spec OCR2Spec, jobID string, client *Client, lggr Logger
 		ContractID:  addr,
 		terra:       client,
 		Transmitter: spec.TransmissionSigner,
-		//data:        make(chan Events),
-		stop: make(chan struct{}),
-		log:  lggr,
+		stop:        make(chan struct{}),
+		log:         lggr,
 	}
 
-	// begin websocket subscription using terra.Subscribe
-	//return &contract,w contract.terra.Subscribe(context.TODO(), jobID, contract.ContractID, contract.data)
 	return &contract, nil
 }
 

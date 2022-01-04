@@ -6,9 +6,6 @@ import (
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/bytes"
-	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 const (
@@ -66,30 +63,6 @@ type LatestTransmissionDetails struct {
 type LatestConfigDigestAndEpoch struct {
 	ConfigDigest types.ConfigDigest `json:"config_digest"`
 	Epoch        uint32             `json:"epoch"`
-}
-
-// this is needed because by default Height is int64, but terra returns a string
-type ResultTx struct {
-	Hash     bytes.HexBytes         `json:"hash"`
-	Height   int64                  `json:"height,string"`
-	Index    uint32                 `json:"index"`
-	TxResult abci.ResponseDeliverTx `json:"tx_result"`
-	Tx       tmtypes.Tx             `json:"tx"`
-	Proof    tmtypes.TxProof        `json:"proof,omitempty"`
-}
-
-type TxResponse struct {
-	Txs   []ResultTx `json:"txs"`
-	Count int        `json:"total_count,string"`
-}
-
-type BroadcastTxResponse struct {
-	Hash      bytes.HexBytes         `json:"hash"`
-	Height    int64                  `json:"height,string"`
-	CheckTx   abci.ResponseCheckTx   `json:"check_tx,omitempty"`
-	DeliverTx abci.ResponseDeliverTx `json:"deliver_tx,omitempty"`
-	Code      uint32                 `json:"code,omitempty"`
-	Data      []byte                 `json:"data,omitempty"`
 }
 
 // WrappedPrivKey wraps the signer provided from the core keystore to the expected interface
