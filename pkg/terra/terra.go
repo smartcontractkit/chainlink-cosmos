@@ -83,7 +83,6 @@ func (c *Client) Start() error {
 			select {
 			case block := <-blocks:
 				b, ok := block.Data.(tmtypes.EventDataNewBlock)
-				fmt.Println("got a block", b, ok)
 				if !ok {
 					c.Log.Errorf("[head-tracker] did not get block, got %T", block)
 					continue
@@ -143,10 +142,10 @@ func (c *Client) GasPrice() msg.DecCoin {
 }
 
 type ABCIQueryParams struct {
-	ContractID string
-	Msg        []byte
+	ContractAddress string
+	Msg             []byte
 }
 
-func NewAbciQueryParams(contractID string, msg []byte) ABCIQueryParams {
-	return ABCIQueryParams{contractID, msg}
+func NewAbciQueryParams(contractAddress string, msg []byte) ABCIQueryParams {
+	return ABCIQueryParams{contractAddress, msg}
 }

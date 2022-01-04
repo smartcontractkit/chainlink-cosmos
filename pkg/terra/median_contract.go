@@ -31,7 +31,7 @@ func (ct *Contract) LatestTransmissionDetails(
 	latestTimestamp time.Time,
 	err error,
 ) {
-	queryParams := NewAbciQueryParams(ct.ContractID.String(), []byte(`"latest_transmission_details"`))
+	queryParams := NewAbciQueryParams(ct.ContractAddress.String(), []byte(`"latest_transmission_details"`))
 	data, err := ct.terra.codec.MarshalJSON(queryParams)
 	if err != nil {
 		return
@@ -86,7 +86,7 @@ func (ct *Contract) LatestRoundRequested(ctx context.Context, lookback time.Dura
 ) {
 	// calculate start block
 	blockNum := ct.terra.Height - uint64(lookback.Seconds())/BlockRate
-	queryStr := fmt.Sprintf("tx.height > %d AND wasm-new_round.contract_address='%s'", blockNum, ct.ContractID)
+	queryStr := fmt.Sprintf("tx.height > %d AND wasm-new_round.contract_address='%s'", blockNum, ct.ContractAddress)
 	res, err := ct.terra.clientCtx.Client.TxSearch(ctx, queryStr, false, nil, nil, "desc")
 	if err != nil {
 		return

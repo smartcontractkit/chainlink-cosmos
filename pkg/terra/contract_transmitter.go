@@ -22,7 +22,7 @@ func (ct *Contract) Transmit(
 	report types.Report,
 	sigs []types.AttributedOnchainSignature,
 ) error {
-	ct.terra.Log.Infof("[%s] Sending TX to %s", ct.JobID, ct.ContractID)
+	ct.terra.Log.Infof("[%s] Sending TX to %s", ct.JobID, ct.ContractAddress)
 	msgStruct := TransmitMsg{}
 	reportContext := evmutil.RawReportContext(reportCtx)
 	for _, r := range reportContext {
@@ -44,7 +44,7 @@ func (ct *Contract) Transmit(
 	}
 
 	// create execute msg
-	rawMsg := terraSDK.NewMsgExecuteContract(sender, ct.ContractID, msgBytes, cosmosSDK.Coins{})
+	rawMsg := terraSDK.NewMsgExecuteContract(sender, ct.ContractAddress, msgBytes, cosmosSDK.Coins{})
 	options := client.CreateTxOptions{
 		Msgs: []msg.Msg{rawMsg},
 		Memo: "",
@@ -75,7 +75,7 @@ func (ct *Contract) LatestConfigDigestAndEpoch(ctx context.Context) (
 	epoch uint32,
 	err error,
 ) {
-	queryParams := NewAbciQueryParams(ct.ContractID.String(), []byte(`"latest_config_digest_and_epoch"`))
+	queryParams := NewAbciQueryParams(ct.ContractAddress.String(), []byte(`"latest_config_digest_and_epoch"`))
 	data, err := ct.terra.codec.MarshalJSON(queryParams)
 	if err != nil {
 		return

@@ -14,14 +14,14 @@ import (
 
 // Contract handles the OCR2 subscription needs but does not track state (state is tracked in actual OCR2 implementation)
 type Contract struct {
-	ChainID     string
-	JobID       string
-	ContractID  sdk.AccAddress
-	terra       *Client
-	Transmitter TransmissionSigner
-	stop        chan struct{}
-	newConfig   chan struct{}
-	log         Logger
+	ChainID         string
+	JobID           string
+	ContractAddress sdk.AccAddress
+	terra           *Client
+	Transmitter     TransmissionSigner
+	stop            chan struct{}
+	newConfig       chan struct{}
+	log             Logger
 }
 
 func NewContractTracker(spec OCR2Spec, jobID string, client *Client, lggr Logger) (*Contract, error) {
@@ -31,13 +31,13 @@ func NewContractTracker(spec OCR2Spec, jobID string, client *Client, lggr Logger
 	}
 
 	contract := Contract{
-		ChainID:     spec.ChainID,
-		JobID:       jobID,
-		ContractID:  addr,
-		terra:       client,
-		Transmitter: spec.TransmissionSigner,
-		stop:        make(chan struct{}),
-		log:         lggr,
+		ChainID:         spec.ChainID,
+		JobID:           jobID,
+		ContractAddress: addr,
+		terra:           client,
+		Transmitter:     spec.TransmissionSigner,
+		stop:            make(chan struct{}),
+		log:             lggr,
 	}
 
 	return &contract, nil
@@ -47,7 +47,7 @@ func NewContractTracker(spec OCR2Spec, jobID string, client *Client, lggr Logger
 func (ct *Contract) Start() error {
 	// TODO:; timeout
 	txes, err := ct.terra.clientCtx.Client.Subscribe(context.TODO(), ct.JobID,
-		fmt.Sprintf("tm.event='Tx' AND execute_contract.contract_address='%s'", ct.ContractID))
+		fmt.Sprintf("tm.event='Tx' AND execute_contract.contract_address='%s'", ct.ContractAddress))
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func (ct *Contract) Close() error {
 	defer close(ct.stop)
 	// unsubscribe websocket
 	return ct.terra.clientCtx.Client.Unsubscribe(context.TODO(), ct.JobID,
-		fmt.Sprintf("tm.event='Tx' AND execute_contract.contract_address='%s'", ct.ContractID))
+		fmt.Sprintf("tm.event='Tx' AND execute_contract.contract_address='%s'", ct.ContractAddress))
 }
 
 // ContractConfigTracker interface implemented below
@@ -87,7 +87,7 @@ func (ct *Contract) Notify() <-chan struct{} {
 
 // LatestConfigDetails returns data by reading the contract state and is called when Notify is triggered or the config poll timer is triggered
 func (ct *Contract) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
-	queryParams := NewAbciQueryParams(ct.ContractID.String(), []byte(`"latest_config_details"`))
+	queryParams := NewAbciQueryParams(ct.ContractAddress.String(), []byte(`"latest_config_details"`))
 	data, err := ct.terra.codec.MarshalJSON(queryParams)
 	if err != nil {
 		return
@@ -112,7 +112,7 @@ func (ct *Contract) LatestConfigDetails(ctx context.Context) (changedInBlock uin
 
 // LatestConfig returns data by searching emitted events and is called in the same scenario as LatestConfigDetails
 func (ct *Contract) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
-	queryStr := fmt.Sprintf("tx.height=%d AND wasm-set_config.contract_address='%s'", changedInBlock, ct.ContractID)
+	queryStr := fmt.Sprintf("tx.height=%d AND wasm-set_config.contract_address='%s'", changedInBlock, ct.ContractAddress)
 	res, err := ct.terra.clientCtx.Client.TxSearch(ctx, queryStr, false, nil, nil, "desc")
 	if err != nil {
 		return types.ContractConfig{}, err
