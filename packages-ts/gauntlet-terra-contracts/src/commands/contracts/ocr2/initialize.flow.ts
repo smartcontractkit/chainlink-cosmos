@@ -4,10 +4,10 @@ import { waitExecute, TransactionResponse } from '@chainlink/gauntlet-terra'
 
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { makeAbstractCommand } from '../../abstract'
-import { makeOCR2DeployCommand } from './deploy'
-import { makeOCR2SetConfigCommand } from './setConfig'
-import { makeOCR2SetBillingCommand } from './setBilling'
-import { makeOCR2SetPayeesCommand } from './setPayees'
+import DeployOCR2 from './deploy'
+import SetBilling from './setBilling'
+import SetConfig from './setConfig'
+import SetPayees from './setPayees'
 
 export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse> {
   static id = 'ocr2:initialize:flow'
@@ -24,9 +24,8 @@ export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse>
     this.flow = [
       {
         name: 'Deploy OCR 2',
-        command: makeOCR2DeployCommand,
+        command: DeployOCR2,
         id: this.stepIds.OCR_2,
-        type: 'maker',
       },
       {
         name: 'Change RDD',
@@ -34,21 +33,18 @@ export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse>
       },
       {
         name: 'Set Config',
-        command: makeOCR2SetConfigCommand,
+        command: SetBilling,
         args: [this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))],
-        type: 'maker',
       },
       {
         name: 'Set Payees',
-        command: makeOCR2SetPayeesCommand,
+        command: SetConfig,
         args: [this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))],
-        type: 'maker',
       },
       {
         name: 'Set Billing',
-        command: makeOCR2SetBillingCommand,
+        command: SetPayees,
         args: [this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))],
-        type: 'maker',
       },
       // Inspection here
       // {

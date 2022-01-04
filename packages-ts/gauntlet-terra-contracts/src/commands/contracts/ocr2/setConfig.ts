@@ -1,5 +1,5 @@
 import { getRDD } from '../../../lib/rdd'
-import { abstractWrapper } from '../../abstract/wrapper'
+import { AbstractInstruction, instructionToCommand } from '../../abstract/wrapper'
 import { time, BN } from '@chainlink/gauntlet-core/dist/utils'
 import { serializeOffchainConfig } from '../../../lib/encoding'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
@@ -99,7 +99,7 @@ const getOffchainConfigInput = (rdd: any, contract: string): OffchainConfig => {
 }
 
 // Command Input is what the user needs to provide to the command to work
-export const makeCommandInput = async (flags: any): Promise<CommandInput> => {
+const makeCommandInput = async (flags: any): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
   const rdd = getRDD(flags.rdd)
   const aggregator = rdd.contracts[flags.contract]
@@ -117,7 +117,7 @@ export const makeCommandInput = async (flags: any): Promise<CommandInput> => {
 }
 
 // Transforms the user input to a valid input for the contract function
-export const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
+const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
   const offchainConfig = await serializeOffchainConfig(input.offchainConfig)
   const signers = input.signers.map((s) => Array.from(Buffer.from(s, 'hex')))
 
@@ -131,7 +131,7 @@ export const makeContractInput = async (input: CommandInput): Promise<ContractIn
   }
 }
 
-export const validateInput = (input: CommandInput): boolean => {
+const validateInput = (input: CommandInput): boolean => {
   const { offchainConfig } = input
   if (3 * offchainConfig.f >= input.signers.length)
     throw new Error(
@@ -194,15 +194,14 @@ export const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-export const makeOCR2SetConfigCommand = (flags: any, args: string[]) => {
-  return abstractWrapper<CommandInput, ContractInput>(
-    {
-      instruction: 'ocr2:set_config',
-      flags,
-      contract: args[0],
-    },
-    makeCommandInput,
-    makeContractInput,
-    validateInput,
-  )
+const instruction: AbstractInstruction<CommandInput, ContractInput> = {
+  instruction: {
+    contract: 'ocr2',
+    function: 'set_config',
+  },
+  makeInput: makeCommandInput,
+  validateInput: validateInput,
+  makeContractInput: makeContractInput,
 }
+
+export default instructionToCommand(instruction)

@@ -1,16 +1,16 @@
-import { ICommand, Result } from '@chainlink/gauntlet-core'
+import { Result } from '@chainlink/gauntlet-core'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TransactionResponse, TerraCommand } from '@chainlink/gauntlet-terra'
 import { Contract, CONTRACT_LIST, getContract, TerraABI, TERRA_OPERATIONS } from '../../lib/contracts'
 import schema from '../../lib/schema'
 
-interface AbstractOpts {
+export interface AbstractOpts {
   contract: Contract
   function: string
   action: TERRA_OPERATIONS.DEPLOY | TERRA_OPERATIONS.EXECUTE | TERRA_OPERATIONS.QUERY | 'help'
 }
 
-interface AbstractParams {
+export interface AbstractParams {
   [param: string]: any
 }
 
@@ -19,22 +19,13 @@ export const makeAbstractCommand = async (
   flags: any,
   args: string[],
   input?: any,
-): Promise<ICommand | undefined> => {
-  try {
-    const commandOpts = parseInstruction(instruction)
-    if (!commandOpts) return
-
-    const params = parseParams(commandOpts, input || flags)
-    if (!params) return
-
-    return new AbstractCommand(flags, args, commandOpts, params)
-  } catch (e) {
-    logger.error(e)
-    return
-  }
+): Promise<TerraCommand> => {
+  const commandOpts = parseInstruction(instruction)
+  const params = parseParams(commandOpts, input || flags)
+  return new AbstractCommand(flags, args, commandOpts, params)
 }
 
-const parseInstruction = (instruction: string): AbstractOpts | undefined => {
+export const parseInstruction = (instruction: string): AbstractOpts => {
   const isValidContract = (contractName: string): boolean => {
     // Validate that we have this contract available
     return Object.values(CONTRACT_LIST).includes(contractName as CONTRACT_LIST)
@@ -59,7 +50,7 @@ const parseInstruction = (instruction: string): AbstractOpts | undefined => {
   }
 
   const command = instruction.split(':')
-  if (!command.length || command.length > 2) return
+  if (!command.length || command.length > 2) throw new Error(`Abstract: Contract ${command[0]} not found`)
 
   const contract = isValidContract(command[0]) && getContract(command[0] as CONTRACT_LIST)
   if (!contract) throw new Error(`Abstract: Contract ${command[0]} not found`)
@@ -90,7 +81,7 @@ const parseInstruction = (instruction: string): AbstractOpts | undefined => {
   }
 }
 
-const parseParams = (commandOpts: AbstractOpts, params: any): AbstractParams | undefined => {
+export const parseParams = (commandOpts: AbstractOpts, params: any): AbstractParams => {
   if (commandOpts.action === 'help') return params
   const abiSchema = commandOpts.contract.abi[commandOpts.action]
   const validate = schema.compile(abiSchema)

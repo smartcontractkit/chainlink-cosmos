@@ -1,12 +1,7 @@
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { CATEGORIES } from '../../../lib/constants'
-
-const CW20_BASE_CODE_IDs = {
-  mainnet: 3,
-  'bombay-testnet': 148,
-}
+import { CATEGORIES, CW20_BASE_CODE_IDs } from '../../../lib/constants'
 
 export default class DeployLink extends TerraCommand {
   static description = 'Deploys LINK token contract'

@@ -1,5 +1,5 @@
 import { getRDD } from '../../../lib/rdd'
-import { abstractWrapper } from '../../abstract/wrapper'
+import { AbstractInstruction, instructionToCommand } from '../../abstract/wrapper'
 
 type CommandInput = {
   payees: string[]
@@ -10,7 +10,7 @@ type ContractInput = {
   payees: string[][]
 }
 
-export const makeCommandInput = async (flags: any): Promise<CommandInput> => {
+const makeCommandInput = async (flags: any): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
   const rdd = getRDD(flags.rdd)
   const aggregator = rdd.contracts[flags.contract]
@@ -23,26 +23,25 @@ export const makeCommandInput = async (flags: any): Promise<CommandInput> => {
   }
 }
 
-export const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
+const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
   return {
     payees: input.payees.map((payee, i) => [payee, input.transmitters[i]]),
   }
 }
 
 // TODO: Add validation
-export const validateInput = (input: CommandInput): boolean => {
+const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-export const makeOCR2SetPayeesCommand = (flags: any, args: string[]) => {
-  return abstractWrapper<CommandInput, ContractInput>(
-    {
-      instruction: 'ocr2:set_payees',
-      flags,
-      contract: args[0],
-    },
-    makeCommandInput,
-    makeContractInput,
-    validateInput,
-  )
+const instruction: AbstractInstruction<CommandInput, ContractInput> = {
+  instruction: {
+    contract: 'ocr2',
+    function: 'set_payees',
+  },
+  makeInput: makeCommandInput,
+  validateInput: validateInput,
+  makeContractInput: makeContractInput,
 }
+
+export default instructionToCommand(instruction)

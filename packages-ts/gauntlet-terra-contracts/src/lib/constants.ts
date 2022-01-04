@@ -10,3 +10,8 @@ export const CATEGORIES = {
 }
 
 export const ORACLES_MAX_LENGTH = 31
+
+export const CW20_BASE_CODE_IDs = {
+  mainnet: 3,
+  'bombay-testnet': 148,
+}
