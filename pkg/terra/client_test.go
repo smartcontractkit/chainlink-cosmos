@@ -3,6 +3,7 @@ package terra
 import (
 	"context"
 	"encoding/json"
+
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/mocks"
@@ -11,16 +12,6 @@ import (
 	"github.com/terra-money/core/app"
 	terraSDK "github.com/terra-money/core/x/wasm/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/pelletier/go-toml"
-	//tmjson "github.com/tendermint/tendermint/libs/json"
-	//tmtypes "github.com/tendermint/tendermint/rpc/core/types"
-	//rpcclient "github.com/tendermint/tendermint/rpc/client"
-	"github.com/terra-money/terra.go/client"
-	"github.com/terra-money/terra.go/key"
-	"github.com/terra-money/terra.go/msg"
-	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -28,10 +19,19 @@ import (
 	"path"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+	"github.com/pelletier/go-toml"
+	"github.com/terra-money/terra.go/client"
+	"github.com/terra-money/terra.go/key"
+	"github.com/terra-money/terra.go/msg"
+	"golang.org/x/net/context/ctxhttp"
+
 	"fmt"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func createKeyFromMnemonic(t *testing.T, mnemonic string) (key.PrivKey, sdk.AccAddress) {
@@ -138,9 +138,9 @@ func getContractAddr(t *testing.T, tc *Client, deploymentHash string) sdk.AccAdd
 
 func TestTerraClient(t *testing.T) {
 	// Local only for now, could maybe run on CI if we install terrad there?
-	if os.Getenv("TEST_CLIENT") == "" {
-		t.Skip()
-	}
+	//if os.Getenv("TEST_CLIENT") == "" {
+	//	t.Skip()
+	//}
 	accounts, deploymentHash := setup(t)
 	cosmosURL := "http://127.0.0.1:1317"
 	tendermintURL := "http://127.0.0.1:26657"
@@ -172,8 +172,6 @@ func TestTerraClient(t *testing.T) {
 		GasLimitMultiplier: "1.3",
 	}, lggr)
 	require.NoError(t, err)
-	require.NoError(t, tc.Start())
-	defer tc.Close()
 
 	time.Sleep(5 * time.Second)
 
@@ -252,6 +250,9 @@ func TestTerraClient(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, tr.TotalCount)
 	assert.Equal(t, tx2.TxResponse.TxHash, tr.Txs[0].Hash.String())
-	// Ensure head tracker is working
-	assert.True(t, tc.Height > 1)
+
+	// Check getting the height works
+	latestBlock, err := tc.clientCtx.Client.Block(context.Background(), nil)
+	require.NoError(t, err)
+	t.Log(latestBlock.Block.Height)
 }

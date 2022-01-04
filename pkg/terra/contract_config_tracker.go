@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"strconv"
+
+	abci "github.com/tendermint/tendermint/abci/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
@@ -14,13 +15,10 @@ import (
 
 // Contract handles the OCR2 subscription needs but does not track state (state is tracked in actual OCR2 implementation)
 type Contract struct {
-	ChainID         string
 	JobID           string
 	ContractAddress sdk.AccAddress
 	terra           *Client
 	Transmitter     TransmissionSigner
-	stop            chan struct{}
-	newConfig       chan struct{}
 	log             Logger
 }
 
@@ -31,58 +29,19 @@ func NewContractTracker(spec OCR2Spec, jobID string, client *Client, lggr Logger
 	}
 
 	contract := Contract{
-		ChainID:         spec.ChainID,
 		JobID:           jobID,
 		ContractAddress: addr,
 		terra:           client,
 		Transmitter:     spec.TransmissionSigner,
-		stop:            make(chan struct{}),
 		log:             lggr,
 	}
 
 	return &contract, nil
 }
 
-// Start creates a loop with handler for different event types
-func (ct *Contract) Start() error {
-	// TODO:; timeout
-	txes, err := ct.terra.clientCtx.Client.Subscribe(context.TODO(), ct.JobID,
-		fmt.Sprintf("tm.event='Tx' AND execute_contract.contract_address='%s'", ct.ContractAddress))
-	if err != nil {
-		return err
-	}
-	go func() {
-		for {
-			select {
-			case data := <-txes:
-				// process received data
-				for event := range data.Events {
-					if event == "wasm-set_config" {
-						ct.newConfig <- struct{}{}
-					}
-				}
-			case <-ct.stop:
-				return
-			}
-		}
-	}()
-	return nil
-}
-
-// Close stops the event channel listener loop and unsubscribes the job from the websocket
-func (ct *Contract) Close() error {
-	// stop listening loops
-	defer close(ct.stop)
-	// unsubscribe websocket
-	return ct.terra.clientCtx.Client.Unsubscribe(context.TODO(), ct.JobID,
-		fmt.Sprintf("tm.event='Tx' AND execute_contract.contract_address='%s'", ct.ContractAddress))
-}
-
-// ContractConfigTracker interface implemented below
-
-// Notify is a channel for notifying if a new config event has been emitted
+// Unused, libocr will use polling
 func (ct *Contract) Notify() <-chan struct{} {
-	return ct.newConfig
+	return nil
 }
 
 // LatestConfigDetails returns data by reading the contract state and is called when Notify is triggered or the config poll timer is triggered
@@ -186,8 +145,9 @@ func (ct *Contract) LatestConfig(ctx context.Context, changedInBlock uint64) (ty
 
 // LatestBlockHeight returns the height of the most recent block in the chain.
 func (ct *Contract) LatestBlockHeight(ctx context.Context) (blockHeight uint64, err error) {
-	if ct.terra.Height == 0 {
-		ct.log.Warnf("Invalid block height: %d - this is a problem if it occurs long after startup", ct.terra.Height)
+	b, err := ct.terra.clientCtx.Client.Block(ctx, nil)
+	if err != nil {
+		return 0, err
 	}
-	return ct.terra.Height, nil
+	return uint64(b.Block.Height), nil
 }

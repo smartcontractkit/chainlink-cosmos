@@ -2,15 +2,15 @@ package terra
 
 import (
 	"context"
-	tmtypes "github.com/tendermint/tendermint/types"
 	"net/http"
 
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/pkg/errors"
 	"github.com/terra-money/core/app"
-	"io/ioutil"
 
 	"time"
 
@@ -22,7 +22,6 @@ import (
 )
 
 type Client struct {
-	close chan struct{}
 	codec *codec.LegacyAmino
 
 	fallbackGasPrice   msg.Dec
@@ -31,10 +30,9 @@ type Client struct {
 	cosmosRPC          string
 	chainID            string
 	clientCtx          cosmosclient.Context
-	httpClient         *http.Client
+	httpTimeout        time.Duration
 
-	Height uint64
-	Log    Logger
+	Log Logger
 }
 
 func NewClient(spec OCR2Spec, lggr Logger) (*Client, error) {
@@ -56,56 +54,16 @@ func NewClient(spec OCR2Spec, lggr Logger) (*Client, error) {
 		WithTxConfig(app.MakeEncodingConfig().TxConfig)
 
 	return &Client{
-		close:              make(chan struct{}),
 		codec:              codec.NewLegacyAmino(),
 		chainID:            spec.ChainID,
 		clientCtx:          clientCtx,
 		cosmosRPC:          spec.CosmosURL,
-		httpClient:         &http.Client{Timeout: spec.HTTPTimeout},
+		httpTimeout:        spec.HTTPTimeout,
 		fcdhttpURL:         spec.FCDNodeEndpointURL,
 		fallbackGasPrice:   fallbackGasPrice,
 		gasLimitMultiplier: gasLimitMultiplier,
 		Log:                lggr,
 	}, nil
-}
-
-func (c *Client) Start() error {
-	// Note starts the websocket and head tracker
-	if err := c.clientCtx.Client.Start(); err != nil {
-		return err
-	}
-	blocks, err := c.clientCtx.Client.Subscribe(context.TODO(), "head-tracker", "tm.event='NewBlock'")
-	if err != nil {
-		return err
-	}
-	go func() {
-		for {
-			select {
-			case block := <-blocks:
-				b, ok := block.Data.(tmtypes.EventDataNewBlock)
-				if !ok {
-					c.Log.Errorf("[head-tracker] did not get block, got %T", block)
-					continue
-				}
-				c.Log.Infof("[head-tracker] Block height %d", b.Block.Height)
-				c.Height = uint64(b.Block.Height)
-			case <-c.close:
-				return
-			}
-		}
-	}()
-	c.Log.Infof("[head-tracker] Subscription started")
-	return nil
-}
-
-func (c *Client) Close() error {
-	if err := c.clientCtx.Client.Unsubscribe(context.TODO(), "head-tracker", "tm.event='NewBlock'"); err != nil {
-		return err
-	}
-	// trigger close channel to trigger stop related services
-	close(c.close)
-	c.Log.Infof("Closing websocket connection to %s", c.clientCtx.Client.String())
-	return nil
 }
 
 func (c *Client) LCD(gasPrice msg.DecCoin, gasAdjustment msg.Dec, signer key.PrivKey, timeout time.Duration) *client.LCDClient {
@@ -115,7 +73,10 @@ func (c *Client) LCD(gasPrice msg.DecCoin, gasAdjustment msg.Dec, signer key.Pri
 func (c *Client) GasPrice() msg.DecCoin {
 	var fallback = msg.NewDecCoinFromDec("uluna", c.fallbackGasPrice)
 	url := fmt.Sprintf("%s%s", c.fcdhttpURL, "/v1/txs/gas_prices")
-	resp, err := c.httpClient.Get(url)
+	ctx, cancel := context.WithTimeout(context.Background(), c.httpTimeout)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		c.Log.Errorf("error querying %s, err %v", url, err)
 		return fallback

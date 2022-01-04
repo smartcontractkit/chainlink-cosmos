@@ -3,6 +3,7 @@ package terra
 import (
 	"context"
 	"encoding/json"
+
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/pkg/errors"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -51,7 +52,7 @@ func (ct *Contract) Transmit(
 	}
 
 	// need LCD for fetching sequence, account number, + setting gas prices, etc
-	lcd := ct.terra.LCD(ct.terra.GasPrice(), ct.terra.gasLimitMultiplier, WrappedPrivKey{ct.Transmitter}, ct.terra.httpClient.Timeout)
+	lcd := ct.terra.LCD(ct.terra.GasPrice(), ct.terra.gasLimitMultiplier, WrappedPrivKey{ct.Transmitter}, ct.terra.httpTimeout)
 	txBuilder, err := lcd.CreateAndSignTx(context.TODO(), options)
 	if err != nil {
 		return errors.Wrap(err, "error in Transmit.NewTxBuilder")

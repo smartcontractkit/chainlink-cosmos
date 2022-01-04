@@ -91,9 +91,6 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	if err != nil {
 		return nil, err
 	}
-	if err := client.Start(); err != nil {
-		return nil, err
-	}
 	tracker, err := NewContractTracker(spec, externalJobID.String(), client, r.lggr)
 	if err != nil {
 		return nil, err
@@ -138,7 +135,7 @@ func (p ocr2Provider) Start() error {
 }
 
 func (p ocr2Provider) Close() error {
-	return p.client.Close()
+	return nil
 }
 
 func (p ocr2Provider) Ready() error {
