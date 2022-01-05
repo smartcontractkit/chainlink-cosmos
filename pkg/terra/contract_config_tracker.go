@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
+	abci "github.com/tendermint/tendermint/abci/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
@@ -13,15 +15,11 @@ import (
 
 // Contract handles the OCR2 subscription needs but does not track state (state is tracked in actual OCR2 implementation)
 type Contract struct {
-	ChainID     string
-	JobID       string
-	ContractID  sdk.AccAddress
-	terra       *Client
-	Transmitter TransmissionSigner
-	stop        chan struct{}
-	data        chan Events
-	newConfig   chan struct{}
-	log         Logger
+	JobID           string
+	ContractAddress sdk.AccAddress
+	terra           *Client
+	Transmitter     TransmissionSigner
+	log             Logger
 }
 
 func NewContractTracker(spec OCR2Spec, jobID string, client *Client, lggr Logger) (*Contract, error) {
@@ -31,71 +29,41 @@ func NewContractTracker(spec OCR2Spec, jobID string, client *Client, lggr Logger
 	}
 
 	contract := Contract{
-		ChainID:     spec.ChainID,
-		JobID:       jobID,
-		ContractID:  addr,
-		terra:       client,
-		Transmitter: spec.TransmissionSigner,
-		data:        make(chan Events),
-		stop:        make(chan struct{}),
-		log:         lggr,
+		JobID:           jobID,
+		ContractAddress: addr,
+		terra:           client,
+		Transmitter:     spec.TransmissionSigner,
+		log:             lggr,
 	}
 
-	// begin websocket subscription using terra.Subscribe
-	return &contract, contract.terra.Subscribe(context.TODO(), jobID, contract.ContractID, contract.data)
+	return &contract, nil
 }
 
-// Start creates a loop with handler for different event types
-func (ct *Contract) Start() {
-	for {
-		select {
-		case data := <-ct.data:
-			// process received data
-			for _, event := range data.Events {
-				if event == "wasm-set_config" {
-					ct.newConfig <- struct{}{}
-				}
-			}
-		case <-ct.stop:
-			return
-		}
-	}
-}
-
-// Close stops the event channel listener loop and unsubscribes the job from the websocket
-func (ct *Contract) Close() error {
-	// stop listening loops
-	defer close(ct.stop)
-	// unsubscribe websocket
-	return ct.terra.Unsubscribe(context.TODO(), ct.JobID)
-}
-
-// ContractConfigTracker interface implemented below
-
-// Notify is a channel for notifying if a new config event has been emitted
+// Unused, libocr will use polling
 func (ct *Contract) Notify() <-chan struct{} {
-	return ct.newConfig
+	return nil
 }
 
 // LatestConfigDetails returns data by reading the contract state and is called when Notify is triggered or the config poll timer is triggered
 func (ct *Contract) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
-	// query state
-	queryParams := NewAbciQueryParams(ct.ContractID.String(), []byte(`"latest_config_details"`))
-
-	raw, err := ct.terra.Query(
-		ABCI,
-		[]interface{}{"custom/wasm/contractStore", queryParams},
-	)
+	queryParams := NewAbciQueryParams(ct.ContractAddress.String(), []byte(`"latest_config_details"`))
+	data, err := ct.terra.codec.MarshalJSON(queryParams)
 	if err != nil {
 		return
 	}
-
-	// unmarshal
-	var config ConfigDetails
-	if err = json.Unmarshal(raw, &config); err != nil {
+	resp, err := ct.terra.clientCtx.QueryABCI(abci.RequestQuery{
+		Data:   data,
+		Path:   "custom/wasm/contractStore",
+		Height: 0,
+		Prove:  false,
+	})
+	if err != nil {
 		return
 	}
-
+	var config ConfigDetails
+	if err = json.Unmarshal(resp.Value, &config); err != nil {
+		return
+	}
 	changedInBlock = config.BlockNumber
 	configDigest = config.ConfigDigest
 	return
@@ -103,23 +71,14 @@ func (ct *Contract) LatestConfigDetails(ctx context.Context) (changedInBlock uin
 
 // LatestConfig returns data by searching emitted events and is called in the same scenario as LatestConfigDetails
 func (ct *Contract) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
-	queryStr := fmt.Sprintf("tx.height=%d AND wasm-set_config.contract_address='%s'", changedInBlock, ct.ContractID)
-	raw, err := ct.terra.Query(
-		TX,
-		[]interface{}{queryStr},
-	)
+	queryStr := fmt.Sprintf("tx.height=%d AND wasm-set_config.contract_address='%s'", changedInBlock, ct.ContractAddress)
+	res, err := ct.terra.clientCtx.Client.TxSearch(ctx, queryStr, false, nil, nil, "desc")
 	if err != nil {
 		return types.ContractConfig{}, err
 	}
-
-	// unmarshal
-	var res TxResponse
-	if err := json.Unmarshal(raw, &res); err != nil {
-		return types.ContractConfig{}, err
-	} else if len(res.Txs) == 0 {
+	if len(res.Txs) == 0 {
 		return types.ContractConfig{}, fmt.Errorf("No transactions found for block %d", changedInBlock)
 	}
-
 	// fetch event and process (use first tx and \first log set)
 	if len(res.Txs[0].TxResult.Events) == 0 {
 		return types.ContractConfig{}, fmt.Errorf("No events found for tx %s", res.Txs[0].Hash)
@@ -186,8 +145,9 @@ func (ct *Contract) LatestConfig(ctx context.Context, changedInBlock uint64) (ty
 
 // LatestBlockHeight returns the height of the most recent block in the chain.
 func (ct *Contract) LatestBlockHeight(ctx context.Context) (blockHeight uint64, err error) {
-	if ct.terra.Height == 0 {
-		ct.log.Warnf("Invalid block height: %d - this is a problem if it occurs long after startup", ct.terra.Height)
+	b, err := ct.terra.clientCtx.Client.Block(ctx, nil)
+	if err != nil {
+		return 0, err
 	}
-	return ct.terra.Height, nil
+	return uint64(b.Block.Height), nil
 }

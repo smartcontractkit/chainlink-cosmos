@@ -3,16 +3,17 @@ package terra
 import (
 	"context"
 	"encoding/json"
-	"time"
 
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/pkg/errors"
+	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/terra-money/terra.go/client"
 	"github.com/terra-money/terra.go/msg"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/libocr/offchainreporting2/chains/evmutil"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 	terraSDK "github.com/terra-money/core/x/wasm/types"
-	"github.com/terra-money/terra.go/client"
 )
 
 // Transmit signs and sends the report
@@ -22,7 +23,7 @@ func (ct *Contract) Transmit(
 	report types.Report,
 	sigs []types.AttributedOnchainSignature,
 ) error {
-	ct.terra.Log.Infof("[%s] Sending TX to %s", ct.JobID, ct.ContractID)
+	ct.terra.Log.Infof("[%s] Sending TX to %s", ct.JobID, ct.ContractAddress)
 	msgStruct := TransmitMsg{}
 	reportContext := evmutil.RawReportContext(reportCtx)
 	for _, r := range reportContext {
@@ -44,32 +45,28 @@ func (ct *Contract) Transmit(
 	}
 
 	// create execute msg
-	rawMsg := terraSDK.NewMsgExecuteContract(sender, ct.ContractID, msgBytes, cosmosSDK.Coins{})
+	rawMsg := terraSDK.NewMsgExecuteContract(sender, ct.ContractAddress, msgBytes, cosmosSDK.Coins{})
 	options := client.CreateTxOptions{
 		Msgs: []msg.Msg{rawMsg},
 		Memo: "",
 	}
 
 	// need LCD for fetching sequence, account number, + setting gas prices, etc
-	gasPrice := msg.NewDecCoinFromDec("uluna", msg.NewDecFromIntWithPrec(msg.NewInt(16), 3))
-	defaultGasAdjustment := msg.NewDecFromIntWithPrec(msg.NewInt(15), 1) // default gas adjustmnet
-	lcd := ct.terra.LCD(gasPrice, defaultGasAdjustment, WrappedPrivKey{ct.Transmitter}, 5*time.Second)
+	lcd := ct.terra.LCD(ct.terra.GasPrice(), ct.terra.gasLimitMultiplier, WrappedPrivKey{ct.Transmitter}, ct.terra.httpTimeout)
 	txBuilder, err := lcd.CreateAndSignTx(context.TODO(), options)
 	if err != nil {
 		return errors.Wrap(err, "error in Transmit.NewTxBuilder")
 	}
-
 	txBytes, err := txBuilder.GetTxBytes()
 	if err != nil {
 		return errors.Wrap(err, "error in Transmit.GetTxBytes")
 	}
 
-	// Transmit TX
-	txResponse, err := ct.terra.Send(ctx, txBytes, BroadcastSync)
+	txResponse, err := ct.terra.clientCtx.WithBroadcastMode(string(txtypes.BroadcastMode_BROADCAST_MODE_SYNC)).BroadcastTx(txBytes)
 	if err != nil {
 		return errors.Wrap(err, "error in Transmit.Send")
 	}
-	ct.terra.Log.Infof("[%s] TX Hash: %s", ct.JobID, txResponse.Hash)
+	ct.terra.Log.Infof("[%s] TX Hash: %s", ct.JobID, txResponse.TxHash)
 	return nil
 }
 
@@ -79,20 +76,23 @@ func (ct *Contract) LatestConfigDigestAndEpoch(ctx context.Context) (
 	epoch uint32,
 	err error,
 ) {
-	// fetch
-	queryParams := NewAbciQueryParams(ct.ContractID.String(), []byte(`"latest_config_digest_and_epoch"`))
-
-	raw, err := ct.terra.Query(
-		ABCI,
-		[]interface{}{"custom/wasm/contractStore", queryParams},
-	)
+	queryParams := NewAbciQueryParams(ct.ContractAddress.String(), []byte(`"latest_config_digest_and_epoch"`))
+	data, err := ct.terra.codec.MarshalJSON(queryParams)
+	if err != nil {
+		return
+	}
+	resp, err := ct.terra.clientCtx.QueryABCI(abci.RequestQuery{
+		Data:   data,
+		Path:   "custom/wasm/contractStore",
+		Height: 0,
+		Prove:  false,
+	})
 	if err != nil {
 		return types.ConfigDigest{}, 0, err
 	}
 
-	// unmarshal
 	var digest LatestConfigDigestAndEpoch
-	if err := json.Unmarshal(raw, &digest); err != nil {
+	if err := json.Unmarshal(resp.Value, &digest); err != nil {
 		return types.ConfigDigest{}, 0, err
 	}
 

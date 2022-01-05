@@ -2,6 +2,7 @@ package terra
 
 import (
 	"errors"
+	"time"
 
 	uuid "github.com/satori/go.uuid"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
+//go:generate mockery --name Logger --output ./mocks/
 type Logger interface {
 	Tracef(format string, values ...interface{})
 	Debugf(format string, values ...interface{})
@@ -32,9 +34,14 @@ type OCR2Spec struct {
 	IsBootstrap bool
 
 	// network data
-	NodeEndpointHTTP string
-	NodeEndpointWS   string
-	ChainID          string
+	TendermintURL      string // URL exposing tendermint RPC (default port is 26657)
+	CosmosURL          string // URL exposing cosmos endpoints (port is 1317, needs to be enabled in terra node config)
+	FCDNodeEndpointURL string // FCD nodes have /v1/txs/gas_prices
+	ChainID            string
+	HTTPTimeout        time.Duration
+
+	FallbackGasPrice   string
+	GasLimitMultiplier string
 
 	// on-chain data
 	ContractID string
@@ -84,7 +91,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	if err != nil {
 		return nil, err
 	}
-	tracker, err := NewContractTracker(spec, externalJobID.String(), &client, r.lggr)
+	tracker, err := NewContractTracker(spec, externalJobID.String(), client, r.lggr)
 	if err != nil {
 		return nil, err
 	}
@@ -105,6 +112,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	reportCodec := ReportCodec{}
 
 	return ocr2Provider{
+		client:                 client,
 		offchainConfigDigester: digester,
 		reportCodec:            reportCodec,
 		tracker:                tracker,
@@ -114,6 +122,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 }
 
 type ocr2Provider struct {
+	client                 *Client
 	offchainConfigDigester types.OffchainConfigDigester
 	reportCodec            median.ReportCodec
 	tracker                types.ContractConfigTracker
