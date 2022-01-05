@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
-	abci "github.com/tendermint/tendermint/abci/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 
 	"math/big"
 	"strconv"
@@ -20,9 +20,28 @@ const (
 )
 
 // MedianContract interface
+var _ median.MedianContract = (*MedianContract)(nil)
+
+type LatestConfigReader interface {
+	LatestConfigDigestAndEpoch(ctx context.Context) (
+		configDigest types.ConfigDigest,
+		epoch uint32,
+		err error)
+}
+
+type MedianContract struct {
+	contract sdk.AccAddress
+	terra    *Client
+	lggr     Logger
+	cr       LatestConfigReader
+}
+
+func NewMedianContract(contract sdk.AccAddress, terra *Client, lggr Logger, cr LatestConfigReader) *MedianContract {
+	return &MedianContract{contract: contract, terra: terra, lggr: lggr, cr: cr}
+}
 
 // LatestTransmissionDetails fetches the latest transmission details from contract state
-func (ct *Contract) LatestTransmissionDetails(
+func (ct *MedianContract) LatestTransmissionDetails(
 	ctx context.Context,
 ) (
 	configDigest types.ConfigDigest,
@@ -32,25 +51,16 @@ func (ct *Contract) LatestTransmissionDetails(
 	latestTimestamp time.Time,
 	err error,
 ) {
-	queryParams := NewAbciQueryParams(ct.ContractAddress.String(), []byte(`"latest_transmission_details"`))
-	data, err := ct.terra.codec.MarshalJSON(queryParams)
-	if err != nil {
-		return
-	}
-	resp, err := ct.terra.clientCtx.QueryABCI(abci.RequestQuery{
-		Data:   data,
-		Path:   "custom/wasm/contractStore",
-		Height: 0,
-		Prove:  false,
-	})
+	queryParams := NewAbciQueryParams(ct.contract.String(), []byte(`"latest_transmission_details"`))
+	resp, err := ct.terra.QueryABCI("custom/wasm/contractStore", queryParams)
 	if err != nil {
 		// TODO: Verify if this is still necessary
 		// https://github.com/smartcontractkit/chainlink-terra/issues/23
 		// Handle the 500 error that occurs when there has not been a submission
 		// "rpc error: code = Unknown desc = ocr2::state::Transmission not found: contract query failed"
 		if strings.Contains(fmt.Sprint(err), "ocr2::state::Transmission not found") {
-			ct.log.Infof("No transmissions found when fetching `latest_transmission_details` attempting with `latest_config_digest_and_epoch`")
-			digest, epoch, err2 := ct.LatestConfigDigestAndEpoch(ctx)
+			ct.lggr.Infof("No transmissions found when fetching `latest_transmission_details` attempting with `latest_config_digest_and_epoch`")
+			digest, epoch, err2 := ct.cr.LatestConfigDigestAndEpoch(ctx)
 
 			// return different data if no error, else continue and return previous error
 			// return config digest and epoch from query, set everything else to 0
@@ -79,7 +89,7 @@ func (ct *Contract) LatestTransmissionDetails(
 }
 
 // LatestRoundRequested fetches the latest round requested by filtering event logs
-func (ct *Contract) LatestRoundRequested(ctx context.Context, lookback time.Duration) (
+func (ct *MedianContract) LatestRoundRequested(ctx context.Context, lookback time.Duration) (
 	configDigest types.ConfigDigest,
 	epoch uint32,
 	round uint8,
@@ -92,7 +102,7 @@ func (ct *Contract) LatestRoundRequested(ctx context.Context, lookback time.Dura
 		return
 	}
 	blockNum := uint64(latestBlock.Block.Height) - uint64(lookback.Seconds())/BlockRate
-	queryStr := fmt.Sprintf("tx.height > %d AND wasm-new_round.contract_address='%s'", blockNum, ct.ContractAddress)
+	queryStr := fmt.Sprintf("tx.height > %d AND wasm-new_round.contract_address='%s'", blockNum, ct.contract.String())
 	res, err := ct.terra.clientCtx.Client.TxSearch(ctx, queryStr, false, nil, nil, "desc")
 	if err != nil {
 		return

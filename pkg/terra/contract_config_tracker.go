@@ -9,9 +9,10 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/pkg/errors"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
+
+var _ types.ContractConfigTracker = (*Contract)(nil)
 
 // Contract handles the OCR2 subscription needs but does not track state (state is tracked in actual OCR2 implementation)
 type Contract struct {
@@ -22,20 +23,14 @@ type Contract struct {
 	log             Logger
 }
 
-func NewContractTracker(spec OCR2Spec, jobID string, client *Client, lggr Logger) (*Contract, error) {
-	addr, err := sdk.AccAddressFromBech32(spec.ContractID)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error while decoding AccAddressFromBech32")
-	}
-
+func NewContractTracker(contractAddr sdk.AccAddress, signer TransmissionSigner, jobID string, client *Client, lggr Logger) (*Contract, error) {
 	contract := Contract{
 		JobID:           jobID,
-		ContractAddress: addr,
+		ContractAddress: contractAddr,
 		terra:           client,
-		Transmitter:     spec.TransmissionSigner,
+		Transmitter:     signer,
 		log:             lggr,
 	}
-
 	return &contract, nil
 }
 

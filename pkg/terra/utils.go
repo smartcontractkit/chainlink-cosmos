@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 	"reflect"
 	"strconv"
 
@@ -67,4 +68,12 @@ func RawMessageStringIntToInt(msg json.RawMessage) (int, error) {
 		return 0, err
 	}
 	return strconv.Atoi(temp)
+}
+
+func MustAccAddress(addr string) cosmosSDK.AccAddress {
+	accAddr, err := cosmosSDK.AccAddressFromBech32(addr)
+	if err != nil {
+		panic(err)
+	}
+	return accAddr
 }
