@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/mocks"
 	"github.com/stretchr/testify/mock"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/terra-money/core/app"
 	terraSDK "github.com/terra-money/core/x/wasm/types"
 
@@ -22,9 +21,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/pelletier/go-toml"
-	"github.com/terra-money/terra.go/client"
-	"github.com/terra-money/terra.go/key"
-	"github.com/terra-money/terra.go/msg"
+	"github.com/smartcontractkit/terra.go/key"
+	"github.com/smartcontractkit/terra.go/msg"
 	"golang.org/x/net/context/ctxhttp"
 
 	"fmt"
@@ -138,9 +136,9 @@ func getContractAddr(t *testing.T, tc *Client, deploymentHash string) sdk.AccAdd
 
 func TestTerraClient(t *testing.T) {
 	// Local only for now, could maybe run on CI if we install terrad there?
-	if os.Getenv("TEST_CLIENT") == "" {
-		t.Skip()
-	}
+	//if os.Getenv("TEST_CLIENT") == "" {
+	//	t.Skip()
+	//}
 	accounts, deploymentHash := setup(t)
 	cosmosURL := "http://127.0.0.1:1317"
 	tendermintURL := "http://127.0.0.1:26657"
@@ -170,75 +168,33 @@ func TestTerraClient(t *testing.T) {
 		ChainID:            "42",
 		FallbackGasPrice:   "0.01",
 		GasLimitMultiplier: "1.3",
+		Timeout:            10 * time.Second,
 	}, lggr)
 	require.NoError(t, err)
 
 	time.Sleep(5 * time.Second)
 
-	// Query initial contract state
-	contract := getContractAddr(t, tc, deploymentHash)
-	q := NewAbciQueryParams(contract.String(), []byte(`{"get_count":{}}`))
-	data, err := tc.codec.MarshalJSON(q)
-	require.NoError(t, err)
-	count, err := tc.clientCtx.QueryABCI(abci.RequestQuery{
-		Data:   data,
-		Path:   "custom/wasm/contractStore",
-		Height: 0,
-		Prove:  false,
-	})
-	require.NoError(t, err)
-	assert.Equal(t, `{"count":0}`, string(count.Value))
-
-	// Change the contract state
-	rawMsg := terraSDK.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
-	lcd := tc.LCD(tc.GasPrice(), tc.gasLimitMultiplier, accounts[0].PrivateKey, 5*time.Second)
-	tx, err := lcd.CreateAndSignTx(context.Background(), client.CreateTxOptions{Msgs: []msg.Msg{
-		rawMsg,
-	},
-		GasLimit: 1000000,
-	})
-	require.NoError(t, err)
-	b, err := tx.GetTxBytes()
-	require.NoError(t, err)
-	_, err = tc.clientCtx.WithBroadcastMode("block").BroadcastTx(b)
-	require.NoError(t, err)
-
-	// Observe changed contract state
-	count, err = tc.clientCtx.QueryABCI(abci.RequestQuery{
-		Data:   data,
-		Path:   "custom/wasm/contractStore",
-		Height: 0,
-		Prove:  false,
-	})
-	require.NoError(t, err)
-	assert.Equal(t, `{"count":5}`, string(count.Value))
-
+	// Check gas price works
 	gp := tc.GasPrice()
 	// Should not use fallback
 	assert.NotEqual(t, gp.String(), "0.01uluna")
 	t.Log(gp)
 
-	lcd = tc.LCD(tc.GasPrice(), tc.gasLimitMultiplier, accounts[0].PrivateKey, 5*time.Second)
-	tx, err = lcd.CreateAndSignTx(context.Background(), client.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgSend(accounts[0].Address, accounts[1].Address, msg.NewCoins(msg.NewInt64Coin("uluna", 1))), // 1uusd
-		},
-		GasLimit: 200000,
-	})
+	// Fund a second account
+	a, err := tc.Account(accounts[0].Address)
 	require.NoError(t, err)
-	b, err = tx.GetTxBytes()
-	require.NoError(t, err)
-	resp, err := tc.clientCtx.WithBroadcastMode("block").BroadcastTx(b)
+	resp, err := tc.SignAndBroadcast([]msg.Msg{msg.NewMsgSend(accounts[0].Address, accounts[1].Address, msg.NewCoins(msg.NewInt64Coin("uluna", 1)))},
+		a.GetAccountNumber(), a.GetSequence(), tc.GasPrice(), accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 	require.NoError(t, err)
 
 	// Note even the blocking command doesn't let you query for the tx right away
 	time.Sleep(1 * time.Second)
 
 	// Ensure cosmos endpoints work
-	b = get(cosmosURL, "/cosmos/tx/v1beta1/txs/"+resp.TxHash)
+	b := get(cosmosURL, "/cosmos/tx/v1beta1/txs/"+resp.TxHash)
 	var tx2 txtypes.GetTxResponse
 	require.NoError(t, app.MakeEncodingConfig().Marshaler.UnmarshalJSON(b, &tx2))
-	t.Log(tx.GetTx().GetFee().String())
+	t.Log(tx2.GetTx().GetFee().String())
 
 	b = get(cosmosURL, "/cosmos/bank/v1beta1/balances/"+accounts[0].Address.String())
 	var balances banktypes.QueryAllBalancesResponse
@@ -246,13 +202,36 @@ func TestTerraClient(t *testing.T) {
 	t.Log(balances.GetBalances().AmountOf("uluna").String())
 
 	// Ensure we can read back the tx with Query
-	tr, err := tc.clientCtx.Client.TxSearch(context.Background(), fmt.Sprintf("tx.height=%v", tx2.TxResponse.Height), false, nil, nil, "desc")
+	tr, err := tc.TxSearch(fmt.Sprintf("tx.height=%v", tx2.TxResponse.Height))
 	require.NoError(t, err)
 	assert.Equal(t, 1, tr.TotalCount)
 	assert.Equal(t, tx2.TxResponse.TxHash, tr.Txs[0].Hash.String())
 
 	// Check getting the height works
-	latestBlock, err := tc.clientCtx.Client.Block(context.Background(), nil)
+	latestBlock, err := tc.Block(nil)
 	require.NoError(t, err)
 	assert.True(t, latestBlock.Block.Height > 1)
+
+	// Query initial contract state
+	contract := getContractAddr(t, tc, deploymentHash)
+	q := NewAbciQueryParams(contract.String(), []byte(`{"get_count":{}}`))
+	count, err := tc.QueryABCI(
+		"custom/wasm/contractStore",
+		q,
+	)
+	require.NoError(t, err)
+	assert.Equal(t, `{"count":0}`, string(count.Value))
+
+	// Change the contract state
+	rawMsg := terraSDK.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
+	a, err = tc.Account(accounts[0].Address)
+	require.NoError(t, err)
+	_, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, a.GetAccountNumber(), a.GetSequence(), tc.GasPrice(), accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+	require.NoError(t, err)
+	time.Sleep(1 * time.Second)
+
+	// Observe changed contract state
+	count, err = tc.QueryABCI("custom/wasm/contractStore", q)
+	require.NoError(t, err)
+	assert.Equal(t, `{"count":5}`, string(count.Value))
 }

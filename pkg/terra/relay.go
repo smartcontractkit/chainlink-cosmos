@@ -4,6 +4,8 @@ import (
 	"errors"
 	"time"
 
+	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
+
 	uuid "github.com/satori/go.uuid"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -38,7 +40,7 @@ type OCR2Spec struct {
 	CosmosURL          string // URL exposing cosmos endpoints (port is 1317, needs to be enabled in terra node config)
 	FCDNodeEndpointURL string // FCD nodes have /v1/txs/gas_prices
 	ChainID            string
-	HTTPTimeout        time.Duration
+	Timeout            time.Duration
 
 	FallbackGasPrice   string
 	GasLimitMultiplier string
@@ -81,53 +83,52 @@ func (r *Relayer) Healthy() error {
 }
 
 func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relaytypes.OCR2Provider, error) {
-	var provider ocr2Provider
 	spec, ok := s.(OCR2Spec)
 	if !ok {
-		return provider, errors.New("unsuccessful cast to 'terra.OCR2Spec'")
+		return nil, errors.New("unsuccessful cast to 'terra.OCR2Spec'")
+	}
+
+	contractAddr, err := cosmosSDK.AccAddressFromBech32(spec.ContractID)
+	if err != nil {
+		return nil, err
 	}
 
 	client, err := NewClient(spec, r.lggr)
 	if err != nil {
 		return nil, err
 	}
-	tracker, err := NewContractTracker(spec, externalJobID.String(), client, r.lggr)
-	if err != nil {
-		return nil, err
-	}
-
-	digester := OffchainConfigDigester{
-		ChainID:    spec.ChainID,
-		ContractID: spec.ContractID,
-	}
+	tracker := NewContractTracker(contractAddr, externalJobID.String(), client, r.lggr)
+	digester := NewOffchainConfigDigester(spec.ChainID, contractAddr)
 
 	if spec.IsBootstrap {
 		// Return early if bootstrap node (doesn't require the full OCR2 provider)
 		return ocr2Provider{
-			offchainConfigDigester: digester,
-			tracker:                tracker,
+			digester: digester,
+			tracker:  tracker,
 		}, nil
 	}
 
 	reportCodec := ReportCodec{}
+	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, spec.TransmissionSigner, client, r.lggr)
+	median := NewMedianContract(contractAddr, client, r.lggr, transmitter)
 
 	return ocr2Provider{
-		client:                 client,
-		offchainConfigDigester: digester,
-		reportCodec:            reportCodec,
-		tracker:                tracker,
-		transmitter:            tracker,
-		medianContract:         tracker,
+		client:         client,
+		digester:       digester,
+		reportCodec:    reportCodec,
+		tracker:        tracker,
+		transmitter:    transmitter,
+		medianContract: median,
 	}, nil
 }
 
 type ocr2Provider struct {
-	client                 *Client
-	offchainConfigDigester types.OffchainConfigDigester
-	reportCodec            median.ReportCodec
-	tracker                types.ContractConfigTracker
-	transmitter            types.ContractTransmitter
-	medianContract         median.MedianContract
+	client         *Client
+	digester       types.OffchainConfigDigester
+	reportCodec    median.ReportCodec
+	tracker        types.ContractConfigTracker
+	transmitter    types.ContractTransmitter
+	medianContract median.MedianContract
 }
 
 func (p ocr2Provider) Start() error {
@@ -156,7 +157,7 @@ func (p ocr2Provider) ContractConfigTracker() types.ContractConfigTracker {
 }
 
 func (p ocr2Provider) OffchainConfigDigester() types.OffchainConfigDigester {
-	return p.offchainConfigDigester
+	return p.digester
 }
 
 func (p ocr2Provider) ReportCodec() median.ReportCodec {

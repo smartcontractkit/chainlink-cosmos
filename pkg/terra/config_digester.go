@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"golang.org/x/crypto/blake2s"
 )
@@ -14,19 +16,26 @@ const ConfigDigestPrefixTerra types.ConfigDigestPrefix = 2
 var _ types.OffchainConfigDigester = (*OffchainConfigDigester)(nil)
 
 type OffchainConfigDigester struct {
-	ChainID    string
-	ContractID string
+	chainID  string
+	contract cosmosSDK.AccAddress
+}
+
+func NewOffchainConfigDigester(chainID string, contract cosmosSDK.AccAddress) OffchainConfigDigester {
+	return OffchainConfigDigester{
+		chainID:  chainID,
+		contract: contract,
+	}
 }
 
 func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.ConfigDigest, error) {
 	digest := types.ConfigDigest{}
 	buf := bytes.NewBuffer([]byte{})
 
-	if _, err := buf.Write([]byte(cd.ChainID)); err != nil {
+	if _, err := buf.Write([]byte(cd.chainID)); err != nil {
 		return digest, err
 	}
 
-	if _, err := buf.Write([]byte(cd.ContractID)); err != nil {
+	if _, err := buf.Write([]byte(cd.contract.String())); err != nil {
 		return digest, err
 	}
 

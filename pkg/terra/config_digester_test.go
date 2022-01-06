@@ -8,10 +8,10 @@ import (
 )
 
 func TestConfigDigester(t *testing.T) {
-	d := OffchainConfigDigester{
-		ChainID:    "localterra",
-		ContractID: "terra16huq7fzc95eyy89xsghzchde2tvucn9ahqja3j",
-	}
+	d := NewOffchainConfigDigester(
+		"localterra",
+		MustAccAddress("terra16huq7fzc95eyy89xsghzchde2tvucn9ahqja3j"),
+	)
 	config := types.ContractConfig{
 		ConfigCount: 1,
 		Signers: []types.OnchainPublicKey{

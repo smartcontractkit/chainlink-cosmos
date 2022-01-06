@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strconv"
 
+	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
@@ -67,4 +69,12 @@ func RawMessageStringIntToInt(msg json.RawMessage) (int, error) {
 		return 0, err
 	}
 	return strconv.Atoi(temp)
+}
+
+func MustAccAddress(addr string) cosmosSDK.AccAddress {
+	accAddr, err := cosmosSDK.AccAddressFromBech32(addr)
+	if err != nil {
+		panic(err)
+	}
+	return accAddr
 }

@@ -156,5 +156,5 @@ replace (
 
 require (
 	github.com/hdevalence/ed25519consensus v0.0.0-20210430192048-0962ce16b305 // indirect
-	github.com/terra-money/terra.go v1.0.1-0.20211220063124-386f2075291e
+	github.com/smartcontractkit/terra.go v1.0.2 // indirect
 )

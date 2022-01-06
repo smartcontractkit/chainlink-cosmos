@@ -6,57 +6,41 @@ import (
 	"fmt"
 	"strconv"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/pkg/errors"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
-// Contract handles the OCR2 subscription needs but does not track state (state is tracked in actual OCR2 implementation)
-type Contract struct {
+var _ types.ContractConfigTracker = (*ContractTracker)(nil)
+
+type ContractTracker struct {
 	JobID           string
 	ContractAddress sdk.AccAddress
-	terra           *Client
-	Transmitter     TransmissionSigner
+	r               Reader
 	log             Logger
 }
 
-func NewContractTracker(spec OCR2Spec, jobID string, client *Client, lggr Logger) (*Contract, error) {
-	addr, err := sdk.AccAddressFromBech32(spec.ContractID)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error while decoding AccAddressFromBech32")
-	}
-
-	contract := Contract{
+func NewContractTracker(contractAddr sdk.AccAddress, jobID string, r Reader, lggr Logger) *ContractTracker {
+	contract := ContractTracker{
 		JobID:           jobID,
-		ContractAddress: addr,
-		terra:           client,
-		Transmitter:     spec.TransmissionSigner,
+		ContractAddress: contractAddr,
+		r:               r,
 		log:             lggr,
 	}
-
-	return &contract, nil
+	return &contract
 }
 
 // Unused, libocr will use polling
-func (ct *Contract) Notify() <-chan struct{} {
+func (ct *ContractTracker) Notify() <-chan struct{} {
 	return nil
 }
 
 // LatestConfigDetails returns data by reading the contract state and is called when Notify is triggered or the config poll timer is triggered
-func (ct *Contract) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
+func (ct *ContractTracker) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
 	queryParams := NewAbciQueryParams(ct.ContractAddress.String(), []byte(`"latest_config_details"`))
-	data, err := ct.terra.codec.MarshalJSON(queryParams)
-	if err != nil {
-		return
-	}
-	resp, err := ct.terra.clientCtx.QueryABCI(abci.RequestQuery{
-		Data:   data,
-		Path:   "custom/wasm/contractStore",
-		Height: 0,
-		Prove:  false,
-	})
+	resp, err := ct.r.QueryABCI(
+		"custom/wasm/contractStore",
+		queryParams,
+	)
 	if err != nil {
 		return
 	}
@@ -70,9 +54,9 @@ func (ct *Contract) LatestConfigDetails(ctx context.Context) (changedInBlock uin
 }
 
 // LatestConfig returns data by searching emitted events and is called in the same scenario as LatestConfigDetails
-func (ct *Contract) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
+func (ct *ContractTracker) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
 	queryStr := fmt.Sprintf("tx.height=%d AND wasm-set_config.contract_address='%s'", changedInBlock, ct.ContractAddress)
-	res, err := ct.terra.clientCtx.Client.TxSearch(ctx, queryStr, false, nil, nil, "desc")
+	res, err := ct.r.TxSearch(queryStr)
 	if err != nil {
 		return types.ContractConfig{}, err
 	}
@@ -144,8 +128,8 @@ func (ct *Contract) LatestConfig(ctx context.Context, changedInBlock uint64) (ty
 }
 
 // LatestBlockHeight returns the height of the most recent block in the chain.
-func (ct *Contract) LatestBlockHeight(ctx context.Context) (blockHeight uint64, err error) {
-	b, err := ct.terra.clientCtx.Client.Block(ctx, nil)
+func (ct *ContractTracker) LatestBlockHeight(ctx context.Context) (blockHeight uint64, err error) {
+	b, err := ct.r.Block(nil)
 	if err != nil {
 		return 0, err
 	}
