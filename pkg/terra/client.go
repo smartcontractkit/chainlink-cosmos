@@ -57,9 +57,9 @@ type Client struct {
 
 	fallbackGasPrice   sdk.Dec
 	gasLimitMultiplier sdk.Dec
-	fcdhttpURL         string
-	cosmosRPC          string
-	chainID            string
+	fcdURL    string
+	cosmosURL string
+	chainID   string
 	clientCtx          cosmosclient.Context
 
 	// Timeout for node interactions
@@ -94,9 +94,9 @@ func NewClient(spec OCR2Spec, lggr Logger) (*Client, error) {
 		codec:              codec.NewLegacyAmino(),
 		chainID:            spec.ChainID,
 		clientCtx:          clientCtx,
-		cosmosRPC:          spec.CosmosURL,
+		cosmosURL:          spec.CosmosURL,
 		timeout:            spec.Timeout,
-		fcdhttpURL:         spec.FCDNodeEndpointURL,
+		fcdURL:             spec.FcdURL,
 		fallbackGasPrice:   fallbackGasPrice,
 		gasLimitMultiplier: gasLimitMultiplier,
 		log:                lggr,
@@ -104,7 +104,7 @@ func NewClient(spec OCR2Spec, lggr Logger) (*Client, error) {
 }
 
 func (c *Client) Account(addr sdk.AccAddress) (authtypes.AccountI, error) {
-	lcd := client.NewLCDClient(c.cosmosRPC, c.chainID, msg.NewDecCoinFromDec("uluna", c.fallbackGasPrice), c.gasLimitMultiplier, nil, c.timeout)
+	lcd := client.NewLCDClient(c.cosmosURL, c.chainID, msg.NewDecCoinFromDec("uluna", c.fallbackGasPrice), c.gasLimitMultiplier, nil, c.timeout)
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 	a, err := lcd.LoadAccount(ctx, addr)
@@ -116,7 +116,7 @@ func (c *Client) Account(addr sdk.AccAddress) (authtypes.AccountI, error) {
 
 func (c *Client) GasPrice() msg.DecCoin {
 	var fallback = msg.NewDecCoinFromDec("uluna", c.fallbackGasPrice)
-	url := fmt.Sprintf("%s%s", c.fcdhttpURL, "/v1/txs/gas_prices")
+	url := fmt.Sprintf("%s%s", c.fcdURL, "/v1/txs/gas_prices")
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -185,7 +185,7 @@ func (c *Client) Block(height *int64) (*ctypes.ResultBlock, error) {
 }
 
 func (c *Client) SignAndBroadcast(msgs []msg.Msg, account uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*sdk.TxResponse, error) {
-	lcd := client.NewLCDClient(c.cosmosRPC, c.chainID, gasPrice, c.gasLimitMultiplier, signer, c.timeout)
+	lcd := client.NewLCDClient(c.cosmosURL, c.chainID, gasPrice, c.gasLimitMultiplier, signer, c.timeout)
 	// TODO: may want a different timeout for simulation
 	// tempted to just remove LCD...
 	simCtx, cancel := context.WithTimeout(context.Background(), c.timeout)

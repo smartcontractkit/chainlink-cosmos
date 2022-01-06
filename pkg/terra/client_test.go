@@ -162,7 +162,7 @@ func TestTerraClient(t *testing.T) {
 	lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Maybe()
 	lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Maybe()
 	tc, err := NewClient(OCR2Spec{
-		FCDNodeEndpointURL: fcdURL,
+		FcdURL:             fcdURL,
 		TendermintURL:      tendermintURL,
 		CosmosURL:          cosmosURL,
 		ChainID:            "42",

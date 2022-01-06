@@ -93,10 +93,3 @@ func (k WrappedPrivKey) Type() string {
 	return ""
 }
 
-// CL Core OCR2 job spec RelayConfig member for Terra
-type RelayConfig struct {
-	// network data
-	NodeEndpointHTTP string `json:"nodeEndpointHTTP"`
-	NodeEndpointWS   string `json:"nodeEndpointWS"`
-	ChainID          string `json:"chainID"`
-}

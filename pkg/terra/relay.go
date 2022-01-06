@@ -31,16 +31,26 @@ type TransmissionSigner interface {
 	PublicKey() cryptotypes.PubKey
 }
 
+// CL Core OCR2 job spec RelayConfig member for Terra
+type RelayConfig struct {
+	// network data
+	TendermintURL  	 string `json:"tendermintURL"`
+	CosmosURL 		 string `json:"cosmosURL"`
+	FcdURL 			 string `json:"fcdURL"`// FCD nodes have /v1/txs/gas_prices
+	Timeout          time.Duration `json:"timeout"`
+	ChainID          string `json:"chainID"`
+}
+
 type OCR2Spec struct {
 	ID          int32
 	IsBootstrap bool
 
 	// network data
-	TendermintURL      string // URL exposing tendermint RPC (default port is 26657)
-	CosmosURL          string // URL exposing cosmos endpoints (port is 1317, needs to be enabled in terra node config)
-	FCDNodeEndpointURL string // FCD nodes have /v1/txs/gas_prices
-	ChainID            string
-	Timeout            time.Duration
+	TendermintURL string // URL exposing tendermint RPC (default port is 26657)
+	CosmosURL     string // URL exposing cosmos endpoints (port is 1317, needs to be enabled in terra node config)
+	FcdURL        string // FCD nodes have /v1/txs/gas_prices
+	ChainID       string
+	Timeout       time.Duration
 
 	FallbackGasPrice   string
 	GasLimitMultiplier string
