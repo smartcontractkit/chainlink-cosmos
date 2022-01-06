@@ -57,9 +57,9 @@ type Client struct {
 
 	fallbackGasPrice   sdk.Dec
 	gasLimitMultiplier sdk.Dec
-	fcdURL    string
-	cosmosURL string
-	chainID   string
+	fcdURL             string
+	cosmosURL          string
+	chainID            string
 	clientCtx          cosmosclient.Context
 
 	// Timeout for node interactions

@@ -34,11 +34,11 @@ type TransmissionSigner interface {
 // CL Core OCR2 job spec RelayConfig member for Terra
 type RelayConfig struct {
 	// network data
-	TendermintURL  	 string `json:"tendermintURL"`
-	CosmosURL 		 string `json:"cosmosURL"`
-	FcdURL 			 string `json:"fcdURL"`// FCD nodes have /v1/txs/gas_prices
-	Timeout          time.Duration `json:"timeout"`
-	ChainID          string `json:"chainID"`
+	TendermintURL string        `json:"tendermintURL"`
+	CosmosURL     string        `json:"cosmosURL"`
+	FcdURL        string        `json:"fcdURL"` // FCD nodes have /v1/txs/gas_prices
+	Timeout       time.Duration `json:"timeout"`
+	ChainID       string        `json:"chainID"`
 }
 
 type OCR2Spec struct {

@@ -92,4 +92,3 @@ func (k WrappedPrivKey) Equals(a cryptotypes.LedgerPrivKey) bool {
 func (k WrappedPrivKey) Type() string {
 	return ""
 }
-
