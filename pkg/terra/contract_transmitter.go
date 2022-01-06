@@ -3,11 +3,13 @@ package terra
 import (
 	"context"
 	"encoding/json"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
 	"github.com/smartcontractkit/libocr/offchainreporting2/chains/evmutil"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+	"github.com/smartcontractkit/terra.go/msg"
 	terraSDK "github.com/terra-money/core/x/wasm/types"
 )
 
@@ -61,16 +63,16 @@ func (ct *ContractTransmitter) Transmit(
 	if err != nil {
 		return err
 	}
-	msg := terraSDK.NewMsgExecuteContract(sender, ct.contract, msgBytes, cosmosSDK.Coins{})
+	m := terraSDK.NewMsgExecuteContract(sender, ct.contract, msgBytes, cosmosSDK.Coins{})
 	a, err := ct.rw.Account(sender)
 	if err != nil {
 		return err
 	}
-	txResponse, err := ct.rw.SignAndBroadcast(msg,
+	txResponse, err := ct.rw.SignAndBroadcast([]msg.Msg{m},
 		a.GetAccountNumber(),
 		a.GetSequence(),
 		ct.rw.GasPrice(),
-		WrappedPrivKey{ct.transmissionSigner})
+		WrappedPrivKey{ct.transmissionSigner}, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 	if err != nil {
 		return errors.Wrap(err, "error in Transmit.Send")
 	}

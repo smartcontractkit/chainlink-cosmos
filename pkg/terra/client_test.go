@@ -136,9 +136,9 @@ func getContractAddr(t *testing.T, tc *Client, deploymentHash string) sdk.AccAdd
 
 func TestTerraClient(t *testing.T) {
 	// Local only for now, could maybe run on CI if we install terrad there?
-	//if os.Getenv("TEST_CLIENT") == "" {
-	//	t.Skip()
-	//}
+	if os.Getenv("TEST_CLIENT") == "" {
+		t.Skip()
+	}
 	accounts, deploymentHash := setup(t)
 	cosmosURL := "http://127.0.0.1:1317"
 	tendermintURL := "http://127.0.0.1:26657"
