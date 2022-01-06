@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
@@ -65,30 +64,30 @@ type LatestConfigDigestAndEpoch struct {
 	Epoch        uint32             `json:"epoch"`
 }
 
-// WrappedPrivKey wraps the signer provided from the core keystore to the expected interface
-type WrappedPrivKey struct {
-	key TransmissionSigner
-}
-
-// protobuf methods (don't do anything)
-func (k WrappedPrivKey) Reset()        {}
-func (k WrappedPrivKey) ProtoMessage() {}
-func (k WrappedPrivKey) String() string {
-	return ""
-}
-
-func (k WrappedPrivKey) Bytes() []byte {
-	return []byte{} // does not expose private key
-}
-func (k WrappedPrivKey) Sign(msg []byte) ([]byte, error) {
-	return k.key.Sign(msg)
-}
-func (k WrappedPrivKey) PubKey() cryptotypes.PubKey {
-	return k.key.PublicKey()
-}
-func (k WrappedPrivKey) Equals(a cryptotypes.LedgerPrivKey) bool {
-	return k.PubKey().Address().String() == a.PubKey().Address().String()
-}
-func (k WrappedPrivKey) Type() string {
-	return ""
-}
+//// WrappedPrivKey wraps the signer provided from the core keystore to the expected interface
+//type WrappedPrivKey struct {
+//	key TransmissionSigner
+//}
+//
+//// protobuf methods (don't do anything)
+//func (k WrappedPrivKey) Reset()        {}
+//func (k WrappedPrivKey) ProtoMessage() {}
+//func (k WrappedPrivKey) String() string {
+//	return ""
+//}
+//
+//func (k WrappedPrivKey) Bytes() []byte {
+//	return []byte{} // does not expose private key
+//}
+//func (k WrappedPrivKey) Sign(msg []byte) ([]byte, error) {
+//	return k.key.Sign(msg)
+//}
+//func (k WrappedPrivKey) PubKey() cryptotypes.PubKey {
+//	return k.key.PublicKey()
+//}
+//func (k WrappedPrivKey) Equals(a cryptotypes.LedgerPrivKey) bool {
+//	return k.PubKey().Address().String() == a.PubKey().Address().String()
+//}
+//func (k WrappedPrivKey) Type() string {
+//	return ""
+//}

@@ -4,11 +4,12 @@ import (
 	"errors"
 	"time"
 
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
 	uuid "github.com/satori/go.uuid"
 
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	relaytypes "github.com/smartcontractkit/chainlink/core/services/relay/types"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
@@ -26,19 +27,24 @@ type Logger interface {
 	Fatalf(format string, values ...interface{})
 }
 
-type TransmissionSigner interface {
-	Sign(msg []byte) ([]byte, error)
-	PublicKey() cryptotypes.PubKey
+//type TransmissionSigner interface {
+//	Sign(msg []byte) ([]byte, error)
+//	PublicKey() cryptotypes.PubKey
+//}
+type MsgEnqueuer interface {
+	Enqueue(contractID string, msg []byte) error
+	Start() error
+	Close() error
 }
 
 // CL Core OCR2 job spec RelayConfig member for Terra
 type RelayConfig struct {
 	// network data
-	TendermintURL string        `json:"tendermintURL"`
-	CosmosURL     string        `json:"cosmosURL"`
-	FcdURL        string        `json:"fcdURL"` // FCD nodes have /v1/txs/gas_prices
-	Timeout       time.Duration `json:"timeout"`
-	ChainID       string        `json:"chainID"`
+	//TendermintURL string        `json:"tendermintURL"`
+	//CosmosURL     string        `json:"cosmosURL"`
+	//FcdURL        string        `json:"fcdURL"` // FCD nodes have /v1/txs/gas_prices
+	//Timeout       time.Duration `json:"timeout"`
+	//ChainID       string        `json:"chainID"`
 }
 
 type OCR2Spec struct {
@@ -56,30 +62,30 @@ type OCR2Spec struct {
 	GasLimitMultiplier string
 
 	// on-chain data
-	ContractID string
-
-	TransmissionSigner TransmissionSigner
+	ContractID    string
+	TransmitterID string
 }
 
 type Relayer struct {
 	lggr Logger
+	me   MsgEnqueuer
 }
 
 // Note: constructed in core
-func NewRelayer(lggr Logger) *Relayer {
+func NewRelayer(lggr Logger, me MsgEnqueuer) *Relayer {
 	return &Relayer{
 		lggr: lggr,
+		me:   me,
 	}
 }
 
 func (r *Relayer) Start() error {
-	// No subservices started on relay start, but when the first job is started
-	return nil
+	return r.me.Start()
 }
 
 // Close will close all open subservices
 func (r *Relayer) Close() error {
-	return nil
+	return r.me.Close()
 }
 
 func (r *Relayer) Ready() error {
@@ -102,12 +108,23 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	if err != nil {
 		return nil, err
 	}
-
-	client, err := NewClient(spec, r.lggr)
+	senderAddr, err := cosmosSDK.AccAddressFromBech32(spec.TransmitterID)
 	if err != nil {
 		return nil, err
 	}
-	tracker := NewContractTracker(contractAddr, externalJobID.String(), client, r.lggr)
+
+	tc, err := client.NewClient(spec.ChainID,
+		spec.FallbackGasPrice,
+		spec.GasLimitMultiplier,
+		spec.TendermintURL,
+		spec.CosmosURL,
+		spec.FcdURL,
+		spec.Timeout,
+		r.lggr)
+	if err != nil {
+		return nil, err
+	}
+	tracker := NewContractTracker(contractAddr, externalJobID.String(), tc, r.lggr)
 	digester := NewOffchainConfigDigester(spec.ChainID, contractAddr)
 
 	if spec.IsBootstrap {
@@ -119,11 +136,10 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	}
 
 	reportCodec := ReportCodec{}
-	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, spec.TransmissionSigner, client, r.lggr)
-	median := NewMedianContract(contractAddr, client, r.lggr, transmitter)
+	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, senderAddr, r.me, tc, r.lggr)
+	median := NewMedianContract(contractAddr, tc, r.lggr, transmitter)
 
 	return ocr2Provider{
-		client:         client,
 		digester:       digester,
 		reportCodec:    reportCodec,
 		tracker:        tracker,
@@ -133,7 +149,6 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 }
 
 type ocr2Provider struct {
-	client         *Client
 	digester       types.OffchainConfigDigester
 	reportCodec    median.ReportCodec
 	tracker        types.ContractConfigTracker

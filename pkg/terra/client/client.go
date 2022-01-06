@@ -1,4 +1,4 @@
-package terra
+package client
 
 import (
 	"context"
@@ -52,6 +52,12 @@ const (
 	DefaultTimeout = 5 * time.Second
 )
 
+type Logger interface {
+	Infof(format string, values ...interface{})
+	Warnf(format string, values ...interface{})
+	Errorf(format string, values ...interface{})
+}
+
 type Client struct {
 	codec *codec.LegacyAmino
 
@@ -68,37 +74,45 @@ type Client struct {
 	log Logger
 }
 
-func NewClient(spec OCR2Spec, lggr Logger) (*Client, error) {
-	fallbackGasPrice, err := sdk.NewDecFromStr(spec.FallbackGasPrice)
+func NewClient(chainID string,
+	fallbackGasPrice string,
+	gasLimitMultiplier string,
+	tendermintURL string,
+	cosmosURL string,
+	fcdURL string,
+	timeout time.Duration,
+	lggr Logger,
+) (*Client, error) {
+	fgp, err := sdk.NewDecFromStr(fallbackGasPrice)
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid fallback gas price %v", spec.FallbackGasPrice)
+		return nil, errors.Wrapf(err, "invalid fallback gas price %v", fallbackGasPrice)
 	}
-	gasLimitMultiplier, err := sdk.NewDecFromStr(spec.GasLimitMultiplier)
+	glm, err := sdk.NewDecFromStr(gasLimitMultiplier)
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid gas limit multiplier %v", spec.GasLimitMultiplier)
+		return nil, errors.Wrapf(err, "invalid gas limit multiplier %v", gasLimitMultiplier)
 	}
-	tmClient, err := cosmosclient.NewClientFromNode(spec.TendermintURL)
+	tmClient, err := cosmosclient.NewClientFromNode(tendermintURL)
 	if err != nil {
 		return nil, err
 	}
 	clientCtx := cosmosclient.Context{}.
 		WithClient(tmClient).
-		WithChainID(spec.ChainID).
+		WithChainID(chainID).
 		WithTxConfig(app.MakeEncodingConfig().TxConfig)
 
-	if spec.Timeout == time.Duration(0) {
-		spec.Timeout = DefaultTimeout
+	if timeout == time.Duration(0) {
+		timeout = DefaultTimeout
 	}
 
 	return &Client{
 		codec:              codec.NewLegacyAmino(),
-		chainID:            spec.ChainID,
+		chainID:            chainID,
 		clientCtx:          clientCtx,
-		cosmosURL:          spec.CosmosURL,
-		timeout:            spec.Timeout,
-		fcdURL:             spec.FcdURL,
-		fallbackGasPrice:   fallbackGasPrice,
-		gasLimitMultiplier: gasLimitMultiplier,
+		cosmosURL:          cosmosURL,
+		timeout:            timeout,
+		fcdURL:             fcdURL,
+		fallbackGasPrice:   fgp,
+		gasLimitMultiplier: glm,
 		log:                lggr,
 	}, nil
 }

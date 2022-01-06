@@ -1,4 +1,4 @@
-package terra
+package client
 
 import (
 	"context"
@@ -161,15 +161,15 @@ func TestTerraClient(t *testing.T) {
 	lggr.Test(t)
 	lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Maybe()
 	lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Maybe()
-	tc, err := NewClient(OCR2Spec{
-		FcdURL:             fcdURL,
-		TendermintURL:      tendermintURL,
-		CosmosURL:          cosmosURL,
-		ChainID:            "42",
-		FallbackGasPrice:   "0.01",
-		GasLimitMultiplier: "1.3",
-		Timeout:            10 * time.Second,
-	}, lggr)
+	tc, err := NewClient(
+		"42",
+		"0.01",
+		"1.3",
+		tendermintURL,
+		fcdURL,
+		cosmosURL,
+		10*time.Second,
+		lggr)
 	require.NoError(t, err)
 
 	time.Sleep(5 * time.Second)

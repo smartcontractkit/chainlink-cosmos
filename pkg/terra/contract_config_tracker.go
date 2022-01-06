@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
@@ -15,11 +17,11 @@ var _ types.ContractConfigTracker = (*ContractTracker)(nil)
 type ContractTracker struct {
 	JobID           string
 	ContractAddress sdk.AccAddress
-	r               Reader
+	r               client.Reader
 	log             Logger
 }
 
-func NewContractTracker(contractAddr sdk.AccAddress, jobID string, r Reader, lggr Logger) *ContractTracker {
+func NewContractTracker(contractAddr sdk.AccAddress, jobID string, r client.Reader, lggr Logger) *ContractTracker {
 	contract := ContractTracker{
 		JobID:           jobID,
 		ContractAddress: contractAddr,
@@ -36,7 +38,7 @@ func (ct *ContractTracker) Notify() <-chan struct{} {
 
 // LatestConfigDetails returns data by reading the contract state and is called when Notify is triggered or the config poll timer is triggered
 func (ct *ContractTracker) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
-	queryParams := NewAbciQueryParams(ct.ContractAddress.String(), []byte(`"latest_config_details"`))
+	queryParams := client.NewAbciQueryParams(ct.ContractAddress.String(), []byte(`"latest_config_details"`))
 	resp, err := ct.r.QueryABCI(
 		"custom/wasm/contractStore",
 		queryParams,

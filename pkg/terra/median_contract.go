@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 
@@ -32,12 +34,12 @@ type LatestConfigReader interface {
 
 type MedianContract struct {
 	contract sdk.AccAddress
-	r        Reader
+	r        client.Reader
 	lggr     Logger
 	cr       LatestConfigReader
 }
 
-func NewMedianContract(contract sdk.AccAddress, r Reader, lggr Logger, cr LatestConfigReader) *MedianContract {
+func NewMedianContract(contract sdk.AccAddress, r client.Reader, lggr Logger, cr LatestConfigReader) *MedianContract {
 	return &MedianContract{contract: contract, r: r, lggr: lggr, cr: cr}
 }
 
@@ -52,7 +54,7 @@ func (ct *MedianContract) LatestTransmissionDetails(
 	latestTimestamp time.Time,
 	err error,
 ) {
-	queryParams := NewAbciQueryParams(ct.contract.String(), []byte(`"latest_transmission_details"`))
+	queryParams := client.NewAbciQueryParams(ct.contract.String(), []byte(`"latest_transmission_details"`))
 	resp, err := ct.r.QueryABCI("custom/wasm/contractStore", queryParams)
 	if err != nil {
 		// TODO: Verify if this is still necessary

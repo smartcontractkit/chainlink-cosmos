@@ -3,38 +3,41 @@ package terra
 import (
 	"context"
 	"encoding/json"
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
-	"github.com/pkg/errors"
 	"github.com/smartcontractkit/libocr/offchainreporting2/chains/evmutil"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
-	"github.com/smartcontractkit/terra.go/msg"
 	terraSDK "github.com/terra-money/core/x/wasm/types"
 )
 
 var _ types.ContractTransmitter = (*ContractTransmitter)(nil)
 
 type ContractTransmitter struct {
-	transmissionSigner TransmissionSigner
-	rw                 ReaderWriter
-	lggr               Logger
-	jobID              string
-	contract           cosmosSDK.AccAddress
+	//transmissionSigner TransmissionSigner
+	me       MsgEnqueuer
+	rw       client.ReaderWriter
+	lggr     Logger
+	jobID    string
+	contract cosmosSDK.AccAddress
+	sender   cosmosSDK.AccAddress
 }
 
 func NewContractTransmitter(jobID string,
 	contract cosmosSDK.AccAddress,
-	ts TransmissionSigner,
-	rw ReaderWriter,
+	sender cosmosSDK.AccAddress,
+	me MsgEnqueuer,
+	rw client.ReaderWriter,
 	lggr Logger,
 ) *ContractTransmitter {
 	return &ContractTransmitter{
-		jobID:              jobID,
-		contract:           contract,
-		transmissionSigner: ts,
-		rw:                 rw,
-		lggr:               lggr,
+		jobID:    jobID,
+		contract: contract,
+		me:       me,
+		sender:   sender,
+		rw:       rw,
+		lggr:     lggr,
 	}
 }
 
@@ -59,25 +62,23 @@ func (ct *ContractTransmitter) Transmit(
 	if err != nil {
 		return err
 	}
-	sender, err := cosmosSDK.AccAddressFromBech32(ct.transmissionSigner.PublicKey().String())
-	if err != nil {
-		return err
-	}
-	m := terraSDK.NewMsgExecuteContract(sender, ct.contract, msgBytes, cosmosSDK.Coins{})
-	a, err := ct.rw.Account(sender)
-	if err != nil {
-		return err
-	}
-	txResponse, err := ct.rw.SignAndBroadcast([]msg.Msg{m},
-		a.GetAccountNumber(),
-		a.GetSequence(),
-		ct.rw.GasPrice(),
-		WrappedPrivKey{ct.transmissionSigner}, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
-	if err != nil {
-		return errors.Wrap(err, "error in Transmit.Send")
-	}
-	ct.lggr.Infof("[%s] TX Hash: %s", ct.jobID, txResponse.TxHash)
-	return nil
+	m := terraSDK.NewMsgExecuteContract(ct.sender, ct.contract, msgBytes, cosmosSDK.Coins{})
+	return ct.me.Enqueue(ct.contract.String(), m.GetSignBytes())
+
+	//a, err := ct.rw.Account(sender)
+	//if err != nil {
+	//	return err
+	//}
+	//txResponse, err := ct.rw.SignAndBroadcast([]msg.Msg{m},
+	//	a.GetAccountNumber(),
+	//	a.GetSequence(),
+	//	ct.rw.GasPrice(),
+	//	WrappedPrivKey{ct.transmissionSigner}, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+	//if err != nil {
+	//	return errors.Wrap(err, "error in Transmit.Send")
+	//}
+	//ct.lggr.Infof("[%s] TX Hash: %s", ct.jobID, txResponse.TxHash)
+	//return nil
 }
 
 // LatestConfigDigestAndEpoch fetches the latest details from contract state
@@ -88,7 +89,7 @@ func (ct *ContractTransmitter) LatestConfigDigestAndEpoch(ctx context.Context) (
 ) {
 	resp, err := ct.rw.QueryABCI(
 		"custom/wasm/contractStore",
-		NewAbciQueryParams(ct.contract.String(), []byte(`"latest_config_digest_and_epoch"`)),
+		client.NewAbciQueryParams(ct.contract.String(), []byte(`"latest_config_digest_and_epoch"`)),
 	)
 	if err != nil {
 		return types.ConfigDigest{}, 0, err
@@ -103,5 +104,5 @@ func (ct *ContractTransmitter) LatestConfigDigestAndEpoch(ctx context.Context) (
 }
 
 func (ct *ContractTransmitter) FromAccount() types.Account {
-	return types.Account(ct.transmissionSigner.PublicKey().String())
+	return types.Account(ct.sender.String())
 }
