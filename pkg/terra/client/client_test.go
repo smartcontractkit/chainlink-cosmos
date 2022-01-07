@@ -102,8 +102,9 @@ func setup(t *testing.T) ([]Account, string) {
 		require.NoError(t, cmd.Process.Kill())
 	})
 	time.Sleep(10 * time.Second) // Wait for api server to boot
-	out, err = exec.Command("terrad", "tx", "wasm", "store", "testdata/my_first_contract.wasm",
+	out, err = exec.Command("terrad", "tx", "wasm", "store", "../testdata/my_first_contract.wasm",
 		"--from", accounts[0].Name, "--gas", "auto", "--fees", "100000uluna", "--chain-id", "42", "--broadcast-mode", "block", "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes").CombinedOutput()
+	require.NoError(t, err, string(out))
 	out, err = exec.Command("terrad", "tx", "wasm", "instantiate", "1", `{"count":0}`,
 		"--from", accounts[0].Name, "--gas", "auto", "--fees", "100000uluna", "--output", "json", "--chain-id", "42", "--broadcast-mode", "block", "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes").Output()
 	require.NoError(t, err, string(out))
@@ -166,8 +167,8 @@ func TestTerraClient(t *testing.T) {
 		"0.01",
 		"1.3",
 		tendermintURL,
-		fcdURL,
 		cosmosURL,
+		fcdURL,
 		10*time.Second,
 		lggr)
 	require.NoError(t, err)

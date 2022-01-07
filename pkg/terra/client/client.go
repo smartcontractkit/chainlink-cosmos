@@ -27,6 +27,7 @@ import (
 	"github.com/smartcontractkit/terra.go/key"
 )
 
+//go:generate mockery --name ReaderWriter --output ./mocks/
 type ReaderWriter interface {
 	Writer
 	Reader
@@ -197,6 +198,7 @@ func (c *Client) Block(height *int64) (*ctypes.ResultBlock, error) {
 	defer cancel()
 	return c.clientCtx.Client.Block(ctx, height)
 }
+
 
 func (c *Client) SignAndBroadcast(msgs []msg.Msg, account uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*sdk.TxResponse, error) {
 	lcd := client.NewLCDClient(c.cosmosURL, c.chainID, gasPrice, c.gasLimitMultiplier, signer, c.timeout)
