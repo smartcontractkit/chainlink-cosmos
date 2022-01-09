@@ -63,7 +63,12 @@ func (ct *ContractTransmitter) Transmit(
 		return err
 	}
 	m := terraSDK.NewMsgExecuteContract(ct.sender, ct.contract, msgBytes, cosmosSDK.Coins{})
-	return ct.me.Enqueue(ct.contract.String(), m.GetSignBytes())
+	d, err := m.Marshal()
+	if err != nil {
+		return err
+	}
+	_, err = ct.me.Enqueue(ct.contract.String(), d)
+	return err
 
 	//a, err := ct.rw.Account(sender)
 	//if err != nil {
@@ -87,16 +92,15 @@ func (ct *ContractTransmitter) LatestConfigDigestAndEpoch(ctx context.Context) (
 	epoch uint32,
 	err error,
 ) {
-	resp, err := ct.rw.QueryABCI(
-		"custom/wasm/contractStore",
-		client.NewAbciQueryParams(ct.contract.String(), []byte(`"latest_config_digest_and_epoch"`)),
+	resp, err := ct.rw.ContractStore(
+		ct.contract.String(), []byte(`"latest_config_digest_and_epoch"`),
 	)
 	if err != nil {
 		return types.ConfigDigest{}, 0, err
 	}
 
 	var digest LatestConfigDigestAndEpoch
-	if err := json.Unmarshal(resp.Value, &digest); err != nil {
+	if err := json.Unmarshal(resp, &digest); err != nil {
 		return types.ConfigDigest{}, 0, err
 	}
 

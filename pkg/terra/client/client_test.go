@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	//cauthtypes "github.com/terra-money/core/custom/auth/types"
+	//banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/mocks"
 	"github.com/stretchr/testify/mock"
-	"github.com/terra-money/core/app"
-	terraSDK "github.com/terra-money/core/x/wasm/types"
 
+	//"github.com/terra-money/core/app"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -18,15 +18,16 @@ import (
 	"path"
 	"time"
 
+	terraSDK "github.com/terra-money/core/x/wasm/types"
+
+	"fmt"
+	"testing"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/pelletier/go-toml"
 	"github.com/smartcontractkit/terra.go/key"
 	"github.com/smartcontractkit/terra.go/msg"
-	"golang.org/x/net/context/ctxhttp"
-
-	"fmt"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -137,26 +138,17 @@ func getContractAddr(t *testing.T, tc *Client, deploymentHash string) sdk.AccAdd
 
 func TestTerraClient(t *testing.T) {
 	// Local only for now, could maybe run on CI if we install terrad there?
-	if os.Getenv("TEST_CLIENT") == "" {
-		t.Skip()
-	}
+	//if os.Getenv("TEST_CLIENT") == "" {
+	//	t.Skip()
+	//}
 	accounts, deploymentHash := setup(t)
-	cosmosURL := "http://127.0.0.1:1317"
 	tendermintURL := "http://127.0.0.1:26657"
 	fcdURL := "https://fcd.terra.dev/" // TODO we can mock this
 
 	// https://lcd.terra.dev/swagger/#/
 	// https://fcd.terra.dev/swagger
 	cl := http.Client{Timeout: 5 * time.Second}
-	get := func(url, path string) []byte {
-		r, err := ctxhttp.Get(context.Background(), &cl, url+path)
-		t.Log(url + path)
-		require.NoError(t, err)
-		b, err := ioutil.ReadAll(r.Body)
-		require.NoError(t, err)
-		defer r.Body.Close()
-		return b
-	}
+	t.Log(cl, accounts, deploymentHash)
 
 	lggr := new(mocks.Logger)
 	lggr.Test(t)
@@ -167,7 +159,7 @@ func TestTerraClient(t *testing.T) {
 		"0.01",
 		"1.3",
 		tendermintURL,
-		cosmosURL,
+		//cosmosURL,
 		fcdURL,
 		10*time.Second,
 		lggr)
@@ -180,59 +172,57 @@ func TestTerraClient(t *testing.T) {
 	// Should not use fallback
 	assert.NotEqual(t, gp.String(), "0.01uluna")
 	t.Log(gp)
+	b, err := tc.Balance(accounts[1].Address, "uluna")
+	require.NoError(t, err)
+	assert.Equal(t, "100000000", b.Amount.String())
 
 	// Fund a second account
-	a, err := tc.Account(accounts[0].Address)
+	an, sn, err := tc.Account(accounts[0].Address)
 	require.NoError(t, err)
 	resp, err := tc.SignAndBroadcast([]msg.Msg{msg.NewMsgSend(accounts[0].Address, accounts[1].Address, msg.NewCoins(msg.NewInt64Coin("uluna", 1)))},
-		a.GetAccountNumber(), a.GetSequence(), tc.GasPrice(), accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		an, sn, tc.GasPrice(), accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 	require.NoError(t, err)
 
 	// Note even the blocking command doesn't let you query for the tx right away
 	time.Sleep(1 * time.Second)
 
-	// Ensure cosmos endpoints work
-	b := get(cosmosURL, "/cosmos/tx/v1beta1/txs/"+resp.TxHash)
-	var tx2 txtypes.GetTxResponse
-	require.NoError(t, app.MakeEncodingConfig().Marshaler.UnmarshalJSON(b, &tx2))
-	t.Log(tx2.GetTx().GetFee().String())
-
-	b = get(cosmosURL, "/cosmos/bank/v1beta1/balances/"+accounts[0].Address.String())
-	var balances banktypes.QueryAllBalancesResponse
-	require.NoError(t, app.MakeEncodingConfig().Marshaler.UnmarshalJSON(b, &balances))
-	t.Log(balances.GetBalances().AmountOf("uluna").String())
+	b, err = tc.Balance(accounts[1].Address, "uluna")
+	require.NoError(t, err)
+	assert.Equal(t, "100000001", b.Amount.String())
 
 	// Ensure we can read back the tx with Query
-	tr, err := tc.TxSearch(fmt.Sprintf("tx.height=%v", tx2.TxResponse.Height))
+	tr, err := tc.TxsEvents([]string{fmt.Sprintf("tx.height=%v", resp.TxResponse.Height)})
 	require.NoError(t, err)
-	assert.Equal(t, 1, tr.TotalCount)
-	assert.Equal(t, tx2.TxResponse.TxHash, tr.Txs[0].Hash.String())
+	assert.Equal(t, 1, len(tr.TxResponses))
+	assert.Equal(t, resp.TxResponse.TxHash, tr.TxResponses[0].TxHash)
 
 	// Check getting the height works
-	latestBlock, err := tc.Block(nil)
+	latestBlock, err := tc.LatestBlock()
 	require.NoError(t, err)
-	assert.True(t, latestBlock.Block.Height > 1)
+	assert.True(t, latestBlock.Block.Header.Height > 1)
 
 	// Query initial contract state
 	contract := getContractAddr(t, tc, deploymentHash)
-	q := NewAbciQueryParams(contract.String(), []byte(`{"get_count":{}}`))
-	count, err := tc.QueryABCI(
-		"custom/wasm/contractStore",
-		q,
+	count, err := tc.ContractStore(
+		contract.String(),
+		[]byte(`{"get_count":{}}`),
 	)
 	require.NoError(t, err)
-	assert.Equal(t, `{"count":0}`, string(count.Value))
+	assert.Equal(t, `{"count":0}`, string(count))
 
 	// Change the contract state
 	rawMsg := terraSDK.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
-	a, err = tc.Account(accounts[0].Address)
+	an, sn, err = tc.Account(accounts[0].Address)
 	require.NoError(t, err)
-	_, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, a.GetAccountNumber(), a.GetSequence(), tc.GasPrice(), accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+	_, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, tc.GasPrice(), accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 	require.NoError(t, err)
 	time.Sleep(1 * time.Second)
 
 	// Observe changed contract state
-	count, err = tc.QueryABCI("custom/wasm/contractStore", q)
+	count, err = tc.ContractStore(
+		contract.String(),
+		[]byte(`{"get_count":{}}`),
+	)
 	require.NoError(t, err)
-	assert.Equal(t, `{"count":5}`, string(count.Value))
+	assert.Equal(t, `{"count":5}`, string(count))
 }

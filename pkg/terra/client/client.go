@@ -4,12 +4,20 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	"github.com/smartcontractkit/terra.go/tx"
+
+	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/smartcontractkit/terra.go/msg"
-	abci "github.com/tendermint/tendermint/abci/types"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	wasmtypes "github.com/terra-money/core/x/wasm/types"
+
+	//abci "github.com/tendermint/tendermint/abci/types"
+	//ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
 	"encoding/json"
 	"fmt"
@@ -23,7 +31,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 
-	"github.com/smartcontractkit/terra.go/client"
 	"github.com/smartcontractkit/terra.go/key"
 )
 
@@ -33,18 +40,21 @@ type ReaderWriter interface {
 	Reader
 }
 
+// Only depends on the cosmos sdk types.
 type Reader interface {
-	QueryABCI(path string, params ABCIQueryParams) (abci.ResponseQuery, error)
-	GasPrice() msg.DecCoin
-	Account(address sdk.AccAddress) (authtypes.AccountI, error)
-	TxSearch(query string) (*ctypes.ResultTxSearch, error)
-	Block(height *int64) (*ctypes.ResultBlock, error)
+	GasPrice() sdk.DecCoin
+	Account(address sdk.AccAddress) (uint64, uint64, error)
+	ContractStore(contractAddress string, queryMsg []byte) ([]byte, error)
+	TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error)
+	LatestBlock() (*tmtypes.GetLatestBlockResponse, error)
+	BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse, error)
+	Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error)
 }
 
 type Writer interface {
 	// Assumes all msgs are for the same from address.
 	// We may want to support multiple from addresses + signers if a use case arises.
-	SignAndBroadcast(msgs []msg.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*sdk.TxResponse, error)
+	SignAndBroadcast(msgs []sdk.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 }
 
 var _ ReaderWriter = (*Client)(nil)
@@ -68,6 +78,11 @@ type Client struct {
 	cosmosURL          string
 	chainID            string
 	clientCtx          cosmosclient.Context
+	sc                 txtypes.ServiceClient
+	ac                 authtypes.QueryClient
+	wc                 wasmtypes.QueryClient
+	bc                 banktypes.QueryClient
+	tmc                tmtypes.ServiceClient
 
 	// Timeout for node interactions
 	timeout time.Duration
@@ -79,7 +94,6 @@ func NewClient(chainID string,
 	fallbackGasPrice string,
 	gasLimitMultiplier string,
 	tendermintURL string,
-	cosmosURL string,
 	fcdURL string,
 	timeout time.Duration,
 	lggr Logger,
@@ -96,20 +110,34 @@ func NewClient(chainID string,
 	if err != nil {
 		return nil, err
 	}
+	ec := app.MakeEncodingConfig()
 	clientCtx := cosmosclient.Context{}.
 		WithClient(tmClient).
 		WithChainID(chainID).
-		WithTxConfig(app.MakeEncodingConfig().TxConfig)
+		WithCodec(ec.Marshaler).
+		WithLegacyAmino(ec.Amino).
+		WithAccountRetriever(authtypes.AccountRetriever{}).
+		WithInterfaceRegistry(ec.InterfaceRegistry).
+		WithTxConfig(ec.TxConfig)
 
 	if timeout == time.Duration(0) {
 		timeout = DefaultTimeout
 	}
+	sc := txtypes.NewServiceClient(clientCtx)
+	ac := authtypes.NewQueryClient(clientCtx)
+	wc := wasmtypes.NewQueryClient(clientCtx)
+	tmc := tmtypes.NewServiceClient(clientCtx)
+	bc := banktypes.NewQueryClient(clientCtx)
 
 	return &Client{
 		codec:              codec.NewLegacyAmino(),
 		chainID:            chainID,
+		sc:                 sc,
+		ac:                 ac,
+		wc:                 wc,
+		tmc:                tmc,
+		bc:                 bc,
 		clientCtx:          clientCtx,
-		cosmosURL:          cosmosURL,
 		timeout:            timeout,
 		fcdURL:             fcdURL,
 		fallbackGasPrice:   fgp,
@@ -118,15 +146,19 @@ func NewClient(chainID string,
 	}, nil
 }
 
-func (c *Client) Account(addr sdk.AccAddress) (authtypes.AccountI, error) {
-	lcd := client.NewLCDClient(c.cosmosURL, c.chainID, msg.NewDecCoinFromDec("uluna", c.fallbackGasPrice), c.gasLimitMultiplier, nil, c.timeout)
+func (c *Client) Account(addr sdk.AccAddress) (uint64, uint64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
-	a, err := lcd.LoadAccount(ctx, addr)
+	r, err := c.ac.Account(ctx, &authtypes.QueryAccountRequest{addr.String()})
 	if err != nil {
-		return nil, err
+		return 0, 0, err
 	}
-	return a, nil
+	var a authtypes.AccountI
+	err = c.clientCtx.InterfaceRegistry.UnpackAny(r.Account, &a)
+	if err != nil {
+		return 0, 0, err
+	}
+	return a.GetAccountNumber(), a.GetSequence(), nil
 }
 
 func (c *Client) GasPrice() msg.DecCoin {
@@ -161,63 +193,91 @@ func (c *Client) GasPrice() msg.DecCoin {
 	return msg.NewDecCoinFromDec("uluna", p)
 }
 
-type ABCIQueryParams struct {
-	ContractAddress string
-	Msg             []byte
-}
-
-func NewAbciQueryParams(contractAddress string, msg []byte) ABCIQueryParams {
-	return ABCIQueryParams{contractAddress, msg}
-}
-
-func (c *Client) QueryABCI(path string, params ABCIQueryParams) (abci.ResponseQuery, error) {
-	var resp abci.ResponseQuery
-	data, err := c.codec.MarshalJSON(params)
-	if err != nil {
-		return resp, err
-	}
-	// TODO: unfortunately the cosmos client doesn't let you pass in a ctx
-	// here for timing out
-	resp, err = c.clientCtx.QueryABCI(abci.RequestQuery{
-		Data:   data,
-		Path:   path,
-		Height: 0,
-		Prove:  false,
+func (c *Client) ContractStore(contractAddress string, queryMsg []byte) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+	s, err := c.wc.ContractStore(ctx, &wasmtypes.QueryContractStoreRequest{
+		ContractAddress: contractAddress,
+		QueryMsg:        queryMsg,
 	})
-	return resp, err
+	return s.QueryResult, err
 }
 
-func (c *Client) TxSearch(query string) (*ctypes.ResultTxSearch, error) {
+func (c *Client) TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
-	return c.clientCtx.Client.TxSearch(ctx, query, false, nil, nil, "desc")
+	e, err := c.sc.GetTxsEvent(ctx, &txtypes.GetTxsEventRequest{
+		Events:     events,
+		Pagination: nil,
+		OrderBy:    txtypes.OrderBy_ORDER_BY_DESC,
+	})
+	return e, err
 }
 
-func (c *Client) Block(height *int64) (*ctypes.ResultBlock, error) {
+func (c *Client) LatestBlock() (*tmtypes.GetLatestBlockResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
-	return c.clientCtx.Client.Block(ctx, height)
+	return c.tmc.GetLatestBlock(ctx, &tmtypes.GetLatestBlockRequest{})
 }
 
+func (c *Client) BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+	return c.tmc.GetBlockByHeight(ctx, &tmtypes.GetBlockByHeightRequest{Height: height})
+}
 
-func (c *Client) SignAndBroadcast(msgs []msg.Msg, account uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*sdk.TxResponse, error) {
-	lcd := client.NewLCDClient(c.cosmosURL, c.chainID, gasPrice, c.gasLimitMultiplier, signer, c.timeout)
-	// TODO: may want a different timeout for simulation
-	// tempted to just remove LCD...
+func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
 	simCtx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
-	// Don't set the gas limit and it will automatically estimate
-	// the gas limit by simulating.
-	txBuilder, err := lcd.CreateAndSignTx(simCtx, client.CreateTxOptions{
-		Msgs: msgs,
-		// Quirk of lcd, you have to specify the account number if you want to specify the sequence
-		AccountNumber: account,
-		Sequence:      sequence,
+	txbuilder := tx.NewTxBuilder(app.MakeEncodingConfig().TxConfig)
+	txbuilder.SetMsgs(msgs...)
+	sig := signing.SignatureV2{
+		PubKey: &secp256k1.PubKey{},
+		Data: &signing.SingleSignatureData{
+			SignMode: tx.SignModeDirect,
+		},
+		Sequence: sequence,
+	}
+	txbuilder.SetSignatures(sig)
+	b, err := txbuilder.GetTxBytes()
+	if err != nil {
+		return nil, err
+	}
+	s, err := c.sc.Simulate(simCtx, &txtypes.SimulateRequest{
+		Tx:      nil,
+		TxBytes: b,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "error in Transmit.NewTxBuilder")
+		return nil, err
+	}
+	txbuilder.SetGasLimit(s.GasInfo.GasUsed)
+	err = txbuilder.Sign(tx.SignModeDirect, tx.SignerData{
+		AccountNumber: account,
+		ChainID:       c.chainID,
+		Sequence:      sequence,
+	}, signer, true)
+	if err != nil {
+		return nil, err
+	}
+	signedTx, err := txbuilder.GetTxBytes()
+	if err != nil {
+		return nil, err
 	}
 	broadcastCtx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
-	return lcd.Broadcast(broadcastCtx, txBuilder, mode)
+	res, err := c.sc.BroadcastTx(broadcastCtx, &txtypes.BroadcastTxRequest{
+		TxBytes: signedTx,
+		Mode:    mode,
+	})
+	return res, err
+}
+
+func (c *Client) Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+	b, err := c.bc.Balance(ctx, &banktypes.QueryBalanceRequest{Address: addr.String(), Denom: denom})
+	if err != nil {
+		return nil, err
+	}
+	return b.Balance, nil
 }

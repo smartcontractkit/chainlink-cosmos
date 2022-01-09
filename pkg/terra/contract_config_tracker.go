@@ -38,16 +38,15 @@ func (ct *ContractTracker) Notify() <-chan struct{} {
 
 // LatestConfigDetails returns data by reading the contract state and is called when Notify is triggered or the config poll timer is triggered
 func (ct *ContractTracker) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
-	queryParams := client.NewAbciQueryParams(ct.ContractAddress.String(), []byte(`"latest_config_details"`))
-	resp, err := ct.r.QueryABCI(
-		"custom/wasm/contractStore",
-		queryParams,
+	resp, err := ct.r.ContractStore(
+		ct.ContractAddress.String(),
+		[]byte(`"latest_config_details"`),
 	)
 	if err != nil {
 		return
 	}
 	var config ConfigDetails
-	if err = json.Unmarshal(resp.Value, &config); err != nil {
+	if err = json.Unmarshal(resp, &config); err != nil {
 		return
 	}
 	changedInBlock = config.BlockNumber
@@ -57,20 +56,20 @@ func (ct *ContractTracker) LatestConfigDetails(ctx context.Context) (changedInBl
 
 // LatestConfig returns data by searching emitted events and is called in the same scenario as LatestConfigDetails
 func (ct *ContractTracker) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
-	queryStr := fmt.Sprintf("tx.height=%d AND wasm-set_config.contract_address='%s'", changedInBlock, ct.ContractAddress)
-	res, err := ct.r.TxSearch(queryStr)
+	//queryStr := fmt.Sprintf("tx.height=%d AND wasm-set_config.contract_address='%s'", changedInBlock, ct.ContractAddress)
+	res, err := ct.r.TxsEvents([]string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm-set_config.contract_address='%s'", ct.ContractAddress)})
 	if err != nil {
 		return types.ContractConfig{}, err
 	}
-	if len(res.Txs) == 0 {
+	if len(res.TxResponses) == 0 {
 		return types.ContractConfig{}, fmt.Errorf("No transactions found for block %d", changedInBlock)
 	}
 	// fetch event and process (use first tx and \first log set)
-	if len(res.Txs[0].TxResult.Events) == 0 {
-		return types.ContractConfig{}, fmt.Errorf("No events found for tx %s", res.Txs[0].Hash)
+	if len(res.TxResponses[0].Events) == 0 {
+		return types.ContractConfig{}, fmt.Errorf("No events found for tx %s", res.TxResponses[0].TxHash)
 	}
 
-	for _, event := range res.Txs[0].TxResult.Events {
+	for _, event := range res.TxResponses[0].Events {
 		if event.Type == "wasm-set_config" {
 			output := types.ContractConfig{}
 			// TODO: is there a better way to parse an array of structs to an struct
@@ -126,7 +125,7 @@ func (ct *ContractTracker) LatestConfig(ctx context.Context, changedInBlock uint
 			return output, nil
 		}
 	}
-	return types.ContractConfig{}, fmt.Errorf("No set_config event found for tx %s", res.Txs[0].Hash)
+	return types.ContractConfig{}, fmt.Errorf("No set_config event found for tx %s", res.TxResponses[0].TxHash)
 }
 
 // LatestBlockHeight returns the height of the most recent block in the chain.

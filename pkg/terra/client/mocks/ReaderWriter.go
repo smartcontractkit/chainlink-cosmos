@@ -3,10 +3,8 @@
 package mocks
 
 import (
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	abcitypes "github.com/tendermint/tendermint/abci/types"
-
 	client "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+	abcitypes "github.com/tendermint/tendermint/abci/types"
 
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 
@@ -25,26 +23,31 @@ type ReaderWriter struct {
 }
 
 // Account provides a mock function with given fields: address
-func (_m *ReaderWriter) Account(address types.AccAddress) (authtypes.AccountI, error) {
+func (_m *ReaderWriter) Account(address types.AccAddress) (uint64, uint64, error) {
 	ret := _m.Called(address)
 
-	var r0 authtypes.AccountI
-	if rf, ok := ret.Get(0).(func(types.AccAddress) authtypes.AccountI); ok {
+	var r0 uint64
+	if rf, ok := ret.Get(0).(func(types.AccAddress) uint64); ok {
 		r0 = rf(address)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(authtypes.AccountI)
-		}
+		r0 = ret.Get(0).(uint64)
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(types.AccAddress) error); ok {
+	var r1 uint64
+	if rf, ok := ret.Get(1).(func(types.AccAddress) uint64); ok {
 		r1 = rf(address)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Get(1).(uint64)
 	}
 
-	return r0, r1
+	var r2 error
+	if rf, ok := ret.Get(2).(func(types.AccAddress) error); ok {
+		r2 = rf(address)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // Block provides a mock function with given fields: height

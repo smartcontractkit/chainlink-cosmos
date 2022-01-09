@@ -32,7 +32,7 @@ type Logger interface {
 //	PublicKey() cryptotypes.PubKey
 //}
 type MsgEnqueuer interface {
-	Enqueue(contractID string, msg []byte) error
+	Enqueue(contractID string, msg []byte) (int64, error)
 	Start() error
 	Close() error
 }

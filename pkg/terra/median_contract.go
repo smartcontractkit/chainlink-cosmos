@@ -54,8 +54,7 @@ func (ct *MedianContract) LatestTransmissionDetails(
 	latestTimestamp time.Time,
 	err error,
 ) {
-	queryParams := client.NewAbciQueryParams(ct.contract.String(), []byte(`"latest_transmission_details"`))
-	resp, err := ct.r.QueryABCI("custom/wasm/contractStore", queryParams)
+	resp, err := ct.r.ContractStore(ct.contract.String(), []byte(`"latest_transmission_details"`))
 	if err != nil {
 		// TODO: Verify if this is still necessary
 		// https://github.com/smartcontractkit/chainlink-terra/issues/23
@@ -78,7 +77,7 @@ func (ct *MedianContract) LatestTransmissionDetails(
 
 	// unmarshal
 	var details LatestTransmissionDetails
-	if err := json.Unmarshal(resp.Value, &details); err != nil {
+	if err := json.Unmarshal(resp, &details); err != nil {
 		return types.ConfigDigest{}, 0, 0, big.NewInt(0), time.Now(), err
 	}
 
