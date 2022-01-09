@@ -3,14 +3,10 @@
 package mocks
 
 import (
-	client "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
-	abcitypes "github.com/tendermint/tendermint/abci/types"
-
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-
 	mock "github.com/stretchr/testify/mock"
+
+	tmservice "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 
 	tx "github.com/cosmos/cosmos-sdk/types/tx"
 
@@ -50,22 +46,68 @@ func (_m *ReaderWriter) Account(address types.AccAddress) (uint64, uint64, error
 	return r0, r1, r2
 }
 
-// Block provides a mock function with given fields: height
-func (_m *ReaderWriter) Block(height *int64) (*coretypes.ResultBlock, error) {
-	ret := _m.Called(height)
+// Balance provides a mock function with given fields: addr, denom
+func (_m *ReaderWriter) Balance(addr types.AccAddress, denom string) (*types.Coin, error) {
+	ret := _m.Called(addr, denom)
 
-	var r0 *coretypes.ResultBlock
-	if rf, ok := ret.Get(0).(func(*int64) *coretypes.ResultBlock); ok {
-		r0 = rf(height)
+	var r0 *types.Coin
+	if rf, ok := ret.Get(0).(func(types.AccAddress, string) *types.Coin); ok {
+		r0 = rf(addr, denom)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*coretypes.ResultBlock)
+			r0 = ret.Get(0).(*types.Coin)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(*int64) error); ok {
+	if rf, ok := ret.Get(1).(func(types.AccAddress, string) error); ok {
+		r1 = rf(addr, denom)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// BlockByHeight provides a mock function with given fields: height
+func (_m *ReaderWriter) BlockByHeight(height int64) (*tmservice.GetBlockByHeightResponse, error) {
+	ret := _m.Called(height)
+
+	var r0 *tmservice.GetBlockByHeightResponse
+	if rf, ok := ret.Get(0).(func(int64) *tmservice.GetBlockByHeightResponse); ok {
+		r0 = rf(height)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*tmservice.GetBlockByHeightResponse)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(int64) error); ok {
 		r1 = rf(height)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ContractStore provides a mock function with given fields: contractAddress, queryMsg
+func (_m *ReaderWriter) ContractStore(contractAddress string, queryMsg []byte) ([]byte, error) {
+	ret := _m.Called(contractAddress, queryMsg)
+
+	var r0 []byte
+	if rf, ok := ret.Get(0).(func(string, []byte) []byte); ok {
+		r0 = rf(contractAddress, queryMsg)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, []byte) error); ok {
+		r1 = rf(contractAddress, queryMsg)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -87,20 +129,22 @@ func (_m *ReaderWriter) GasPrice() types.DecCoin {
 	return r0
 }
 
-// QueryABCI provides a mock function with given fields: path, params
-func (_m *ReaderWriter) QueryABCI(path string, params client.ABCIQueryParams) (abcitypes.ResponseQuery, error) {
-	ret := _m.Called(path, params)
+// LatestBlock provides a mock function with given fields:
+func (_m *ReaderWriter) LatestBlock() (*tmservice.GetLatestBlockResponse, error) {
+	ret := _m.Called()
 
-	var r0 abcitypes.ResponseQuery
-	if rf, ok := ret.Get(0).(func(string, client.ABCIQueryParams) abcitypes.ResponseQuery); ok {
-		r0 = rf(path, params)
+	var r0 *tmservice.GetLatestBlockResponse
+	if rf, ok := ret.Get(0).(func() *tmservice.GetLatestBlockResponse); ok {
+		r0 = rf()
 	} else {
-		r0 = ret.Get(0).(abcitypes.ResponseQuery)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*tmservice.GetLatestBlockResponse)
+		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, client.ABCIQueryParams) error); ok {
-		r1 = rf(path, params)
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -109,15 +153,15 @@ func (_m *ReaderWriter) QueryABCI(path string, params client.ABCIQueryParams) (a
 }
 
 // SignAndBroadcast provides a mock function with given fields: msgs, accountNum, sequence, gasPrice, signer, mode
-func (_m *ReaderWriter) SignAndBroadcast(msgs []types.Msg, accountNum uint64, sequence uint64, gasPrice types.DecCoin, signer cryptotypes.PrivKey, mode tx.BroadcastMode) (*types.TxResponse, error) {
+func (_m *ReaderWriter) SignAndBroadcast(msgs []types.Msg, accountNum uint64, sequence uint64, gasPrice types.DecCoin, signer cryptotypes.PrivKey, mode tx.BroadcastMode) (*tx.BroadcastTxResponse, error) {
 	ret := _m.Called(msgs, accountNum, sequence, gasPrice, signer, mode)
 
-	var r0 *types.TxResponse
-	if rf, ok := ret.Get(0).(func([]types.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) *types.TxResponse); ok {
+	var r0 *tx.BroadcastTxResponse
+	if rf, ok := ret.Get(0).(func([]types.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) *tx.BroadcastTxResponse); ok {
 		r0 = rf(msgs, accountNum, sequence, gasPrice, signer, mode)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.TxResponse)
+			r0 = ret.Get(0).(*tx.BroadcastTxResponse)
 		}
 	}
 
@@ -131,22 +175,45 @@ func (_m *ReaderWriter) SignAndBroadcast(msgs []types.Msg, accountNum uint64, se
 	return r0, r1
 }
 
-// TxSearch provides a mock function with given fields: query
-func (_m *ReaderWriter) TxSearch(query string) (*coretypes.ResultTxSearch, error) {
-	ret := _m.Called(query)
+// Tx provides a mock function with given fields: hash
+func (_m *ReaderWriter) Tx(hash string) (*tx.GetTxResponse, error) {
+	ret := _m.Called(hash)
 
-	var r0 *coretypes.ResultTxSearch
-	if rf, ok := ret.Get(0).(func(string) *coretypes.ResultTxSearch); ok {
-		r0 = rf(query)
+	var r0 *tx.GetTxResponse
+	if rf, ok := ret.Get(0).(func(string) *tx.GetTxResponse); ok {
+		r0 = rf(hash)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*coretypes.ResultTxSearch)
+			r0 = ret.Get(0).(*tx.GetTxResponse)
 		}
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(query)
+		r1 = rf(hash)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// TxsEvents provides a mock function with given fields: events
+func (_m *ReaderWriter) TxsEvents(events []string) (*tx.GetTxsEventResponse, error) {
+	ret := _m.Called(events)
+
+	var r0 *tx.GetTxsEventResponse
+	if rf, ok := ret.Get(0).(func([]string) *tx.GetTxsEventResponse); ok {
+		r0 = rf(events)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*tx.GetTxsEventResponse)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]string) error); ok {
+		r1 = rf(events)
 	} else {
 		r1 = ret.Error(1)
 	}

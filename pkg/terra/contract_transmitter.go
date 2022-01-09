@@ -15,9 +15,8 @@ import (
 var _ types.ContractTransmitter = (*ContractTransmitter)(nil)
 
 type ContractTransmitter struct {
-	//transmissionSigner TransmissionSigner
 	me       MsgEnqueuer
-	rw       client.ReaderWriter
+	rw       client.Reader
 	lggr     Logger
 	jobID    string
 	contract cosmosSDK.AccAddress
@@ -28,7 +27,7 @@ func NewContractTransmitter(jobID string,
 	contract cosmosSDK.AccAddress,
 	sender cosmosSDK.AccAddress,
 	me MsgEnqueuer,
-	rw client.ReaderWriter,
+	rw client.Reader,
 	lggr Logger,
 ) *ContractTransmitter {
 	return &ContractTransmitter{
@@ -69,21 +68,6 @@ func (ct *ContractTransmitter) Transmit(
 	}
 	_, err = ct.me.Enqueue(ct.contract.String(), d)
 	return err
-
-	//a, err := ct.rw.Account(sender)
-	//if err != nil {
-	//	return err
-	//}
-	//txResponse, err := ct.rw.SignAndBroadcast([]msg.Msg{m},
-	//	a.GetAccountNumber(),
-	//	a.GetSequence(),
-	//	ct.rw.GasPrice(),
-	//	WrappedPrivKey{ct.transmissionSigner}, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
-	//if err != nil {
-	//	return errors.Wrap(err, "error in Transmit.Send")
-	//}
-	//ct.lggr.Infof("[%s] TX Hash: %s", ct.jobID, txResponse.TxHash)
-	//return nil
 }
 
 // LatestConfigDigestAndEpoch fetches the latest details from contract state

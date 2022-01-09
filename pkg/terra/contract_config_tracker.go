@@ -130,9 +130,9 @@ func (ct *ContractTracker) LatestConfig(ctx context.Context, changedInBlock uint
 
 // LatestBlockHeight returns the height of the most recent block in the chain.
 func (ct *ContractTracker) LatestBlockHeight(ctx context.Context) (blockHeight uint64, err error) {
-	b, err := ct.r.Block(nil)
+	b, err := ct.r.LatestBlock()
 	if err != nil {
 		return 0, err
 	}
-	return uint64(b.Block.Height), nil
+	return uint64(b.Block.Header.Height), nil
 }

@@ -16,9 +16,6 @@ import (
 	"github.com/smartcontractkit/terra.go/msg"
 	wasmtypes "github.com/terra-money/core/x/wasm/types"
 
-	//abci "github.com/tendermint/tendermint/abci/types"
-	//ctypes "github.com/tendermint/tendermint/rpc/core/types"
-
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -46,6 +43,7 @@ type Reader interface {
 	Account(address sdk.AccAddress) (uint64, uint64, error)
 	ContractStore(contractAddress string, queryMsg []byte) ([]byte, error)
 	TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error)
+	Tx(hash string)(*txtypes.GetTxResponse,error)
 	LatestBlock() (*tmtypes.GetLatestBlockResponse, error)
 	BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse, error)
 	Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error)
@@ -214,6 +212,15 @@ func (c *Client) TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error
 	return e, err
 }
 
+func (c *Client) Tx(hash string) (*txtypes.GetTxResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+	e, err := c.sc.GetTx(ctx, &txtypes.GetTxRequest{
+		Hash:     hash,
+	})
+	return e, err
+}
+
 func (c *Client) LatestBlock() (*tmtypes.GetLatestBlockResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
@@ -250,7 +257,10 @@ func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint6
 	if err != nil {
 		return nil, err
 	}
-	txbuilder.SetGasLimit(s.GasInfo.GasUsed)
+	gasLimit := uint64(c.gasLimitMultiplier.MulInt64(int64(s.GasInfo.GasUsed)).Ceil().RoundInt64())
+	txbuilder.SetGasLimit(gasLimit)
+	gasFee := msg.NewCoin(gasPrice.Denom, gasPrice.Amount.MulInt64(int64(gasLimit)).Ceil().RoundInt())
+	txbuilder.SetFeeAmount(sdk.NewCoins(gasFee))
 	err = txbuilder.Sign(tx.SignModeDirect, tx.SignerData{
 		AccountNumber: account,
 		ChainID:       c.chainID,
@@ -269,7 +279,16 @@ func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint6
 		TxBytes: signedTx,
 		Mode:    mode,
 	})
-	return res, err
+	if err != nil {
+		return nil, err
+	}
+	if res.TxResponse == nil {
+		return nil, errors.Errorf("got nil tx response")
+	}
+	if res.TxResponse.Code != 0 {
+		return res, errors.Errorf("tx failed with error code: %d", res.TxResponse.Code)
+	}
+	return res, nil
 }
 
 func (c *Client) Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error) {

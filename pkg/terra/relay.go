@@ -2,8 +2,6 @@ package terra
 
 import (
 	"errors"
-	"time"
-
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
@@ -27,10 +25,6 @@ type Logger interface {
 	Fatalf(format string, values ...interface{})
 }
 
-//type TransmissionSigner interface {
-//	Sign(msg []byte) ([]byte, error)
-//	PublicKey() cryptotypes.PubKey
-//}
 type MsgEnqueuer interface {
 	Enqueue(contractID string, msg []byte) (int64, error)
 	Start() error
@@ -39,12 +33,6 @@ type MsgEnqueuer interface {
 
 // CL Core OCR2 job spec RelayConfig member for Terra
 type RelayConfig struct {
-	// network data
-	//TendermintURL string        `json:"tendermintURL"`
-	//CosmosURL     string        `json:"cosmosURL"`
-	//FcdURL        string        `json:"fcdURL"` // FCD nodes have /v1/txs/gas_prices
-	//Timeout       time.Duration `json:"timeout"`
-	//ChainID       string        `json:"chainID"`
 }
 
 type OCR2Spec struct {
@@ -52,14 +40,13 @@ type OCR2Spec struct {
 	IsBootstrap bool
 
 	// network data
-	TendermintURL string // URL exposing tendermint RPC (default port is 26657)
-	CosmosURL     string // URL exposing cosmos endpoints (port is 1317, needs to be enabled in terra node config)
-	FcdURL        string // FCD nodes have /v1/txs/gas_prices
-	ChainID       string
-	Timeout       time.Duration
-
-	FallbackGasPrice   string
-	GasLimitMultiplier string
+	//TendermintURL string // URL exposing tendermint RPC (default port is 26657)
+	//FcdURL        string // FCD nodes have /v1/txs/gas_prices
+	//ChainID       string
+	//Timeout       time.Duration
+	//
+	//FallbackGasPrice   string
+	//GasLimitMultiplier string
 
 	// on-chain data
 	ContractID    string
@@ -69,13 +56,17 @@ type OCR2Spec struct {
 type Relayer struct {
 	lggr Logger
 	me   MsgEnqueuer
+	tr  client.Reader
+	chainID string
 }
 
 // Note: constructed in core
-func NewRelayer(lggr Logger, me MsgEnqueuer) *Relayer {
+func NewRelayer(lggr Logger, me MsgEnqueuer, tr client.Reader, chainID string) *Relayer {
 	return &Relayer{
 		lggr: lggr,
 		me:   me,
+		tr:   tr,
+		chainID: chainID,
 	}
 }
 
@@ -113,19 +104,8 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 		return nil, err
 	}
 
-	tc, err := client.NewClient(spec.ChainID,
-		spec.FallbackGasPrice,
-		spec.GasLimitMultiplier,
-		spec.TendermintURL,
-		spec.CosmosURL,
-		spec.FcdURL,
-		spec.Timeout,
-		r.lggr)
-	if err != nil {
-		return nil, err
-	}
-	tracker := NewContractTracker(contractAddr, externalJobID.String(), tc, r.lggr)
-	digester := NewOffchainConfigDigester(spec.ChainID, contractAddr)
+	tracker := NewContractTracker(contractAddr, externalJobID.String(), r.tr, r.lggr)
+	digester := NewOffchainConfigDigester(r.chainID, contractAddr)
 
 	if spec.IsBootstrap {
 		// Return early if bootstrap node (doesn't require the full OCR2 provider)
@@ -136,8 +116,8 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	}
 
 	reportCodec := ReportCodec{}
-	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, senderAddr, r.me, tc, r.lggr)
-	median := NewMedianContract(contractAddr, tc, r.lggr, transmitter)
+	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, senderAddr, r.me, r.tr, r.lggr)
+	median := NewMedianContract(contractAddr, r.tr, r.lggr, transmitter)
 
 	return ocr2Provider{
 		digester:       digester,
