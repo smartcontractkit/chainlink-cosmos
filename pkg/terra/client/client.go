@@ -56,7 +56,7 @@ type Writer interface {
 	SignAndBroadcast(msgs []sdk.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Simulate(txBytes []byte) (*txtypes.SimulateResponse, error)
-	EstimateGas(msgs []sdk.Msg, sequence uint64) (uint64, error)
+	SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error)
 	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasPrice sdk.DecCoin, signer key.PrivKey) ([]byte, error)
 }
 
@@ -253,13 +253,13 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 	return signedTx, nil
 }
 
-func (c *Client) EstimateGas(msgs []sdk.Msg, sequence uint64) (uint64, error) {
-	// Create an empty signature literal as the ante handler will populate with a
-	// sentinel pubkey.
+func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error){
 	txbuilder := tx.NewTxBuilder(app.MakeEncodingConfig().TxConfig)
 	if err := txbuilder.SetMsgs(msgs...); err != nil {
-		return 0, err
+		return nil, err
 	}
+	// Create an empty signature literal as the ante handler will populate with a
+	// sentinel pubkey.
 	sig := signing.SignatureV2{
 		PubKey: &secp256k1.PubKey{},
 		Data: &signing.SingleSignatureData{
@@ -268,23 +268,17 @@ func (c *Client) EstimateGas(msgs []sdk.Msg, sequence uint64) (uint64, error) {
 		Sequence: sequence,
 	}
 	if err := txbuilder.SetSignatures(sig); err != nil {
-		return 0, err
+		return nil, err
 	}
 	txBytes, err := txbuilder.GetTxBytes()
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	s, err := c.sc.Simulate(context.Background(), &txtypes.SimulateRequest{
 		Tx:      nil,
 		TxBytes: txBytes,
 	})
-	if err != nil {
-		return 0, err
-	}
-	if s.GasInfo == nil {
-		return 0, err
-	}
-	return s.GasInfo.GasUsed, err
+	return s, err
 }
 
 func (c *Client) Simulate(txBytes []byte) (*txtypes.SimulateResponse, error) {
@@ -313,11 +307,11 @@ func (c *Client) Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes
 }
 
 func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
-	gasLimit, err := c.EstimateGas(msgs, sequence)
+	sim, err := c.SimulateUnsigned(msgs, sequence)
 	if err != nil {
 		return nil, err
 	}
-	txBytes, err := c.CreateAndSign(msgs, account, sequence, gasLimit, gasPrice, signer)
+	txBytes, err := c.CreateAndSign(msgs, account, sequence, sim.GasInfo.GasUsed, gasPrice, signer)
 	if err != nil {
 		return nil, err
 	}

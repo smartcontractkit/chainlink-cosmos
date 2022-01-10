@@ -161,27 +161,6 @@ func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence
 	return r0, r1
 }
 
-// EstimateGas provides a mock function with given fields: msgs, sequence
-func (_m *ReaderWriter) EstimateGas(msgs []types.Msg, sequence uint64) (uint64, error) {
-	ret := _m.Called(msgs, sequence)
-
-	var r0 uint64
-	if rf, ok := ret.Get(0).(func([]types.Msg, uint64) uint64); ok {
-		r0 = rf(msgs, sequence)
-	} else {
-		r0 = ret.Get(0).(uint64)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func([]types.Msg, uint64) error); ok {
-		r1 = rf(msgs, sequence)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GasPrice provides a mock function with given fields:
 func (_m *ReaderWriter) GasPrice() types.DecCoin {
 	ret := _m.Called()
@@ -258,6 +237,29 @@ func (_m *ReaderWriter) Simulate(txBytes []byte) (*tx.SimulateResponse, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func([]byte) error); ok {
 		r1 = rf(txBytes)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SimulateUnsigned provides a mock function with given fields: msgs, sequence
+func (_m *ReaderWriter) SimulateUnsigned(msgs []types.Msg, sequence uint64) (*tx.SimulateResponse, error) {
+	ret := _m.Called(msgs, sequence)
+
+	var r0 *tx.SimulateResponse
+	if rf, ok := ret.Get(0).(func([]types.Msg, uint64) *tx.SimulateResponse); ok {
+		r0 = rf(msgs, sequence)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*tx.SimulateResponse)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]types.Msg, uint64) error); ok {
+		r1 = rf(msgs, sequence)
 	} else {
 		r1 = ret.Error(1)
 	}
