@@ -286,7 +286,7 @@ func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint6
 		return nil, errors.Errorf("got nil tx response")
 	}
 	if res.TxResponse.Code != 0 {
-		return res, errors.Errorf("tx failed with error code: %d", res.TxResponse.Code)
+		return res, errors.Errorf("tx failed with error code: %d, resp %v", res.TxResponse.Code, res.TxResponse)
 	}
 	return res, nil
 }
