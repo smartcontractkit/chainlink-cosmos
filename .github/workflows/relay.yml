@@ -46,6 +46,9 @@ jobs:
       - name: Run unit tests
         run: nix develop -c go test -v ./pkg/terra/...
 
+      - name: Run tests with the race detector enabled
+        run: nix develop -c go test -v ./pkg/terra/... -race -count=10
+
   lint:
     runs-on: ubuntu-latest
     # defaults:
