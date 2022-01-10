@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/smartcontractkit/terra.go/tx"
+	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 
 	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -62,7 +63,7 @@ type Writer interface {
 var _ ReaderWriter = (*Client)(nil)
 
 const (
-	DefaultTimeout = 5 * time.Second
+	DefaultTimeout = 5
 )
 
 type Logger interface {
@@ -96,7 +97,7 @@ func NewClient(chainID string,
 	gasLimitMultiplier string,
 	tendermintURL string,
 	fcdURL string,
-	timeout time.Duration,
+	timeoutSeconds int,
 	lggr Logger,
 ) (*Client, error) {
 	fgp, err := sdk.NewDecFromStr(fallbackGasPrice)
@@ -107,11 +108,17 @@ func NewClient(chainID string,
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid gas limit multiplier %v", gasLimitMultiplier)
 	}
-	tmClient, err := cosmosclient.NewClientFromNode(tendermintURL)
+	if timeoutSeconds <= 0 {
+		timeoutSeconds = DefaultTimeout
+	}
+	tmClient, err := rpchttp.NewWithTimeout(tendermintURL, "/websocket", uint(timeoutSeconds))
 	if err != nil {
 		return nil, err
 	}
 	ec := app.MakeEncodingConfig()
+	// Note should terra nodes start exposing grpc, its preferable
+	// to connect directly with grpc.Dial to avoid using clientCtx (according to tendermint team).
+	// If so then we would start putting timeouts on the ctx we pass in to the generate grpc client calls.
 	clientCtx := cosmosclient.Context{}.
 		WithClient(tmClient).
 		WithChainID(chainID).
@@ -121,9 +128,6 @@ func NewClient(chainID string,
 		WithInterfaceRegistry(ec.InterfaceRegistry).
 		WithTxConfig(ec.TxConfig)
 
-	if timeout == time.Duration(0) {
-		timeout = DefaultTimeout
-	}
 	sc := txtypes.NewServiceClient(clientCtx)
 	ac := authtypes.NewQueryClient(clientCtx)
 	wc := wasmtypes.NewQueryClient(clientCtx)
@@ -139,7 +143,7 @@ func NewClient(chainID string,
 		tmc:                tmc,
 		bc:                 bc,
 		clientCtx:          clientCtx,
-		timeout:            timeout,
+		timeout:            time.Duration(timeoutSeconds * int(time.Second)),
 		fcdURL:             fcdURL,
 		fallbackGasPrice:   fgp,
 		gasLimitMultiplier: glm,
@@ -148,9 +152,7 @@ func NewClient(chainID string,
 }
 
 func (c *Client) Account(addr sdk.AccAddress) (uint64, uint64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
-	r, err := c.ac.Account(ctx, &authtypes.QueryAccountRequest{Address: addr.String()})
+	r, err := c.ac.Account(context.Background(), &authtypes.QueryAccountRequest{Address: addr.String()})
 	if err != nil {
 		return 0, 0, err
 	}
@@ -195,9 +197,7 @@ func (c *Client) GasPrice() msg.DecCoin {
 }
 
 func (c *Client) ContractStore(contractAddress string, queryMsg []byte) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
-	s, err := c.wc.ContractStore(ctx, &wasmtypes.QueryContractStoreRequest{
+	s, err := c.wc.ContractStore(context.Background(), &wasmtypes.QueryContractStoreRequest{
 		ContractAddress: contractAddress,
 		QueryMsg:        queryMsg,
 	})
@@ -205,9 +205,7 @@ func (c *Client) ContractStore(contractAddress string, queryMsg []byte) ([]byte,
 }
 
 func (c *Client) TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
-	e, err := c.sc.GetTxsEvent(ctx, &txtypes.GetTxsEventRequest{
+	e, err := c.sc.GetTxsEvent(context.Background(), &txtypes.GetTxsEventRequest{
 		Events:     events,
 		Pagination: nil,
 		OrderBy:    txtypes.OrderBy_ORDER_BY_DESC,
@@ -216,24 +214,18 @@ func (c *Client) TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error
 }
 
 func (c *Client) Tx(hash string) (*txtypes.GetTxResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
-	e, err := c.sc.GetTx(ctx, &txtypes.GetTxRequest{
+	e, err := c.sc.GetTx(context.Background(), &txtypes.GetTxRequest{
 		Hash: hash,
 	})
 	return e, err
 }
 
 func (c *Client) LatestBlock() (*tmtypes.GetLatestBlockResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
-	return c.tmc.GetLatestBlock(ctx, &tmtypes.GetLatestBlockRequest{})
+	return c.tmc.GetLatestBlock(context.Background(), &tmtypes.GetLatestBlockRequest{})
 }
 
 func (c *Client) BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
-	return c.tmc.GetBlockByHeight(ctx, &tmtypes.GetBlockByHeightRequest{Height: height})
+	return c.tmc.GetBlockByHeight(context.Background(), &tmtypes.GetBlockByHeightRequest{Height: height})
 }
 
 func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasPrice sdk.DecCoin, signer key.PrivKey) ([]byte, error) {
@@ -262,8 +254,6 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 }
 
 func (c *Client) EstimateGas(msgs []sdk.Msg, sequence uint64) (uint64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
 	// Create an empty signature literal as the ante handler will populate with a
 	// sentinel pubkey.
 	txbuilder := tx.NewTxBuilder(app.MakeEncodingConfig().TxConfig)
@@ -284,17 +274,21 @@ func (c *Client) EstimateGas(msgs []sdk.Msg, sequence uint64) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	s, err := c.sc.Simulate(ctx, &txtypes.SimulateRequest{
+	s, err := c.sc.Simulate(context.Background(), &txtypes.SimulateRequest{
 		Tx:      nil,
 		TxBytes: txBytes,
 	})
+	if err != nil {
+		return 0, err
+	}
+	if s.GasInfo == nil {
+		return 0, err
+	}
 	return s.GasInfo.GasUsed, err
 }
 
 func (c *Client) Simulate(txBytes []byte) (*txtypes.SimulateResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
-	s, err := c.sc.Simulate(ctx, &txtypes.SimulateRequest{
+	s, err := c.sc.Simulate(context.Background(), &txtypes.SimulateRequest{
 		Tx:      nil,
 		TxBytes: txBytes,
 	})
@@ -302,9 +296,7 @@ func (c *Client) Simulate(txBytes []byte) (*txtypes.SimulateResponse, error) {
 }
 
 func (c *Client) Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
-	res, err := c.sc.BroadcastTx(ctx, &txtypes.BroadcastTxRequest{
+	res, err := c.sc.BroadcastTx(context.Background(), &txtypes.BroadcastTxRequest{
 		Mode:    mode,
 		TxBytes: txBytes,
 	})
@@ -333,9 +325,7 @@ func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint6
 }
 
 func (c *Client) Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
-	b, err := c.bc.Balance(ctx, &banktypes.QueryBalanceRequest{Address: addr.String(), Denom: denom})
+	b, err := c.bc.Balance(context.Background(), &banktypes.QueryBalanceRequest{Address: addr.String(), Denom: denom})
 	if err != nil {
 		return nil, err
 	}
