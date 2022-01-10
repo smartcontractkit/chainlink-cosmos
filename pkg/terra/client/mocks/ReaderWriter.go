@@ -92,6 +92,29 @@ func (_m *ReaderWriter) BlockByHeight(height int64) (*tmservice.GetBlockByHeight
 	return r0, r1
 }
 
+// Broadcast provides a mock function with given fields: txBytes, mode
+func (_m *ReaderWriter) Broadcast(txBytes []byte, mode tx.BroadcastMode) (*tx.BroadcastTxResponse, error) {
+	ret := _m.Called(txBytes, mode)
+
+	var r0 *tx.BroadcastTxResponse
+	if rf, ok := ret.Get(0).(func([]byte, tx.BroadcastMode) *tx.BroadcastTxResponse); ok {
+		r0 = rf(txBytes, mode)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*tx.BroadcastTxResponse)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]byte, tx.BroadcastMode) error); ok {
+		r1 = rf(txBytes, mode)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ContractStore provides a mock function with given fields: contractAddress, queryMsg
 func (_m *ReaderWriter) ContractStore(contractAddress string, queryMsg []byte) ([]byte, error) {
 	ret := _m.Called(contractAddress, queryMsg)
@@ -108,6 +131,50 @@ func (_m *ReaderWriter) ContractStore(contractAddress string, queryMsg []byte) (
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, []byte) error); ok {
 		r1 = rf(contractAddress, queryMsg)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// CreateAndSign provides a mock function with given fields: msgs, account, sequence, gasLimit, gasPrice, signer
+func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence uint64, gasLimit uint64, gasPrice types.DecCoin, signer cryptotypes.PrivKey) ([]byte, error) {
+	ret := _m.Called(msgs, account, sequence, gasLimit, gasPrice, signer)
+
+	var r0 []byte
+	if rf, ok := ret.Get(0).(func([]types.Msg, uint64, uint64, uint64, types.DecCoin, cryptotypes.PrivKey) []byte); ok {
+		r0 = rf(msgs, account, sequence, gasLimit, gasPrice, signer)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]types.Msg, uint64, uint64, uint64, types.DecCoin, cryptotypes.PrivKey) error); ok {
+		r1 = rf(msgs, account, sequence, gasLimit, gasPrice, signer)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// EstimateGas provides a mock function with given fields: msgs, sequence
+func (_m *ReaderWriter) EstimateGas(msgs []types.Msg, sequence uint64) (uint64, error) {
+	ret := _m.Called(msgs, sequence)
+
+	var r0 uint64
+	if rf, ok := ret.Get(0).(func([]types.Msg, uint64) uint64); ok {
+		r0 = rf(msgs, sequence)
+	} else {
+		r0 = ret.Get(0).(uint64)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]types.Msg, uint64) error); ok {
+		r1 = rf(msgs, sequence)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -168,6 +235,29 @@ func (_m *ReaderWriter) SignAndBroadcast(msgs []types.Msg, accountNum uint64, se
 	var r1 error
 	if rf, ok := ret.Get(1).(func([]types.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) error); ok {
 		r1 = rf(msgs, accountNum, sequence, gasPrice, signer, mode)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Simulate provides a mock function with given fields: txBytes
+func (_m *ReaderWriter) Simulate(txBytes []byte) (*tx.SimulateResponse, error) {
+	ret := _m.Called(txBytes)
+
+	var r0 *tx.SimulateResponse
+	if rf, ok := ret.Get(0).(func([]byte) *tx.SimulateResponse); ok {
+		r0 = rf(txBytes)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*tx.SimulateResponse)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]byte) error); ok {
+		r1 = rf(txBytes)
 	} else {
 		r1 = ret.Error(1)
 	}

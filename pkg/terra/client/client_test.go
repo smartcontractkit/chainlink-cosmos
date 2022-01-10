@@ -1,6 +1,7 @@
 package client
 
 import (
+	"os"
 	"time"
 
 	"fmt"
@@ -20,9 +21,9 @@ import (
 
 func TestTerraClient(t *testing.T) {
 	// Local only for now, could maybe run on CI if we install terrad there?
-	//if os.Getenv("TEST_CLIENT") == "" {
-	//	t.Skip()
-	//}
+	if os.Getenv("TEST_CLIENT") == "" {
+		t.Skip()
+	}
 	accounts, testdir := SetupLocalTerraNode(t, "42")
 	tendermintURL := "http://127.0.0.1:26657"
 	fcdURL := "https://fcd.terra.dev/" // TODO we can mock this
@@ -42,8 +43,7 @@ func TestTerraClient(t *testing.T) {
 		10*time.Second,
 		lggr)
 	require.NoError(t, err)
-	contract := DeployTestContract(t, accounts[0], accounts[0], tc,  testdir, "../testdata/my_first_contract.wasm")
-
+	contract := DeployTestContract(t, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 
 	time.Sleep(5 * time.Second)
 
@@ -59,9 +59,16 @@ func TestTerraClient(t *testing.T) {
 	// Fund a second account
 	an, sn, err := tc.Account(accounts[0].Address)
 	require.NoError(t, err)
-	resp, err := tc.SignAndBroadcast([]msg.Msg{msg.NewMsgSend(accounts[0].Address, accounts[1].Address, msg.NewCoins(msg.NewInt64Coin("uluna", 1)))},
-		an, sn, tc.GasPrice(), accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+	fund := msg.NewMsgSend(accounts[0].Address, accounts[1].Address, msg.NewCoins(msg.NewInt64Coin("uluna", 1)))
+	gasLimit, err := tc.EstimateGas([]msg.Msg{fund}, sn)
 	require.NoError(t, err)
+	txBytes, err := tc.CreateAndSign([]msg.Msg{fund}, an, sn, gasLimit, tc.GasPrice(), accounts[0].PrivateKey)
+	require.NoError(t, err)
+	_, err = tc.Simulate(txBytes)
+	require.NoError(t, err)
+	resp, err := tc.Broadcast(txBytes, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+	require.NoError(t, err)
+
 	require.Equal(t, types.CodeTypeOK, resp.TxResponse.Code)
 
 	// Note even the blocking command doesn't let you query for the tx right away
@@ -140,7 +147,7 @@ func TestTerraClient(t *testing.T) {
 				t.Log("Gas price:", tt.gasPrice)
 				an, sn, err = tc.Account(accounts[0].Address)
 				require.NoError(t, err)
-				resp, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, an,sn, tt.gasPrice, accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+				resp, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, tt.gasPrice, accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 				if tt.expCode == 0 {
 					require.NoError(t, err)
 				} else {

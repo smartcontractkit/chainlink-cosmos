@@ -3,6 +3,13 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"path"
+	"testing"
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/pelletier/go-toml"
@@ -10,12 +17,6 @@ import (
 	"github.com/smartcontractkit/terra.go/msg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
-	"os"
-	"os/exec"
-	"path"
-	"testing"
-	"time"
 )
 
 func createKeyFromMnemonic(t *testing.T, mnemonic string) (key.PrivKey, sdk.AccAddress) {
@@ -51,11 +52,12 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string) {
 	// Enable the api server
 	p := path.Join(testdir, "config", "app.toml")
 	f, err := os.ReadFile(p)
+	require.NoError(t, err)
 	config, err := toml.Load(string(f))
 	require.NoError(t, err)
 	config.Set("api.enable", "true")
 	config.Set("minimum-gas-prices", minGasPrice.String())
-	require.NoError(t, os.WriteFile(p, []byte(config.String()), 644))
+	require.NoError(t, os.WriteFile(p, []byte(config.String()), 0644))
 	// TODO: could also speed up the block mining config
 
 	// Create 2 test accounts

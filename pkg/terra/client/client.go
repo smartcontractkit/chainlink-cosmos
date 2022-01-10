@@ -43,7 +43,7 @@ type Reader interface {
 	Account(address sdk.AccAddress) (uint64, uint64, error)
 	ContractStore(contractAddress string, queryMsg []byte) ([]byte, error)
 	TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error)
-	Tx(hash string)(*txtypes.GetTxResponse,error)
+	Tx(hash string) (*txtypes.GetTxResponse, error)
 	LatestBlock() (*tmtypes.GetLatestBlockResponse, error)
 	BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse, error)
 	Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error)
@@ -53,6 +53,10 @@ type Writer interface {
 	// Assumes all msgs are for the same from address.
 	// We may want to support multiple from addresses + signers if a use case arises.
 	SignAndBroadcast(msgs []sdk.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
+	Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
+	Simulate(txBytes []byte) (*txtypes.SimulateResponse, error)
+	EstimateGas(msgs []sdk.Msg, sequence uint64) (uint64, error)
+	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasPrice sdk.DecCoin, signer key.PrivKey) ([]byte, error)
 }
 
 var _ ReaderWriter = (*Client)(nil)
@@ -73,7 +77,6 @@ type Client struct {
 	fallbackGasPrice   sdk.Dec
 	gasLimitMultiplier sdk.Dec
 	fcdURL             string
-	cosmosURL          string
 	chainID            string
 	clientCtx          cosmosclient.Context
 	sc                 txtypes.ServiceClient
@@ -147,7 +150,7 @@ func NewClient(chainID string,
 func (c *Client) Account(addr sdk.AccAddress) (uint64, uint64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
-	r, err := c.ac.Account(ctx, &authtypes.QueryAccountRequest{addr.String()})
+	r, err := c.ac.Account(ctx, &authtypes.QueryAccountRequest{Address: addr.String()})
 	if err != nil {
 		return 0, 0, err
 	}
@@ -216,7 +219,7 @@ func (c *Client) Tx(hash string) (*txtypes.GetTxResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 	e, err := c.sc.GetTx(ctx, &txtypes.GetTxRequest{
-		Hash:     hash,
+		Hash: hash,
 	})
 	return e, err
 }
@@ -233,33 +236,15 @@ func (c *Client) BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse,
 	return c.tmc.GetBlockByHeight(ctx, &tmtypes.GetBlockByHeightRequest{Height: height})
 }
 
-func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
-	simCtx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
+func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasPrice sdk.DecCoin, signer key.PrivKey) ([]byte, error) {
 	txbuilder := tx.NewTxBuilder(app.MakeEncodingConfig().TxConfig)
-	txbuilder.SetMsgs(msgs...)
-	sig := signing.SignatureV2{
-		PubKey: &secp256k1.PubKey{},
-		Data: &signing.SingleSignatureData{
-			SignMode: tx.SignModeDirect,
-		},
-		Sequence: sequence,
-	}
-	txbuilder.SetSignatures(sig)
-	b, err := txbuilder.GetTxBytes()
+	err := txbuilder.SetMsgs(msgs...)
 	if err != nil {
 		return nil, err
 	}
-	s, err := c.sc.Simulate(simCtx, &txtypes.SimulateRequest{
-		Tx:      nil,
-		TxBytes: b,
-	})
-	if err != nil {
-		return nil, err
-	}
-	gasLimit := uint64(c.gasLimitMultiplier.MulInt64(int64(s.GasInfo.GasUsed)).Ceil().RoundInt64())
-	txbuilder.SetGasLimit(gasLimit)
-	gasFee := msg.NewCoin(gasPrice.Denom, gasPrice.Amount.MulInt64(int64(gasLimit)).Ceil().RoundInt())
+	gasLimitBuffered := uint64(c.gasLimitMultiplier.MulInt64(int64(gasLimit)).Ceil().RoundInt64())
+	txbuilder.SetGasLimit(gasLimitBuffered)
+	gasFee := msg.NewCoin(gasPrice.Denom, gasPrice.Amount.MulInt64(int64(gasLimitBuffered)).Ceil().RoundInt())
 	txbuilder.SetFeeAmount(sdk.NewCoins(gasFee))
 	err = txbuilder.Sign(tx.SignModeDirect, tx.SignerData{
 		AccountNumber: account,
@@ -273,11 +258,55 @@ func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint6
 	if err != nil {
 		return nil, err
 	}
-	broadcastCtx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	return signedTx, nil
+}
+
+func (c *Client) EstimateGas(msgs []sdk.Msg, sequence uint64) (uint64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
-	res, err := c.sc.BroadcastTx(broadcastCtx, &txtypes.BroadcastTxRequest{
-		TxBytes: signedTx,
+	// Create an empty signature literal as the ante handler will populate with a
+	// sentinel pubkey.
+	txbuilder := tx.NewTxBuilder(app.MakeEncodingConfig().TxConfig)
+	if err := txbuilder.SetMsgs(msgs...); err != nil {
+		return 0, err
+	}
+	sig := signing.SignatureV2{
+		PubKey: &secp256k1.PubKey{},
+		Data: &signing.SingleSignatureData{
+			SignMode: tx.SignModeDirect,
+		},
+		Sequence: sequence,
+	}
+	if err := txbuilder.SetSignatures(sig); err != nil {
+		return 0, err
+	}
+	txBytes, err := txbuilder.GetTxBytes()
+	if err != nil {
+		return 0, err
+	}
+	s, err := c.sc.Simulate(ctx, &txtypes.SimulateRequest{
+		Tx:      nil,
+		TxBytes: txBytes,
+	})
+	return s.GasInfo.GasUsed, err
+}
+
+func (c *Client) Simulate(txBytes []byte) (*txtypes.SimulateResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+	s, err := c.sc.Simulate(ctx, &txtypes.SimulateRequest{
+		Tx:      nil,
+		TxBytes: txBytes,
+	})
+	return s, err
+}
+
+func (c *Client) Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+	res, err := c.sc.BroadcastTx(ctx, &txtypes.BroadcastTxRequest{
 		Mode:    mode,
+		TxBytes: txBytes,
 	})
 	if err != nil {
 		return nil, err
@@ -288,7 +317,19 @@ func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint6
 	if res.TxResponse.Code != 0 {
 		return res, errors.Errorf("tx failed with error code: %d, resp %v", res.TxResponse.Code, res.TxResponse)
 	}
-	return res, nil
+	return res, err
+}
+
+func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
+	gasLimit, err := c.EstimateGas(msgs, sequence)
+	if err != nil {
+		return nil, err
+	}
+	txBytes, err := c.CreateAndSign(msgs, account, sequence, gasLimit, gasPrice, signer)
+	if err != nil {
+		return nil, err
+	}
+	return c.Broadcast(txBytes, mode)
 }
 
 func (c *Client) Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error) {

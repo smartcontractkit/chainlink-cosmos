@@ -2,6 +2,7 @@ package terra
 
 import (
 	"errors"
+
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
@@ -54,18 +55,18 @@ type OCR2Spec struct {
 }
 
 type Relayer struct {
-	lggr Logger
-	me   MsgEnqueuer
-	tr  client.Reader
+	lggr    Logger
+	me      MsgEnqueuer
+	tr      client.Reader
 	chainID string
 }
 
 // Note: constructed in core
 func NewRelayer(lggr Logger, me MsgEnqueuer, tr client.Reader, chainID string) *Relayer {
 	return &Relayer{
-		lggr: lggr,
-		me:   me,
-		tr:   tr,
+		lggr:    lggr,
+		me:      me,
+		tr:      tr,
 		chainID: chainID,
 	}
 }

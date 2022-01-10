@@ -104,7 +104,7 @@ func (ct *MedianContract) LatestRoundRequested(ctx context.Context, lookback tim
 		return
 	}
 	blockNum := uint64(latestBlock.Block.Header.Height) - uint64(lookback.Seconds())/BlockRate
-	res, err := ct.r.TxsEvents([]string{fmt.Sprintf("tx.height > %d", blockNum), fmt.Sprintf("wasm-new_round.contract_address='%s'",ct.contract.String())})
+	res, err := ct.r.TxsEvents([]string{fmt.Sprintf("tx.height > %d", blockNum), fmt.Sprintf("wasm-new_round.contract_address='%s'", ct.contract.String())})
 	if err != nil {
 		return
 	}
