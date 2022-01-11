@@ -388,7 +388,7 @@ func (t Terrad) Addresses() map[int]string {
 func (t Terrad) Fund(addresses []string) error {
 	for _, a := range addresses {
 		msg := utils.LogStatus(fmt.Sprintf("Funded %s", a))
-		args := append([]string{"tx", "bank", "send", t.keyID, a, "1000luna"}, t.args...)
+		args := append([]string{"tx", "bank", "send", t.keyID, a, "1000000000uluna"}, t.args...)
 		if _, err := exec.Command("terrad", args...).Output(); msg.Check(err) != nil {
 			return err
 		}
