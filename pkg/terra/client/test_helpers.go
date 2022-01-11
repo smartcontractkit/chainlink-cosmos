@@ -108,14 +108,6 @@ func DeployTestContract(t *testing.T, deployAccount, ownerAccount Account, tc *C
 	r, err := tc.SignAndBroadcast([]msg.Msg{
 		msg.NewMsgInstantiateContract(ownerAccount.Address, nil, 1, []byte(`{"count":0}`), nil)}, an, sn, minGasPrice, ownerAccount.PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 	require.NoError(t, err)
-	//out, err = exec.Command("terrad", "tx", "wasm", "instantiate", "1", `{"count":0}`,
-	//	"--from", fromAccount.Name, "--gas", "auto", "--fees", "100000uluna", "--output", "json", "--chain-id", "42", "--broadcast-mode", "block", "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes").Output()
-	//require.NoError(t, err, string(out))
-	//var deployment struct {
-	//	TxHash string `json:"txhash"`
-	//}
-	//require.NoError(t, json.Unmarshal(out, &r.TxResponse))
-	//t.Log("deployment", deployment.TxHash)
 	return GetContractAddr(t, tc, r.TxResponse.TxHash)
 }
 

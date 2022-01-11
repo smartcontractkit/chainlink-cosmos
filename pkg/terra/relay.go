@@ -40,15 +40,6 @@ type OCR2Spec struct {
 	ID          int32
 	IsBootstrap bool
 
-	// network data
-	//TendermintURL string // URL exposing tendermint RPC (default port is 26657)
-	//FcdURL        string // FCD nodes have /v1/txs/gas_prices
-	//ChainID       string
-	//Timeout       time.Duration
-	//
-	//FallbackGasPrice   string
-	//GasLimitMultiplier string
-
 	// on-chain data
 	ContractID    string
 	TransmitterID string

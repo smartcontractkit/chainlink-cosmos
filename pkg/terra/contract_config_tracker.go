@@ -56,7 +56,6 @@ func (ct *ContractTracker) LatestConfigDetails(ctx context.Context) (changedInBl
 
 // LatestConfig returns data by searching emitted events and is called in the same scenario as LatestConfigDetails
 func (ct *ContractTracker) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
-	//queryStr := fmt.Sprintf("tx.height=%d AND wasm-set_config.contract_address='%s'", changedInBlock, ct.ContractAddress)
 	res, err := ct.r.TxsEvents([]string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm-set_config.contract_address='%s'", ct.ContractAddress)})
 	if err != nil {
 		return types.ContractConfig{}, err
