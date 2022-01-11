@@ -138,13 +138,13 @@ func (_m *ReaderWriter) ContractStore(contractAddress string, queryMsg []byte) (
 	return r0, r1
 }
 
-// CreateAndSign provides a mock function with given fields: msgs, account, sequence, gasLimit, gasPrice, signer
-func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence uint64, gasLimit uint64, gasPrice types.DecCoin, signer cryptotypes.PrivKey) ([]byte, error) {
-	ret := _m.Called(msgs, account, sequence, gasLimit, gasPrice, signer)
+// CreateAndSign provides a mock function with given fields: msgs, account, sequence, gasLimit, gasPrice, signer, timeoutHeight
+func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence uint64, gasLimit uint64, gasPrice types.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error) {
+	ret := _m.Called(msgs, account, sequence, gasLimit, gasPrice, signer, timeoutHeight)
 
 	var r0 []byte
-	if rf, ok := ret.Get(0).(func([]types.Msg, uint64, uint64, uint64, types.DecCoin, cryptotypes.PrivKey) []byte); ok {
-		r0 = rf(msgs, account, sequence, gasLimit, gasPrice, signer)
+	if rf, ok := ret.Get(0).(func([]types.Msg, uint64, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, uint64) []byte); ok {
+		r0 = rf(msgs, account, sequence, gasLimit, gasPrice, signer, timeoutHeight)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
@@ -152,8 +152,8 @@ func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func([]types.Msg, uint64, uint64, uint64, types.DecCoin, cryptotypes.PrivKey) error); ok {
-		r1 = rf(msgs, account, sequence, gasLimit, gasPrice, signer)
+	if rf, ok := ret.Get(1).(func([]types.Msg, uint64, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, uint64) error); ok {
+		r1 = rf(msgs, account, sequence, gasLimit, gasPrice, signer, timeoutHeight)
 	} else {
 		r1 = ret.Error(1)
 	}
