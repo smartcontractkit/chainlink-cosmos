@@ -1,6 +1,7 @@
 package client
 
 import (
+	"os"
 	"time"
 
 	"fmt"
@@ -20,9 +21,9 @@ import (
 
 func TestTerraClient(t *testing.T) {
 	// Local only for now, could maybe run on CI if we install terrad there?
-	//if os.Getenv("TEST_CLIENT") == "" {
-	//	t.Skip()
-	//}
+	if os.Getenv("TEST_CLIENT") == "" {
+		t.Skip()
+	}
 	accounts, testdir := SetupLocalTerraNode(t, "42")
 	tendermintURL := "http://127.0.0.1:26657"
 	fcdURL := "https://fcd.terra.dev/" // TODO we can mock this

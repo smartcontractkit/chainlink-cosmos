@@ -253,7 +253,7 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 	return signedTx, nil
 }
 
-func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error){
+func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error) {
 	txbuilder := tx.NewTxBuilder(app.MakeEncodingConfig().TxConfig)
 	if err := txbuilder.SetMsgs(msgs...); err != nil {
 		return nil, err
