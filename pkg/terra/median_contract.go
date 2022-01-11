@@ -104,22 +104,20 @@ func (ct *MedianContract) LatestRoundRequested(ctx context.Context, lookback tim
 		return
 	}
 	blockNum := uint64(latestBlock.Block.Header.Height) - uint64(lookback.Seconds())/BlockRate
-	res, err := ct.r.TxsEvents([]string{fmt.Sprintf("tx.height > %d", blockNum), fmt.Sprintf("wasm-new_round.contract_address='%s'", ct.contract.String())})
+	res, err := ct.r.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", blockNum+1), fmt.Sprintf("wasm-new_round.contract_address='%s'", ct.contract.String())})
 	if err != nil {
 		return
 	}
-	if len(res.Txs) == 0 {
+	if len(res.TxResponses) == 0 {
+		return
+	}
+	// First tx is the latest.
+	if len(res.TxResponses[0].Events) == 0 {
+		err = fmt.Errorf("No events found for tx %s", res.TxResponses[0].TxHash)
 		return
 	}
 
-	// use the last one, should be the latest tx with event
-	index := len(res.Txs) - 1
-	if len(res.TxResponses[index].Events) == 0 {
-		err = fmt.Errorf("No events found for tx %s", res.TxResponses[index].TxHash)
-		return
-	}
-
-	for _, event := range res.TxResponses[index].Events {
+	for _, event := range res.TxResponses[0].Events {
 		if event.Type == "wasm-new_round" {
 			// TODO: confirm event parameters
 			// https://github.com/smartcontractkit/chainlink-terra/issues/22
