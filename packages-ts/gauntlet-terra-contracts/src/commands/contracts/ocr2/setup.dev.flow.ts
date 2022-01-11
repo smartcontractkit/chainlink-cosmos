@@ -98,29 +98,29 @@ export default class DeployOCR2Flow extends FlowCommand<TransactionResponse> {
     }
 
     this.flow = [
-      {
-        name: 'Upload Contracts',
-        command: UploadContractCode,
-      },
-      {
-        name: 'Deploy LINK',
-        command: DeployLink,
-        id: this.stepIds.LINK,
-      },
-      {
-        name: 'Deploy Billing Access Controller',
-        command: 'access_controller:deploy',
-        id: this.stepIds.BILLING_ACCESS_CONTROLLER,
-      },
-      {
-        name: 'Deploy Request Access Controller',
-        command: 'access_controller:deploy',
-        id: this.stepIds.REQUEST_ACCESS_CONTROLLER,
-      },
-      {
-        name: 'Set environment',
-        exec: this.setEnvironment,
-      },
+      // {
+      //   name: 'Upload Contracts',
+      //   command: UploadContractCode,
+      // },
+      // {
+      //   name: 'Deploy LINK',
+      //   command: DeployLink,
+      //   id: this.stepIds.LINK,
+      // },
+      // {
+      //   name: 'Deploy Billing Access Controller',
+      //   command: 'access_controller:deploy',
+      //   id: this.stepIds.BILLING_ACCESS_CONTROLLER,
+      // },
+      // {
+      //   name: 'Deploy Request Access Controller',
+      //   command: 'access_controller:deploy',
+      //   id: this.stepIds.REQUEST_ACCESS_CONTROLLER,
+      // },
+      // {
+      //   name: 'Set environment',
+      //   exec: this.setEnvironment,
+      // },
       {
         name: 'Deploy OCR 2',
         command: DeployOCR2,

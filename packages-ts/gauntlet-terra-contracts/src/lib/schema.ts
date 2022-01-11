@@ -9,6 +9,11 @@ ajv.addFormat('uint64', {
   validate: (x) => !isNaN(x),
 })
 
+ajv.addFormat('uint32', {
+  type: 'number',
+  validate: (x) => !isNaN(x),
+})
+
 export default ajv
 
 const jtd = new JTD()
