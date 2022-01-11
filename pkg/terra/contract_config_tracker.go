@@ -105,9 +105,17 @@ func (ct *ContractTracker) LatestConfig(ctx context.Context, changedInBlock uint
 					output.F = uint8(i)
 				case "onchain_config":
 					// parse byte array encoded as hex string
-					if err := HexToByteArray(value, &output.OnchainConfig); err != nil {
+					var config33 []byte
+					if err := HexToByteArray(value, &config33); err != nil {
 						return types.ContractConfig{}, err
 					}
+					// convert byte array to encoding expected by lib OCR
+					config49, err := ContractConfigToOCRConfig(config33)
+					if err != nil {
+						return types.ContractConfig{}, err
+
+					}
+					output.OnchainConfig = config49
 				case "offchain_config_version":
 					i, err := strconv.ParseInt(value, 10, 64)
 					if err != nil {
