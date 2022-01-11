@@ -49,7 +49,7 @@ export type OffchainConfig = {
   configPublicKeys: string[]
 }
 
-const getOffchainConfigInput = (rdd: any, contract: string): OffchainConfig => {
+export const getOffchainConfigInput = (rdd: any, contract: string): OffchainConfig => {
   const aggregator = rdd.contracts[contract]
   const config = aggregator.config
 

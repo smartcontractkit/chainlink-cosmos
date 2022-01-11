@@ -193,6 +193,7 @@ export default class AbstractCommand extends TerraCommand {
       help: this.abstractHelp,
     }
 
+    // TODO: The contract address should come from a specific flag
     const address = this.args[0]
     return operations[this.opts.action](this.params, address)
   }
