@@ -66,6 +66,7 @@ const (
 	DefaultTimeout = 5
 )
 
+//go:generate mockery --name Logger --output ./mocks/
 type Logger interface {
 	Infof(format string, values ...interface{})
 	Warnf(format string, values ...interface{})

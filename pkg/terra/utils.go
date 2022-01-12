@@ -81,11 +81,6 @@ func MustAccAddress(addr string) cosmosSDK.AccAddress {
 	return accAddr
 }
 
-// ConcatBytes appends a bunch of byte arrays into a single byte array
-func ConcatBytes(bufs ...[]byte) []byte {
-	return bytes.Join(bufs, []byte{})
-}
-
 // ContractConfigToOCRConfig converts the output onchain_config to the type
 // expected by OCR
 func ContractConfigToOCRConfig(in []byte) ([]byte, error) {
@@ -99,5 +94,5 @@ func ContractConfigToOCRConfig(in []byte) ([]byte, error) {
 	version := in[0:1]
 	min128 := in[1 : byteWidth128+1]
 	max128 := in[1+byteWidth128:]
-	return ConcatBytes(version, padding, min128, padding, max128), nil
+	return bytes.Join([][]byte{version, padding, min128, padding, max128}, []byte{}), nil
 }

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"os"
 	"time"
 
 	"fmt"
@@ -9,7 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/errors"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/mocks"
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client/mocks"
 	"github.com/smartcontractkit/terra.go/msg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -18,17 +19,11 @@ import (
 	wasmtypes "github.com/terra-money/core/x/wasm/types"
 )
 
-func TestAddr(t *testing.T) {
-	a, err := sdk.AccAddressFromBech32("terra10an403x6cl8gr6hxmem0ndwmgpe9rdsva5qnk4")
-	require.NoError(t, err)
-	t.Log(a.String())
-}
-
 func TestTerraClient(t *testing.T) {
 	// Local only for now, could maybe run on CI if we install terrad there?
-	//if os.Getenv("TEST_CLIENT") == "" {
-	//	t.Skip()
-	//}
+	if os.Getenv("TEST_CLIENT") == "" {
+		t.Skip()
+	}
 	accounts, testdir := SetupLocalTerraNode(t, "42")
 	tendermintURL := "http://127.0.0.1:26657"
 	fcdURL := "https://fcd.terra.dev/" // TODO we can mock this
@@ -49,8 +44,6 @@ func TestTerraClient(t *testing.T) {
 		lggr)
 	require.NoError(t, err)
 	contract := DeployTestContract(t, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
-
-	time.Sleep(5 * time.Second)
 
 	// Check gas price works
 	gp := tc.GasPrice()

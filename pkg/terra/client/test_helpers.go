@@ -95,7 +95,26 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string) {
 	t.Cleanup(func() {
 		require.NoError(t, cmd.Process.Kill())
 	})
-	time.Sleep(10 * time.Second) // Wait for api server to boot
+	// Wait for api server to boot
+	var ready bool
+	for i := 0; i < 10; i++ {
+		time.Sleep(1 * time.Second)
+		out, err = exec.Command("curl", "http://127.0.0.1:26657/abci_info").Output()
+		require.NoError(t, err)
+		var a struct {
+			Result struct {
+				Response struct {
+					LastBlockHeight string `json:"last_block_height"`
+				} `json:"response"`
+			} `json:"result"`
+		}
+		require.NoError(t, json.Unmarshal(out, &a))
+		if a.Result.Response.LastBlockHeight != "" {
+			ready = true
+			break
+		}
+	}
+	require.True(t, ready)
 	return accounts, testdir
 }
 
