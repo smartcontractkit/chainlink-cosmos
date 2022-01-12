@@ -15,28 +15,28 @@ import (
 var _ types.ContractTransmitter = (*ContractTransmitter)(nil)
 
 type ContractTransmitter struct {
-	me       MsgEnqueuer
-	rw       client.Reader
-	lggr     Logger
-	jobID    string
-	contract cosmosSDK.AccAddress
-	sender   cosmosSDK.AccAddress
+	msgEnqueuer MsgEnqueuer
+	chainReader client.Reader
+	lggr        Logger
+	jobID       string
+	contract    cosmosSDK.AccAddress
+	sender      cosmosSDK.AccAddress
 }
 
 func NewContractTransmitter(jobID string,
 	contract cosmosSDK.AccAddress,
 	sender cosmosSDK.AccAddress,
-	me MsgEnqueuer,
-	rw client.Reader,
+	msgEnqueuer MsgEnqueuer,
+	chainReader client.Reader,
 	lggr Logger,
 ) *ContractTransmitter {
 	return &ContractTransmitter{
-		jobID:    jobID,
-		contract: contract,
-		me:       me,
-		sender:   sender,
-		rw:       rw,
-		lggr:     lggr,
+		jobID:       jobID,
+		contract:    contract,
+		msgEnqueuer: msgEnqueuer,
+		sender:      sender,
+		chainReader: chainReader,
+		lggr:        lggr,
 	}
 }
 
@@ -66,17 +66,17 @@ func (ct *ContractTransmitter) Transmit(
 	if err != nil {
 		return err
 	}
-	_, err = ct.me.Enqueue(ct.contract.String(), d)
+	_, err = ct.msgEnqueuer.Enqueue(ct.contract.String(), d)
 	return err
 }
 
-// LatestConfigDigestAndEpoch fetches the latest details from contract state
+// LatestConfigDigestAndEpoch fetches the latest details from address state
 func (ct *ContractTransmitter) LatestConfigDigestAndEpoch(ctx context.Context) (
 	configDigest types.ConfigDigest,
 	epoch uint32,
 	err error,
 ) {
-	resp, err := ct.rw.ContractStore(
+	resp, err := ct.chainReader.ContractStore(
 		ct.contract.String(), []byte(`"latest_config_digest_and_epoch"`),
 	)
 	if err != nil {

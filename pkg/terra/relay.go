@@ -46,29 +46,29 @@ type OCR2Spec struct {
 }
 
 type Relayer struct {
-	lggr    Logger
-	me      MsgEnqueuer
-	tr      client.Reader
-	chainID string
+	lggr        Logger
+	msgEnqueuer MsgEnqueuer
+	chainReader client.Reader
+	chainID     string
 }
 
 // Note: constructed in core
-func NewRelayer(lggr Logger, me MsgEnqueuer, tr client.Reader, chainID string) *Relayer {
+func NewRelayer(lggr Logger, msgEnqueuer MsgEnqueuer, chainReader client.Reader, chainID string) *Relayer {
 	return &Relayer{
-		lggr:    lggr,
-		me:      me,
-		tr:      tr,
-		chainID: chainID,
+		lggr:        lggr,
+		msgEnqueuer: msgEnqueuer,
+		chainReader: chainReader,
+		chainID:     chainID,
 	}
 }
 
 func (r *Relayer) Start() error {
-	return r.me.Start()
+	return r.msgEnqueuer.Start()
 }
 
 // Close will close all open subservices
 func (r *Relayer) Close() error {
-	return r.me.Close()
+	return r.msgEnqueuer.Close()
 }
 
 func (r *Relayer) Ready() error {
@@ -96,7 +96,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 		return nil, err
 	}
 
-	tracker := NewContractTracker(contractAddr, externalJobID.String(), r.tr, r.lggr)
+	tracker := NewContractTracker(contractAddr, externalJobID.String(), r.chainReader, r.lggr)
 	digester := NewOffchainConfigDigester(r.chainID, contractAddr)
 
 	if spec.IsBootstrap {
@@ -108,8 +108,8 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	}
 
 	reportCodec := ReportCodec{}
-	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, senderAddr, r.me, r.tr, r.lggr)
-	median := NewMedianContract(contractAddr, r.tr, r.lggr, transmitter)
+	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, senderAddr, r.msgEnqueuer, r.chainReader, r.lggr)
+	median := NewMedianContract(contractAddr, r.chainReader, r.lggr, transmitter)
 
 	return ocr2Provider{
 		digester:       digester,

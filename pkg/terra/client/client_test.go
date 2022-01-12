@@ -1,7 +1,6 @@
 package client
 
 import (
-	"os"
 	"time"
 
 	"fmt"
@@ -19,11 +18,17 @@ import (
 	wasmtypes "github.com/terra-money/core/x/wasm/types"
 )
 
+func TestAddr(t *testing.T) {
+	a, err := sdk.AccAddressFromBech32("terra10an403x6cl8gr6hxmem0ndwmgpe9rdsva5qnk4")
+	require.NoError(t, err)
+	t.Log(a.String())
+}
+
 func TestTerraClient(t *testing.T) {
 	// Local only for now, could maybe run on CI if we install terrad there?
-	if os.Getenv("TEST_CLIENT") == "" {
-		t.Skip()
-	}
+	//if os.Getenv("TEST_CLIENT") == "" {
+	//	t.Skip()
+	//}
 	accounts, testdir := SetupLocalTerraNode(t, "42")
 	tendermintURL := "http://127.0.0.1:26657"
 	fcdURL := "https://fcd.terra.dev/" // TODO we can mock this

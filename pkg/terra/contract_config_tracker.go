@@ -15,18 +15,18 @@ import (
 var _ types.ContractConfigTracker = (*ContractTracker)(nil)
 
 type ContractTracker struct {
-	JobID           string
-	ContractAddress sdk.AccAddress
-	r               client.Reader
-	log             Logger
+	jobID       string
+	address     sdk.AccAddress
+	chainReader client.Reader
+	log         Logger
 }
 
-func NewContractTracker(contractAddr sdk.AccAddress, jobID string, r client.Reader, lggr Logger) *ContractTracker {
+func NewContractTracker(address sdk.AccAddress, jobID string, chainReader client.Reader, lggr Logger) *ContractTracker {
 	contract := ContractTracker{
-		JobID:           jobID,
-		ContractAddress: contractAddr,
-		r:               r,
-		log:             lggr,
+		jobID:       jobID,
+		address:     address,
+		chainReader: chainReader,
+		log:         lggr,
 	}
 	return &contract
 }
@@ -36,10 +36,10 @@ func (ct *ContractTracker) Notify() <-chan struct{} {
 	return nil
 }
 
-// LatestConfigDetails returns data by reading the contract state and is called when Notify is triggered or the config poll timer is triggered
+// LatestConfigDetails returns data by reading the address state and is called when Notify is triggered or the config poll timer is triggered
 func (ct *ContractTracker) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
-	resp, err := ct.r.ContractStore(
-		ct.ContractAddress.String(),
+	resp, err := ct.chainReader.ContractStore(
+		ct.address.String(),
 		[]byte(`"latest_config_details"`),
 	)
 	if err != nil {
@@ -56,7 +56,7 @@ func (ct *ContractTracker) LatestConfigDetails(ctx context.Context) (changedInBl
 
 // LatestConfig returns data by searching emitted events and is called in the same scenario as LatestConfigDetails
 func (ct *ContractTracker) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
-	res, err := ct.r.TxsEvents([]string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm-set_config.contract_address='%s'", ct.ContractAddress)})
+	res, err := ct.chainReader.TxsEvents([]string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm-set_config.contract_address='%s'", ct.address)})
 	if err != nil {
 		return types.ContractConfig{}, err
 	}
@@ -129,7 +129,7 @@ func (ct *ContractTracker) LatestConfig(ctx context.Context, changedInBlock uint
 
 // LatestBlockHeight returns the height of the most recent block in the chain.
 func (ct *ContractTracker) LatestBlockHeight(ctx context.Context) (blockHeight uint64, err error) {
-	b, err := ct.r.LatestBlock()
+	b, err := ct.chainReader.LatestBlock()
 	if err != nil {
 		return 0, err
 	}

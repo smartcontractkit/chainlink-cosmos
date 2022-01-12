@@ -75,16 +75,16 @@ type Logger interface {
 type Client struct {
 	codec *codec.LegacyAmino
 
-	fallbackGasPrice   sdk.Dec
-	gasLimitMultiplier sdk.Dec
-	fcdURL             string
-	chainID            string
-	clientCtx          cosmosclient.Context
-	sc                 txtypes.ServiceClient
-	ac                 authtypes.QueryClient
-	wc                 wasmtypes.QueryClient
-	bc                 banktypes.QueryClient
-	tmc                tmtypes.ServiceClient
+	fallbackGasPrice        sdk.Dec
+	gasLimitMultiplier      sdk.Dec
+	fcdURL                  string
+	chainID                 string
+	clientCtx               cosmosclient.Context
+	cosmosServiceClient     txtypes.ServiceClient
+	authClient              authtypes.QueryClient
+	wasmClient              wasmtypes.QueryClient
+	bankClient              banktypes.QueryClient
+	tendermintServiceClient tmtypes.ServiceClient
 
 	// Timeout for node interactions
 	timeout time.Duration
@@ -97,7 +97,7 @@ func NewClient(chainID string,
 	gasLimitMultiplier string,
 	tendermintURL string,
 	fcdURL string,
-	timeoutSeconds int,
+	requestTimeoutSeconds int,
 	lggr Logger,
 ) (*Client, error) {
 	fgp, err := sdk.NewDecFromStr(fallbackGasPrice)
@@ -108,10 +108,10 @@ func NewClient(chainID string,
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid gas limit multiplier %v", gasLimitMultiplier)
 	}
-	if timeoutSeconds <= 0 {
-		timeoutSeconds = DefaultTimeout
+	if requestTimeoutSeconds <= 0 {
+		requestTimeoutSeconds = DefaultTimeout
 	}
-	tmClient, err := rpchttp.NewWithTimeout(tendermintURL, "/websocket", uint(timeoutSeconds))
+	tmClient, err := rpchttp.NewWithTimeout(tendermintURL, "/websocket", uint(requestTimeoutSeconds))
 	if err != nil {
 		return nil, err
 	}
@@ -128,31 +128,31 @@ func NewClient(chainID string,
 		WithInterfaceRegistry(ec.InterfaceRegistry).
 		WithTxConfig(ec.TxConfig)
 
-	sc := txtypes.NewServiceClient(clientCtx)
-	ac := authtypes.NewQueryClient(clientCtx)
-	wc := wasmtypes.NewQueryClient(clientCtx)
-	tmc := tmtypes.NewServiceClient(clientCtx)
-	bc := banktypes.NewQueryClient(clientCtx)
+	cosmosServiceClient := txtypes.NewServiceClient(clientCtx)
+	authClient := authtypes.NewQueryClient(clientCtx)
+	wasmClient := wasmtypes.NewQueryClient(clientCtx)
+	tendermintServiceClient := tmtypes.NewServiceClient(clientCtx)
+	bankClient := banktypes.NewQueryClient(clientCtx)
 
 	return &Client{
-		codec:              codec.NewLegacyAmino(),
-		chainID:            chainID,
-		sc:                 sc,
-		ac:                 ac,
-		wc:                 wc,
-		tmc:                tmc,
-		bc:                 bc,
-		clientCtx:          clientCtx,
-		timeout:            time.Duration(timeoutSeconds * int(time.Second)),
-		fcdURL:             fcdURL,
-		fallbackGasPrice:   fgp,
-		gasLimitMultiplier: glm,
-		log:                lggr,
+		codec:                   codec.NewLegacyAmino(),
+		chainID:                 chainID,
+		cosmosServiceClient:     cosmosServiceClient,
+		authClient:              authClient,
+		wasmClient:              wasmClient,
+		tendermintServiceClient: tendermintServiceClient,
+		bankClient:              bankClient,
+		clientCtx:               clientCtx,
+		timeout:                 time.Duration(requestTimeoutSeconds * int(time.Second)),
+		fcdURL:                  fcdURL,
+		fallbackGasPrice:        fgp,
+		gasLimitMultiplier:      glm,
+		log:                     lggr,
 	}, nil
 }
 
 func (c *Client) Account(addr sdk.AccAddress) (uint64, uint64, error) {
-	r, err := c.ac.Account(context.Background(), &authtypes.QueryAccountRequest{Address: addr.String()})
+	r, err := c.authClient.Account(context.Background(), &authtypes.QueryAccountRequest{Address: addr.String()})
 	if err != nil {
 		return 0, 0, err
 	}
@@ -197,7 +197,7 @@ func (c *Client) GasPrice() msg.DecCoin {
 }
 
 func (c *Client) ContractStore(contractAddress string, queryMsg []byte) ([]byte, error) {
-	s, err := c.wc.ContractStore(context.Background(), &wasmtypes.QueryContractStoreRequest{
+	s, err := c.wasmClient.ContractStore(context.Background(), &wasmtypes.QueryContractStoreRequest{
 		ContractAddress: contractAddress,
 		QueryMsg:        queryMsg,
 	})
@@ -209,7 +209,7 @@ func (c *Client) ContractStore(contractAddress string, queryMsg []byte) ([]byte,
 // https://docs.cosmos.network/master/core/events.html
 // Note one current issue https://github.com/cosmos/cosmos-sdk/issues/10448
 func (c *Client) TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error) {
-	e, err := c.sc.GetTxsEvent(context.Background(), &txtypes.GetTxsEventRequest{
+	e, err := c.cosmosServiceClient.GetTxsEvent(context.Background(), &txtypes.GetTxsEventRequest{
 		Events:     events,
 		Pagination: nil,
 		OrderBy:    txtypes.OrderBy_ORDER_BY_DESC,
@@ -218,18 +218,18 @@ func (c *Client) TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error
 }
 
 func (c *Client) Tx(hash string) (*txtypes.GetTxResponse, error) {
-	e, err := c.sc.GetTx(context.Background(), &txtypes.GetTxRequest{
+	e, err := c.cosmosServiceClient.GetTx(context.Background(), &txtypes.GetTxRequest{
 		Hash: hash,
 	})
 	return e, err
 }
 
 func (c *Client) LatestBlock() (*tmtypes.GetLatestBlockResponse, error) {
-	return c.tmc.GetLatestBlock(context.Background(), &tmtypes.GetLatestBlockRequest{})
+	return c.tendermintServiceClient.GetLatestBlock(context.Background(), &tmtypes.GetLatestBlockRequest{})
 }
 
 func (c *Client) BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse, error) {
-	return c.tmc.GetBlockByHeight(context.Background(), &tmtypes.GetBlockByHeightRequest{Height: height})
+	return c.tendermintServiceClient.GetBlockByHeight(context.Background(), &tmtypes.GetBlockByHeightRequest{Height: height})
 }
 
 func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error) {
@@ -280,7 +280,7 @@ func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.Sim
 	if err != nil {
 		return nil, err
 	}
-	s, err := c.sc.Simulate(context.Background(), &txtypes.SimulateRequest{
+	s, err := c.cosmosServiceClient.Simulate(context.Background(), &txtypes.SimulateRequest{
 		Tx:      nil,
 		TxBytes: txBytes,
 	})
@@ -288,7 +288,7 @@ func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.Sim
 }
 
 func (c *Client) Simulate(txBytes []byte) (*txtypes.SimulateResponse, error) {
-	s, err := c.sc.Simulate(context.Background(), &txtypes.SimulateRequest{
+	s, err := c.cosmosServiceClient.Simulate(context.Background(), &txtypes.SimulateRequest{
 		Tx:      nil,
 		TxBytes: txBytes,
 	})
@@ -296,7 +296,7 @@ func (c *Client) Simulate(txBytes []byte) (*txtypes.SimulateResponse, error) {
 }
 
 func (c *Client) Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
-	res, err := c.sc.BroadcastTx(context.Background(), &txtypes.BroadcastTxRequest{
+	res, err := c.cosmosServiceClient.BroadcastTx(context.Background(), &txtypes.BroadcastTxRequest{
 		Mode:    mode,
 		TxBytes: txBytes,
 	})
@@ -325,7 +325,7 @@ func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint6
 }
 
 func (c *Client) Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error) {
-	b, err := c.bc.Balance(context.Background(), &banktypes.QueryBalanceRequest{Address: addr.String(), Denom: denom})
+	b, err := c.bankClient.Balance(context.Background(), &banktypes.QueryBalanceRequest{Address: addr.String(), Denom: denom})
 	if err != nil {
 		return nil, err
 	}

@@ -33,17 +33,17 @@ type LatestConfigReader interface {
 }
 
 type MedianContract struct {
-	contract sdk.AccAddress
-	r        client.Reader
-	lggr     Logger
-	cr       LatestConfigReader
+	address     sdk.AccAddress
+	chainReader client.Reader
+	lggr        Logger
+	cr          LatestConfigReader
 }
 
-func NewMedianContract(contract sdk.AccAddress, r client.Reader, lggr Logger, cr LatestConfigReader) *MedianContract {
-	return &MedianContract{contract: contract, r: r, lggr: lggr, cr: cr}
+func NewMedianContract(address sdk.AccAddress, chainReader client.Reader, lggr Logger, cr LatestConfigReader) *MedianContract {
+	return &MedianContract{address: address, chainReader: chainReader, lggr: lggr, cr: cr}
 }
 
-// LatestTransmissionDetails fetches the latest transmission details from contract state
+// LatestTransmissionDetails fetches the latest transmission details from address state
 func (ct *MedianContract) LatestTransmissionDetails(
 	ctx context.Context,
 ) (
@@ -54,12 +54,12 @@ func (ct *MedianContract) LatestTransmissionDetails(
 	latestTimestamp time.Time,
 	err error,
 ) {
-	resp, err := ct.r.ContractStore(ct.contract.String(), []byte(`"latest_transmission_details"`))
+	resp, err := ct.chainReader.ContractStore(ct.address.String(), []byte(`"latest_transmission_details"`))
 	if err != nil {
 		// TODO: Verify if this is still necessary
 		// https://github.com/smartcontractkit/chainlink-terra/issues/23
 		// Handle the 500 error that occurs when there has not been a submission
-		// "rpc error: code = Unknown desc = ocr2::state::Transmission not found: contract query failed"
+		// "rpc error: code = Unknown desc = ocr2::state::Transmission not found: address query failed"
 		if strings.Contains(fmt.Sprint(err), "ocr2::state::Transmission not found") {
 			ct.lggr.Infof("No transmissions found when fetching `latest_transmission_details` attempting with `latest_config_digest_and_epoch`")
 			digest, epoch, err2 := ct.cr.LatestConfigDigestAndEpoch(ctx)
@@ -98,13 +98,13 @@ func (ct *MedianContract) LatestRoundRequested(ctx context.Context, lookback tim
 	err error,
 ) {
 	// calculate start block
-	latestBlock, blkErr := ct.r.LatestBlock()
+	latestBlock, blkErr := ct.chainReader.LatestBlock()
 	if blkErr != nil {
 		err = blkErr
 		return
 	}
 	blockNum := uint64(latestBlock.Block.Header.Height) - uint64(lookback.Seconds())/BlockRate
-	res, err := ct.r.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", blockNum+1), fmt.Sprintf("wasm-new_round.contract_address='%s'", ct.contract.String())})
+	res, err := ct.chainReader.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", blockNum+1), fmt.Sprintf("wasm-new_round.contract_address='%s'", ct.address.String())})
 	if err != nil {
 		return
 	}
