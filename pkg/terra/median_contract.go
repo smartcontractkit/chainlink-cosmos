@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 
 	"math/big"
 	"strconv"
@@ -20,9 +23,28 @@ const (
 )
 
 // MedianContract interface
+var _ median.MedianContract = (*MedianContract)(nil)
 
-// LatestTransmissionDetails fetches the latest transmission details from contract state
-func (ct *Contract) LatestTransmissionDetails(
+type LatestConfigReader interface {
+	LatestConfigDigestAndEpoch(ctx context.Context) (
+		configDigest types.ConfigDigest,
+		epoch uint32,
+		err error)
+}
+
+type MedianContract struct {
+	address     sdk.AccAddress
+	chainReader client.Reader
+	lggr        Logger
+	cr          LatestConfigReader
+}
+
+func NewMedianContract(address sdk.AccAddress, chainReader client.Reader, lggr Logger, cr LatestConfigReader) *MedianContract {
+	return &MedianContract{address: address, chainReader: chainReader, lggr: lggr, cr: cr}
+}
+
+// LatestTransmissionDetails fetches the latest transmission details from address state
+func (ct *MedianContract) LatestTransmissionDetails(
 	ctx context.Context,
 ) (
 	configDigest types.ConfigDigest,
@@ -32,25 +54,15 @@ func (ct *Contract) LatestTransmissionDetails(
 	latestTimestamp time.Time,
 	err error,
 ) {
-	queryParams := NewAbciQueryParams(ct.ContractAddress.String(), []byte(`"latest_transmission_details"`))
-	data, err := ct.terra.codec.MarshalJSON(queryParams)
-	if err != nil {
-		return
-	}
-	resp, err := ct.terra.clientCtx.QueryABCI(abci.RequestQuery{
-		Data:   data,
-		Path:   "custom/wasm/contractStore",
-		Height: 0,
-		Prove:  false,
-	})
+	resp, err := ct.chainReader.ContractStore(ct.address.String(), []byte(`"latest_transmission_details"`))
 	if err != nil {
 		// TODO: Verify if this is still necessary
 		// https://github.com/smartcontractkit/chainlink-terra/issues/23
 		// Handle the 500 error that occurs when there has not been a submission
-		// "rpc error: code = Unknown desc = ocr2::state::Transmission not found: contract query failed"
+		// "rpc error: code = Unknown desc = ocr2::state::Transmission not found: address query failed"
 		if strings.Contains(fmt.Sprint(err), "ocr2::state::Transmission not found") {
-			ct.log.Infof("No transmissions found when fetching `latest_transmission_details` attempting with `latest_config_digest_and_epoch`")
-			digest, epoch, err2 := ct.LatestConfigDigestAndEpoch(ctx)
+			ct.lggr.Infof("No transmissions found when fetching `latest_transmission_details` attempting with `latest_config_digest_and_epoch`")
+			digest, epoch, err2 := ct.cr.LatestConfigDigestAndEpoch(ctx)
 
 			// return different data if no error, else continue and return previous error
 			// return config digest and epoch from query, set everything else to 0
@@ -65,7 +77,7 @@ func (ct *Contract) LatestTransmissionDetails(
 
 	// unmarshal
 	var details LatestTransmissionDetails
-	if err := json.Unmarshal(resp.Value, &details); err != nil {
+	if err := json.Unmarshal(resp, &details); err != nil {
 		return types.ConfigDigest{}, 0, 0, big.NewInt(0), time.Now(), err
 	}
 
@@ -79,36 +91,33 @@ func (ct *Contract) LatestTransmissionDetails(
 }
 
 // LatestRoundRequested fetches the latest round requested by filtering event logs
-func (ct *Contract) LatestRoundRequested(ctx context.Context, lookback time.Duration) (
+func (ct *MedianContract) LatestRoundRequested(ctx context.Context, lookback time.Duration) (
 	configDigest types.ConfigDigest,
 	epoch uint32,
 	round uint8,
 	err error,
 ) {
 	// calculate start block
-	latestBlock, blkErr := ct.terra.clientCtx.Client.Block(ctx, nil)
+	latestBlock, blkErr := ct.chainReader.LatestBlock()
 	if blkErr != nil {
 		err = blkErr
 		return
 	}
-	blockNum := uint64(latestBlock.Block.Height) - uint64(lookback.Seconds())/BlockRate
-	queryStr := fmt.Sprintf("tx.height > %d AND wasm-new_round.contract_address='%s'", blockNum, ct.ContractAddress)
-	res, err := ct.terra.clientCtx.Client.TxSearch(ctx, queryStr, false, nil, nil, "desc")
+	blockNum := uint64(latestBlock.Block.Header.Height) - uint64(lookback.Seconds())/BlockRate
+	res, err := ct.chainReader.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", blockNum+1), fmt.Sprintf("wasm-new_round.contract_address='%s'", ct.address.String())})
 	if err != nil {
 		return
 	}
-	if len(res.Txs) == 0 || res.TotalCount == 0 {
+	if len(res.TxResponses) == 0 {
+		return
+	}
+	// First tx is the latest.
+	if len(res.TxResponses[0].Events) == 0 {
+		err = fmt.Errorf("No events found for tx %s", res.TxResponses[0].TxHash)
 		return
 	}
 
-	// use the last one, should be the latest tx with event
-	index := len(res.Txs) - 1
-	if len(res.Txs[index].TxResult.Events) == 0 {
-		err = fmt.Errorf("No events found for tx %s", res.Txs[index].Hash)
-		return
-	}
-
-	for _, event := range res.Txs[index].TxResult.Events {
+	for _, event := range res.TxResponses[0].Events {
 		if event.Type == "wasm-new_round" {
 			// TODO: confirm event parameters
 			// https://github.com/smartcontractkit/chainlink-terra/issues/22

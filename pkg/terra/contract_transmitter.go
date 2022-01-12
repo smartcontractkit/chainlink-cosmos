@@ -4,11 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/pkg/errors"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/terra-money/terra.go/client"
-	"github.com/terra-money/terra.go/msg"
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/libocr/offchainreporting2/chains/evmutil"
@@ -16,14 +12,42 @@ import (
 	terraSDK "github.com/terra-money/core/x/wasm/types"
 )
 
+var _ types.ContractTransmitter = (*ContractTransmitter)(nil)
+
+type ContractTransmitter struct {
+	msgEnqueuer MsgEnqueuer
+	chainReader client.Reader
+	lggr        Logger
+	jobID       string
+	contract    cosmosSDK.AccAddress
+	sender      cosmosSDK.AccAddress
+}
+
+func NewContractTransmitter(jobID string,
+	contract cosmosSDK.AccAddress,
+	sender cosmosSDK.AccAddress,
+	msgEnqueuer MsgEnqueuer,
+	chainReader client.Reader,
+	lggr Logger,
+) *ContractTransmitter {
+	return &ContractTransmitter{
+		jobID:       jobID,
+		contract:    contract,
+		msgEnqueuer: msgEnqueuer,
+		sender:      sender,
+		chainReader: chainReader,
+		lggr:        lggr,
+	}
+}
+
 // Transmit signs and sends the report
-func (ct *Contract) Transmit(
+func (ct *ContractTransmitter) Transmit(
 	ctx context.Context,
 	reportCtx types.ReportContext,
 	report types.Report,
 	sigs []types.AttributedOnchainSignature,
 ) error {
-	ct.terra.Log.Infof("[%s] Sending TX to %s", ct.JobID, ct.ContractAddress)
+	ct.lggr.Infof("[%s] Sending TX to %s", ct.jobID, ct.contract.String())
 	msgStruct := TransmitMsg{}
 	reportContext := evmutil.RawReportContext(reportCtx)
 	for _, r := range reportContext {
@@ -37,68 +61,36 @@ func (ct *Contract) Transmit(
 	if err != nil {
 		return err
 	}
-
-	// convert addresses from string to proper types
-	sender, err := cosmosSDK.AccAddressFromBech32(ct.Transmitter.PublicKey().String())
+	m := terraSDK.NewMsgExecuteContract(ct.sender, ct.contract, msgBytes, cosmosSDK.Coins{})
+	d, err := m.Marshal()
 	if err != nil {
 		return err
 	}
-
-	// create execute msg
-	rawMsg := terraSDK.NewMsgExecuteContract(sender, ct.ContractAddress, msgBytes, cosmosSDK.Coins{})
-	options := client.CreateTxOptions{
-		Msgs: []msg.Msg{rawMsg},
-		Memo: "",
-	}
-
-	// need LCD for fetching sequence, account number, + setting gas prices, etc
-	lcd := ct.terra.LCD(ct.terra.GasPrice(), ct.terra.gasLimitMultiplier, WrappedPrivKey{ct.Transmitter}, ct.terra.httpTimeout)
-	txBuilder, err := lcd.CreateAndSignTx(context.TODO(), options)
-	if err != nil {
-		return errors.Wrap(err, "error in Transmit.NewTxBuilder")
-	}
-	txBytes, err := txBuilder.GetTxBytes()
-	if err != nil {
-		return errors.Wrap(err, "error in Transmit.GetTxBytes")
-	}
-
-	txResponse, err := ct.terra.clientCtx.WithBroadcastMode(string(txtypes.BroadcastMode_BROADCAST_MODE_SYNC)).BroadcastTx(txBytes)
-	if err != nil {
-		return errors.Wrap(err, "error in Transmit.Send")
-	}
-	ct.terra.Log.Infof("[%s] TX Hash: %s", ct.JobID, txResponse.TxHash)
-	return nil
+	_, err = ct.msgEnqueuer.Enqueue(ct.contract.String(), d)
+	return err
 }
 
-// LatestConfigDigestAndEpoch fetches the latest details from contract state
-func (ct *Contract) LatestConfigDigestAndEpoch(ctx context.Context) (
+// LatestConfigDigestAndEpoch fetches the latest details from address state
+func (ct *ContractTransmitter) LatestConfigDigestAndEpoch(ctx context.Context) (
 	configDigest types.ConfigDigest,
 	epoch uint32,
 	err error,
 ) {
-	queryParams := NewAbciQueryParams(ct.ContractAddress.String(), []byte(`"latest_config_digest_and_epoch"`))
-	data, err := ct.terra.codec.MarshalJSON(queryParams)
-	if err != nil {
-		return
-	}
-	resp, err := ct.terra.clientCtx.QueryABCI(abci.RequestQuery{
-		Data:   data,
-		Path:   "custom/wasm/contractStore",
-		Height: 0,
-		Prove:  false,
-	})
+	resp, err := ct.chainReader.ContractStore(
+		ct.contract.String(), []byte(`"latest_config_digest_and_epoch"`),
+	)
 	if err != nil {
 		return types.ConfigDigest{}, 0, err
 	}
 
 	var digest LatestConfigDigestAndEpoch
-	if err := json.Unmarshal(resp.Value, &digest); err != nil {
+	if err := json.Unmarshal(resp, &digest); err != nil {
 		return types.ConfigDigest{}, 0, err
 	}
 
 	return digest.ConfigDigest, digest.Epoch, nil
 }
 
-func (ct *Contract) FromAccount() types.Account {
-	return types.Account(ct.Transmitter.PublicKey().String())
+func (ct *ContractTransmitter) FromAccount() types.Account {
+	return types.Account(ct.sender.String())
 }

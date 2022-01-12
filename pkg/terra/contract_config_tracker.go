@@ -6,62 +6,47 @@ import (
 	"fmt"
 	"strconv"
 
-	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/pkg/errors"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
-// Contract handles the OCR2 subscription needs but does not track state (state is tracked in actual OCR2 implementation)
-type Contract struct {
-	JobID           string
-	ContractAddress sdk.AccAddress
-	terra           *Client
-	Transmitter     TransmissionSigner
-	log             Logger
+var _ types.ContractConfigTracker = (*ContractTracker)(nil)
+
+type ContractTracker struct {
+	jobID       string
+	address     sdk.AccAddress
+	chainReader client.Reader
+	log         Logger
 }
 
-func NewContractTracker(spec OCR2Spec, jobID string, client *Client, lggr Logger) (*Contract, error) {
-	addr, err := sdk.AccAddressFromBech32(spec.ContractID)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error while decoding AccAddressFromBech32")
+func NewContractTracker(address sdk.AccAddress, jobID string, chainReader client.Reader, lggr Logger) *ContractTracker {
+	contract := ContractTracker{
+		jobID:       jobID,
+		address:     address,
+		chainReader: chainReader,
+		log:         lggr,
 	}
-
-	contract := Contract{
-		JobID:           jobID,
-		ContractAddress: addr,
-		terra:           client,
-		Transmitter:     spec.TransmissionSigner,
-		log:             lggr,
-	}
-
-	return &contract, nil
+	return &contract
 }
 
 // Unused, libocr will use polling
-func (ct *Contract) Notify() <-chan struct{} {
+func (ct *ContractTracker) Notify() <-chan struct{} {
 	return nil
 }
 
-// LatestConfigDetails returns data by reading the contract state and is called when Notify is triggered or the config poll timer is triggered
-func (ct *Contract) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
-	queryParams := NewAbciQueryParams(ct.ContractAddress.String(), []byte(`"latest_config_details"`))
-	data, err := ct.terra.codec.MarshalJSON(queryParams)
-	if err != nil {
-		return
-	}
-	resp, err := ct.terra.clientCtx.QueryABCI(abci.RequestQuery{
-		Data:   data,
-		Path:   "custom/wasm/contractStore",
-		Height: 0,
-		Prove:  false,
-	})
+// LatestConfigDetails returns data by reading the address state and is called when Notify is triggered or the config poll timer is triggered
+func (ct *ContractTracker) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
+	resp, err := ct.chainReader.ContractStore(
+		ct.address.String(),
+		[]byte(`"latest_config_details"`),
+	)
 	if err != nil {
 		return
 	}
 	var config ConfigDetails
-	if err = json.Unmarshal(resp.Value, &config); err != nil {
+	if err = json.Unmarshal(resp, &config); err != nil {
 		return
 	}
 	changedInBlock = config.BlockNumber
@@ -70,21 +55,20 @@ func (ct *Contract) LatestConfigDetails(ctx context.Context) (changedInBlock uin
 }
 
 // LatestConfig returns data by searching emitted events and is called in the same scenario as LatestConfigDetails
-func (ct *Contract) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
-	queryStr := fmt.Sprintf("tx.height=%d AND wasm-set_config.contract_address='%s'", changedInBlock, ct.ContractAddress)
-	res, err := ct.terra.clientCtx.Client.TxSearch(ctx, queryStr, false, nil, nil, "desc")
+func (ct *ContractTracker) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
+	res, err := ct.chainReader.TxsEvents([]string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm-set_config.contract_address='%s'", ct.address)})
 	if err != nil {
 		return types.ContractConfig{}, err
 	}
-	if len(res.Txs) == 0 {
+	if len(res.TxResponses) == 0 {
 		return types.ContractConfig{}, fmt.Errorf("No transactions found for block %d", changedInBlock)
 	}
 	// fetch event and process (use first tx and \first log set)
-	if len(res.Txs[0].TxResult.Events) == 0 {
-		return types.ContractConfig{}, fmt.Errorf("No events found for tx %s", res.Txs[0].Hash)
+	if len(res.TxResponses[0].Events) == 0 {
+		return types.ContractConfig{}, fmt.Errorf("No events found for tx %s", res.TxResponses[0].TxHash)
 	}
 
-	for _, event := range res.Txs[0].TxResult.Events {
+	for _, event := range res.TxResponses[0].Events {
 		if event.Type == "wasm-set_config" {
 			output := types.ContractConfig{}
 			// TODO: is there a better way to parse an array of structs to an struct
@@ -121,9 +105,17 @@ func (ct *Contract) LatestConfig(ctx context.Context, changedInBlock uint64) (ty
 					output.F = uint8(i)
 				case "onchain_config":
 					// parse byte array encoded as hex string
-					if err := HexToByteArray(value, &output.OnchainConfig); err != nil {
+					var config33 []byte
+					if err := HexToByteArray(value, &config33); err != nil {
 						return types.ContractConfig{}, err
 					}
+					// convert byte array to encoding expected by lib OCR
+					config49, err := ContractConfigToOCRConfig(config33)
+					if err != nil {
+						return types.ContractConfig{}, err
+
+					}
+					output.OnchainConfig = config49
 				case "offchain_config_version":
 					i, err := strconv.ParseInt(value, 10, 64)
 					if err != nil {
@@ -140,14 +132,14 @@ func (ct *Contract) LatestConfig(ctx context.Context, changedInBlock uint64) (ty
 			return output, nil
 		}
 	}
-	return types.ContractConfig{}, fmt.Errorf("No set_config event found for tx %s", res.Txs[0].Hash)
+	return types.ContractConfig{}, fmt.Errorf("No set_config event found for tx %s", res.TxResponses[0].TxHash)
 }
 
 // LatestBlockHeight returns the height of the most recent block in the chain.
-func (ct *Contract) LatestBlockHeight(ctx context.Context) (blockHeight uint64, err error) {
-	b, err := ct.terra.clientCtx.Client.Block(ctx, nil)
+func (ct *ContractTracker) LatestBlockHeight(ctx context.Context) (blockHeight uint64, err error) {
+	b, err := ct.chainReader.LatestBlock()
 	if err != nil {
 		return 0, err
 	}
-	return uint64(b.Block.Height), nil
+	return uint64(b.Block.Header.Height), nil
 }
