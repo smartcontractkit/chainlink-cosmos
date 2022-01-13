@@ -2,7 +2,6 @@ package terra
 
 import (
 	"errors"
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
@@ -33,9 +32,12 @@ type MsgEnqueuer interface {
 
 // CL Core OCR2 job spec RelayConfig member for Terra
 type RelayConfig struct {
+	TerraChainID string
 }
 
 type OCR2Spec struct {
+	ChainID string
+
 	ID          int32
 	IsBootstrap bool
 
@@ -45,39 +47,34 @@ type OCR2Spec struct {
 }
 
 type Relayer struct {
-	lggr        Logger
-	msgEnqueuer MsgEnqueuer
-	chainReader client.Reader
-	chainID     string
+	lggr     Logger
+	chainSet ChainSet
 }
 
 // Note: constructed in core
-func NewRelayer(lggr Logger, msgEnqueuer MsgEnqueuer, chainReader client.Reader, chainID string) *Relayer {
+func NewRelayer(lggr Logger, chainSet ChainSet) *Relayer {
 	return &Relayer{
-		lggr:        lggr,
-		msgEnqueuer: msgEnqueuer,
-		chainReader: chainReader,
-		chainID:     chainID,
+		lggr:     lggr,
+		chainSet: chainSet,
 	}
 }
 
 func (r *Relayer) Start() error {
-	return r.msgEnqueuer.Start()
+	return r.chainSet.Start()
 }
 
 // Close will close all open subservices
 func (r *Relayer) Close() error {
-	return r.msgEnqueuer.Close()
+	return r.chainSet.Close()
 }
 
 func (r *Relayer) Ready() error {
-	// always ready
-	return nil
+	return r.chainSet.Ready()
 }
 
 // Healthy only if all subservices are healthy
 func (r *Relayer) Healthy() error {
-	return nil
+	return r.chainSet.Healthy()
 }
 
 func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relaytypes.OCR2Provider, error) {
@@ -85,6 +82,13 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	if !ok {
 		return nil, errors.New("unsuccessful cast to 'terra.OCR2Spec'")
 	}
+
+	chain, err := r.chainSet.Get(spec.ChainID)
+	if err != nil {
+		return nil, err
+	}
+	chainReader := chain.Reader()
+	msgEnqueuer := chain.MsgEnqueuer()
 
 	contractAddr, err := cosmosSDK.AccAddressFromBech32(spec.ContractID)
 	if err != nil {
@@ -95,8 +99,8 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 		return nil, err
 	}
 
-	tracker := NewContractTracker(contractAddr, externalJobID.String(), r.chainReader, r.lggr)
-	digester := NewOffchainConfigDigester(r.chainID, contractAddr)
+	tracker := NewContractTracker(contractAddr, externalJobID.String(), chainReader, r.lggr)
+	digester := NewOffchainConfigDigester(spec.ChainID, contractAddr)
 
 	if spec.IsBootstrap {
 		// Return early if bootstrap node (doesn't require the full OCR2 provider)
@@ -107,8 +111,8 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	}
 
 	reportCodec := ReportCodec{}
-	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, senderAddr, r.msgEnqueuer, r.chainReader, r.lggr)
-	median := NewMedianContract(contractAddr, r.chainReader, r.lggr, transmitter)
+	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, senderAddr, msgEnqueuer, chainReader, r.lggr)
+	median := NewMedianContract(contractAddr, chainReader, r.lggr, transmitter)
 
 	return ocr2Provider{
 		digester:       digester,
