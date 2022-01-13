@@ -95,9 +95,8 @@ func TestTerraClient(t *testing.T) {
 	assert.True(t, latestBlock.Block.Header.Height > 1)
 
 	// Query initial contract state
-	//contract := GetContractAddr(t, tc, deploymentHash)
 	count, err := tc.ContractStore(
-		contract.String(),
+		contract,
 		[]byte(`{"get_count":{}}`),
 	)
 	require.NoError(t, err)
@@ -120,7 +119,7 @@ func TestTerraClient(t *testing.T) {
 
 	// Observe changed contract state
 	count, err = tc.ContractStore(
-		contract.String(),
+		contract,
 		[]byte(`{"get_count":{}}`),
 	)
 	require.NoError(t, err)

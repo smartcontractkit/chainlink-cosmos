@@ -161,13 +161,13 @@ func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence
 	return r0, r1
 }
 
-// GasPrice provides a mock function with given fields:
-func (_m *ReaderWriter) GasPrice() types.DecCoin {
-	ret := _m.Called()
+// GasPrice provides a mock function with given fields: fallback
+func (_m *ReaderWriter) GasPrice(fallback types.DecCoin) types.DecCoin {
+	ret := _m.Called(fallback)
 
 	var r0 types.DecCoin
-	if rf, ok := ret.Get(0).(func() types.DecCoin); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(types.DecCoin) types.DecCoin); ok {
+		r0 = rf(fallback)
 	} else {
 		r0 = ret.Get(0).(types.DecCoin)
 	}

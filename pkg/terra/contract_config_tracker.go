@@ -39,7 +39,7 @@ func (ct *ContractTracker) Notify() <-chan struct{} {
 // LatestConfigDetails returns data by reading the address state and is called when Notify is triggered or the config poll timer is triggered
 func (ct *ContractTracker) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
 	resp, err := ct.chainReader.ContractStore(
-		ct.address.String(),
+		ct.address,
 		[]byte(`"latest_config_details"`),
 	)
 	if err != nil {

@@ -40,9 +40,9 @@ type ReaderWriter interface {
 
 // Only depends on the cosmos sdk types.
 type Reader interface {
-	GasPrice() sdk.DecCoin
+	GasPrice(fallback sdk.DecCoin) sdk.DecCoin
 	Account(address sdk.AccAddress) (uint64, uint64, error)
-	ContractStore(contractAddress string, queryMsg []byte) ([]byte, error)
+	ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
 	TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error)
 	Tx(hash string) (*txtypes.GetTxResponse, error)
 	LatestBlock() (*tmtypes.GetLatestBlockResponse, error)
@@ -165,8 +165,7 @@ func (c *Client) Account(addr sdk.AccAddress) (uint64, uint64, error) {
 	return a.GetAccountNumber(), a.GetSequence(), nil
 }
 
-func (c *Client) GasPrice() msg.DecCoin {
-	var fallback = msg.NewDecCoinFromDec("uluna", c.fallbackGasPrice)
+func (c *Client) GasPrice(fallback msg.DecCoin) msg.DecCoin {
 	url := fmt.Sprintf("%s%s", c.fcdURL, "/v1/txs/gas_prices")
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
@@ -197,9 +196,9 @@ func (c *Client) GasPrice() msg.DecCoin {
 	return msg.NewDecCoinFromDec("uluna", p)
 }
 
-func (c *Client) ContractStore(contractAddress string, queryMsg []byte) ([]byte, error) {
+func (c *Client) ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
 	s, err := c.wasmClient.ContractStore(context.Background(), &wasmtypes.QueryContractStoreRequest{
-		ContractAddress: contractAddress,
+		ContractAddress: contractAddress.String(),
 		QueryMsg:        queryMsg,
 	})
 	return s.QueryResult, err
@@ -282,7 +281,6 @@ func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.Sim
 		return nil, err
 	}
 	s, err := c.cosmosServiceClient.Simulate(context.Background(), &txtypes.SimulateRequest{
-		Tx:      nil,
 		TxBytes: txBytes,
 	})
 	return s, err
