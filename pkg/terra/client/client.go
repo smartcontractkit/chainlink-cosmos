@@ -184,6 +184,10 @@ func (c *Client) ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) 
 		ContractAddress: contractAddress.String(),
 		QueryMsg:        queryMsg,
 	})
+	if err != nil {
+		return nil, err
+	}
+	//  Note s will be nil on err
 	return s.QueryResult, err
 }
 
@@ -271,7 +275,6 @@ func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.Sim
 
 func (c *Client) Simulate(txBytes []byte) (*txtypes.SimulateResponse, error) {
 	s, err := c.cosmosServiceClient.Simulate(context.Background(), &txtypes.SimulateRequest{
-		Tx:      nil,
 		TxBytes: txBytes,
 	})
 	return s, err

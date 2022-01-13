@@ -101,6 +101,13 @@ func TestTerraClient(t *testing.T) {
 	)
 	require.NoError(t, err)
 	assert.Equal(t, `{"count":0}`, string(count))
+	// Query invalid state should give an error
+	count, err = tc.ContractStore(
+		contract,
+		[]byte(`{"blah":{}}`),
+	)
+	require.Error(t, err)
+	require.Nil(t, count)
 
 	// Change the contract state
 	rawMsg := wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
@@ -130,16 +137,25 @@ func TestTerraClient(t *testing.T) {
 	ev, err := tc.TxsEvents([]string{fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(ev.TxResponses))
-	found := false
+	foundCount := false
+	foundContract := false
 	for _, event := range ev.TxResponses[0].Logs[0].Events {
+		if event.Type != "wasm-reset" {
+			continue
+		}
 		for _, attr := range event.Attributes {
-			if event.Type == "wasm-reset" && string(attr.Key) == "count" {
-				assert.Equal(t, "4", string(attr.Value))
-				found = true
+			if attr.Key == "count" {
+				assert.Equal(t, "4", attr.Value)
+				foundCount = true
+			}
+			if attr.Key == "contract_address" {
+				assert.Equal(t, contract.String(), attr.Value)
+				foundContract = true
 			}
 		}
 	}
-	assert.True(t, found)
+	assert.True(t, foundCount)
+	assert.True(t, foundContract)
 
 	// Ensure the height filtering works
 	ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", resp1.TxResponse.Height+1), fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())})
