@@ -54,7 +54,7 @@ func (ct *MedianContract) LatestTransmissionDetails(
 	latestTimestamp time.Time,
 	err error,
 ) {
-	resp, err := ct.chainReader.ContractStore(ct.address.String(), []byte(`"latest_transmission_details"`))
+	resp, err := ct.chainReader.ContractStore(ct.address, []byte(`"latest_transmission_details"`))
 	if err != nil {
 		// TODO: Verify if this is still necessary
 		// https://github.com/smartcontractkit/chainlink-terra/issues/23

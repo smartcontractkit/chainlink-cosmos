@@ -36,8 +36,6 @@ func TestTerraClient(t *testing.T) {
 	lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Maybe()
 	tc, err := NewClient(
 		"42",
-		"0.01",
-		"1.3",
 		tendermintURL,
 		fcdURL,
 		10,
@@ -46,7 +44,9 @@ func TestTerraClient(t *testing.T) {
 	contract := DeployTestContract(t, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 
 	// Check gas price works
-	gp := tc.GasPrice()
+	fgp := sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("0.01"))
+	require.NoError(t, err)
+	gp := tc.GasPrice(fgp)
 	t.Log("Recommended:", gp)
 	// Should not use fallback
 	assert.NotEqual(t, gp.String(), "0.01uluna")
@@ -63,7 +63,7 @@ func TestTerraClient(t *testing.T) {
 	fund := msg.NewMsgSend(accounts[0].Address, accounts[1].Address, msg.NewCoins(msg.NewInt64Coin("uluna", 1)))
 	gasLimit, err := tc.SimulateUnsigned([]msg.Msg{fund}, sn)
 	require.NoError(t, err)
-	txBytes, err := tc.CreateAndSign([]msg.Msg{fund}, an, sn, gasLimit.GasInfo.GasUsed, tc.GasPrice(), accounts[0].PrivateKey, 0)
+	txBytes, err := tc.CreateAndSign([]msg.Msg{fund}, an, sn, gasLimit.GasInfo.GasUsed, DefaultGasLimitMultiplier, tc.GasPrice(fgp), accounts[0].PrivateKey, 0)
 	require.NoError(t, err)
 	_, err = tc.Simulate(txBytes)
 	require.NoError(t, err)
@@ -106,14 +106,14 @@ func TestTerraClient(t *testing.T) {
 	rawMsg := wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
 	an, sn, err = tc.Account(accounts[0].Address)
 	require.NoError(t, err)
-	resp1, err := tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, tc.GasPrice(), accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+	resp1, err := tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, tc.GasPrice(fgp), accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 	require.NoError(t, err)
 	time.Sleep(1 * time.Second)
 	// Do it again so there are multiple executions
 	rawMsg = wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":4}}`), sdk.Coins{})
 	an, sn, err = tc.Account(accounts[0].Address)
 	require.NoError(t, err)
-	_, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, tc.GasPrice(), accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+	_, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, tc.GasPrice(fgp), accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 	require.NoError(t, err)
 	time.Sleep(1 * time.Second)
 

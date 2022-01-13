@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"math"
 	"net/http"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -26,8 +27,6 @@ import (
 	"github.com/terra-money/core/app"
 
 	"time"
-
-	"github.com/cosmos/cosmos-sdk/codec"
 
 	"github.com/smartcontractkit/terra.go/key"
 )
@@ -57,13 +56,14 @@ type Writer interface {
 	Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Simulate(txBytes []byte) (*txtypes.SimulateResponse, error)
 	SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error)
-	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error)
+	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error)
 }
 
 var _ ReaderWriter = (*Client)(nil)
 
 const (
 	DefaultTimeout = 5
+	DefaultGasLimitMultiplier = 1.5
 )
 
 //go:generate mockery --name Logger --output ./mocks/
@@ -74,10 +74,6 @@ type Logger interface {
 }
 
 type Client struct {
-	codec *codec.LegacyAmino
-
-	fallbackGasPrice        sdk.Dec
-	gasLimitMultiplier      sdk.Dec
 	fcdURL                  string
 	chainID                 string
 	clientCtx               cosmosclient.Context
@@ -94,21 +90,11 @@ type Client struct {
 }
 
 func NewClient(chainID string,
-	fallbackGasPrice string,
-	gasLimitMultiplier string,
 	tendermintURL string,
 	fcdURL string,
 	requestTimeoutSeconds int,
 	lggr Logger,
 ) (*Client, error) {
-	fgp, err := sdk.NewDecFromStr(fallbackGasPrice)
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid fallback gas price %v", fallbackGasPrice)
-	}
-	glm, err := sdk.NewDecFromStr(gasLimitMultiplier)
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid gas limit multiplier %v", gasLimitMultiplier)
-	}
 	if requestTimeoutSeconds <= 0 {
 		requestTimeoutSeconds = DefaultTimeout
 	}
@@ -136,7 +122,6 @@ func NewClient(chainID string,
 	bankClient := banktypes.NewQueryClient(clientCtx)
 
 	return &Client{
-		codec:                   codec.NewLegacyAmino(),
 		chainID:                 chainID,
 		cosmosServiceClient:     cosmosServiceClient,
 		authClient:              authClient,
@@ -146,8 +131,6 @@ func NewClient(chainID string,
 		clientCtx:               clientCtx,
 		timeout:                 time.Duration(requestTimeoutSeconds * int(time.Second)),
 		fcdURL:                  fcdURL,
-		fallbackGasPrice:        fgp,
-		gasLimitMultiplier:      glm,
 		log:                     lggr,
 	}, nil
 }
@@ -232,13 +215,13 @@ func (c *Client) BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse,
 	return c.tendermintServiceClient.GetBlockByHeight(context.Background(), &tmtypes.GetBlockByHeightRequest{Height: height})
 }
 
-func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error) {
+func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error) {
 	txbuilder := tx.NewTxBuilder(app.MakeEncodingConfig().TxConfig)
 	err := txbuilder.SetMsgs(msgs...)
 	if err != nil {
 		return nil, err
 	}
-	gasLimitBuffered := uint64(c.gasLimitMultiplier.MulInt64(int64(gasLimit)).Ceil().RoundInt64())
+	gasLimitBuffered := uint64(math.Ceil(float64(gasLimit)*float64(gasLimitMultiplier)))
 	txbuilder.SetGasLimit(gasLimitBuffered)
 	gasFee := msg.NewCoin(gasPrice.Denom, gasPrice.Amount.MulInt64(int64(gasLimitBuffered)).Ceil().RoundInt())
 	txbuilder.SetFeeAmount(sdk.NewCoins(gasFee))
@@ -316,7 +299,7 @@ func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint6
 	if err != nil {
 		return nil, err
 	}
-	txBytes, err := c.CreateAndSign(msgs, account, sequence, sim.GasInfo.GasUsed, gasPrice, signer, 0)
+	txBytes, err := c.CreateAndSign(msgs, account, sequence, sim.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrice, signer, 0)
 	if err != nil {
 		return nil, err
 	}
