@@ -131,7 +131,7 @@ func TestTerraClient(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 2, len(ev.TxResponses))
 	found := false
-	for _, event := range ev.TxResponses[0].Events {
+	for _, event := range ev.TxResponses[0].Logs[0].Events {
 		for _, attr := range event.Attributes {
 			if event.Type == "wasm-reset" && string(attr.Key) == "count" {
 				assert.Equal(t, "4", string(attr.Value))
@@ -145,6 +145,16 @@ func TestTerraClient(t *testing.T) {
 	ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", resp1.TxResponse.Height+1), fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(ev.TxResponses))
+	ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height=%d", resp1.TxResponse.Height), fmt.Sprintf("wasm-reset.contract_address='%s'", contract)})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(ev.TxResponses))
+	for _, ev := range ev.TxResponses[0].Logs[0].Events {
+		if ev.Type == "wasm-reset" {
+			for _, attr := range ev.Attributes {
+				t.Log(attr.Key, attr.Value)
+			}
+		}
+	}
 
 	t.Run("gasprice", func(t *testing.T) {
 		rawMsg := wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
