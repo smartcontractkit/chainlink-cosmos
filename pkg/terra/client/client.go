@@ -62,7 +62,7 @@ type Writer interface {
 var _ ReaderWriter = (*Client)(nil)
 
 const (
-	DefaultTimeout = 5
+	DefaultTimeout            = 5
 	DefaultGasLimitMultiplier = 1.5
 )
 
@@ -221,7 +221,7 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 	if err != nil {
 		return nil, err
 	}
-	gasLimitBuffered := uint64(math.Ceil(float64(gasLimit)*float64(gasLimitMultiplier)))
+	gasLimitBuffered := uint64(math.Ceil(float64(gasLimit) * float64(gasLimitMultiplier)))
 	txbuilder.SetGasLimit(gasLimitBuffered)
 	gasFee := msg.NewCoin(gasPrice.Denom, gasPrice.Amount.MulInt64(int64(gasLimitBuffered)).Ceil().RoundInt())
 	txbuilder.SetFeeAmount(sdk.NewCoins(gasFee))
