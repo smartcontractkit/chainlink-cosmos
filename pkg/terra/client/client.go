@@ -250,7 +250,7 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 }
 
 type SimMsg struct {
-	ID int64
+	ID  int64
 	Msg sdk.Msg
 }
 
@@ -273,6 +273,7 @@ func (tc *Client) failedMsgIndex(err error) (bool, int) {
 	if err == nil {
 		return false, 0
 	}
+
 	m := failedMsgIndexRe.FindStringSubmatch(err.Error())
 	if len(m) != 2 {
 		return false, 0

@@ -2,7 +2,6 @@ package terra
 
 import (
 	"errors"
-
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"

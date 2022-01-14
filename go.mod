@@ -8,7 +8,7 @@ require (
 	github.com/pelletier/go-toml v1.9.4
 	github.com/pkg/errors v0.9.1
 	github.com/satori/go.uuid v1.2.0
-	github.com/smartcontractkit/chainlink v1.0.1-0.20220107192117-3d2ac0e84f04
+	github.com/smartcontractkit/chainlink v1.0.1-0.20220114200720-95a78cb9fc2b
 	github.com/smartcontractkit/libocr v0.0.0-20211210213233-5443fb9db7f7
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	github.com/stretchr/testify v1.7.0
