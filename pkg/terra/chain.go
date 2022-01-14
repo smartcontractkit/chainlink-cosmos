@@ -7,7 +7,7 @@ import (
 
 type ChainSet interface {
 	Service
-	Get(id string) (Chain, error)
+	Chain(id string) (Chain, error)
 }
 
 type Chain interface {

@@ -83,7 +83,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 		return nil, errors.New("unsuccessful cast to 'terra.OCR2Spec'")
 	}
 
-	chain, err := r.chainSet.Get(spec.ChainID)
+	chain, err := r.chainSet.Chain(spec.ChainID)
 	if err != nil {
 		return nil, err
 	}
