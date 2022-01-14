@@ -2,7 +2,10 @@ package client
 
 import (
 	"context"
+	"math"
 	"net/http"
+	"regexp"
+	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -27,8 +30,6 @@ import (
 
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-
 	"github.com/smartcontractkit/terra.go/key"
 )
 
@@ -40,9 +41,9 @@ type ReaderWriter interface {
 
 // Only depends on the cosmos sdk types.
 type Reader interface {
-	GasPrice() sdk.DecCoin
+	GasPrice(fallback sdk.DecCoin) sdk.DecCoin
 	Account(address sdk.AccAddress) (uint64, uint64, error)
-	ContractStore(contractAddress string, queryMsg []byte) ([]byte, error)
+	ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
 	TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error)
 	Tx(hash string) (*txtypes.GetTxResponse, error)
 	LatestBlock() (*tmtypes.GetLatestBlockResponse, error)
@@ -56,14 +57,16 @@ type Writer interface {
 	SignAndBroadcast(msgs []sdk.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Simulate(txBytes []byte) (*txtypes.SimulateResponse, error)
+	BatchSimulateUnsigned(msgs []SimMsg, sequence uint64) (*BatchSimResults, error)
 	SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error)
-	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error)
+	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error)
 }
 
 var _ ReaderWriter = (*Client)(nil)
 
 const (
-	DefaultTimeout = 5
+	DefaultTimeout            = 5
+	DefaultGasLimitMultiplier = 1.5
 )
 
 //go:generate mockery --name Logger --output ./mocks/
@@ -74,10 +77,6 @@ type Logger interface {
 }
 
 type Client struct {
-	codec *codec.LegacyAmino
-
-	fallbackGasPrice        sdk.Dec
-	gasLimitMultiplier      sdk.Dec
 	fcdURL                  string
 	chainID                 string
 	clientCtx               cosmosclient.Context
@@ -94,21 +93,11 @@ type Client struct {
 }
 
 func NewClient(chainID string,
-	fallbackGasPrice string,
-	gasLimitMultiplier string,
 	tendermintURL string,
 	fcdURL string,
 	requestTimeoutSeconds int,
 	lggr Logger,
 ) (*Client, error) {
-	fgp, err := sdk.NewDecFromStr(fallbackGasPrice)
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid fallback gas price %v", fallbackGasPrice)
-	}
-	glm, err := sdk.NewDecFromStr(gasLimitMultiplier)
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid gas limit multiplier %v", gasLimitMultiplier)
-	}
 	if requestTimeoutSeconds <= 0 {
 		requestTimeoutSeconds = DefaultTimeout
 	}
@@ -136,7 +125,6 @@ func NewClient(chainID string,
 	bankClient := banktypes.NewQueryClient(clientCtx)
 
 	return &Client{
-		codec:                   codec.NewLegacyAmino(),
 		chainID:                 chainID,
 		cosmosServiceClient:     cosmosServiceClient,
 		authClient:              authClient,
@@ -146,8 +134,6 @@ func NewClient(chainID string,
 		clientCtx:               clientCtx,
 		timeout:                 time.Duration(requestTimeoutSeconds * int(time.Second)),
 		fcdURL:                  fcdURL,
-		fallbackGasPrice:        fgp,
-		gasLimitMultiplier:      glm,
 		log:                     lggr,
 	}, nil
 }
@@ -165,8 +151,7 @@ func (c *Client) Account(addr sdk.AccAddress) (uint64, uint64, error) {
 	return a.GetAccountNumber(), a.GetSequence(), nil
 }
 
-func (c *Client) GasPrice() msg.DecCoin {
-	var fallback = msg.NewDecCoinFromDec("uluna", c.fallbackGasPrice)
+func (c *Client) GasPrice(fallback msg.DecCoin) msg.DecCoin {
 	url := fmt.Sprintf("%s%s", c.fcdURL, "/v1/txs/gas_prices")
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
@@ -197,11 +182,15 @@ func (c *Client) GasPrice() msg.DecCoin {
 	return msg.NewDecCoinFromDec("uluna", p)
 }
 
-func (c *Client) ContractStore(contractAddress string, queryMsg []byte) ([]byte, error) {
+func (c *Client) ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
 	s, err := c.wasmClient.ContractStore(context.Background(), &wasmtypes.QueryContractStoreRequest{
-		ContractAddress: contractAddress,
+		ContractAddress: contractAddress.String(),
 		QueryMsg:        queryMsg,
 	})
+	if err != nil {
+		return nil, err
+	}
+	//  Note s will be nil on err
 	return s.QueryResult, err
 }
 
@@ -233,13 +222,13 @@ func (c *Client) BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse,
 	return c.tendermintServiceClient.GetBlockByHeight(context.Background(), &tmtypes.GetBlockByHeightRequest{Height: height})
 }
 
-func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error) {
+func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error) {
 	txbuilder := tx.NewTxBuilder(app.MakeEncodingConfig().TxConfig)
 	err := txbuilder.SetMsgs(msgs...)
 	if err != nil {
 		return nil, err
 	}
-	gasLimitBuffered := uint64(c.gasLimitMultiplier.MulInt64(int64(gasLimit)).Ceil().RoundInt64())
+	gasLimitBuffered := uint64(math.Ceil(float64(gasLimit) * float64(gasLimitMultiplier)))
 	txbuilder.SetGasLimit(gasLimitBuffered)
 	gasFee := msg.NewCoin(gasPrice.Denom, gasPrice.Amount.MulInt64(int64(gasLimitBuffered)).Ceil().RoundInt())
 	txbuilder.SetFeeAmount(sdk.NewCoins(gasFee))
@@ -258,6 +247,84 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 		return nil, err
 	}
 	return signedTx, nil
+}
+
+type SimMsg struct {
+	ID  int64
+	Msg sdk.Msg
+}
+
+func getMsgs(simMsgs []SimMsg) []sdk.Msg {
+	var msgs []sdk.Msg
+	for _, simMsg := range simMsgs {
+		msgs = append(msgs, simMsg.Msg)
+	}
+	return msgs
+}
+
+type BatchSimResults struct {
+	Failed    []SimMsg
+	Succeeded []SimMsg
+}
+
+var failedMsgIndexRe, _ = regexp.Compile(`^.*failed to execute message; message index: (?P<Index>\d{1}):.*$`)
+
+func (tc *Client) failedMsgIndex(err error) (bool, int) {
+	if err == nil {
+		return false, 0
+	}
+
+	m := failedMsgIndexRe.FindStringSubmatch(err.Error())
+	if len(m) != 2 {
+		return false, 0
+	}
+	index, err := strconv.ParseInt(m[1], 10, 32)
+	if err != nil {
+		return false, 0
+	}
+	return true, int(index)
+}
+
+func (tc *Client) BatchSimulateUnsigned(msgs []SimMsg, sequence uint64) (*BatchSimResults, error) {
+	// Assumes at least one msg is present.
+	// If we fail to simulate the batch, remove the offending tx
+	// and try again. Repeat until we have a successful batch.
+	// Keep track of failures so we can mark them as errored.
+	// Note that the error from simulating indicates the first
+	// msg in the slice which failed (it simply loops over the msgs
+	// and simulates them one by one, breaking at the first failure).
+	var succeeded []SimMsg
+	var failed []SimMsg
+	toSim := msgs
+	for {
+		tc.log.Infof("simulating %v", toSim)
+		_, err := tc.SimulateUnsigned(getMsgs(toSim), sequence)
+		containsFailure, failureIndex := tc.failedMsgIndex(err)
+		if err != nil && !containsFailure {
+			return nil, err
+		}
+		if containsFailure {
+			failed = append(failed, toSim[failureIndex])
+			succeeded = append(succeeded, toSim[:failureIndex]...)
+			// remove offending msg and retry
+			if failureIndex == len(toSim)-1 {
+				// we're done, last one failed
+				tc.log.Errorf("simulation error found in last msg, failure %v, index %v, err %v", toSim[failureIndex], failureIndex, err)
+				break
+			}
+			// otherwise there may be more to sim
+			tc.log.Errorf("simulation error found in a msg, retrying with %v, failure %v, index %v, err %v", toSim[failureIndex+1:], toSim[failureIndex], failureIndex, err)
+			toSim = toSim[failureIndex+1:]
+		} else {
+			// we're done they all succeeded
+			succeeded = append(succeeded, toSim...)
+			break
+		}
+	}
+	return &BatchSimResults{
+		Failed:    failed,
+		Succeeded: succeeded,
+	}, nil
 }
 
 func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error) {
@@ -282,7 +349,6 @@ func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.Sim
 		return nil, err
 	}
 	s, err := c.cosmosServiceClient.Simulate(context.Background(), &txtypes.SimulateRequest{
-		Tx:      nil,
 		TxBytes: txBytes,
 	})
 	return s, err
@@ -290,7 +356,6 @@ func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.Sim
 
 func (c *Client) Simulate(txBytes []byte) (*txtypes.SimulateResponse, error) {
 	s, err := c.cosmosServiceClient.Simulate(context.Background(), &txtypes.SimulateRequest{
-		Tx:      nil,
 		TxBytes: txBytes,
 	})
 	return s, err
@@ -318,7 +383,7 @@ func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint6
 	if err != nil {
 		return nil, err
 	}
-	txBytes, err := c.CreateAndSign(msgs, account, sequence, sim.GasInfo.GasUsed, gasPrice, signer, 0)
+	txBytes, err := c.CreateAndSign(msgs, account, sequence, sim.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrice, signer, 0)
 	if err != nil {
 		return nil, err
 	}

@@ -39,7 +39,7 @@ func (ct *ContractTracker) Notify() <-chan struct{} {
 // LatestConfigDetails returns data by reading the address state and is called when Notify is triggered or the config poll timer is triggered
 func (ct *ContractTracker) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
 	resp, err := ct.chainReader.ContractStore(
-		ct.address.String(),
+		ct.address,
 		[]byte(`"latest_config_details"`),
 	)
 	if err != nil {
@@ -56,19 +56,23 @@ func (ct *ContractTracker) LatestConfigDetails(ctx context.Context) (changedInBl
 
 // LatestConfig returns data by searching emitted events and is called in the same scenario as LatestConfigDetails
 func (ct *ContractTracker) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
-	res, err := ct.chainReader.TxsEvents([]string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm-set_config.contract_address='%s'", ct.address)})
+	query := []string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm-set_config.contract_address='%s'", ct.address)}
+	res, err := ct.chainReader.TxsEvents(query)
 	if err != nil {
 		return types.ContractConfig{}, err
 	}
 	if len(res.TxResponses) == 0 {
-		return types.ContractConfig{}, fmt.Errorf("No transactions found for block %d", changedInBlock)
+		return types.ContractConfig{}, fmt.Errorf("No transactions found for block %d, query %v", changedInBlock, query)
 	}
 	// fetch event and process (use first tx and \first log set)
-	if len(res.TxResponses[0].Events) == 0 {
-		return types.ContractConfig{}, fmt.Errorf("No events found for tx %s", res.TxResponses[0].TxHash)
+	if len(res.TxResponses[0].Logs) == 0 {
+		return types.ContractConfig{}, fmt.Errorf("No logs found for tx %s, query %v", res.TxResponses[0].TxHash, query)
+	}
+	if len(res.TxResponses[0].Logs[0].Events) == 0 {
+		return types.ContractConfig{}, fmt.Errorf("No events found for tx %s, query %v", res.TxResponses[0].TxHash, query)
 	}
 
-	for _, event := range res.TxResponses[0].Events {
+	for _, event := range res.TxResponses[0].Logs[0].Events {
 		if event.Type == "wasm-set_config" {
 			output := types.ContractConfig{}
 			// TODO: is there a better way to parse an array of structs to an struct

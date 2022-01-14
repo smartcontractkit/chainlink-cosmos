@@ -4,6 +4,8 @@ package mocks
 
 import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	client "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+
 	mock "github.com/stretchr/testify/mock"
 
 	tmservice "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -69,6 +71,29 @@ func (_m *ReaderWriter) Balance(addr types.AccAddress, denom string) (*types.Coi
 	return r0, r1
 }
 
+// BatchSimulateUnsigned provides a mock function with given fields: msgs, sequence
+func (_m *ReaderWriter) BatchSimulateUnsigned(msgs []client.SimMsg, sequence uint64) (*client.BatchSimResults, error) {
+	ret := _m.Called(msgs, sequence)
+
+	var r0 *client.BatchSimResults
+	if rf, ok := ret.Get(0).(func([]client.SimMsg, uint64) *client.BatchSimResults); ok {
+		r0 = rf(msgs, sequence)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*client.BatchSimResults)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]client.SimMsg, uint64) error); ok {
+		r1 = rf(msgs, sequence)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // BlockByHeight provides a mock function with given fields: height
 func (_m *ReaderWriter) BlockByHeight(height int64) (*tmservice.GetBlockByHeightResponse, error) {
 	ret := _m.Called(height)
@@ -116,11 +141,11 @@ func (_m *ReaderWriter) Broadcast(txBytes []byte, mode tx.BroadcastMode) (*tx.Br
 }
 
 // ContractStore provides a mock function with given fields: contractAddress, queryMsg
-func (_m *ReaderWriter) ContractStore(contractAddress string, queryMsg []byte) ([]byte, error) {
+func (_m *ReaderWriter) ContractStore(contractAddress types.AccAddress, queryMsg []byte) ([]byte, error) {
 	ret := _m.Called(contractAddress, queryMsg)
 
 	var r0 []byte
-	if rf, ok := ret.Get(0).(func(string, []byte) []byte); ok {
+	if rf, ok := ret.Get(0).(func(types.AccAddress, []byte) []byte); ok {
 		r0 = rf(contractAddress, queryMsg)
 	} else {
 		if ret.Get(0) != nil {
@@ -129,7 +154,7 @@ func (_m *ReaderWriter) ContractStore(contractAddress string, queryMsg []byte) (
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, []byte) error); ok {
+	if rf, ok := ret.Get(1).(func(types.AccAddress, []byte) error); ok {
 		r1 = rf(contractAddress, queryMsg)
 	} else {
 		r1 = ret.Error(1)
@@ -138,13 +163,13 @@ func (_m *ReaderWriter) ContractStore(contractAddress string, queryMsg []byte) (
 	return r0, r1
 }
 
-// CreateAndSign provides a mock function with given fields: msgs, account, sequence, gasLimit, gasPrice, signer, timeoutHeight
-func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence uint64, gasLimit uint64, gasPrice types.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error) {
-	ret := _m.Called(msgs, account, sequence, gasLimit, gasPrice, signer, timeoutHeight)
+// CreateAndSign provides a mock function with given fields: msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight
+func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice types.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error) {
+	ret := _m.Called(msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight)
 
 	var r0 []byte
-	if rf, ok := ret.Get(0).(func([]types.Msg, uint64, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, uint64) []byte); ok {
-		r0 = rf(msgs, account, sequence, gasLimit, gasPrice, signer, timeoutHeight)
+	if rf, ok := ret.Get(0).(func([]types.Msg, uint64, uint64, uint64, float64, types.DecCoin, cryptotypes.PrivKey, uint64) []byte); ok {
+		r0 = rf(msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
@@ -152,8 +177,8 @@ func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func([]types.Msg, uint64, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, uint64) error); ok {
-		r1 = rf(msgs, account, sequence, gasLimit, gasPrice, signer, timeoutHeight)
+	if rf, ok := ret.Get(1).(func([]types.Msg, uint64, uint64, uint64, float64, types.DecCoin, cryptotypes.PrivKey, uint64) error); ok {
+		r1 = rf(msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -161,13 +186,13 @@ func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence
 	return r0, r1
 }
 
-// GasPrice provides a mock function with given fields:
-func (_m *ReaderWriter) GasPrice() types.DecCoin {
-	ret := _m.Called()
+// GasPrice provides a mock function with given fields: fallback
+func (_m *ReaderWriter) GasPrice(fallback types.DecCoin) types.DecCoin {
+	ret := _m.Called(fallback)
 
 	var r0 types.DecCoin
-	if rf, ok := ret.Get(0).(func() types.DecCoin); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(types.DecCoin) types.DecCoin); ok {
+		r0 = rf(fallback)
 	} else {
 		r0 = ret.Get(0).(types.DecCoin)
 	}

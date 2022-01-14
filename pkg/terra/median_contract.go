@@ -54,7 +54,7 @@ func (ct *MedianContract) LatestTransmissionDetails(
 	latestTimestamp time.Time,
 	err error,
 ) {
-	resp, err := ct.chainReader.ContractStore(ct.address.String(), []byte(`"latest_transmission_details"`))
+	resp, err := ct.chainReader.ContractStore(ct.address, []byte(`"latest_transmission_details"`))
 	if err != nil {
 		// TODO: Verify if this is still necessary
 		// https://github.com/smartcontractkit/chainlink-terra/issues/23
@@ -111,13 +111,17 @@ func (ct *MedianContract) LatestRoundRequested(ctx context.Context, lookback tim
 	if len(res.TxResponses) == 0 {
 		return
 	}
+	if len(res.TxResponses[0].Logs) == 0 {
+		err = fmt.Errorf("No logs found for tx %s", res.TxResponses[0].TxHash)
+		return
+	}
 	// First tx is the latest.
-	if len(res.TxResponses[0].Events) == 0 {
+	if len(res.TxResponses[0].Logs[0].Events) == 0 {
 		err = fmt.Errorf("No events found for tx %s", res.TxResponses[0].TxHash)
 		return
 	}
 
-	for _, event := range res.TxResponses[0].Events {
+	for _, event := range res.TxResponses[0].Logs[0].Events {
 		if event.Type == "wasm-new_round" {
 			// TODO: confirm event parameters
 			// https://github.com/smartcontractkit/chainlink-terra/issues/22

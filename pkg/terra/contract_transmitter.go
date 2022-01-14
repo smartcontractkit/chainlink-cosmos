@@ -77,7 +77,7 @@ func (ct *ContractTransmitter) LatestConfigDigestAndEpoch(ctx context.Context) (
 	err error,
 ) {
 	resp, err := ct.chainReader.ContractStore(
-		ct.contract.String(), []byte(`"latest_config_digest_and_epoch"`),
+		ct.contract, []byte(`"latest_config_digest_and_epoch"`),
 	)
 	if err != nil {
 		return types.ConfigDigest{}, 0, err
