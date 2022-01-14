@@ -4,7 +4,6 @@ go 1.17
 
 require (
 	github.com/cosmos/cosmos-sdk v0.44.5
-	github.com/cosmos/cosmos-sdk/errors v1.0.0-beta.2
 	github.com/pelletier/go-toml v1.9.4
 	github.com/pkg/errors v0.9.1
 	github.com/satori/go.uuid v1.2.0
@@ -23,7 +22,6 @@ require (
 	github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d // indirect
 	github.com/CosmWasm/wasmvm v0.16.3 // indirect
 	github.com/DataDog/zstd v1.4.5 // indirect
-	github.com/Depado/ginprom v1.7.2 // indirect
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
