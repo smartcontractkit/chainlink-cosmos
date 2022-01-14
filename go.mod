@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/cosmos/cosmos-sdk v0.44.5
+	github.com/cosmos/cosmos-sdk/errors v1.0.0-beta.2
 	github.com/pelletier/go-toml v1.9.4
 	github.com/pkg/errors v0.9.1
 	github.com/satori/go.uuid v1.2.0

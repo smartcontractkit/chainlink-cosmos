@@ -4,6 +4,8 @@ package mocks
 
 import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	client "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+
 	mock "github.com/stretchr/testify/mock"
 
 	tmservice "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -62,6 +64,29 @@ func (_m *ReaderWriter) Balance(addr types.AccAddress, denom string) (*types.Coi
 	var r1 error
 	if rf, ok := ret.Get(1).(func(types.AccAddress, string) error); ok {
 		r1 = rf(addr, denom)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// BatchSimulateUnsigned provides a mock function with given fields: msgs, sequence
+func (_m *ReaderWriter) BatchSimulateUnsigned(msgs []client.SimMsg, sequence uint64) (*client.BatchSimResults, error) {
+	ret := _m.Called(msgs, sequence)
+
+	var r0 *client.BatchSimResults
+	if rf, ok := ret.Get(0).(func([]client.SimMsg, uint64) *client.BatchSimResults); ok {
+		r0 = rf(msgs, sequence)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*client.BatchSimResults)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]client.SimMsg, uint64) error); ok {
+		r1 = rf(msgs, sequence)
 	} else {
 		r1 = ret.Error(1)
 	}

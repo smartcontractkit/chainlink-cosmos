@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client/mocks"
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/mocks"
 	"github.com/smartcontractkit/terra.go/msg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -18,6 +18,109 @@ import (
 	"github.com/tendermint/tendermint/abci/types"
 	wasmtypes "github.com/terra-money/core/x/wasm/types"
 )
+
+func TestErrMatch(t *testing.T) {
+	errStr := "rpc error: code = InvalidArgument desc = failed to execute message; message index: 0: Error parsing into type my_first_contract::msg::ExecuteMsg: unknown variant `blah`, expected `increment` or `reset`: execute wasm contract failed: invalid request"
+	m := failedMsgIndexRe.FindStringSubmatch(errStr)
+	require.Equal(t, 2, len(m))
+	assert.Equal(t, m[1], "0")
+}
+
+func TestBatchSim(t *testing.T) {
+	if os.Getenv("TEST_CLIENT") == "" {
+		t.Skip()
+	}
+	accounts, testdir := SetupLocalTerraNode(t, "42")
+	SetupLocalTerraNode(t, "42")
+	tendermintURL := "http://127.0.0.1:26657"
+	fcdURL := "https://fcd.terra.dev/" // TODO we can mock this
+
+	lggr := new(mocks.Logger)
+	lggr.Test(t)
+	lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Once()
+	tc, err := NewClient(
+		"42",
+		tendermintURL,
+		fcdURL,
+		10,
+		lggr)
+	require.NoError(t, err)
+	contract := DeployTestContract(t, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
+	var succeed sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), ExecuteMsg: []byte(`{"reset":{"count":5}}`)}
+	var fail sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), ExecuteMsg: []byte(`{"blah":{"count":5}}`)}
+
+	t.Run("single success", func(t *testing.T) {
+		_, sn, err := tc.Account(accounts[0].Address)
+		require.NoError(t, err)
+		lggr.On("Infof", mock.Anything, mock.Anything).Once()
+		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}}, sn)
+		require.NoError(t, err)
+		require.Equal(t, 1, len(res.Succeeded))
+		assert.Equal(t, int64(1), res.Succeeded[0].ID)
+		assert.Equal(t, 0, len(res.Failed))
+	})
+
+	t.Run("single failure", func(t *testing.T) {
+		_, sn, err := tc.Account(accounts[0].Address)
+		require.NoError(t, err)
+		lggr.On("Infof", mock.Anything, mock.Anything).Once()
+		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: fail}}, sn)
+		require.NoError(t, err)
+		assert.Equal(t, 0, len(res.Succeeded))
+		require.Equal(t, 1, len(res.Failed))
+		assert.Equal(t, int64(1), res.Failed[0].ID)
+	})
+
+	t.Run("multi failure", func(t *testing.T) {
+		_, sn, err := tc.Account(accounts[0].Address)
+		require.NoError(t, err)
+		lggr.On("Infof", mock.Anything, mock.Anything).Once()
+		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once() // retry
+		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
+		require.NoError(t, err)
+		require.Equal(t, 1, len(res.Succeeded))
+		assert.Equal(t, int64(1), res.Succeeded[0].ID)
+		require.Equal(t, 2, len(res.Failed))
+		assert.Equal(t, int64(2), res.Failed[0].ID)
+		assert.Equal(t, int64(3), res.Failed[1].ID)
+	})
+
+	t.Run("multi succeed", func(t *testing.T) {
+		_, sn, err := tc.Account(accounts[0].Address)
+		require.NoError(t, err)
+		lggr.On("Infof", mock.Anything, mock.Anything).Once()
+		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: fail}}, sn)
+		require.NoError(t, err)
+		assert.Equal(t, 2, len(res.Succeeded))
+		assert.Equal(t, 1, len(res.Failed))
+	})
+
+	t.Run("all succeed", func(t *testing.T) {
+		_, sn, err := tc.Account(accounts[0].Address)
+		require.NoError(t, err)
+		lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Once()
+		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: succeed}}, sn)
+		require.NoError(t, err)
+		assert.Equal(t, 3, len(res.Succeeded))
+		assert.Equal(t, 0, len(res.Failed))
+	})
+
+	t.Run("all fail", func(t *testing.T) {
+		_, sn, err := tc.Account(accounts[0].Address)
+		require.NoError(t, err)
+		lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Times(3)
+		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Times(2) // retry
+		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: fail}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
+		require.NoError(t, err)
+		assert.Equal(t, 0, len(res.Succeeded))
+		assert.Equal(t, 3, len(res.Failed))
+	})
+	lggr.AssertExpectations(t)
+}
 
 func TestTerraClient(t *testing.T) {
 	// Local only for now, could maybe run on CI if we install terrad there?
@@ -174,7 +277,7 @@ func TestTerraClient(t *testing.T) {
 
 	t.Run("gasprice", func(t *testing.T) {
 		rawMsg := wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
-		const expCodespace = errors.RootCodespace
+		const expCodespace = sdkerrors.RootCodespace
 		for _, tt := range []struct {
 			name     string
 			gasPrice msg.DecCoin
@@ -183,12 +286,12 @@ func TestTerraClient(t *testing.T) {
 			{
 				"zero",
 				msg.NewInt64DecCoin(gp.Denom, 0),
-				errors.ErrInsufficientFee.ABCICode(),
+				sdkerrors.ErrInsufficientFee.ABCICode(),
 			},
 			{
 				"below-min",
 				msg.NewDecCoinFromDec(gp.Denom, msg.NewDecWithPrec(1, 4)),
-				errors.ErrInsufficientFee.ABCICode(),
+				sdkerrors.ErrInsufficientFee.ABCICode(),
 			},
 			{
 				"min",

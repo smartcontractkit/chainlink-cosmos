@@ -4,6 +4,8 @@ import (
 	"context"
 	"math"
 	"net/http"
+	"regexp"
+	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -55,6 +57,7 @@ type Writer interface {
 	SignAndBroadcast(msgs []sdk.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Simulate(txBytes []byte) (*txtypes.SimulateResponse, error)
+	BatchSimulateUnsigned(msgs []SimMsg, sequence uint64) (*BatchSimResults, error)
 	SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error)
 	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error)
 }
@@ -244,6 +247,83 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 		return nil, err
 	}
 	return signedTx, nil
+}
+
+type SimMsg struct {
+	ID int64
+	Msg sdk.Msg
+}
+
+func getMsgs(simMsgs []SimMsg) []sdk.Msg {
+	var msgs []sdk.Msg
+	for _, simMsg := range simMsgs {
+		msgs = append(msgs, simMsg.Msg)
+	}
+	return msgs
+}
+
+type BatchSimResults struct {
+	Failed    []SimMsg
+	Succeeded []SimMsg
+}
+
+var failedMsgIndexRe, _ = regexp.Compile(`^.*failed to execute message; message index: (?P<Index>\d{1}):.*$`)
+
+func (tc *Client) failedMsgIndex(err error) (bool, int) {
+	if err == nil {
+		return false, 0
+	}
+	m := failedMsgIndexRe.FindStringSubmatch(err.Error())
+	if len(m) != 2 {
+		return false, 0
+	}
+	index, err := strconv.ParseInt(m[1], 10, 32)
+	if err != nil {
+		return false, 0
+	}
+	return true, int(index)
+}
+
+func (tc *Client) BatchSimulateUnsigned(msgs []SimMsg, sequence uint64) (*BatchSimResults, error) {
+	// Assumes at least one msg is present.
+	// If we fail to simulate the batch, remove the offending tx
+	// and try again. Repeat until we have a successful batch.
+	// Keep track of failures so we can mark them as errored.
+	// Note that the error from simulating indicates the first
+	// msg in the slice which failed (it simply loops over the msgs
+	// and simulates them one by one, breaking at the first failure).
+	var succeeded []SimMsg
+	var failed []SimMsg
+	toSim := msgs
+	for {
+		tc.log.Infof("simulating %v", toSim)
+		_, err := tc.SimulateUnsigned(getMsgs(toSim), sequence)
+		containsFailure, failureIndex := tc.failedMsgIndex(err)
+		if err != nil && !containsFailure {
+			return nil, err
+		}
+		if containsFailure {
+			failed = append(failed, toSim[failureIndex])
+			succeeded = append(succeeded, toSim[:failureIndex]...)
+			// remove offending msg and retry
+			if failureIndex == len(toSim)-1 {
+				// we're done, last one failed
+				tc.log.Errorf("simulation error found in last msg, failure %v, index %v, err %v", toSim[failureIndex], failureIndex, err)
+				break
+			}
+			// otherwise there may be more to sim
+			tc.log.Errorf("simulation error found in a msg, retrying with %v, failure %v, index %v, err %v", toSim[failureIndex+1:], toSim[failureIndex], failureIndex, err)
+			toSim = toSim[failureIndex+1:]
+		} else {
+			// we're done they all succeeded
+			succeeded = append(succeeded, toSim...)
+			break
+		}
+	}
+	return &BatchSimResults{
+		Failed:    failed,
+		Succeeded: succeeded,
+	}, nil
 }
 
 func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error) {
