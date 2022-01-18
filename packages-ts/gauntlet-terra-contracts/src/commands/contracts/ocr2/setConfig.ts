@@ -99,10 +99,11 @@ const getOffchainConfigInput = (rdd: any, contract: string): OffchainConfig => {
 }
 
 // Command Input is what the user needs to provide to the command to work
-const makeCommandInput = async (flags: any): Promise<CommandInput> => {
+const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
   const rdd = getRDD(flags.rdd)
-  const aggregator = rdd.contracts[flags.contract]
+  const contract = args[0]
+  const aggregator = rdd.contracts[contract]
   const aggregatorOperators: any[] = aggregator.oracles.map((o) => rdd.operators[o.operator])
   const signers = aggregatorOperators.map((o) => o.ocr2OnchainPublicKey[0].replace('ocr2on_terra_', ''))
   const transmitters = aggregatorOperators.map((o) => o.ocrNodeAddress[0])
@@ -110,7 +111,7 @@ const makeCommandInput = async (flags: any): Promise<CommandInput> => {
   return {
     signers,
     transmitters,
-    offchainConfig: getOffchainConfigInput(rdd, flags.contract),
+    offchainConfig: getOffchainConfigInput(rdd, contract),
     offchainConfigVersion: 2,
     onchainConfig: [],
   }

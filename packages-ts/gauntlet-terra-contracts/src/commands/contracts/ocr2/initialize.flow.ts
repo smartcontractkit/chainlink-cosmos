@@ -32,17 +32,17 @@ export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse>
         exec: this.showRddInstructions,
       },
       {
-        name: 'Set Config',
+        name: 'Set Billing',
         command: SetBilling,
         args: [this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))],
       },
       {
-        name: 'Set Payees',
+        name: 'Set Config',
         command: SetConfig,
         args: [this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))],
       },
       {
-        name: 'Set Billing',
+        name: 'Set Payees',
         command: SetPayees,
         args: [this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))],
       },

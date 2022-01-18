@@ -1,3 +1,4 @@
+import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { getRDD } from '../../../lib/rdd'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/wrapper'
 
@@ -14,10 +15,11 @@ type ContractInput = {
   }
 }
 
-const makeCommandInput = async (flags: any): Promise<CommandInput> => {
+const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
   const rdd = getRDD(flags.rdd)
-  const billingInfo = rdd.contracts[flags.contract]?.billing
+  const contract = args[0]
+  const billingInfo = rdd.contracts[contract]?.billing
   return {
     observationPaymentGjuels: billingInfo.observationPaymentGjuels,
     transmissionPaymentGjuels: billingInfo.transmissionPaymentGjuels,
@@ -28,8 +30,8 @@ const makeCommandInput = async (flags: any): Promise<CommandInput> => {
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
   return {
     config: {
-      recommended_gas_price: input.recommendedGasPrice,
-      observation_payment: input.observationPaymentGjuels,
+      recommended_gas_price: new BN(input.recommendedGasPrice).toNumber(),
+      observation_payment: new BN(input.observationPaymentGjuels).toNumber(),
     },
   }
 }

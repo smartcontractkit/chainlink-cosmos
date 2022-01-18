@@ -10,10 +10,11 @@ type ContractInput = {
   payees: string[][]
 }
 
-const makeCommandInput = async (flags: any): Promise<CommandInput> => {
+const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
   const rdd = getRDD(flags.rdd)
-  const aggregator = rdd.contracts[flags.contract]
+  const contract = args[0]
+  const aggregator = rdd.contracts[contract]
   const aggregatorOperators: string[] = aggregator.oracles.map((o) => o.operator)
   const payees = aggregatorOperators.map((operator) => rdd.operators[operator].adminAddress)
   const transmitters = aggregatorOperators.map((operator) => rdd.operators[operator].ocrNodeAddress[0])

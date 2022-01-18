@@ -1,6 +1,5 @@
 .direnv
 target/
-artifacts/
 tarpaulin-report.html
 
 # TS
@@ -10,3 +9,5 @@ dist
 .env
 flow-report.json
 .envrc
+
+packages-ts/gauntlet-terra-contracts/artifacts/bin

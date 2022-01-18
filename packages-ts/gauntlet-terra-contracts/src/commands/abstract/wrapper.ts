@@ -7,7 +7,7 @@ export interface AbstractInstruction<Input, ContractInput> {
     contract: string
     function: string
   }
-  makeInput: (flags: any) => Promise<Input>
+  makeInput: (flags: any, args: string[]) => Promise<Input>
   validateInput: (input: Input) => boolean
   makeContractInput: (input: Input) => Promise<ContractInput>
 }
@@ -23,7 +23,7 @@ export const instructionToCommand = (instruction: AbstractInstruction<any, any>)
     }
 
     execute = async (): Promise<Result<TransactionResponse>> => {
-      const commandInput = await instruction.makeInput(this.flags)
+      const commandInput = await instruction.makeInput(this.flags, this.args)
       instruction.validateInput(commandInput)
       const input = await instruction.makeContractInput(commandInput)
       const abstractCommand = await makeAbstractCommand(id, this.flags, this.args, input)
