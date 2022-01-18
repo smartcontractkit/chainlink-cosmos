@@ -105,7 +105,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 			tracker:  tracker,
 		}, nil
 	}
-	
+
 	senderAddr, err := cosmosSDK.AccAddressFromBech32(spec.TransmitterID)
 	if err != nil {
 		return nil, err
