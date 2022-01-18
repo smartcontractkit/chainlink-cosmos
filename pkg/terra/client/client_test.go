@@ -27,9 +27,9 @@ func TestErrMatch(t *testing.T) {
 }
 
 func TestBatchSim(t *testing.T) {
-	if os.Getenv("TEST_CLIENT") == "" {
-		t.Skip()
-	}
+	//if os.Getenv("TEST_CLIENT") == "" {
+	//	t.Skip()
+	//}
 	accounts, testdir := SetupLocalTerraNode(t, "42")
 	SetupLocalTerraNode(t, "42")
 	tendermintURL := "http://127.0.0.1:26657"
