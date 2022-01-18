@@ -15,6 +15,8 @@ pkgs.mkShell {
     # pkg-config
     # openssl
 
+    (pkgs.callPackage ./terrad.nix {})
+
     # Golang
     go_1_17
     gopls
