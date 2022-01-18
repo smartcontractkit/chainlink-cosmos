@@ -2,7 +2,6 @@ package terra
 
 import (
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/config"
 )
 
 type ChainSet interface {
@@ -14,7 +13,7 @@ type Chain interface {
 	Service
 
 	ID() string
-	Config() config.ChainCfg
+	Config() Config
 	MsgEnqueuer() MsgEnqueuer
 	Reader() client.Reader
 }
