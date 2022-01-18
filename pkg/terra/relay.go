@@ -94,10 +94,6 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	if err != nil {
 		return nil, err
 	}
-	senderAddr, err := cosmosSDK.AccAddressFromBech32(spec.TransmitterID)
-	if err != nil {
-		return nil, err
-	}
 
 	tracker := NewContractTracker(contractAddr, externalJobID.String(), chainReader, r.lggr)
 	digester := NewOffchainConfigDigester(spec.ChainID, contractAddr)
@@ -108,6 +104,11 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 			digester: digester,
 			tracker:  tracker,
 		}, nil
+	}
+	
+	senderAddr, err := cosmosSDK.AccAddressFromBech32(spec.TransmitterID)
+	if err != nil {
+		return nil, err
 	}
 
 	reportCodec := ReportCodec{}
