@@ -1,9 +1,12 @@
 package terra
 
 import (
+	"sync"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
 )
 
 var DefaultConfigSet = ConfigSet{
@@ -33,6 +36,9 @@ type Config interface {
 	FallbackGasPriceULuna() sdk.Dec
 	GasLimitMultiplier() float64
 	MaxMsgsPerBatch() int64
+
+	// Update sets new chain config values.
+	Update(db.ChainCfg)
 }
 
 // ConfigSet has configuration fields for default sets and testing.
@@ -45,35 +51,93 @@ type ConfigSet struct {
 	MaxMsgsPerBatch       int64
 }
 
-// Config returns a Config backed by this ConfigSet.
-func (s ConfigSet) Config() Config {
-	return &configSet{s}
+var _ Config = (*config)(nil)
+
+type config struct {
+	defaults ConfigSet
+	chain    db.ChainCfg
+	chainMu  sync.RWMutex
+	lggr     Logger
 }
 
-type configSet struct {
-	s ConfigSet
+// NewConfig returns a Config with defaults overridden by dbcfg.
+func NewConfig(dbcfg db.ChainCfg, defaults ConfigSet, lggr Logger) *config {
+	return &config{
+		defaults: defaults,
+		chain:    dbcfg,
+		lggr:     lggr,
+	}
 }
 
-func (c *configSet) BlocksUntilTxTimeout() int64 {
-	return c.s.BlocksUntilTxTimeout
+func (c *config) Update(dbcfg db.ChainCfg) {
+	c.chainMu.Lock()
+	c.chain = dbcfg
+	c.chainMu.Unlock()
 }
 
-func (c *configSet) ConfirmMaxPolls() int64 {
-	return c.s.ConfirmMaxPolls
+func (c *config) BlocksUntilTxTimeout() int64 {
+	c.chainMu.RLock()
+	ch := c.chain.BlocksUntilTxTimeout
+	c.chainMu.RUnlock()
+	if ch.Valid {
+		return ch.Int64
+	}
+	return c.defaults.BlocksUntilTxTimeout
 }
 
-func (c *configSet) ConfirmPollPeriod() time.Duration {
-	return c.s.ConfirmPollPeriod
+func (c *config) ConfirmMaxPolls() int64 {
+	c.chainMu.RLock()
+	ch := c.chain.ConfirmMaxPolls
+	c.chainMu.RUnlock()
+	if ch.Valid {
+		return ch.Int64
+	}
+	return c.defaults.ConfirmMaxPolls
 }
 
-func (c *configSet) FallbackGasPriceULuna() sdk.Dec {
-	return c.s.FallbackGasPriceULuna
+func (c *config) ConfirmPollPeriod() time.Duration {
+	c.chainMu.RLock()
+	ch := c.chain.ConfirmPollPeriod
+	c.chainMu.RUnlock()
+	if ch != nil {
+		return ch.Duration()
+	}
+	return c.defaults.ConfirmPollPeriod
 }
 
-func (c *configSet) GasLimitMultiplier() float64 {
-	return c.s.GasLimitMultiplier
+func (c *config) FallbackGasPriceULuna() sdk.Dec {
+	c.chainMu.RLock()
+	ch := c.chain.FallbackGasPriceULuna
+	c.chainMu.RUnlock()
+	if ch.Valid {
+		str := ch.String
+		dec, err := sdk.NewDecFromStr(str)
+		if err == nil {
+			return dec
+		}
+		c.lggr.Warnf(invalidFallbackMsg, "FallbackGasPriceULuna", str, c.defaults.FallbackGasPriceULuna, err)
+	}
+	return c.defaults.FallbackGasPriceULuna
 }
 
-func (c *configSet) MaxMsgsPerBatch() int64 {
-	return c.s.MaxMsgsPerBatch
+func (c *config) GasLimitMultiplier() float64 {
+	c.chainMu.RLock()
+	ch := c.chain.GasLimitMultiplier
+	c.chainMu.RUnlock()
+	if ch.Valid {
+		return ch.Float64
+	}
+	return c.defaults.GasLimitMultiplier
 }
+
+func (c *config) MaxMsgsPerBatch() int64 {
+	c.chainMu.RLock()
+	ch := c.chain.MaxMsgsPerBatch
+	c.chainMu.RUnlock()
+	if ch.Valid {
+		return ch.Int64
+	}
+	return c.defaults.MaxMsgsPerBatch
+}
+
+const invalidFallbackMsg = `Invalid value provided for %s, "%s" - falling back to default "%s": %v`
