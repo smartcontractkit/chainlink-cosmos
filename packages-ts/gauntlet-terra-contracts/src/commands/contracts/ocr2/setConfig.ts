@@ -53,13 +53,7 @@ const getOffchainConfigInput = (rdd: any, contract: string): OffchainConfig => {
   const aggregator = rdd.contracts[contract]
   const config = aggregator.config
 
-  const aggregatorOperators: any[] = aggregator.oracles
-    .map((o) => rdd.operators[o.operator])
-    .sort((a, b) => {
-      if (a.ocr2OnchainPublicKey[0] > b.ocr2OnchainPublicKey[0]) return 1
-      if (a.ocr2OnchainPublicKey[0] < b.ocr2OnchainPublicKey[0]) return -1
-      return 0
-    })
+  const aggregatorOperators: any[] = aggregator.oracles.map((o) => rdd.operators[o.operator])
   const operatorsPublicKeys = aggregatorOperators.map((o) => o.ocr2OffchainPublicKey[0].replace('ocr2off_terra_', ''))
   const operatorsPeerIds = aggregatorOperators.map((o) => o.peerId[0])
   const operatorConfigPublicKeys = aggregatorOperators.map((o) =>
