@@ -5,9 +5,9 @@ import { CATEGORIES, CW20_BASE_CODE_IDs } from '../../../lib/constants'
 
 export default class DeployLink extends TerraCommand {
   static description = 'Deploys LINK token contract'
-  static examples = [`yarn gauntlet deploy:link --network=bombay-testnet`]
+  static examples = [`yarn gauntlet token:deploy --network=bombay-testnet`]
 
-  static id = 'deploy:link'
+  static id = 'token:deploy'
   static category = CATEGORIES.LINK
 
   static flags = {
