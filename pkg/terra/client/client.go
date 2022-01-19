@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
-	"net/http"
 	"regexp"
 	"strconv"
 	"time"
@@ -39,7 +38,6 @@ type ReaderWriter interface {
 
 // Only depends on the cosmos sdk types.
 type Reader interface {
-	GasPrice(fallback sdk.DecCoin) sdk.DecCoin
 	Account(address sdk.AccAddress) (uint64, uint64, error)
 	ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
 	TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error)
@@ -75,7 +73,6 @@ type Logger interface {
 }
 
 type Client struct {
-	fcdURL                  string
 	chainID                 string
 	clientCtx               cosmosclient.Context
 	cosmosServiceClient     txtypes.ServiceClient
@@ -92,7 +89,6 @@ type Client struct {
 
 func NewClient(chainID string,
 	tendermintURL string,
-	fcdURL string,
 	requestTimeoutSeconds int,
 	lggr Logger,
 ) (*Client, error) {
@@ -134,7 +130,6 @@ func NewClient(chainID string,
 		bankClient:              bankClient,
 		clientCtx:               clientCtx,
 		timeout:                 time.Duration(requestTimeoutSeconds * int(time.Second)),
-		fcdURL:                  fcdURL,
 		log:                     lggr,
 	}, nil
 }
@@ -150,37 +145,6 @@ func (c *Client) Account(addr sdk.AccAddress) (uint64, uint64, error) {
 		return 0, 0, err
 	}
 	return a.GetAccountNumber(), a.GetSequence(), nil
-}
-
-func (c *Client) GasPrice(fallback msg.DecCoin) msg.DecCoin {
-	url := fmt.Sprintf("%s%s", c.fcdURL, "/v1/txs/gas_prices")
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		c.log.Errorf("error querying %s, err %v", url, err)
-		return fallback
-	}
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		c.log.Errorf("error reading body, err %v", url, err)
-		return fallback
-	}
-	defer resp.Body.Close()
-	var prices struct {
-		Uluna string `json:"uluna"`
-	}
-	if err := json.Unmarshal(b, &prices); err != nil {
-		c.log.Errorf("error unmarshalling, err %v", url, err)
-		return fallback
-	}
-	p, err := msg.NewDecFromStr(prices.Uluna)
-	if err != nil {
-		c.log.Errorf("error parsing, err %v", url, err)
-		return fallback
-	}
-	return msg.NewDecCoinFromDec("uluna", p)
 }
 
 func (c *Client) ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {

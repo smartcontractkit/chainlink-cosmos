@@ -27,9 +27,7 @@ func TestErrMatch(t *testing.T) {
 
 func TestBatchSim(t *testing.T) {
 	accounts, testdir := SetupLocalTerraNode(t, "42")
-	SetupLocalTerraNode(t, "42")
 	tendermintURL := "http://127.0.0.1:26657"
-	fcdURL := "https://fcd.terra.dev/" // TODO we can mock this
 
 	lggr := new(mocks.Logger)
 	lggr.Test(t)
@@ -37,10 +35,10 @@ func TestBatchSim(t *testing.T) {
 	tc, err := NewClient(
 		"42",
 		tendermintURL,
-		fcdURL,
 		10,
 		lggr)
 	require.NoError(t, err)
+
 	contract := DeployTestContract(t, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 	var succeed sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), ExecuteMsg: []byte(`{"reset":{"count":5}}`)}
 	var fail sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), ExecuteMsg: []byte(`{"blah":{"count":5}}`)}
@@ -122,10 +120,6 @@ func TestTerraClient(t *testing.T) {
 	// Local only for now, could maybe run on CI if we install terrad there?
 	accounts, testdir := SetupLocalTerraNode(t, "42")
 	tendermintURL := "http://127.0.0.1:26657"
-	fcdURL := "https://fcd.terra.dev/" // TODO we can mock this
-
-	// https://lcd.terra.dev/swagger/#/
-	// https://fcd.terra.dev/swagger
 	lggr := new(mocks.Logger)
 	lggr.Test(t)
 	lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Maybe()
@@ -133,140 +127,141 @@ func TestTerraClient(t *testing.T) {
 	tc, err := NewClient(
 		"42",
 		tendermintURL,
-		fcdURL,
 		10,
 		lggr)
 	require.NoError(t, err)
+	gpe := NewFixedGasPriceEstimator(sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("0.01")))
 	contract := DeployTestContract(t, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 
-	// Check gas price works
-	fgp := sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("0.01"))
-	require.NoError(t, err)
-	gp := tc.GasPrice(fgp)
-	t.Log("Recommended:", gp)
-	// Should not use fallback
-	assert.NotEqual(t, gp.String(), "0.01uluna")
-	b, err := tc.Balance(accounts[1].Address, "uluna")
-	require.NoError(t, err)
-	assert.Equal(t, "100000000", b.Amount.String())
+	t.Run("send tx between accounts", func(t *testing.T) {
+		// Assert balance before
+		b, err := tc.Balance(accounts[1].Address, "uluna")
+		require.NoError(t, err)
+		assert.Equal(t, "100000000", b.Amount.String())
 
-	tx, err := tc.Tx("1234")
-	require.Error(t, err)
-	t.Log("invalid tx", tx, err)
-	// Fund a second account
-	an, sn, err := tc.Account(accounts[0].Address)
-	require.NoError(t, err)
-	fund := msg.NewMsgSend(accounts[0].Address, accounts[1].Address, msg.NewCoins(msg.NewInt64Coin("uluna", 1)))
-	gasLimit, err := tc.SimulateUnsigned([]msg.Msg{fund}, sn)
-	require.NoError(t, err)
-	txBytes, err := tc.CreateAndSign([]msg.Msg{fund}, an, sn, gasLimit.GasInfo.GasUsed, DefaultGasLimitMultiplier, tc.GasPrice(fgp), accounts[0].PrivateKey, 0)
-	require.NoError(t, err)
-	_, err = tc.Simulate(txBytes)
-	require.NoError(t, err)
-	resp, err := tc.Broadcast(txBytes, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
-	require.NoError(t, err)
+		// Send a uluna from one account to another and ensure balances update
+		an, sn, err := tc.Account(accounts[0].Address)
+		require.NoError(t, err)
+		fund := msg.NewMsgSend(accounts[0].Address, accounts[1].Address, msg.NewCoins(msg.NewInt64Coin("uluna", 1)))
+		gasLimit, err := tc.SimulateUnsigned([]msg.Msg{fund}, sn)
+		require.NoError(t, err)
+		txBytes, err := tc.CreateAndSign([]msg.Msg{fund}, an, sn, gasLimit.GasInfo.GasUsed, DefaultGasLimitMultiplier, gpe.MustGasPrice([]string{"uluna"})[0], accounts[0].PrivateKey, 0)
+		require.NoError(t, err)
+		_, err = tc.Simulate(txBytes)
+		require.NoError(t, err)
+		resp, err := tc.Broadcast(txBytes, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		require.NoError(t, err)
+		require.Equal(t, types.CodeTypeOK, resp.TxResponse.Code)
 
-	require.Equal(t, types.CodeTypeOK, resp.TxResponse.Code)
+		// Note even the blocking command doesn't let you query for the tx right away
+		time.Sleep(1 * time.Second)
 
-	// Note even the blocking command doesn't let you query for the tx right away
-	time.Sleep(1 * time.Second)
+		// Assert balance changed
+		b, err = tc.Balance(accounts[1].Address, "uluna")
+		require.NoError(t, err)
+		assert.Equal(t, "100000001", b.Amount.String())
 
-	b, err = tc.Balance(accounts[1].Address, "uluna")
-	require.NoError(t, err)
-	assert.Equal(t, "100000001", b.Amount.String())
+		// Invalid tx should error
+		_, err = tc.Tx("1234")
+		require.Error(t, err)
 
-	// Ensure we can read back the tx with Query
-	tr, err := tc.TxsEvents([]string{fmt.Sprintf("tx.height=%v", resp.TxResponse.Height)})
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(tr.TxResponses))
-	assert.Equal(t, resp.TxResponse.TxHash, tr.TxResponses[0].TxHash)
-	// And also Tx
-	getTx, err := tc.Tx(resp.TxResponse.TxHash)
-	require.NoError(t, err)
-	assert.Equal(t, getTx.TxResponse.TxHash, resp.TxResponse.TxHash)
+		// Ensure we can read back the tx with Query
+		tr, err := tc.TxsEvents([]string{fmt.Sprintf("tx.height=%v", resp.TxResponse.Height)})
+		require.NoError(t, err)
+		assert.Equal(t, 1, len(tr.TxResponses))
+		assert.Equal(t, resp.TxResponse.TxHash, tr.TxResponses[0].TxHash)
+		// And also Tx
+		getTx, err := tc.Tx(resp.TxResponse.TxHash)
+		require.NoError(t, err)
+		assert.Equal(t, getTx.TxResponse.TxHash, resp.TxResponse.TxHash)
+	})
 
-	// Check getting the height works
-	latestBlock, err := tc.LatestBlock()
-	require.NoError(t, err)
-	assert.True(t, latestBlock.Block.Header.Height > 1)
+	t.Run("can get height", func(t *testing.T) {
+		// Check getting the height works
+		latestBlock, err := tc.LatestBlock()
+		require.NoError(t, err)
+		assert.True(t, latestBlock.Block.Header.Height > 1)
+	})
 
-	// Query initial contract state
-	count, err := tc.ContractStore(
-		contract,
-		[]byte(`{"get_count":{}}`),
-	)
-	require.NoError(t, err)
-	assert.Equal(t, `{"count":0}`, string(count))
-	// Query invalid state should give an error
-	count, err = tc.ContractStore(
-		contract,
-		[]byte(`{"blah":{}}`),
-	)
-	require.Error(t, err)
-	require.Nil(t, count)
+	t.Run("contract event querying", func(t *testing.T) {
+		// Query initial contract state
+		count, err := tc.ContractStore(
+			contract,
+			[]byte(`{"get_count":{}}`),
+		)
+		require.NoError(t, err)
+		assert.Equal(t, `{"count":0}`, string(count))
+		// Query invalid state should give an error
+		count, err = tc.ContractStore(
+			contract,
+			[]byte(`{"blah":{}}`),
+		)
+		require.Error(t, err)
+		require.Nil(t, count)
 
-	// Change the contract state
-	rawMsg := wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
-	an, sn, err = tc.Account(accounts[0].Address)
-	require.NoError(t, err)
-	resp1, err := tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, tc.GasPrice(fgp), accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
-	require.NoError(t, err)
-	time.Sleep(1 * time.Second)
-	// Do it again so there are multiple executions
-	rawMsg = wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":4}}`), sdk.Coins{})
-	an, sn, err = tc.Account(accounts[0].Address)
-	require.NoError(t, err)
-	_, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, tc.GasPrice(fgp), accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
-	require.NoError(t, err)
-	time.Sleep(1 * time.Second)
+		// Change the contract state
+		rawMsg := wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
+		an, sn, err := tc.Account(accounts[0].Address)
+		require.NoError(t, err)
+		resp1, err := tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, gpe.MustGasPrice([]string{"uluna"})[0], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		require.NoError(t, err)
+		time.Sleep(1 * time.Second)
+		// Do it again so there are multiple executions
+		rawMsg = wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":4}}`), sdk.Coins{})
+		an, sn, err = tc.Account(accounts[0].Address)
+		require.NoError(t, err)
+		_, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, gpe.MustGasPrice([]string{"uluna"})[0], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		require.NoError(t, err)
+		time.Sleep(1 * time.Second)
 
-	// Observe changed contract state
-	count, err = tc.ContractStore(
-		contract,
-		[]byte(`{"get_count":{}}`),
-	)
-	require.NoError(t, err)
-	assert.Equal(t, `{"count":4}`, string(count))
+		// Observe changed contract state
+		count, err = tc.ContractStore(
+			contract,
+			[]byte(`{"get_count":{}}`),
+		)
+		require.NoError(t, err)
+		assert.Equal(t, `{"count":4}`, string(count))
 
-	// Check events querying works
-	// TxEvents sorts in a descending manner, so latest txes are first
-	ev, err := tc.TxsEvents([]string{fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())})
-	require.NoError(t, err)
-	require.Equal(t, 2, len(ev.TxResponses))
-	foundCount := false
-	foundContract := false
-	for _, event := range ev.TxResponses[0].Logs[0].Events {
-		if event.Type != "wasm-reset" {
-			continue
-		}
-		for _, attr := range event.Attributes {
-			if attr.Key == "count" {
-				assert.Equal(t, "4", attr.Value)
-				foundCount = true
+		// Check events querying works
+		// TxEvents sorts in a descending manner, so latest txes are first
+		ev, err := tc.TxsEvents([]string{fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())})
+		require.NoError(t, err)
+		require.Equal(t, 2, len(ev.TxResponses))
+		foundCount := false
+		foundContract := false
+		for _, event := range ev.TxResponses[0].Logs[0].Events {
+			if event.Type != "wasm-reset" {
+				continue
 			}
-			if attr.Key == "contract_address" {
-				assert.Equal(t, contract.String(), attr.Value)
-				foundContract = true
-			}
-		}
-	}
-	assert.True(t, foundCount)
-	assert.True(t, foundContract)
-
-	// Ensure the height filtering works
-	ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", resp1.TxResponse.Height+1), fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())})
-	require.NoError(t, err)
-	require.Equal(t, 1, len(ev.TxResponses))
-	ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height=%d", resp1.TxResponse.Height), fmt.Sprintf("wasm-reset.contract_address='%s'", contract)})
-	require.NoError(t, err)
-	require.Equal(t, 1, len(ev.TxResponses))
-	for _, ev := range ev.TxResponses[0].Logs[0].Events {
-		if ev.Type == "wasm-reset" {
-			for _, attr := range ev.Attributes {
-				t.Log(attr.Key, attr.Value)
+			for _, attr := range event.Attributes {
+				if attr.Key == "count" {
+					assert.Equal(t, "4", attr.Value)
+					foundCount = true
+				}
+				if attr.Key == "contract_address" {
+					assert.Equal(t, contract.String(), attr.Value)
+					foundContract = true
+				}
 			}
 		}
-	}
+		assert.True(t, foundCount)
+		assert.True(t, foundContract)
+
+		// Ensure the height filtering works
+		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", resp1.TxResponse.Height+1), fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())})
+		require.NoError(t, err)
+		require.Equal(t, 1, len(ev.TxResponses))
+		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height=%d", resp1.TxResponse.Height), fmt.Sprintf("wasm-reset.contract_address='%s'", contract)})
+		require.NoError(t, err)
+		require.Equal(t, 1, len(ev.TxResponses))
+		for _, ev := range ev.TxResponses[0].Logs[0].Events {
+			if ev.Type == "wasm-reset" {
+				for _, attr := range ev.Attributes {
+					t.Log(attr.Key, attr.Value)
+				}
+			}
+		}
+	})
 
 	t.Run("gasprice", func(t *testing.T) {
 		rawMsg := wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
@@ -278,12 +273,12 @@ func TestTerraClient(t *testing.T) {
 		}{
 			{
 				"zero",
-				msg.NewInt64DecCoin(gp.Denom, 0),
+				msg.NewInt64DecCoin("uluna", 0),
 				sdkerrors.ErrInsufficientFee.ABCICode(),
 			},
 			{
 				"below-min",
-				msg.NewDecCoinFromDec(gp.Denom, msg.NewDecWithPrec(1, 4)),
+				msg.NewDecCoinFromDec("uluna", msg.NewDecWithPrec(1, 4)),
 				sdkerrors.ErrInsufficientFee.ABCICode(),
 			},
 			{
@@ -293,15 +288,15 @@ func TestTerraClient(t *testing.T) {
 			},
 			{
 				"recommended",
-				gp,
+				gpe.MustGasPrice([]string{"uluna"})[0],
 				0,
 			},
 		} {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Log("Gas price:", tt.gasPrice)
-				an, sn, err = tc.Account(accounts[0].Address)
+				an, sn, err := tc.Account(accounts[0].Address)
 				require.NoError(t, err)
-				resp, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, tt.gasPrice, accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+				resp, err := tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, tt.gasPrice, accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 				if tt.expCode == 0 {
 					require.NoError(t, err)
 				} else {
