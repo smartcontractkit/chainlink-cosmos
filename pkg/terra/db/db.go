@@ -32,7 +32,6 @@ type Node struct {
 
 type ChainCfg struct {
 	BlocksUntilTxTimeout  null.Int
-	ConfirmMaxPolls       null.Int
 	ConfirmPollPeriod     *models.Duration
 	FallbackGasPriceULuna null.String
 	GasLimitMultiplier    null.Float
@@ -77,7 +76,7 @@ type Msg struct {
 	ChainID    string `db:"terra_chain_id"`
 	ContractID string
 	State      State
-	Raw        []byte
+	Raw        []byte // serialized msg
 	TxHash     *string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time

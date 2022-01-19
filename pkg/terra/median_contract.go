@@ -18,9 +18,7 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
-const (
-	BlockRate = 5 // 1 block/5 seconds
-)
+const BlockRateSeconds = 8 // 1 block/8 seconds
 
 // MedianContract interface
 var _ median.MedianContract = (*MedianContract)(nil)
@@ -103,7 +101,7 @@ func (ct *MedianContract) LatestRoundRequested(ctx context.Context, lookback tim
 		err = blkErr
 		return
 	}
-	blockNum := uint64(latestBlock.Block.Header.Height) - uint64(lookback.Seconds())/BlockRate
+	blockNum := uint64(latestBlock.Block.Header.Height) - uint64(lookback.Seconds())/BlockRateSeconds
 	res, err := ct.chainReader.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", blockNum+1), fmt.Sprintf("wasm-new_round.contract_address='%s'", ct.address.String())})
 	if err != nil {
 		return

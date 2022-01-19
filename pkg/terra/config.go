@@ -13,9 +13,8 @@ var DefaultConfigSet = ConfigSet{
 	// ~8s per block, so ~80s until we give up on the tx getting confirmed
 	// Anecdotally it appears anything more than 4 blocks would be an extremely long wait.
 	BlocksUntilTxTimeout:  10,
-	ConfirmMaxPolls:       100,
 	ConfirmPollPeriod:     time.Second,
-	FallbackGasPriceULuna: sdk.MustNewDecFromStr("0.01"),
+	FallbackGasPriceULuna: sdk.MustNewDecFromStr("0.015"),
 	GasLimitMultiplier:    1.5,
 	// The max gas limit per block is 1_000_000_000
 	// https://github.com/terra-money/core/blob/d6037b9a12c8bf6b09fe861c8ad93456aac5eebb/app/legacy/migrate.go#L69.
@@ -24,14 +23,13 @@ var DefaultConfigSet = ConfigSet{
 	// There appears to be no gas limit per tx, only per block, so theoretically
 	// we could include 1000 msgs which use up to 1M gas.
 	// To be conservative and since the number of messages we'd
-	// have in a batch on average roughly correponds to the number of terra ocr jobs we're running (do not expect more than 100),
+	// have in a batch on average roughly corresponds to the number of terra ocr jobs we're running (do not expect more than 100),
 	// we can set a max msgs per batch of 100.
 	MaxMsgsPerBatch: 100,
 }
 
 type Config interface {
 	BlocksUntilTxTimeout() int64
-	ConfirmMaxPolls() int64
 	ConfirmPollPeriod() time.Duration
 	FallbackGasPriceULuna() sdk.Dec
 	GasLimitMultiplier() float64
@@ -44,7 +42,6 @@ type Config interface {
 // ConfigSet has configuration fields for default sets and testing.
 type ConfigSet struct {
 	BlocksUntilTxTimeout  int64
-	ConfirmMaxPolls       int64
 	ConfirmPollPeriod     time.Duration
 	FallbackGasPriceULuna sdk.Dec
 	GasLimitMultiplier    float64
@@ -83,16 +80,6 @@ func (c *config) BlocksUntilTxTimeout() int64 {
 		return ch.Int64
 	}
 	return c.defaults.BlocksUntilTxTimeout
-}
-
-func (c *config) ConfirmMaxPolls() int64 {
-	c.chainMu.RLock()
-	ch := c.chain.ConfirmMaxPolls
-	c.chainMu.RUnlock()
-	if ch.Valid {
-		return ch.Int64
-	}
-	return c.defaults.ConfirmMaxPolls
 }
 
 func (c *config) ConfirmPollPeriod() time.Duration {

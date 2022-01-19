@@ -19,7 +19,6 @@ func TestConfig(t *testing.T) {
 	lggr.On("Warnf", mock.Anything, "FallbackGasPriceULuna", "not-a-number", mock.Anything, mock.Anything).Once()
 	cfg := NewConfig(db.ChainCfg{}, def, lggr)
 	assert.Equal(t, def.BlocksUntilTxTimeout, cfg.BlocksUntilTxTimeout())
-	assert.Equal(t, def.ConfirmMaxPolls, cfg.ConfirmMaxPolls())
 	assert.Equal(t, def.ConfirmPollPeriod, cfg.ConfirmPollPeriod())
 	assert.Equal(t, def.FallbackGasPriceULuna, cfg.FallbackGasPriceULuna())
 	assert.Equal(t, def.GasLimitMultiplier, cfg.GasLimitMultiplier())
@@ -31,7 +30,6 @@ func TestConfig(t *testing.T) {
 	}
 	cfg.Update(updated)
 	assert.Equal(t, updated.BlocksUntilTxTimeout.Int64, cfg.BlocksUntilTxTimeout())
-	assert.Equal(t, def.ConfirmMaxPolls, cfg.ConfirmMaxPolls())
 	assert.Equal(t, def.ConfirmPollPeriod, cfg.ConfirmPollPeriod())
 	assert.Equal(t, sdk.MustNewDecFromStr(updated.FallbackGasPriceULuna.String), cfg.FallbackGasPriceULuna())
 	assert.Equal(t, def.GasLimitMultiplier, cfg.GasLimitMultiplier())
