@@ -2,14 +2,17 @@ package client
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"regexp"
 	"strconv"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/smartcontractkit/terra.go/tx"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 
 	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -20,17 +23,12 @@ import (
 	"github.com/smartcontractkit/terra.go/msg"
 	wasmtypes "github.com/terra-money/core/x/wasm/types"
 
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/pkg/errors"
 	"github.com/terra-money/core/app"
 
-	"time"
-
 	"github.com/smartcontractkit/terra.go/key"
+	"github.com/smartcontractkit/terra.go/tx"
 )
 
 //go:generate mockery --name ReaderWriter --output ./mocks/
@@ -57,7 +55,7 @@ type Writer interface {
 	SignAndBroadcast(msgs []sdk.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Simulate(txBytes []byte) (*txtypes.SimulateResponse, error)
-	BatchSimulateUnsigned(msgs []SimMsg, sequence uint64) (*BatchSimResults, error)
+	BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSimResults, error)
 	SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error)
 	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error)
 }
@@ -257,17 +255,27 @@ type SimMsg struct {
 	Msg sdk.Msg
 }
 
-func getMsgs(simMsgs []SimMsg) []sdk.Msg {
-	var msgs []sdk.Msg
-	for _, simMsg := range simMsgs {
-		msgs = append(msgs, simMsg.Msg)
+type SimMsgs []SimMsg
+
+func (simMsgs SimMsgs) GetMsgs() []sdk.Msg {
+	msgs := make([]sdk.Msg, len(simMsgs))
+	for i := range simMsgs {
+		msgs[i] = simMsgs[i].Msg
 	}
 	return msgs
 }
 
+func (simMsgs SimMsgs) GetSimMsgsIDs() []int64 {
+	ids := make([]int64, len(simMsgs))
+	for i := range simMsgs {
+		ids[i] = simMsgs[i].ID
+	}
+	return ids
+}
+
 type BatchSimResults struct {
-	Failed    []SimMsg
-	Succeeded []SimMsg
+	Failed    SimMsgs
+	Succeeded SimMsgs
 }
 
 var failedMsgIndexRe, _ = regexp.Compile(`^.*failed to execute message; message index: (?P<Index>\d{1}):.*$`)
@@ -288,7 +296,7 @@ func (tc *Client) failedMsgIndex(err error) (bool, int) {
 	return true, int(index)
 }
 
-func (tc *Client) BatchSimulateUnsigned(msgs []SimMsg, sequence uint64) (*BatchSimResults, error) {
+func (tc *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSimResults, error) {
 	// Assumes at least one msg is present.
 	// If we fail to simulate the batch, remove the offending tx
 	// and try again. Repeat until we have a successful batch.
@@ -301,7 +309,7 @@ func (tc *Client) BatchSimulateUnsigned(msgs []SimMsg, sequence uint64) (*BatchS
 	toSim := msgs
 	for {
 		tc.log.Infof("simulating %v", toSim)
-		_, err := tc.SimulateUnsigned(getMsgs(toSim), sequence)
+		_, err := tc.SimulateUnsigned(toSim.GetMsgs(), sequence)
 		containsFailure, failureIndex := tc.failedMsgIndex(err)
 		if err != nil && !containsFailure {
 			return nil, err

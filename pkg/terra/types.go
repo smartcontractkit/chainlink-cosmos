@@ -2,6 +2,9 @@ package terra
 
 import (
 	"fmt"
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
+	"github.com/smartcontractkit/terra.go/msg"
 	"strings"
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
@@ -62,4 +65,32 @@ type LatestTransmissionDetails struct {
 type LatestConfigDigestAndEpoch struct {
 	ConfigDigest types.ConfigDigest `json:"config_digest"`
 	Epoch        uint32             `json:"epoch"`
+}
+
+type Msg struct {
+	db.Msg
+
+	// In memory only
+	ExecuteContract *msg.ExecuteContract
+}
+
+type Msgs []Msg
+
+func (tms Msgs) GetSimMsgs() client.SimMsgs {
+	var msgs []client.SimMsg
+	for i := range tms {
+		msgs = append(msgs, client.SimMsg{
+			ID:  tms[i].ID,
+			Msg: tms[i].ExecuteContract,
+		})
+	}
+	return msgs
+}
+
+func (tms Msgs) GetIDs() []int64 {
+	ids := make([]int64, len(tms))
+	for i := range tms {
+		ids[i] = tms[i].ID
+	}
+	return ids
 }

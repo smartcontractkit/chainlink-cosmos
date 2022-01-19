@@ -72,11 +72,11 @@ func (_m *ReaderWriter) Balance(addr types.AccAddress, denom string) (*types.Coi
 }
 
 // BatchSimulateUnsigned provides a mock function with given fields: msgs, sequence
-func (_m *ReaderWriter) BatchSimulateUnsigned(msgs []client.SimMsg, sequence uint64) (*client.BatchSimResults, error) {
+func (_m *ReaderWriter) BatchSimulateUnsigned(msgs client.SimMsgs, sequence uint64) (*client.BatchSimResults, error) {
 	ret := _m.Called(msgs, sequence)
 
 	var r0 *client.BatchSimResults
-	if rf, ok := ret.Get(0).(func([]client.SimMsg, uint64) *client.BatchSimResults); ok {
+	if rf, ok := ret.Get(0).(func(client.SimMsgs, uint64) *client.BatchSimResults); ok {
 		r0 = rf(msgs, sequence)
 	} else {
 		if ret.Get(0) != nil {
@@ -85,7 +85,7 @@ func (_m *ReaderWriter) BatchSimulateUnsigned(msgs []client.SimMsg, sequence uin
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func([]client.SimMsg, uint64) error); ok {
+	if rf, ok := ret.Get(1).(func(client.SimMsgs, uint64) error); ok {
 		r1 = rf(msgs, sequence)
 	} else {
 		r1 = ret.Error(1)
