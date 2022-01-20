@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Response};
+use cosmwasm_std::{Addr, Binary, Response};
 use cosmwasm_vm::testing::{
     execute, instantiate, mock_env, mock_info, mock_instance, MockApi, MockQuerier, MockStorage,
 };
@@ -66,7 +66,7 @@ fn init_works() {
 
     let signers = keypairs
         .iter()
-        .map(|sk| VerificationKeyBytes::from(sk).as_ref().to_vec())
+        .map(|sk| Binary(VerificationKeyBytes::from(sk).as_ref().to_vec()))
         .collect();
 
     let transmitters = keypairs
@@ -79,9 +79,9 @@ fn init_works() {
         signers,
         transmitters: transmitters.clone(),
         f,
-        onchain_config: vec![],
+        onchain_config: Binary(vec![]),
         offchain_config_version: 1,
-        offchain_config: vec![4, 5, 6],
+        offchain_config: Binary(vec![4, 5, 6]),
     };
 
     let execute_info = mock_info(OWNER, &[]);
