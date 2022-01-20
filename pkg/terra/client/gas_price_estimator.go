@@ -6,33 +6,32 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
-	"strings"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-type GasPriceEstimator interface {
-	MustGasPrice(denom []string) []sdk.DecCoin
+type GasPricesEstimator interface {
+	GasPrices() map[string]sdk.DecCoin
 }
 
-var _ GasPriceEstimator = (*FixedGasPriceEstimator)(nil)
+var _ GasPricesEstimator = (*FixedGasPriceEstimator)(nil)
 
 type FixedGasPriceEstimator struct {
-	gasPrice sdk.DecCoin
+	gasPrices map[string]sdk.DecCoin
 }
 
-func NewFixedGasPriceEstimator(price sdk.DecCoin) *FixedGasPriceEstimator {
-	return &FixedGasPriceEstimator{gasPrice: price}
+func NewFixedGasPriceEstimator(prices map[string]sdk.DecCoin) *FixedGasPriceEstimator {
+	return &FixedGasPriceEstimator{gasPrices: prices}
 }
 
-func (gpe *FixedGasPriceEstimator) MustGasPrice(denoms []string) []sdk.DecCoin {
-	return []sdk.DecCoin{gpe.gasPrice}
+func (gpe *FixedGasPriceEstimator) GasPrices() map[string]sdk.DecCoin {
+	return gpe.gasPrices
 }
 
 type FCDGasPriceEstimator struct {
 	fcdURL url.URL
-	prices prices
+	prices map[string]sdk.DecCoin
 	client http.Client
 	lggr   Logger
 }
@@ -45,11 +44,11 @@ func NewFCDGasPriceEstimator(fcdURLRaw string, requestTimeout time.Duration, lgg
 	}
 	client := http.Client{Timeout: requestTimeout}
 	gpe := FCDGasPriceEstimator{fcdURL: *fcdURL, client: client, lggr: lggr}
-	initialGasPrice, err := gpe.request()
+	initialGasPrices, err := gpe.request()
 	if err != nil {
 		return nil, err
 	}
-	gpe.prices = *initialGasPrice
+	gpe.prices = initialGasPrices
 	return &gpe, nil
 }
 
@@ -77,7 +76,7 @@ type prices struct {
 	Uhkd  string `json:"uhkd"`
 }
 
-func (gpe *FCDGasPriceEstimator) request() (*prices, error) {
+func (gpe *FCDGasPriceEstimator) request() (map[string]sdk.DecCoin, error) {
 	req, _ := http.NewRequest(http.MethodGet, gpe.fcdURL.String(), nil)
 	resp, err := gpe.client.Do(req)
 	if err != nil {
@@ -94,35 +93,24 @@ func (gpe *FCDGasPriceEstimator) request() (*prices, error) {
 		gpe.lggr.Errorf("error unmarshalling, err %v", gpe.fcdURL.RequestURI(), err)
 		return nil, err
 	}
-	return &prices, nil
+	results := make(map[string]sdk.DecCoin)
+	v := reflect.ValueOf(prices)
+	for i := 0; i < v.NumField(); i++ {
+		name, value := v.Type().Field(i).Name, v.Field(i).String()
+		amount, err := sdk.NewDecFromStr(value)
+		if err != nil {
+			return nil, err
+		}
+		results[name] = sdk.NewDecCoinFromDec(name, amount)
+	}
+	return results, nil
 }
 
-// Will skip invalid denominations
-func (gpe *FCDGasPriceEstimator) MustGasPrice(denoms []string) []sdk.DecCoin {
-	var gasPrices = gpe.prices
+func (gpe *FCDGasPriceEstimator) GasPrices() map[string]sdk.DecCoin {
 	latestGasPrice, err := gpe.request()
 	if err != nil {
-		gasPrices = *latestGasPrice
+		gpe.lggr.Warnf("unable get latest prices, using last cached value", "cached value", gpe.prices, "err", err)
+		return gpe.prices
 	}
-	var res []sdk.DecCoin
-	for _, denom := range denoms {
-		if err := sdk.ValidateDenom(denom); err != nil {
-			gpe.lggr.Errorf("invalid denom %v, skipping", err)
-			continue
-		}
-		field := reflect.ValueOf(gasPrices).FieldByName(strings.Title(denom))
-		if !field.IsValid() {
-			// Would mean there is a mismatch between the api and the sdk support denoms
-			// Should never happen because of our initial query
-			gpe.lggr.Errorf("unexpected error, mismatch between denoms and fcd api", err)
-			continue
-		}
-		gasPriceAmount, err := sdk.NewDecFromStr(field.String())
-		if err != nil {
-			gpe.lggr.Errorf("unexpected error, unable to parse gas price", err)
-			continue
-		}
-		res = append(res, sdk.NewDecCoinFromDec(denom, gasPriceAmount))
-	}
-	return res
+	return latestGasPrice
 }
