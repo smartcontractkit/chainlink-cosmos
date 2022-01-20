@@ -66,7 +66,7 @@ func New(ctx *pulumi.Context) (Terrad, error) {
 
 	chainID := config.Require(ctx, "CL-RELAY_CHAINID")
 	return Terrad{
-		url:      config.Require(ctx, "CL-RELAY_HTTP"),
+		url:      config.Require(ctx, "CL-TENDERMINT_URL"),
 		chainID:  chainID,
 		keyID:    keyID,
 		addr:     deployerAddr.Address,
