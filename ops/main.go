@@ -28,9 +28,10 @@ func main() {
 
 func RelayConfig(ctx *pulumi.Context, addresses map[int]string) (map[string]string, error) {
 	return map[string]string{
-		"nodeEndpointHTTP": config.Require(ctx, "CL-RELAY_HTTP"),
-		"nodeEndpointWS":   config.Require(ctx, "CL-RELAY_WS"),
-		"chainID":          config.Require(ctx, "CL-RELAY_CHAINID"),
+		"nodeType":      config.Require(ctx, "CL-NODE_TYPE"),
+		"tendermintURL": config.Require(ctx, "CL-TENDERMINT_URL"),
+		"fcdURL":        config.Require(ctx, "CL-FCD_URL"),
+		"chainID":       config.Require(ctx, "CL-RELAY_CHAINID"),
 	}, nil
 }
 

@@ -10,8 +10,9 @@ config:
   terra-env:CL-BUILD_CONTEXT: ../../chainlink
   terra-env:CL-BUILD_DOCKERFILE: ../../chainlink/core/chainlink.Dockerfile
   terra-env:CL-RELAY_NAME: terra
-  terra-env:CL-RELAY_HTTP: http://127.0.0.1:1317
-  terra-env:CL-RELAY_WS: http://127.0.0.1:26657
+  terra-env:CL-NODE_TYPE: terra
+  terra-env:CL-FCD_URL: https://fcd.terra.dev:443
+  terra-env:CL-TENDERMINT_URL: http://127.0.0.1:26657
   terra-env:CL-RELAY_CHAINID: localterra
   terra-env:CL-ENV_VARS: # specify which chainlink env variables to include, and define below
     - CHAINLINK_DEV
