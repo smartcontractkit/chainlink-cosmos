@@ -2,10 +2,8 @@ package client
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"math"
+	"net/http"
 	"regexp"
 	"strconv"
 	"time"

@@ -111,6 +111,8 @@ func (gpe *FCDGasPriceEstimator) GasPrices() (map[string]sdk.DecCoin, error) {
 	return gpe.request()
 }
 
+var _ GasPricesEstimator = (*CachingGasPriceEstimator)(nil)
+
 type CachingGasPriceEstimator struct {
 	lastPrices map[string]sdk.DecCoin
 	estimator  GasPricesEstimator
@@ -137,8 +139,8 @@ type ComposedGasPriceEstimator struct {
 	estimators []GasPricesEstimator
 }
 
-func NewMustGasPriceEstimator(estimators []GasPricesEstimator) ComposedGasPriceEstimator {
-	return ComposedGasPriceEstimator{estimators: estimators}
+func NewMustGasPriceEstimator(estimators []GasPricesEstimator) *ComposedGasPriceEstimator {
+	return &ComposedGasPriceEstimator{estimators: estimators}
 }
 
 func (gpe *ComposedGasPriceEstimator) GasPrices() map[string]sdk.DecCoin {
