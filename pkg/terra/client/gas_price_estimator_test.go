@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/mocks"
@@ -73,6 +75,7 @@ func TestGasPriceEstimators(t *testing.T) {
 		badURL, err := url.Parse("https://does.not.exist:443/v1/txs/gas_prices")
 		require.NoError(t, err)
 		gpeFCD.fcdURL = *badURL
+		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything).Once()
 		cachedPrices, err := cachingFCD.GasPrices()
 		require.NoError(t, err)
 		assert.Equal(t, prices["uluna"], cachedPrices["uluna"])
@@ -100,6 +103,7 @@ func TestGasPriceEstimators(t *testing.T) {
 			"uluna": sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("10")),
 		})
 		gpe := NewMustGasPriceEstimator([]GasPricesEstimator{cachingFCD, gpeFixed}, lggr)
+		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything).Twice()
 		fixedPrices := gpe.GasPrices()
 		uluna, ok := fixedPrices["uluna"]
 		assert.True(t, ok)

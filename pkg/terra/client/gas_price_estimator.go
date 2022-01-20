@@ -155,7 +155,7 @@ type ComposedGasPriceEstimator struct {
 }
 
 func NewMustGasPriceEstimator(estimators []GasPricesEstimator, lggr Logger) *ComposedGasPriceEstimator {
-	return &ComposedGasPriceEstimator{estimators: estimators}
+	return &ComposedGasPriceEstimator{estimators: estimators, lggr: lggr}
 }
 
 func (gpe *ComposedGasPriceEstimator) GasPrices() map[string]sdk.DecCoin {
