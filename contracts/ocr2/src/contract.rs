@@ -132,11 +132,11 @@ pub fn execute(
             // since we currently use Vec instead of [u8; N], verify each raw signature length first
             let signatures = signatures
                 .into_iter()
-                .map(|signature| signature.try_into())
+                .map(|signature| signature.0.try_into())
                 .collect::<Result<_, _>>()
                 .map_err(|_| ContractError::InvalidInput)?;
 
-            execute_transmit(deps, env, info, report_context, report, signatures)
+            execute_transmit(deps, env, info, report_context.0, report.0, signatures)
         }
         ExecuteMsg::SetLinkToken {
             link_token,
