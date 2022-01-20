@@ -102,6 +102,7 @@ pub fn execute(
             offchain_config,
         } => {
             let api = &deps.api;
+            let signers = signers.into_iter().map(|s| s.0).collect::<Vec<Vec<u8>>>();
             let transmitters = transmitters
                 .iter()
                 .map(|t| api.addr_validate(t))
@@ -113,9 +114,9 @@ pub fn execute(
                 signers,
                 transmitters,
                 f,
-                onchain_config,
+                onchain_config.0,
                 offchain_config_version,
-                offchain_config,
+                offchain_config.0,
             )
         }
         ExecuteMsg::TransferOwnership { to } => {
@@ -1361,7 +1362,12 @@ pub(crate) mod tests {
         let owner = "owner".to_string();
 
         let msg = ExecuteMsg::SetConfig {
-            signers: vec![vec![1; 64], vec![2; 64], vec![3; 64], vec![4; 64]],
+            signers: vec![
+                Binary(vec![1; 64]),
+                Binary(vec![2; 64]),
+                Binary(vec![3; 64]),
+                Binary(vec![4; 64]),
+            ],
             transmitters: vec![
                 "transmitter0".to_string(),
                 "transmitter1".to_string(),
@@ -1369,9 +1375,9 @@ pub(crate) mod tests {
                 "transmitter3".to_string(),
             ],
             f: 1,
-            onchain_config: vec![],
+            onchain_config: Binary(vec![]),
             offchain_config_version: 1,
-            offchain_config: vec![4, 5, 6],
+            offchain_config: Binary(vec![4, 5, 6]),
         };
 
         let execute_info = mock_info(owner.as_str(), &[]);

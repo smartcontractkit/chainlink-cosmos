@@ -8,7 +8,7 @@ use crate::msg::{
 };
 use crate::state::{Billing, Round, Transmission};
 use crate::Decimal;
-use cosmwasm_std::{Addr, Binary, Empty, Uint128};
+use cosmwasm_std::{to_binary, Addr, Binary, Empty, Uint128};
 use cw20::Cw20Coin;
 use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes};
@@ -194,14 +194,14 @@ fn setup() -> Env {
         .unwrap();
     // generate a few signer keypairs
     let mut keypairs = Vec::new();
-    for _ in 0..4 {
+    for _ in 0..19 {
         let sk = SigningKey::new(thread_rng());
         keypairs.push(sk);
     }
 
     let signers = keypairs
         .iter()
-        .map(|sk| VerificationKeyBytes::from(sk).as_ref().to_vec())
+        .map(|sk| Binary(VerificationKeyBytes::from(sk).as_ref().to_vec()))
         .collect();
 
     let transmitters = keypairs
@@ -214,9 +214,9 @@ fn setup() -> Env {
         signers,
         transmitters: transmitters.clone(),
         f: 1,
-        onchain_config: vec![],
+        onchain_config: Binary(vec![]),
         offchain_config_version: 1,
-        offchain_config: vec![4, 5, 6],
+        offchain_config: Binary(vec![4, 5, 6]),
     };
     let response = router
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
@@ -439,23 +439,27 @@ fn transmit_happy_path() {
 
     // use a new set of keypairs and signers
     let mut keypairs = Vec::new();
-    for _ in 0..4 {
+    for _ in 0..19 {
         let sk = SigningKey::new(thread_rng());
         keypairs.push(sk);
     }
     let signers = keypairs
         .iter()
-        .map(|sk| VerificationKeyBytes::from(sk).as_ref().to_vec())
+        .map(|sk| Binary(VerificationKeyBytes::from(sk).as_ref().to_vec()))
         .collect();
 
     let msg = ExecuteMsg::SetConfig {
         signers,
         transmitters: env.transmitters.clone(),
-        f: 1,
-        onchain_config: vec![],
+        f: 6,
+        onchain_config: Binary(vec![]),
         offchain_config_version: 2,
-        offchain_config: vec![5, 5, 6],
+        offchain_config: Binary(vec![1; 2165]),
     };
+
+    const MAX_MSG_SIZE: usize = 4 * 1024; // 4kb
+    assert!(to_binary(&msg).unwrap().len() <= MAX_MSG_SIZE);
+
     env.router
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();
@@ -685,7 +689,7 @@ fn set_link_token() {
         )
         .unwrap();
     let expected_balance = Decimal(deposit)
-        - (Decimal(Uint128::new(4) * observation_payment) + Decimal(reimbursement));
+        - (Decimal(Uint128::new(19) * observation_payment) + Decimal(reimbursement));
     assert_eq!(Decimal(balance).to_string(), expected_balance.to_string());
 
     // token address should be changed
