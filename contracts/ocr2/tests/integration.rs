@@ -165,7 +165,7 @@ fn init_works() {
             let mut result = Vec::new();
             result.extend_from_slice(&pk_bytes);
             result.extend_from_slice(&sig_bytes);
-            result
+            Binary(result)
         })
         .collect();
 
@@ -175,8 +175,8 @@ fn init_works() {
 
     let transmitter = Addr::unchecked(transmitters.first().cloned().unwrap());
     let msg = ExecuteMsg::Transmit {
-        report_context,
-        report,
+        report_context: Binary(report_context),
+        report: Binary(report),
         signatures,
     };
 

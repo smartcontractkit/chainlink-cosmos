@@ -90,14 +90,14 @@ fn transmit_report(env: &mut Env, epoch: u32, round: u8) {
             let mut result = Vec::new();
             result.extend_from_slice(&pk_bytes);
             result.extend_from_slice(&sig_bytes);
-            result
+            Binary(result)
         })
         .collect();
 
     let transmitter = Addr::unchecked(env.transmitters.first().cloned().unwrap());
     let msg = ExecuteMsg::Transmit {
-        report_context,
-        report,
+        report_context: Binary(report_context),
+        report: Binary(report),
         signatures,
     };
     env.router
