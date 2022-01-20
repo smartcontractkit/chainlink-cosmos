@@ -42,12 +42,12 @@ pub enum ExecuteMsg {
     AcceptOwnership,
 
     Transmit {
-        report_context: Vec<u8>,
-        report: Vec<u8>,
+        report_context: Binary,
+        report: Binary,
 
         // TODO: use signatures: Vec<[u8; 32+64]>, when it becomes possible
         // https://github.com/GREsau/schemars/issues/111
-        signatures: Vec<Vec<u8>>,
+        signatures: Vec<Binary>,
     },
 
     RequestNewRound,
