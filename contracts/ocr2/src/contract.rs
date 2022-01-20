@@ -73,6 +73,9 @@ pub fn instantiate(
         billing: Billing {
             recommended_gas_price: 0,
             observation_payment: 0,
+            base_gas: None,
+            gas_per_signature: None,
+            gas_adjustment: None,
         },
         validator: None,
     };
@@ -581,11 +584,7 @@ pub fn execute_transmit(
     )?;
 
     // pay transmitter the gas reimbursement
-    let amount = calculate_reimbursement(
-        u128::from(config.billing.recommended_gas_price),
-        juels_per_luna,
-        raw_signatures.len(),
-    );
+    let amount = calculate_reimbursement(&config.billing, juels_per_luna, raw_signatures.len());
     oracle.payment += amount;
     TRANSMITTERS.save(deps.storage, &info.sender, &oracle)?;
 
@@ -1197,18 +1196,21 @@ pub fn query_oracle_observation_count(deps: Deps, transmitter: String) -> StdRes
 
 // Returns amount in juels
 fn calculate_reimbursement(
-    recommended_gas_price: u128,
+    config: &Billing,
     juels_per_luna: u128,
     signature_count: usize,
 ) -> Uint128 {
-    const BASE_GAS: Decimal = decimal(338_000);
-    const GAS_PER_SIGNATURE: Decimal = decimal(67_000);
+    let signature_count = decimal(signature_count as u64);
+    let gas_per_signature = decimal(config.gas_per_signature.unwrap_or(17_000));
+    let base_gas = decimal(config.base_gas.unwrap_or(84_000));
+    let gas_adjustment = Decimal::percent(u64::from(config.gas_adjustment.unwrap_or(140)));
 
-    let signature_count = decimal(signature_count);
     // total gas spent
-    let gas = GAS_PER_SIGNATURE * signature_count + BASE_GAS;
+    let gas = gas_per_signature * signature_count + base_gas;
+    // gas allocated seems to be about 1.4 of gas used
+    let gas = gas * gas_adjustment;
     // gas cost in LUNA
-    let gas_cost = Decimal(Uint128::new(recommended_gas_price)) * gas;
+    let gas_cost = Decimal(Uint128::new(u128::from(config.recommended_gas_price))) * gas;
     // total in juels
     let total = gas_cost * Decimal(Uint128::new(juels_per_luna));
     // NOTE: no stability tax is charged on transactions in LUNA
