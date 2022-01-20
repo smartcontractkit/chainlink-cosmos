@@ -34,6 +34,19 @@ func (gpe *FixedGasPriceEstimator) GasPrices() (map[string]sdk.DecCoin, error) {
 	return gpe.gasPrices, nil
 }
 
+// Useful for hot reloads of configured prices
+type ClosureGasPriceEstimator struct {
+	gasPrices func() (map[string]sdk.DecCoin, error)
+}
+
+func NewClosureGasPriceEstimator(prices func() (map[string]sdk.DecCoin, error)) *ClosureGasPriceEstimator {
+	return &ClosureGasPriceEstimator{gasPrices: prices}
+}
+
+func (gpe *ClosureGasPriceEstimator) GasPrices() (map[string]sdk.DecCoin, error) {
+	return gpe.gasPrices()
+}
+
 var _ GasPricesEstimator = (*FCDGasPriceEstimator)(nil)
 
 type FCDGasPriceEstimator struct {

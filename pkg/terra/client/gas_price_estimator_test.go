@@ -75,8 +75,21 @@ func TestGasPriceEstimators(t *testing.T) {
 		gpeFCD.fcdURL = *badURL
 		cachedPrices, err := cachingFCD.GasPrices()
 		require.NoError(t, err)
-		t.Log(cachedPrices)
 		assert.Equal(t, prices["uluna"], cachedPrices["uluna"])
+	})
+
+	t.Run("closure", func(t *testing.T) {
+		gpe := NewClosureGasPriceEstimator(func() (map[string]sdk.DecCoin, error) {
+			return map[string]sdk.DecCoin{
+				"uluna": sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("10")),
+			}, nil
+		})
+		p, err := gpe.GasPrices()
+		require.NoError(t, err)
+		price, ok := p["uluna"]
+		require.True(t, ok)
+		assert.Equal(t, "uluna", price.Denom)
+		assert.Equal(t, "10.000000000000000000", price.Amount.String())
 	})
 
 	t.Run("composed", func(t *testing.T) {

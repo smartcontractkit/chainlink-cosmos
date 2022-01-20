@@ -96,7 +96,7 @@ func NewClient(chainID string,
 	// Note rpchttp.New or rpchttp.NewWithTimeout use a (buggy) custom transport
 	// which results in new connections being created per request.
 	// Pass our own client here which uses a default transport and caches connections properly.
-	tmClient, err := rpchttp.NewWithClient(tendermintURL, "/websocket", &http.Client{Timeout: time.Duration(requestTimeoutSeconds)})
+	tmClient, err := rpchttp.NewWithClient(tendermintURL, "/websocket", &http.Client{Timeout: time.Duration(requestTimeoutSeconds) * time.Second})
 	if err != nil {
 		return nil, err
 	}
