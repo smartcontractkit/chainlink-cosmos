@@ -147,7 +147,9 @@ func TestTerraClient(t *testing.T) {
 		fund := msg.NewMsgSend(accounts[0].Address, accounts[1].Address, msg.NewCoins(msg.NewInt64Coin("uluna", 1)))
 		gasLimit, err := tc.SimulateUnsigned([]msg.Msg{fund}, sn)
 		require.NoError(t, err)
-		txBytes, err := tc.CreateAndSign([]msg.Msg{fund}, an, sn, gasLimit.GasInfo.GasUsed, DefaultGasLimitMultiplier, gpe.GasPrices()["uluna"], accounts[0].PrivateKey, 0)
+		gasPrices, err := gpe.GasPrices()
+		require.NoError(t, err)
+		txBytes, err := tc.CreateAndSign([]msg.Msg{fund}, an, sn, gasLimit.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrices["uluna"], accounts[0].PrivateKey, 0)
 		require.NoError(t, err)
 		_, err = tc.Simulate(txBytes)
 		require.NoError(t, err)
@@ -205,14 +207,16 @@ func TestTerraClient(t *testing.T) {
 		rawMsg := wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
 		an, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		resp1, err := tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, gpe.GasPrices()["uluna"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		gasPrices, err := gpe.GasPrices()
+		require.NoError(t, err)
+		resp1, err := tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, gasPrices["uluna"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 		require.NoError(t, err)
 		time.Sleep(1 * time.Second)
 		// Do it again so there are multiple executions
 		rawMsg = wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":4}}`), sdk.Coins{})
 		an, sn, err = tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		_, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, gpe.GasPrices()["uluna"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		_, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, gasPrices["uluna"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 		require.NoError(t, err)
 		time.Sleep(1 * time.Second)
 
@@ -268,6 +272,8 @@ func TestTerraClient(t *testing.T) {
 	t.Run("gasprice", func(t *testing.T) {
 		rawMsg := wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
 		const expCodespace = sdkerrors.RootCodespace
+		gasPrices, err := gpe.GasPrices()
+		require.NoError(t, err)
 		for _, tt := range []struct {
 			name     string
 			gasPrice msg.DecCoin
@@ -290,7 +296,7 @@ func TestTerraClient(t *testing.T) {
 			},
 			{
 				"recommended",
-				gpe.GasPrices()["uluna"],
+				gasPrices["uluna"],
 				0,
 			},
 		} {

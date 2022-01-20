@@ -2,17 +2,22 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"reflect"
+	"strings"
 	"time"
+
+	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type GasPricesEstimator interface {
-	GasPrices() map[string]sdk.DecCoin
+	GasPrices() (map[string]sdk.DecCoin, error)
 }
 
 var _ GasPricesEstimator = (*FixedGasPriceEstimator)(nil)
@@ -25,13 +30,14 @@ func NewFixedGasPriceEstimator(prices map[string]sdk.DecCoin) *FixedGasPriceEsti
 	return &FixedGasPriceEstimator{gasPrices: prices}
 }
 
-func (gpe *FixedGasPriceEstimator) GasPrices() map[string]sdk.DecCoin {
-	return gpe.gasPrices
+func (gpe *FixedGasPriceEstimator) GasPrices() (map[string]sdk.DecCoin, error) {
+	return gpe.gasPrices, nil
 }
+
+var _ GasPricesEstimator = (*FCDGasPriceEstimator)(nil)
 
 type FCDGasPriceEstimator struct {
 	fcdURL url.URL
-	prices map[string]sdk.DecCoin
 	client http.Client
 	lggr   Logger
 }
@@ -44,11 +50,6 @@ func NewFCDGasPriceEstimator(fcdURLRaw string, requestTimeout time.Duration, lgg
 	}
 	client := http.Client{Timeout: requestTimeout}
 	gpe := FCDGasPriceEstimator{fcdURL: *fcdURL, client: client, lggr: lggr}
-	initialGasPrices, err := gpe.request()
-	if err != nil {
-		return nil, err
-	}
-	gpe.prices = initialGasPrices
 	return &gpe, nil
 }
 
@@ -96,7 +97,7 @@ func (gpe *FCDGasPriceEstimator) request() (map[string]sdk.DecCoin, error) {
 	results := make(map[string]sdk.DecCoin)
 	v := reflect.ValueOf(prices)
 	for i := 0; i < v.NumField(); i++ {
-		name, value := v.Type().Field(i).Name, v.Field(i).String()
+		name, value := strings.ToLower(v.Type().Field(i).Name), v.Field(i).String()
 		amount, err := sdk.NewDecFromStr(value)
 		if err != nil {
 			return nil, err
@@ -106,11 +107,50 @@ func (gpe *FCDGasPriceEstimator) request() (map[string]sdk.DecCoin, error) {
 	return results, nil
 }
 
-func (gpe *FCDGasPriceEstimator) GasPrices() map[string]sdk.DecCoin {
-	latestGasPrice, err := gpe.request()
+func (gpe *FCDGasPriceEstimator) GasPrices() (map[string]sdk.DecCoin, error) {
+	return gpe.request()
+}
+
+type CachingGasPriceEstimator struct {
+	lastPrices map[string]sdk.DecCoin
+	estimator  GasPricesEstimator
+	lggr       Logger
+}
+
+func NewCachingGasPriceEstimator(estimator GasPricesEstimator, lggr Logger) *CachingGasPriceEstimator {
+	return &CachingGasPriceEstimator{estimator: estimator, lggr: lggr}
+}
+
+func (gpe *CachingGasPriceEstimator) GasPrices() (map[string]sdk.DecCoin, error) {
+	latestPrices, err := gpe.estimator.GasPrices()
 	if err != nil {
-		gpe.lggr.Warnf("unable get latest prices, using last cached value", "cached value", gpe.prices, "err", err)
-		return gpe.prices
+		if gpe.lastPrices == nil {
+			return nil, errors.Errorf("unable to get gas prices and cache is empty, err %v", err)
+		}
+		return gpe.lastPrices, nil
 	}
-	return latestGasPrice
+	gpe.lastPrices = latestPrices
+	return latestPrices, nil
+}
+
+type ComposedGasPriceEstimator struct {
+	estimators []GasPricesEstimator
+}
+
+func NewMustGasPriceEstimator(estimators []GasPricesEstimator) ComposedGasPriceEstimator {
+	return ComposedGasPriceEstimator{estimators: estimators}
+}
+
+func (gpe *ComposedGasPriceEstimator) GasPrices() map[string]sdk.DecCoin {
+	// Try each estimator in order
+	var finalError error
+	for _, estimator := range gpe.estimators {
+		latestPrices, err := estimator.GasPrices()
+		if err != nil {
+			multierr.Combine(finalError, err)
+			continue
+		}
+		return latestPrices
+	}
+	panic(fmt.Sprintf("no estimator succeeded errs %v", finalError))
 }
