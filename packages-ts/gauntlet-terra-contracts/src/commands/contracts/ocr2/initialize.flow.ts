@@ -8,6 +8,7 @@ import DeployOCR2 from './deploy'
 import SetBilling from './setBilling'
 import SetConfig from './setConfig'
 import SetPayees from './setPayees'
+import Inspect from './inspection/inspect'
 
 export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse> {
   static id = 'ocr2:initialize:flow'
@@ -47,16 +48,11 @@ export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse>
         args: [this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))],
       },
       // Inspection here
-      // {
-      //   name: 'Inspection',
-      //   command: OCR2Inspect,
-      //   flags: {
-      //     state: FlowCommand.ID.contract(this.stepIds.OCR_2),
-      //     billingAccessController: process.env.BILLING_ACCESS_CONTROLLER || this.flags.billingAccessController,
-      //     requesterAccessController: process.env.REQUESTER_ACCESS_CONTROLLER || this.flags.requesterAccessController,
-      //     link: process.env.LINK || this.flags.link,
-      //   },
-      // },
+      {
+        name: 'Inspection',
+        command: Inspect,
+        args: [this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))],
+      },
     ]
   }
 
