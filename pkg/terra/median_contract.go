@@ -18,8 +18,6 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
-const BlockRateSeconds = 8 // 1 block/8 seconds
-
 // MedianContract interface
 var _ median.MedianContract = (*MedianContract)(nil)
 
@@ -35,10 +33,11 @@ type MedianContract struct {
 	chainReader client.Reader
 	lggr        Logger
 	cr          LatestConfigReader
+	cfg         Config
 }
 
-func NewMedianContract(address sdk.AccAddress, chainReader client.Reader, lggr Logger, cr LatestConfigReader) *MedianContract {
-	return &MedianContract{address: address, chainReader: chainReader, lggr: lggr, cr: cr}
+func NewMedianContract(address sdk.AccAddress, chainReader client.Reader, lggr Logger, cr LatestConfigReader, cfg Config) *MedianContract {
+	return &MedianContract{address: address, chainReader: chainReader, lggr: lggr, cr: cr, cfg: cfg}
 }
 
 // LatestTransmissionDetails fetches the latest transmission details from address state
@@ -101,7 +100,7 @@ func (ct *MedianContract) LatestRoundRequested(ctx context.Context, lookback tim
 		err = blkErr
 		return
 	}
-	blockNum := uint64(latestBlock.Block.Header.Height) - uint64(lookback.Seconds())/BlockRateSeconds
+	blockNum := uint64(latestBlock.Block.Header.Height) - uint64(lookback/ct.cfg.BlockRate())
 	res, err := ct.chainReader.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", blockNum+1), fmt.Sprintf("wasm-new_round.contract_address='%s'", ct.address.String())})
 	if err != nil {
 		return

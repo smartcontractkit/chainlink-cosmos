@@ -1,7 +1,9 @@
 package terra
 
 import (
+	"github.com/smartcontractkit/chainlink/core/store/models"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
@@ -18,18 +20,22 @@ func TestConfig(t *testing.T) {
 	lggr := new(mocks.Logger)
 	lggr.On("Warnf", mock.Anything, "FallbackGasPriceULuna", "not-a-number", mock.Anything, mock.Anything).Once()
 	cfg := NewConfig(db.ChainCfg{}, def, lggr)
+	assert.Equal(t, def.BlockRate, cfg.BlockRate())
 	assert.Equal(t, def.BlocksUntilTxTimeout, cfg.BlocksUntilTxTimeout())
 	assert.Equal(t, def.ConfirmPollPeriod, cfg.ConfirmPollPeriod())
 	assert.Equal(t, def.FallbackGasPriceULuna, cfg.FallbackGasPriceULuna())
 	assert.Equal(t, def.GasLimitMultiplier, cfg.GasLimitMultiplier())
 	assert.Equal(t, def.MaxMsgsPerBatch, cfg.MaxMsgsPerBatch())
 
+	minute := models.MustMakeDuration(time.Minute)
 	updated := db.ChainCfg{
+		BlockRate:             &minute,
 		BlocksUntilTxTimeout:  null.IntFrom(1000),
 		FallbackGasPriceULuna: null.StringFrom("5.6"),
 	}
 	cfg.Update(updated)
 	assert.Equal(t, updated.BlocksUntilTxTimeout.Int64, cfg.BlocksUntilTxTimeout())
+	assert.Equal(t, updated.BlockRate.Duration(), cfg.BlockRate())
 	assert.Equal(t, def.ConfirmPollPeriod, cfg.ConfirmPollPeriod())
 	assert.Equal(t, sdk.MustNewDecFromStr(updated.FallbackGasPriceULuna.String), cfg.FallbackGasPriceULuna())
 	assert.Equal(t, def.GasLimitMultiplier, cfg.GasLimitMultiplier())

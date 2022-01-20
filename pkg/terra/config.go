@@ -10,7 +10,8 @@ import (
 )
 
 var DefaultConfigSet = ConfigSet{
-	// ~8s per block, so ~80s until we give up on the tx getting confirmed
+	BlockRate: 6 * time.Second,
+	// ~6s per block, so ~1m until we give up on the tx getting confirmed
 	// Anecdotally it appears anything more than 4 blocks would be an extremely long wait.
 	BlocksUntilTxTimeout:  10,
 	ConfirmPollPeriod:     time.Second,
@@ -29,6 +30,7 @@ var DefaultConfigSet = ConfigSet{
 }
 
 type Config interface {
+	BlockRate() time.Duration
 	BlocksUntilTxTimeout() int64
 	ConfirmPollPeriod() time.Duration
 	FallbackGasPriceULuna() sdk.Dec
@@ -41,6 +43,7 @@ type Config interface {
 
 // ConfigSet has configuration fields for default sets and testing.
 type ConfigSet struct {
+	BlockRate             time.Duration
 	BlocksUntilTxTimeout  int64
 	ConfirmPollPeriod     time.Duration
 	FallbackGasPriceULuna sdk.Dec
@@ -70,6 +73,16 @@ func (c *config) Update(dbcfg db.ChainCfg) {
 	c.chainMu.Lock()
 	c.chain = dbcfg
 	c.chainMu.Unlock()
+}
+
+func (c *config) BlockRate() time.Duration {
+	c.chainMu.RLock()
+	ch := c.chain.BlockRate
+	c.chainMu.RUnlock()
+	if ch != nil {
+		return ch.Duration()
+	}
+	return c.defaults.BlockRate
 }
 
 func (c *config) BlocksUntilTxTimeout() int64 {

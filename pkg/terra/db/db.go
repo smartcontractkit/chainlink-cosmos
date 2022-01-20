@@ -31,6 +31,7 @@ type Node struct {
 }
 
 type ChainCfg struct {
+	BlockRate             *models.Duration
 	BlocksUntilTxTimeout  null.Int
 	ConfirmPollPeriod     *models.Duration
 	FallbackGasPriceULuna null.String
