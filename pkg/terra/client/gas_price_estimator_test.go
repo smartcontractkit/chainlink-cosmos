@@ -99,7 +99,7 @@ func TestGasPriceEstimators(t *testing.T) {
 		gpeFixed := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
 			"uluna": sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("10")),
 		})
-		gpe := NewMustGasPriceEstimator([]GasPricesEstimator{cachingFCD, gpeFixed})
+		gpe := NewMustGasPriceEstimator([]GasPricesEstimator{cachingFCD, gpeFixed}, lggr)
 		fixedPrices := gpe.GasPrices()
 		uluna, ok := fixedPrices["uluna"]
 		assert.True(t, ok)

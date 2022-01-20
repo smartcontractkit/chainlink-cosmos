@@ -142,6 +142,7 @@ func (gpe *CachingGasPriceEstimator) GasPrices() (map[string]sdk.DecCoin, error)
 		if gpe.lastPrices == nil {
 			return nil, errors.Errorf("unable to get gas prices and cache is empty, err %v", err)
 		}
+		gpe.lggr.Warnf("error %v getting latest prices, using cached value %v", err, gpe.lastPrices)
 		return gpe.lastPrices, nil
 	}
 	gpe.lastPrices = latestPrices
@@ -150,9 +151,10 @@ func (gpe *CachingGasPriceEstimator) GasPrices() (map[string]sdk.DecCoin, error)
 
 type ComposedGasPriceEstimator struct {
 	estimators []GasPricesEstimator
+	lggr       Logger
 }
 
-func NewMustGasPriceEstimator(estimators []GasPricesEstimator) *ComposedGasPriceEstimator {
+func NewMustGasPriceEstimator(estimators []GasPricesEstimator, lggr Logger) *ComposedGasPriceEstimator {
 	return &ComposedGasPriceEstimator{estimators: estimators}
 }
 
@@ -162,7 +164,8 @@ func (gpe *ComposedGasPriceEstimator) GasPrices() map[string]sdk.DecCoin {
 	for _, estimator := range gpe.estimators {
 		latestPrices, err := estimator.GasPrices()
 		if err != nil {
-			multierr.Combine(finalError, err)
+			finalError = multierr.Combine(finalError, err)
+			gpe.lggr.Warnf("error using estimator, trying next one, err %v", err)
 			continue
 		}
 		return latestPrices
