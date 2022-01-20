@@ -41,6 +41,10 @@ pub struct Billing {
     /// NOTE: needs to be scaled to the same amount of decimals places as LINK token
     pub recommended_gas_price: u64,
     pub observation_payment: u64,
+    pub base_gas: Option<u64>,
+    pub gas_per_signature: Option<u64>,
+    /// In percent
+    pub gas_adjustment: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

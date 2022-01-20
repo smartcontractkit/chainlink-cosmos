@@ -8,7 +8,7 @@ pub mod state;
 pub use crate::decimal::Decimal;
 pub use crate::error::ContractError;
 
-pub const fn decimal(i: usize) -> Decimal {
+pub const fn decimal(i: u64) -> Decimal {
     use cosmwasm_std::Uint128;
     let decimals = 10u128.pow(18);
     let n = i as u128 * decimals;
