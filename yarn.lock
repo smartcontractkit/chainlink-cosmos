@@ -818,13 +818,13 @@
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
-"@terra-money/terra.js@^2.1.2":
-  version "2.1.23"
-  resolved "https://registry.yarnpkg.com/@terra-money/terra.js/-/terra.js-2.1.23.tgz#6e7ee7477b8cc5895ddcb2e4eb0446e71bb0e575"
-  integrity sha512-nSAR35zqjKUn1Jzqevf30s47XRlW/VXU01YgK3n9ndmX15lkdlgFvqaV7UezK0xAmCpm+7xWIrtBTMmZpVBkMQ==
+"@terra-money/terra.js@^3.0.4":
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/@terra-money/terra.js/-/terra.js-3.0.4.tgz#1805447fdc76d2d976757bffc07d8ba47eb47783"
+  integrity sha512-PEYaPs0p521njZyD6a7aH6KrXRKdj4+j7kboM4qGc8FS/lKPFQUgacsVSlbAK0sYX/tOhINvN7eudwRBwuJVhw==
   dependencies:
     "@terra-money/terra.proto" "^0.1.7"
-    axios "^0.21.1"
+    axios "^0.24.0"
     bech32 "^2.0.0"
     bip32 "^2.0.6"
     bip39 "^3.0.3"
@@ -835,7 +835,7 @@
     secp256k1 "^4.0.2"
     tmp "^0.2.1"
     utf-8-validate "^5.0.5"
-    ws "^7.4.2"
+    ws "^7.5.5"
 
 "@terra-money/terra.proto@^0.1.7":
   version "0.1.7"
@@ -1163,13 +1163,6 @@ atob@^2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/atob/-/atob-2.1.2.tgz#6d9517eb9e030d2436666651e86bd9f6f13533c9"
   integrity sha512-Wm6ukoaOGJi/73p/cl2GvLjTI5JM1k/O14isD73YML8StrH/7/lRFgmg8nICZgD3bZZvjwCGxtMOD3wWNAu8cg==
-
-axios@^0.21.1:
-  version "0.21.4"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-0.21.4.tgz#c67b90dc0568e5c1cf2b0b858c43ba28e2eda575"
-  integrity sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==
-  dependencies:
-    follow-redirects "^1.14.0"
 
 axios@^0.24.0:
   version "0.24.0"
@@ -5208,7 +5201,7 @@ write-file-atomic@^3.0.0:
     signal-exit "^3.0.2"
     typedarray-to-buffer "^3.1.5"
 
-ws@^7.4.2, ws@^7.4.6:
+ws@^7.4.6, ws@^7.5.5:
   version "7.5.6"
   resolved "https://registry.yarnpkg.com/ws/-/ws-7.5.6.tgz#e59fc509fb15ddfb65487ee9765c5a51dec5fe7b"
   integrity sha512-6GLgCqo2cy2A2rjCNFlxQS6ZljG/coZfZXclldI8FB/1G3CCI36Zd8xy2HrFVACi8tfk5XrgLQEk+P0Tnz9UcA==

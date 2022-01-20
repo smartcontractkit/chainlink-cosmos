@@ -1,5 +1,5 @@
 import { getRDD } from '../../../lib/rdd'
-import { instructionToCommand, AbstractInstruction } from '../../abstract/wrapper'
+import { instructionToCommand, AbstractInstruction } from '../../abstract/executionWrapper'
 
 type CommandInput = {
   billingAccessController: string
