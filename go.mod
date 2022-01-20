@@ -14,6 +14,7 @@ require (
 	github.com/tendermint/tendermint v0.34.15
 	github.com/terra-money/core v0.5.14
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
+	gopkg.in/guregu/null.v4 v4.0.0
 )
 
 require (

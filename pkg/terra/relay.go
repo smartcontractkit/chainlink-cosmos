@@ -113,7 +113,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 
 	reportCodec := ReportCodec{}
 	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, senderAddr, msgEnqueuer, chainReader, r.lggr)
-	median := NewMedianContract(contractAddr, chainReader, r.lggr, transmitter)
+	median := NewMedianContract(contractAddr, chainReader, r.lggr, transmitter, chain.Config())
 
 	return ocr2Provider{
 		digester:       digester,
