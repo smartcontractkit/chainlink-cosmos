@@ -3,19 +3,21 @@ package terra
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
-
 	"math/big"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/smartcontractkit/chainlink/core/utils"
+	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 )
 
 // MedianContract interface
@@ -29,19 +31,142 @@ type LatestConfigReader interface {
 }
 
 type MedianContract struct {
+	utils.StartStopOnce
 	address     sdk.AccAddress
 	chainReader client.Reader
 	lggr        Logger
 	cr          LatestConfigReader
 	cfg         Config
+	stop, done  chan struct{}
+
+	// cached state
+	trnMu sync.RWMutex
+	trn   transmission
+	rndMu sync.RWMutex
+	rnd   round
+}
+
+type transmission struct {
+	configDigest    types.ConfigDigest
+	epoch           uint32
+	round           uint8
+	latestAnswer    *big.Int
+	latestTimestamp time.Time
+}
+
+type round struct {
+	configDigest types.ConfigDigest
+	epoch        uint32
+	round        uint8
 }
 
 func NewMedianContract(address sdk.AccAddress, chainReader client.Reader, lggr Logger, cr LatestConfigReader, cfg Config) *MedianContract {
-	return &MedianContract{address: address, chainReader: chainReader, lggr: lggr, cr: cr, cfg: cfg}
+	return &MedianContract{
+		address:     address,
+		chainReader: chainReader,
+		lggr:        lggr,
+		cr:          cr,
+		cfg:         cfg,
+		stop:        make(chan struct{}),
+		done:        make(chan struct{}),
+	}
+}
+
+func (ct *MedianContract) Start() error {
+	return ct.StartOnce("TerraMedianContract", func() error {
+		ct.lggr.Debugf("Starting")
+		go ct.pollState()
+		return nil
+	})
+}
+
+func (ct *MedianContract) Close() error {
+	return ct.StopOnce("TerraMedianContract", func() error {
+		ct.lggr.Debugf("Stopping")
+		close(ct.stop)
+		<-ct.done
+		return nil
+	})
+}
+
+func (ct *MedianContract) pollState() {
+	defer close(ct.done)
+	tick := time.After(utils.WithJitter(ct.cfg.OCRCachePollPeriod()))
+	for {
+		select {
+		case <-ct.stop:
+			return
+		case <-tick:
+			ctx, cancel := utils.ContextFromChan(ct.stop)
+			var wg sync.WaitGroup
+			wg.Add(2)
+			go func() {
+				defer wg.Done()
+				configDigest, epoch, round, latestAnswer, latestTimestamp, err := ct.latestTransmissionDetails(ctx)
+				if err != nil {
+					ct.lggr.Errorf("Failed to get latest transmission details", "err", err)
+					return
+				}
+				ct.trnMu.Lock()
+				ct.trn.configDigest = configDigest
+				ct.trn.epoch = epoch
+				ct.trn.round = round
+				ct.trn.latestAnswer = latestAnswer
+				ct.trn.latestTimestamp = latestTimestamp
+				ct.trnMu.Unlock()
+			}()
+			go func() {
+				defer wg.Done()
+				lookback := time.Minute //TODO remember their last call? error when it doesnt match? or fallback to sync?
+				configDigest, epoch, round, err := ct.latestRoundRequested(ctx, lookback)
+				if err != nil {
+					ct.lggr.Errorf("Failed to get latest round requested", "err", err)
+					return
+				}
+				ct.rndMu.RLock()
+				ct.rnd.configDigest = configDigest
+				ct.rnd.epoch = epoch
+				ct.rnd.round = round
+				ct.rndMu.Unlock()
+			}()
+			select {
+			case <-ct.stop:
+				cancel()
+				// Note: the client does not respect context, so just return instead of waiting.
+				// wg.Wait()
+				return
+			case <-utils.WaitGroupChan(&wg):
+				tick = time.After(utils.WithJitter(ct.cfg.OCRCachePollPeriod()))
+			}
+		}
+	}
 }
 
 // LatestTransmissionDetails fetches the latest transmission details from address state
 func (ct *MedianContract) LatestTransmissionDetails(
+	ctx context.Context,
+) (
+	configDigest types.ConfigDigest,
+	epoch uint32,
+	round uint8,
+	latestAnswer *big.Int,
+	latestTimestamp time.Time,
+	err error,
+) {
+	ct.trnMu.Lock()
+	configDigest = ct.trn.configDigest
+	epoch = ct.trn.epoch
+	round = ct.trn.round
+	latestAnswer = ct.trn.latestAnswer
+	latestTimestamp = ct.trn.latestTimestamp
+	ct.trnMu.Unlock()
+	if configDigest == (types.ConfigDigest{}) {
+		err = errors.New("contract not yet initialized")
+	}
+	return
+}
+
+func (ct *MedianContract) latestTransmissionDetails(
 	ctx context.Context,
 ) (
 	configDigest types.ConfigDigest,
@@ -89,6 +214,23 @@ func (ct *MedianContract) LatestTransmissionDetails(
 
 // LatestRoundRequested fetches the latest round requested by filtering event logs
 func (ct *MedianContract) LatestRoundRequested(ctx context.Context, lookback time.Duration) (
+	configDigest types.ConfigDigest,
+	epoch uint32,
+	round uint8,
+	err error,
+) {
+	ct.rndMu.RLock()
+	ct.rnd.configDigest = configDigest
+	ct.rnd.epoch = epoch
+	ct.rnd.round = round
+	ct.rndMu.Unlock()
+	if configDigest == (types.ConfigDigest{}) {
+		err = errors.New("contract not yet initialized")
+	}
+	return
+}
+
+func (ct *MedianContract) latestRoundRequested(ctx context.Context, lookback time.Duration) (
 	configDigest types.ConfigDigest,
 	epoch uint32,
 	round uint8,

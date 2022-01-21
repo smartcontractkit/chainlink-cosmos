@@ -3,32 +3,118 @@ package terra
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
-
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+	"sync"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/smartcontractkit/chainlink/core/utils"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 )
 
 var _ types.ContractConfigTracker = (*ContractTracker)(nil)
 
 type ContractTracker struct {
+	utils.StartStopOnce
 	jobID       string
 	address     sdk.AccAddress
 	chainReader client.Reader
 	log         Logger
+	cfg         Config
+	stop, done  chan struct{}
+
+	// cached state
+	mu             sync.RWMutex
+	ts             *time.Time
+	changedInBlock uint64
+	configDigest   types.ConfigDigest
+	contractConfig types.ContractConfig
 }
 
-func NewContractTracker(address sdk.AccAddress, jobID string, chainReader client.Reader, lggr Logger) *ContractTracker {
+func NewContractTracker(address sdk.AccAddress, jobID string, chainReader client.Reader, cfg Config, lggr Logger) *ContractTracker {
 	contract := ContractTracker{
 		jobID:       jobID,
 		address:     address,
 		chainReader: chainReader,
 		log:         lggr,
+		cfg:         cfg,
+		stop:        make(chan struct{}),
+		done:        make(chan struct{}),
 	}
 	return &contract
+}
+
+func (ct *ContractTracker) Start() error {
+	return ct.StartOnce("TerraContractTracker", func() error {
+		ct.log.Debugf("Starting")
+		go ct.pollState()
+		return nil
+	})
+}
+
+func (ct *ContractTracker) Close() error {
+	return ct.StopOnce("TerraContractTracker", func() error {
+		ct.log.Debugf("Stopping")
+		close(ct.stop)
+		<-ct.done
+		return nil
+	})
+}
+
+func (ct *ContractTracker) pollState() {
+	defer close(ct.done)
+	tick := time.After(utils.WithJitter(ct.cfg.ConfirmPollPeriod()))
+	for {
+		select {
+		case <-ct.stop:
+			return
+		case <-tick:
+			ctx, cancel := utils.ContextFromChan(ct.stop)
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				changedInBlock, configDigest, err := ct.latestConfigDetails(ctx)
+				if err != nil {
+					ct.log.Errorf("Failed to get latest config details", "err", err)
+					return
+				}
+				ct.mu.RLock()
+				update := ct.changedInBlock != ct.changedInBlock
+				ct.mu.RUnlock()
+				if !update {
+					// no change
+					return
+				}
+				contractConfig, err := ct.latestConfig(ctx, changedInBlock)
+				if err != nil {
+					ct.log.Errorf("Failed to get latest config", "block", changedInBlock, "err", err)
+					return
+				}
+				now := time.Now()
+				//TODO sanity check digest/block?
+				ct.mu.Lock()
+				ct.ts = &now
+				ct.changedInBlock = changedInBlock
+				ct.configDigest = configDigest
+				ct.contractConfig = contractConfig
+				ct.mu.Unlock()
+			}()
+			select {
+			case <-ct.stop:
+				cancel()
+				// Note: the client does not respect context, so just return instead of waiting.
+				// <-done
+				return
+			case <-done:
+				tick = time.After(utils.WithJitter(ct.cfg.ConfirmPollPeriod()))
+			}
+		}
+	}
 }
 
 // Unused, libocr will use polling
@@ -38,6 +124,20 @@ func (ct *ContractTracker) Notify() <-chan struct{} {
 
 // LatestConfigDetails returns data by reading the address state and is called when Notify is triggered or the config poll timer is triggered
 func (ct *ContractTracker) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
+	ct.mu.RLock()
+	ts := ct.ts
+	changedInBlock = ct.changedInBlock
+	configDigest = ct.configDigest
+	ct.mu.RUnlock()
+	if ts == nil {
+		err = errors.New("config details not yet initialized")
+	} else if since := time.Since(*ts); since > ct.cfg.OCRCacheTTL() {
+		err = fmt.Errorf("failed to get config details: stale value cached %s ago", since)
+	}
+	return
+}
+
+func (ct *ContractTracker) latestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
 	resp, err := ct.chainReader.ContractStore(
 		ct.address,
 		[]byte(`"latest_config_details"`),
@@ -55,7 +155,21 @@ func (ct *ContractTracker) LatestConfigDetails(ctx context.Context) (changedInBl
 }
 
 // LatestConfig returns data by searching emitted events and is called in the same scenario as LatestConfigDetails
-func (ct *ContractTracker) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
+func (ct *ContractTracker) LatestConfig(_ context.Context, changedInBlock uint64) (contractConfig types.ContractConfig, err error) {
+	ct.mu.RLock()
+	ts := ct.ts
+	contractConfig = ct.contractConfig
+	cachedBlock := ct.changedInBlock
+	ct.mu.RUnlock()
+	if ts == nil {
+		err = errors.New("config not yet initialized")
+	} else if cachedBlock != changedInBlock {
+		err = fmt.Errorf("failed to get config from %d: latest config in cache is from %d", changedInBlock, cachedBlock)
+	}
+	return
+}
+
+func (ct *ContractTracker) latestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
 	query := []string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm-set_config.contract_address='%s'", ct.address)}
 	res, err := ct.chainReader.TxsEvents(query)
 	if err != nil {

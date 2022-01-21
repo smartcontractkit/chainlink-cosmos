@@ -2,12 +2,14 @@ package terra
 
 import (
 	"errors"
+	"go.uber.org/multierr"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
-
 	uuid "github.com/satori/go.uuid"
 
+	"github.com/smartcontractkit/chainlink/core/services"
 	relaytypes "github.com/smartcontractkit/chainlink/core/services/relay/types"
+	"github.com/smartcontractkit/chainlink/core/utils"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
@@ -95,7 +97,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 		return nil, err
 	}
 
-	tracker := NewContractTracker(contractAddr, externalJobID.String(), chainReader, r.lggr)
+	tracker := NewContractTracker(contractAddr, externalJobID.String(), chainReader, chain.Config(), r.lggr)
 	digester := NewOffchainConfigDigester(spec.ChainID, contractAddr)
 
 	if spec.IsBootstrap {
@@ -103,6 +105,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 		return ocr2Provider{
 			digester: digester,
 			tracker:  tracker,
+			lggr:     r.lggr,
 		}, nil
 	}
 
@@ -112,7 +115,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	}
 
 	reportCodec := ReportCodec{}
-	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, senderAddr, msgEnqueuer, chainReader, r.lggr)
+	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, senderAddr, msgEnqueuer, chainReader, r.lggr, chain.Config())
 	median := NewMedianContract(contractAddr, chainReader, r.lggr, transmitter, chain.Config())
 
 	return ocr2Provider{
@@ -121,32 +124,71 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 		tracker:        tracker,
 		transmitter:    transmitter,
 		medianContract: median,
+		lggr:           r.lggr,
 	}, nil
 }
 
 type ocr2Provider struct {
-	digester       types.OffchainConfigDigester
-	reportCodec    median.ReportCodec
-	tracker        types.ContractConfigTracker
-	transmitter    types.ContractTransmitter
-	medianContract median.MedianContract
+	utils.StartStopOnce
+	digester    types.OffchainConfigDigester
+	reportCodec median.ReportCodec
+	lggr        Logger
+
+	// caching implementations which behave like sub-services
+	tracker interface {
+		types.ContractConfigTracker
+		services.Service
+	}
+	transmitter interface {
+		types.ContractTransmitter
+		services.Service
+	}
+	medianContract interface {
+		median.MedianContract
+		services.Service
+	}
 }
 
 func (p ocr2Provider) Start() error {
-	return nil
+	return p.StartOnce("TerraOCR2Provider", func() error {
+		p.lggr.Debugf("Starting")
+		p.lggr.Debugf("Starting ContractTracker")
+		p.lggr.Debugf("Starting ContractTransmitter")
+		p.lggr.Debugf("Starting MedianContract")
+		return multierr.Combine(
+			p.tracker.Start(),
+			p.transmitter.Start(),
+			p.medianContract.Start())
+	})
 }
 
 func (p ocr2Provider) Close() error {
-	return nil
+	return p.StopOnce("TerraOCR2Provider", func() error {
+		p.lggr.Debugf("Stopping")
+		p.lggr.Debugf("Stopping ContractTracker")
+		p.lggr.Debugf("Stopping ContractTransmitter")
+		p.lggr.Debugf("Stopping MedianContract")
+		return multierr.Combine(
+			p.tracker.Close(),
+			p.transmitter.Close(),
+			p.medianContract.Close())
+	})
 }
 
 func (p ocr2Provider) Ready() error {
-	// always ready
-	return nil
+	return multierr.Combine(
+		p.StartStopOnce.Ready(),
+		p.tracker.Ready(),
+		p.transmitter.Ready(),
+		p.medianContract.Ready())
 }
 
 func (p ocr2Provider) Healthy() error {
-	return nil
+	return multierr.Combine(
+		p.StartStopOnce.Healthy(),
+		p.tracker.Healthy(),
+		p.transmitter.Healthy(),
+		p.medianContract.Healthy())
 }
 
 func (p ocr2Provider) ContractTransmitter() types.ContractTransmitter {
