@@ -33,8 +33,7 @@ func (s *sourceFactory) NewSource(
 	client, err := pkgClient.NewClient(
 		terraChainConfig.TendermintURL,
 		terraChainConfig.FCDURL,
-		"",
-		int(terraChainConfig.ReadTimeout.Seconds()),
+		terraChainConfig.ReadTimeout,
 		s.log,
 	)
 	if err != nil {
