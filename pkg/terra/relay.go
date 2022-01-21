@@ -102,7 +102,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 
 	if spec.IsBootstrap {
 		// Return early if bootstrap node (doesn't require the full OCR2 provider)
-		return ocr2Provider{
+		return &ocr2Provider{
 			digester: digester,
 			tracker:  tracker,
 			lggr:     r.lggr,
@@ -118,7 +118,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, senderAddr, msgEnqueuer, chainReader, r.lggr, chain.Config())
 	median := NewMedianContract(contractAddr, chainReader, r.lggr, transmitter, chain.Config())
 
-	return ocr2Provider{
+	return &ocr2Provider{
 		digester:       digester,
 		reportCodec:    reportCodec,
 		tracker:        tracker,
@@ -149,33 +149,41 @@ type ocr2Provider struct {
 	}
 }
 
-func (p ocr2Provider) Start() error {
+func (p *ocr2Provider) Start() error {
 	return p.StartOnce("TerraOCR2Provider", func() error {
 		p.lggr.Debugf("Starting")
 		p.lggr.Debugf("Starting ContractTracker")
-		p.lggr.Debugf("Starting ContractTransmitter")
-		p.lggr.Debugf("Starting MedianContract")
-		return multierr.Combine(
-			p.tracker.Start(),
-			p.transmitter.Start(),
-			p.medianContract.Start())
+		err := p.tracker.Start()
+		if p.transmitter != nil {
+			p.lggr.Debugf("Starting ContractTransmitter")
+			err = multierr.Append(err, p.transmitter.Start())
+		}
+		if p.medianContract != nil {
+			p.lggr.Debugf("Starting MedianContract")
+			err = multierr.Append(err, p.medianContract.Start())
+		}
+		return err
 	})
 }
 
-func (p ocr2Provider) Close() error {
+func (p *ocr2Provider) Close() error {
 	return p.StopOnce("TerraOCR2Provider", func() error {
 		p.lggr.Debugf("Stopping")
 		p.lggr.Debugf("Stopping ContractTracker")
-		p.lggr.Debugf("Stopping ContractTransmitter")
-		p.lggr.Debugf("Stopping MedianContract")
-		return multierr.Combine(
-			p.tracker.Close(),
-			p.transmitter.Close(),
-			p.medianContract.Close())
+		err := p.tracker.Close()
+		if p.transmitter != nil {
+			p.lggr.Debugf("Stopping ContractTransmitter")
+			err = multierr.Append(err, p.transmitter.Close())
+		}
+		if p.medianContract != nil {
+			p.lggr.Debugf("Stopping MedianContract")
+			err = multierr.Append(err, p.medianContract.Close())
+		}
+		return err
 	})
 }
 
-func (p ocr2Provider) Ready() error {
+func (p *ocr2Provider) Ready() error {
 	return multierr.Combine(
 		p.StartStopOnce.Ready(),
 		p.tracker.Ready(),
@@ -183,7 +191,7 @@ func (p ocr2Provider) Ready() error {
 		p.medianContract.Ready())
 }
 
-func (p ocr2Provider) Healthy() error {
+func (p *ocr2Provider) Healthy() error {
 	return multierr.Combine(
 		p.StartStopOnce.Healthy(),
 		p.tracker.Healthy(),
@@ -191,22 +199,22 @@ func (p ocr2Provider) Healthy() error {
 		p.medianContract.Healthy())
 }
 
-func (p ocr2Provider) ContractTransmitter() types.ContractTransmitter {
+func (p *ocr2Provider) ContractTransmitter() types.ContractTransmitter {
 	return p.transmitter
 }
 
-func (p ocr2Provider) ContractConfigTracker() types.ContractConfigTracker {
+func (p *ocr2Provider) ContractConfigTracker() types.ContractConfigTracker {
 	return p.tracker
 }
 
-func (p ocr2Provider) OffchainConfigDigester() types.OffchainConfigDigester {
+func (p *ocr2Provider) OffchainConfigDigester() types.OffchainConfigDigester {
 	return p.digester
 }
 
-func (p ocr2Provider) ReportCodec() median.ReportCodec {
+func (p *ocr2Provider) ReportCodec() median.ReportCodec {
 	return p.reportCodec
 }
 
-func (p ocr2Provider) MedianContract() median.MedianContract {
+func (p *ocr2Provider) MedianContract() median.MedianContract {
 	return p.medianContract
 }
