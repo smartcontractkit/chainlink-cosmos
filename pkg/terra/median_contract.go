@@ -153,13 +153,13 @@ func (ct *MedianContract) LatestTransmissionDetails(
 	latestTimestamp time.Time,
 	err error,
 ) {
-	ct.trnMu.Lock()
+	ct.trnMu.RLock()
 	configDigest = ct.trn.configDigest
 	epoch = ct.trn.epoch
 	round = ct.trn.round
 	latestAnswer = ct.trn.latestAnswer
 	latestTimestamp = ct.trn.latestTimestamp
-	ct.trnMu.Unlock()
+	ct.trnMu.RUnlock()
 	if configDigest == (types.ConfigDigest{}) {
 		err = errors.New("contract not yet initialized")
 	}
@@ -220,13 +220,14 @@ func (ct *MedianContract) LatestRoundRequested(ctx context.Context, lookback tim
 	err error,
 ) {
 	ct.rndMu.RLock()
-	ct.rnd.configDigest = configDigest
-	ct.rnd.epoch = epoch
-	ct.rnd.round = round
+	configDigest = ct.rnd.configDigest
+	epoch = ct.rnd.epoch
+	round = ct.rnd.round
 	ct.rndMu.Unlock()
 	if configDigest == (types.ConfigDigest{}) {
 		err = errors.New("contract not yet initialized")
 	}
+	//TODO consider lookback
 	return
 }
 
