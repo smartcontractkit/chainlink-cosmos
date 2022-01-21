@@ -59,7 +59,7 @@ type Writer interface {
 var _ ReaderWriter = (*Client)(nil)
 
 const (
-	DefaultTimeout            = 5
+	DefaultTimeout            = 10 * time.Second
 	DefaultGasLimitMultiplier = 1.5
 )
 
@@ -78,25 +78,21 @@ type Client struct {
 	wasmClient              wasmtypes.QueryClient
 	bankClient              banktypes.QueryClient
 	tendermintServiceClient tmtypes.ServiceClient
-
-	// Timeout for node interactions
-	timeout time.Duration
-
-	log Logger
+	log                     Logger
 }
 
 func NewClient(chainID string,
 	tendermintURL string,
-	requestTimeoutSeconds int,
+	requestTimeout time.Duration,
 	lggr Logger,
 ) (*Client, error) {
-	if requestTimeoutSeconds <= 0 {
-		requestTimeoutSeconds = DefaultTimeout
+	if requestTimeout <= 0 {
+		requestTimeout = DefaultTimeout
 	}
 	// Note rpchttp.New or rpchttp.NewWithTimeout use a (buggy) custom transport
 	// which results in new connections being created per request.
 	// Pass our own client here which uses a default transport and caches connections properly.
-	tmClient, err := rpchttp.NewWithClient(tendermintURL, "/websocket", &http.Client{Timeout: time.Duration(requestTimeoutSeconds) * time.Second})
+	tmClient, err := rpchttp.NewWithClient(tendermintURL, "/websocket", &http.Client{Timeout: requestTimeout})
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +123,6 @@ func NewClient(chainID string,
 		tendermintServiceClient: tendermintServiceClient,
 		bankClient:              bankClient,
 		clientCtx:               clientCtx,
-		timeout:                 time.Duration(requestTimeoutSeconds * int(time.Second)),
 		log:                     lggr,
 	}, nil
 }

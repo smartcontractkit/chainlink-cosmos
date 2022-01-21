@@ -35,7 +35,7 @@ func TestBatchSim(t *testing.T) {
 	tc, err := NewClient(
 		"42",
 		tendermintURL,
-		10,
+		DefaultTimeout,
 		lggr)
 	require.NoError(t, err)
 
@@ -127,7 +127,7 @@ func TestTerraClient(t *testing.T) {
 	tc, err := NewClient(
 		"42",
 		tendermintURL,
-		10,
+		DefaultTimeout,
 		lggr)
 	require.NoError(t, err)
 	gpe := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
