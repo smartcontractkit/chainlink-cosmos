@@ -183,20 +183,30 @@ func (p *ocr2Provider) Close() error {
 	})
 }
 
-func (p *ocr2Provider) Ready() error {
-	return multierr.Combine(
+func (p *ocr2Provider) Ready() (err error) {
+	err = multierr.Combine(
 		p.StartStopOnce.Ready(),
-		p.tracker.Ready(),
-		p.transmitter.Ready(),
-		p.medianContract.Ready())
+		p.tracker.Ready())
+	if p.transmitter != nil {
+		err = multierr.Append(err, p.transmitter.Ready())
+	}
+	if p.medianContract != nil {
+		err = multierr.Append(err, p.medianContract.Ready())
+	}
+	return
 }
 
-func (p *ocr2Provider) Healthy() error {
-	return multierr.Combine(
+func (p *ocr2Provider) Healthy() (err error) {
+	err = multierr.Combine(
 		p.StartStopOnce.Healthy(),
-		p.tracker.Healthy(),
-		p.transmitter.Healthy(),
-		p.medianContract.Healthy())
+		p.tracker.Healthy())
+	if p.transmitter != nil {
+		err = multierr.Append(err, p.transmitter.Healthy())
+	}
+	if p.medianContract != nil {
+		err = multierr.Append(err, p.medianContract.Healthy())
+	}
+	return
 }
 
 func (p *ocr2Provider) ContractTransmitter() types.ContractTransmitter {
