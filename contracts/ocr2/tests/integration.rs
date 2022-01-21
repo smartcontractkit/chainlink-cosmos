@@ -109,6 +109,8 @@ fn init_works() {
         config: Billing {
             recommended_gas_price: 10,
             observation_payment: 5,
+            transmission_payment: 0,
+            ..Default::default()
         },
     };
 

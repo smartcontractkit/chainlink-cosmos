@@ -257,7 +257,7 @@ fn transmit_happy_path() {
     let mut env = setup();
     let deposit = Decimal::from_str("1000").unwrap().0;
     let observation_payment = Decimal::from_str("5").unwrap().0;
-    let reimbursement = Decimal::from_str("0.00534776").unwrap().0;
+    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
 
     // -- set billing
 
@@ -271,6 +271,8 @@ fn transmit_happy_path() {
         config: Billing {
             recommended_gas_price: u64::try_from(recommended_gas_price.u128()).unwrap(),
             observation_payment: u64::try_from(observation_payment.u128()).unwrap(),
+            transmission_payment: 0,
+            ..Default::default()
         },
     };
     env.router
@@ -511,7 +513,7 @@ fn set_link_token() {
     let mut env = setup();
     let deposit = Decimal::from_str("1000").unwrap().0;
     let observation_payment = Decimal::from_str("5").unwrap().0;
-    let reimbursement = Decimal::from_str("0.00534776").unwrap().0;
+    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
 
     // -- set billing
 
@@ -525,6 +527,8 @@ fn set_link_token() {
         config: Billing {
             recommended_gas_price: u64::try_from(recommended_gas_price.u128()).unwrap(),
             observation_payment: u64::try_from(observation_payment.u128()).unwrap(),
+            transmission_payment: 0,
+            ..Default::default()
         },
     };
 
