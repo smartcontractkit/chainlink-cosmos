@@ -130,7 +130,7 @@ func (ct *ContractTracker) LatestConfigDetails(ctx context.Context) (changedInBl
 	ct.mu.RUnlock()
 	if ts == nil {
 		err = errors.New("config details not yet initialized")
-	} else if since := time.Since(*ts); since > ct.cfg.OCRCacheTTL() {
+	} else if since := time.Since(*ts); since > ct.cfg.OCR2CacheTTL() {
 		err = fmt.Errorf("failed to get config details: stale value cached %s ago", since)
 	}
 	return

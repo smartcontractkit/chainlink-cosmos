@@ -26,9 +26,9 @@ var DefaultConfigSet = ConfigSet{
 	// To be conservative and since the number of messages we'd
 	// have in a batch on average roughly corresponds to the number of terra ocr jobs we're running (do not expect more than 100),
 	// we can set a max msgs per batch of 100.
-	MaxMsgsPerBatch:    100,
-	OCRCachePollPeriod: 10 * time.Second,
-	OCRCacheTTL:        time.Minute,
+	MaxMsgsPerBatch:     100,
+	OCR2CachePollPeriod: 10 * time.Second,
+	OCR2CacheTTL:        time.Minute,
 }
 
 type Config interface {
@@ -38,8 +38,8 @@ type Config interface {
 	FallbackGasPriceULuna() sdk.Dec
 	GasLimitMultiplier() float64
 	MaxMsgsPerBatch() int64
-	OCRCachePollPeriod() time.Duration
-	OCRCacheTTL() time.Duration
+	OCR2CachePollPeriod() time.Duration
+	OCR2CacheTTL() time.Duration
 
 	// Update sets new chain config values.
 	Update(db.ChainCfg)
@@ -53,8 +53,8 @@ type ConfigSet struct {
 	FallbackGasPriceULuna sdk.Dec
 	GasLimitMultiplier    float64
 	MaxMsgsPerBatch       int64
-	OCRCachePollPeriod    time.Duration
-	OCRCacheTTL           time.Duration
+	OCR2CachePollPeriod   time.Duration
+	OCR2CacheTTL          time.Duration
 }
 
 var _ Config = (*config)(nil)
@@ -146,24 +146,24 @@ func (c *config) MaxMsgsPerBatch() int64 {
 	return c.defaults.MaxMsgsPerBatch
 }
 
-func (c *config) OCRCachePollPeriod() time.Duration {
+func (c *config) OCR2CachePollPeriod() time.Duration {
 	c.chainMu.RLock()
 	ch := c.chain.OCRCachePollPeriod
 	c.chainMu.RUnlock()
 	if ch != nil {
 		return ch.Duration()
 	}
-	return c.defaults.OCRCachePollPeriod
+	return c.defaults.OCR2CachePollPeriod
 }
 
-func (c *config) OCRCacheTTL() time.Duration {
+func (c *config) OCR2CacheTTL() time.Duration {
 	c.chainMu.RLock()
 	ch := c.chain.OCRCacheTTL
 	c.chainMu.RUnlock()
 	if ch != nil {
 		return ch.Duration()
 	}
-	return c.defaults.OCRCacheTTL
+	return c.defaults.OCR2CacheTTL
 }
 
 const invalidFallbackMsg = `Invalid value provided for %s, "%s" - falling back to default "%s": %v`

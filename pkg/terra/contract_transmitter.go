@@ -156,7 +156,7 @@ func (ct *ContractTransmitter) LatestConfigDigestAndEpoch(ctx context.Context) (
 	ct.mu.RUnlock()
 	if ts == nil {
 		err = errors.New("config digest and epoch not yet initialized")
-	} else if since := time.Since(*ts); since > ct.cfg.OCRCacheTTL() {
+	} else if since := time.Since(*ts); since > ct.cfg.OCR2CacheTTL() {
 		err = fmt.Errorf("failed to get config digest and epoch: stale value cached %s ago", since)
 	}
 	return

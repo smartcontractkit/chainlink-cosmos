@@ -110,7 +110,7 @@ func (ct *MedianContract) pollState() {
 				// <-done
 				return
 			case <-done:
-				tick = time.After(utils.WithJitter(ct.cfg.OCRCachePollPeriod()))
+				tick = time.After(utils.WithJitter(ct.cfg.OCR2CachePollPeriod()))
 			}
 		}
 	}
@@ -137,7 +137,7 @@ func (ct *MedianContract) LatestTransmissionDetails(
 	ct.mu.RUnlock()
 	if ts.IsZero() {
 		err = errors.New("contract not yet initialized")
-	} else if since := time.Since(ts); since > ct.cfg.OCRCacheTTL() {
+	} else if since := time.Since(ts); since > ct.cfg.OCR2CacheTTL() {
 		err = fmt.Errorf("failed to get latest transmission details: stale value cached %s ago", since)
 	}
 	return
@@ -205,7 +205,7 @@ func (ct *MedianContract) LatestRoundRequested(ctx context.Context, lookback tim
 	ct.mu.Unlock()
 	if ts.IsZero() {
 		err = errors.New("contract not yet initialized")
-	} else if since := time.Since(ts); since > ct.cfg.OCRCacheTTL() {
+	} else if since := time.Since(ts); since > ct.cfg.OCR2CacheTTL() {
 		err = fmt.Errorf("failed to get latest round requested: stale value cached %s ago", since)
 	}
 	return
