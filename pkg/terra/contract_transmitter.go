@@ -78,7 +78,7 @@ func (ct *ContractTransmitter) Close() error {
 
 func (ct *ContractTransmitter) pollState() {
 	defer close(ct.done)
-	tick := time.After(utils.WithJitter(ct.cfg.OCRCachePollPeriod()))
+	tick := time.After(0)
 	for {
 		select {
 		case <-ct.stop:
@@ -143,7 +143,7 @@ func (ct *ContractTransmitter) Transmit(
 	return err
 }
 
-// LatestConfigDigestAndEpoch fetches the latest details from address state
+// LatestConfigDigestAndEpoch fetches the latest details from cache
 func (ct *ContractTransmitter) LatestConfigDigestAndEpoch(ctx context.Context) (
 	configDigest types.ConfigDigest,
 	epoch uint32,
@@ -162,6 +162,7 @@ func (ct *ContractTransmitter) LatestConfigDigestAndEpoch(ctx context.Context) (
 	return
 }
 
+// latestConfigDigestAndEpoch fetches the latest details from address state
 func (ct *ContractTransmitter) latestConfigDigestAndEpoch(ctx context.Context) (
 	configDigest types.ConfigDigest,
 	epoch uint32,

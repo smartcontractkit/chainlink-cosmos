@@ -40,24 +40,13 @@ type MedianContract struct {
 	stop, done  chan struct{}
 
 	// cached state
-	trnMu sync.RWMutex
-	trn   transmission
-	rndMu sync.RWMutex
-	rnd   round
-}
-
-type transmission struct {
+	mu              sync.RWMutex
+	ts              time.Time
 	configDigest    types.ConfigDigest
 	epoch           uint32
 	round           uint8
 	latestAnswer    *big.Int
 	latestTimestamp time.Time
-}
-
-type round struct {
-	configDigest types.ConfigDigest
-	epoch        uint32
-	round        uint8
 }
 
 func NewMedianContract(address sdk.AccAddress, chainReader client.Reader, lggr Logger, cr LatestConfigReader, cfg Config) *MedianContract {
@@ -91,58 +80,43 @@ func (ct *MedianContract) Close() error {
 
 func (ct *MedianContract) pollState() {
 	defer close(ct.done)
-	tick := time.After(utils.WithJitter(ct.cfg.OCRCachePollPeriod()))
+	tick := time.After(0)
 	for {
 		select {
 		case <-ct.stop:
 			return
 		case <-tick:
 			ctx, cancel := utils.ContextFromChan(ct.stop)
-			var wg sync.WaitGroup
-			wg.Add(2)
+			done := make(chan struct{})
 			go func() {
-				defer wg.Done()
+				defer close(done)
 				configDigest, epoch, round, latestAnswer, latestTimestamp, err := ct.latestTransmissionDetails(ctx)
 				if err != nil {
 					ct.lggr.Errorf("Failed to get latest transmission details", "err", err)
 					return
 				}
-				ct.trnMu.Lock()
-				ct.trn.configDigest = configDigest
-				ct.trn.epoch = epoch
-				ct.trn.round = round
-				ct.trn.latestAnswer = latestAnswer
-				ct.trn.latestTimestamp = latestTimestamp
-				ct.trnMu.Unlock()
-			}()
-			go func() {
-				defer wg.Done()
-				lookback := time.Minute //TODO remember their last call? error when it doesnt match? or fallback to sync?
-				configDigest, epoch, round, err := ct.latestRoundRequested(ctx, lookback)
-				if err != nil {
-					ct.lggr.Errorf("Failed to get latest round requested", "err", err)
-					return
-				}
-				ct.rndMu.RLock()
-				ct.rnd.configDigest = configDigest
-				ct.rnd.epoch = epoch
-				ct.rnd.round = round
-				ct.rndMu.Unlock()
+				ct.mu.Lock()
+				ct.configDigest = configDigest
+				ct.epoch = epoch
+				ct.round = round
+				ct.latestAnswer = latestAnswer
+				ct.latestTimestamp = latestTimestamp
+				ct.mu.Unlock()
 			}()
 			select {
 			case <-ct.stop:
 				cancel()
 				// Note: the client does not respect context, so just return instead of waiting.
-				// wg.Wait()
+				// <-done
 				return
-			case <-utils.WaitGroupChan(&wg):
+			case <-done:
 				tick = time.After(utils.WithJitter(ct.cfg.OCRCachePollPeriod()))
 			}
 		}
 	}
 }
 
-// LatestTransmissionDetails fetches the latest transmission details from address state
+// LatestTransmissionDetails fetches the latest cached transmission details
 func (ct *MedianContract) LatestTransmissionDetails(
 	ctx context.Context,
 ) (
@@ -153,19 +127,23 @@ func (ct *MedianContract) LatestTransmissionDetails(
 	latestTimestamp time.Time,
 	err error,
 ) {
-	ct.trnMu.RLock()
-	configDigest = ct.trn.configDigest
-	epoch = ct.trn.epoch
-	round = ct.trn.round
-	latestAnswer = ct.trn.latestAnswer
-	latestTimestamp = ct.trn.latestTimestamp
-	ct.trnMu.RUnlock()
-	if configDigest == (types.ConfigDigest{}) {
+	ct.mu.RLock()
+	ts := ct.ts
+	configDigest = ct.configDigest
+	epoch = ct.epoch
+	round = ct.round
+	latestAnswer = ct.latestAnswer
+	latestTimestamp = ct.latestTimestamp
+	ct.mu.RUnlock()
+	if ts.IsZero() {
 		err = errors.New("contract not yet initialized")
+	} else if since := time.Since(ts); since > ct.cfg.OCRCacheTTL() {
+		err = fmt.Errorf("failed to get latest transmission details: stale value cached %s ago", since)
 	}
 	return
 }
 
+// latestTransmissionDetails fetches the latest transmission details from address state
 func (ct *MedianContract) latestTransmissionDetails(
 	ctx context.Context,
 ) (
@@ -212,25 +190,28 @@ func (ct *MedianContract) latestTransmissionDetails(
 	return details.LatestConfigDigest, details.Epoch, details.Round, ans, time.Unix(details.LatestTimestamp, 0), nil
 }
 
-// LatestRoundRequested fetches the latest round requested by filtering event logs
+// LatestRoundRequested fetches the latest round requested from the cache
 func (ct *MedianContract) LatestRoundRequested(ctx context.Context, lookback time.Duration) (
 	configDigest types.ConfigDigest,
 	epoch uint32,
 	round uint8,
 	err error,
 ) {
-	ct.rndMu.RLock()
-	configDigest = ct.rnd.configDigest
-	epoch = ct.rnd.epoch
-	round = ct.rnd.round
-	ct.rndMu.Unlock()
-	if configDigest == (types.ConfigDigest{}) {
+	ct.mu.RLock()
+	ts := ct.ts
+	configDigest = ct.configDigest
+	epoch = ct.epoch
+	round = ct.round
+	ct.mu.Unlock()
+	if ts.IsZero() {
 		err = errors.New("contract not yet initialized")
+	} else if since := time.Since(ts); since > ct.cfg.OCRCacheTTL() {
+		err = fmt.Errorf("failed to get latest round requested: stale value cached %s ago", since)
 	}
-	//TODO consider lookback
 	return
 }
 
+// latestRoundRequested fetches the latest round requested by filtering event logs
 func (ct *MedianContract) latestRoundRequested(ctx context.Context, lookback time.Duration) (
 	configDigest types.ConfigDigest,
 	epoch uint32,

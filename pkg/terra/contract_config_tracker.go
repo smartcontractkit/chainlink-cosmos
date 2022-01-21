@@ -68,7 +68,7 @@ func (ct *ContractTracker) Close() error {
 
 func (ct *ContractTracker) pollState() {
 	defer close(ct.done)
-	tick := time.After(utils.WithJitter(ct.cfg.ConfirmPollPeriod()))
+	tick := time.After(0)
 	for {
 		select {
 		case <-ct.stop:
@@ -96,7 +96,6 @@ func (ct *ContractTracker) pollState() {
 					return
 				}
 				now := time.Now()
-				//TODO sanity check digest/block?
 				ct.mu.Lock()
 				ct.ts = &now
 				ct.changedInBlock = changedInBlock
