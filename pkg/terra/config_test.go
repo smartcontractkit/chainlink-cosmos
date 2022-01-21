@@ -1,9 +1,10 @@
 package terra
 
 import (
-	"github.com/smartcontractkit/chainlink/core/store/models"
 	"testing"
 	"time"
+
+	"github.com/smartcontractkit/chainlink/core/store/models"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"

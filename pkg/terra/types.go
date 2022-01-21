@@ -2,10 +2,11 @@ package terra
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
 	"github.com/smartcontractkit/terra.go/msg"
-	"strings"
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
