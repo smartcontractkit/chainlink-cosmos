@@ -35,12 +35,13 @@ pub struct Validator {
     pub gas_limit: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, JsonSchema)]
 pub struct Billing {
     /// Should match https://fcd.terra.dev/v1/txs/gas_prices
     /// NOTE: needs to be scaled to the same amount of decimals places as LINK token
     pub recommended_gas_price: u64,
     pub observation_payment: u64,
+    pub transmission_payment: u64,
     pub base_gas: Option<u64>,
     pub gas_per_signature: Option<u64>,
     /// In percent
