@@ -73,6 +73,7 @@ pub fn instantiate(
         billing: Billing {
             recommended_gas_price: 0,
             observation_payment: 0,
+            transmission_payment: 0,
             base_gas: None,
             gas_per_signature: None,
             gas_adjustment: None,
@@ -583,8 +584,9 @@ pub fn execute_transmit(
         &raw_report,
     )?;
 
-    // pay transmitter the gas reimbursement
-    let amount = calculate_reimbursement(&config.billing, juels_per_luna, raw_signatures.len());
+    // pay transmitter and reimburse gas spent
+    let amount = Uint128::from(config.billing.transmission_payment)
+        + calculate_reimbursement(&config.billing, juels_per_luna, raw_signatures.len());
     oracle.payment += amount;
     TRANSMITTERS.save(deps.storage, &info.sender, &oracle)?;
 
