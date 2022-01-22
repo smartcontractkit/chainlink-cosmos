@@ -54,6 +54,7 @@ const validateInput = (input: CommandInput): boolean => {
 
 const deployInstruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
+    category: 'OCR',
     contract: 'ocr2',
     function: 'deploy',
   },

@@ -4,6 +4,7 @@ import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 
 export interface AbstractInstruction<Input, ContractInput> {
   instruction: {
+    category: string
     contract: string
     function: string
   }
@@ -14,8 +15,10 @@ export interface AbstractInstruction<Input, ContractInput> {
 
 export const instructionToCommand = (instruction: AbstractInstruction<any, any>) => {
   const id = `${instruction.instruction.contract}:${instruction.instruction.function}`
+  const category = `${instruction.instruction.category}`
   return class Command extends TerraCommand {
     static id = id
+    static category = category
     command: AbstractCommand
 
     constructor(flags, args) {

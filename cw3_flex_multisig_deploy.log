@@ -1,0 +1,12 @@
+[dominos-mbp:~/workspace/chainlink-terra> yarn gauntlet  cw3_flex_multisig:deploy --network=local --group_addr=terra1js4j4838l3yvp7n32nqjkyvvepj0f25melmemf --max_voting_period='{ "time" : 28800}' --threshold='{ "absolute_count" : { "weight" : 50 }}'
+yarn run v1.22.17
+$ yarn build && node ./packages-ts/gauntlet-terra-contracts/dist/index.js cw3_flex_multisig:deploy --network=local --group_addr=terra1js4j4838l3yvp7n32nqjkyvvepj0f25melmemf '--max_voting_period={ "time" : 28800}' '--threshold={ "absolute_count" : { "weight" : 50 }}'
+$ yarn clean && tsc -b ./tsconfig.json
+$ tsc -b --clean ./tsconfig.json
+🧤  gauntlet 0.0.7
+Operator address is terra1pl4k5rj2jv6phm2vvhkttju7px6va2ja2v3haw
+Operator address is terra1pl4k5rj2jv6phm2vvhkttju7px6va2ja2v3haw
+⏳  Deploying contract cw3_flex_multisig
+⏳  Deploying contract...
+✅  Deployed cw3_flex_multisig to terra1lwjzdjdzcwku9deg8yxcq767n5lg5467q76xq2
+✨  Done in 13.21s.

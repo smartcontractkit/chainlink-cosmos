@@ -2,5 +2,7 @@
   "flags": 39112,
   "ocr2": 39113,
   "access_controller": 39116,
-  "deviation_flagging_validator": 39115
+  "deviation_flagging_validator": 39115,
+  "cw3_flex_multisig": 36059,
+  "cw4_group": 36895
 }

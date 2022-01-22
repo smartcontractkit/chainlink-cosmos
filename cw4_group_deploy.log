@@ -1,0 +1,30 @@
+[dominos-mbp:~/workspace/chainlink-terra> yarn gauntlet cw4_group:deploy --members='[terra1pl4k5rj2jv6phm2vvhkttju7px6va2ja2v3haw,terra1tsxn3zzp09kvwpx03gzwquhc6nn794vvznuhzr,terra1s66cck3sxacdc2jfpdd4t4pk4yzc60pa72ssdr]' --admin=terra1pl4k5rj2jv6phm2vvhkttju7px6va2ja2v3haw --weights='[34,33,33]' --network=bombay-testnet
+yarn run v1.22.17
+$ yarn build && node ./packages-ts/gauntlet-terra-contracts/dist/index.js cw4_group:deploy --members=[terra1pl4k5rj2jv6phm2vvhkttju7px6va2ja2v3haw,terra1tsxn3zzp09kvwpx03gzwquhc6nn794vvznuhzr,terra1s66cck3sxacdc2jfpdd4t4pk4yzc60pa72ssdr] --admin=terra1pl4k5rj2jv6phm2vvhkttju7px6va2ja2v3haw --weights=[34,33,33] --network=bombay-testnet
+$ yarn clean && tsc -b ./tsconfig.json
+$ tsc -b --clean ./tsconfig.json
+🧤  gauntlet 0.0.7
+Operator address is terra1pl4k5rj2jv6phm2vvhkttju7px6va2ja2v3haw
+object
+string
+{
+  members: [
+    'terra1pl4k5rj2jv6phm2vvhkttju7px6va2ja2v3haw',
+    'terra1tsxn3zzp09kvwpx03gzwquhc6nn794vvznuhzr',
+    'terra1s66cck3sxacdc2jfpdd4t4pk4yzc60pa72ssdr'
+  ],
+  admin: 'terra1pl4k5rj2jv6phm2vvhkttju7px6va2ja2v3haw',
+  weights: [ 34, 33, 33 ],
+  network: 'bombay-testnet',
+  help: false,
+  delta: 'delta.json',
+  codeIdsPath: './codeIds',
+  artifactsPath: './artifacts'
+}
+object
+string
+Operator address is terra1pl4k5rj2jv6phm2vvhkttju7px6va2ja2v3haw
+⏳  Deploying contract cw4_group
+⏳  Deploying contract...
+✅  Deployed cw4_group to terra1fu4f92ty5a4x6rqgxckyd6u463fyjkwfxlqscy
+✨  Done in 21.53s

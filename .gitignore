@@ -1,7 +1,8 @@
 .direnv
+.vscode
 target/
+artifacts/
 tarpaulin-report.html
-artifacts
 
 # TS
 node_modules
