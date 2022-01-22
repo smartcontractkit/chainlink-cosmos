@@ -84,7 +84,7 @@ func (ct *ContractTracker) pollState() {
 					return
 				}
 				ct.mu.RLock()
-				update := ct.changedInBlock != ct.changedInBlock
+				update := ct.changedInBlock != changedInBlock
 				ct.mu.RUnlock()
 				if !update {
 					// no change
