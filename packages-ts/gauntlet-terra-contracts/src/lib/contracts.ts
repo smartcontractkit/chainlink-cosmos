@@ -13,7 +13,6 @@ export const RELEASE_VERSION = "v0.0.4"
 export enum CONTRACT_LIST {
   FLAGS = 'flags',
   DEVIATION_FLAGGING_VALIDATOR = 'deviation_flagging_validator',
-  LINK = 'cw20_base',
   OCR_2 = 'ocr2',
   ACCESS_CONTROLLER = 'access_controller',
 }

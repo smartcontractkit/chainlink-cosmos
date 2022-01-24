@@ -49,13 +49,12 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string) {
 	_, err = exec.Command("terrad", "init", "integration-test", "-o", "--chain-id", chainID, "--home", testdir).Output()
 	require.NoError(t, err)
 
-	// Enable the api server
 	p := path.Join(testdir, "config", "app.toml")
 	f, err := os.ReadFile(p)
 	require.NoError(t, err)
 	config, err := toml.Load(string(f))
 	require.NoError(t, err)
-	config.Set("api.enable", "true")
+	// Enable if desired to use lcd endpoints config.Set("api.enable", "true")
 	config.Set("minimum-gas-prices", minGasPrice.String())
 	require.NoError(t, os.WriteFile(p, []byte(config.String()), 0644))
 	// TODO: could also speed up the block mining config
@@ -66,7 +65,6 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string) {
 		account := fmt.Sprintf("test%d", i)
 		key, err := exec.Command("terrad", "keys", "add", account, "--output", "json", "--keyring-backend", "test", "--keyring-dir", testdir).CombinedOutput()
 		require.NoError(t, err, string(key))
-		t.Log("key", string(key), account)
 		var k struct {
 			Address  string `json:"address"`
 			Mnemonic string `json:"mnemonic"`

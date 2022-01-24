@@ -28,9 +28,6 @@ export default class UploadContractCode extends TerraCommand {
   }
 
   execute = async () => {
-    if (this.args && this.args[0] == 'none') {
-      this.args = []
-    }
     const askedContracts = !!this.args.length
       ? Object.keys(CONTRACT_LIST)
           .filter((contractId) => this.args.includes(CONTRACT_LIST[contractId]))
@@ -48,18 +45,18 @@ export default class UploadContractCode extends TerraCommand {
     const responses: any[] = []
     for (const contractName of askedContracts) {
       const contract = getContract(contractName)
+      console.log('CONTRACT Bytecode exists:', !!contract.bytecode)
 
       try {
         const res = await this.upload(contract.bytecode, contractName)
 
+        logger.success(`Contract ${contractName} code uploaded succesfully`)
         contractReceipts[contractName] = res.tx
-
         responses.push({
           tx: res,
           contract: null,
         })
       } catch (e) {
-        console.log(e)
         logger.error(`Error deploying ${contractName} code: ${e.message}`)
       }
     }

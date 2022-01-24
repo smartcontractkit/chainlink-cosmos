@@ -27,7 +27,7 @@
     "bundle": "yarn build && pkg ."
   },
   "dependencies": {
-    "@chainlink/gauntlet-core": "0.0.3",
+    "@chainlink/gauntlet-core": "0.0.7",
     "@chainlink/gauntlet-terra": "*",
     "@terra-money/terra.js": "^2.1.2",
     "ajv": "^8.6.3"

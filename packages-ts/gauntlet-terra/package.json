@@ -27,6 +27,6 @@
   },
   "dependencies": {
     "@terra-money/terra.js": "^2.1.2",
-    "@chainlink/gauntlet-core": "0.0.3"
+    "@chainlink/gauntlet-core": "0.0.7"
   }
 }
