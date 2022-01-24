@@ -2,6 +2,13 @@ import { io, logger } from '@chainlink/gauntlet-core/dist/utils'
 import { JSONSchemaType } from 'ajv'
 import { existsSync, readFileSync } from 'fs'
 import path from 'path'
+import fetch from 'node-fetch';
+
+const { Octokit } = require("@octokit/core");
+const octokit = new Octokit();
+const http = require('http');
+
+export const RELEASE_VERSION = "v0.0.4"
 
 export enum CONTRACT_LIST {
   FLAGS = 'flags',
@@ -39,7 +46,7 @@ export const loadContracts = (): Contracts => {
         [id]: {
           id,
           abi: getContractABI(id),
-          bytecode: getContractCode(id),
+          bytecode: getContractCode(id, RELEASE_VERSION),
         },
       },
     }
@@ -47,18 +54,20 @@ export const loadContracts = (): Contracts => {
 }
 
 // TODO: Pull it from a Github versioned release artifact
-export const getContractCode = (contractId: CONTRACT_LIST): string => {
-  // Possible paths depending on how/where gauntlet is being executed
-  const possibleContractPaths = [
-    path.join(__dirname, '../..', './artifacts'),
-    path.join(process.cwd(), './artifacts'),
-    path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts'),
-  ]
-  const codes = possibleContractPaths
-    .filter((contractPath) => existsSync(`${contractPath}/${contractId}.wasm`))
-    .map((contractPath) => {
-      const wasm = readFileSync(`${contractPath}/${contractId}.wasm`)
-      return wasm.toString('base64')
+export const getContractCode = async (contractId: CONTRACT_LIST, version): Promise<string> => {
+  // get requested release
+  const release = await octokit.request('GET /repos/{owner}/{repo}/releases/tags/{tag}', {
+    owner: 'smartcontractkit',
+    repo: 'chainlink-terra',
+    tag: version
+  })
+  
+  const codes = release.data.assets
+    .filter((asset) => (asset.name === `${contractId}.wasm`))
+    .map(async (asset) => {
+      const response = await fetch(asset.browser_download_url);
+      const body = await response.text();
+      return body.toString(`base64`)
     })
   return codes[0]
 }
