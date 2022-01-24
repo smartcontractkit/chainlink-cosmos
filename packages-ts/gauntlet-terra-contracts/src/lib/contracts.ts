@@ -2,13 +2,13 @@ import { io, logger } from '@chainlink/gauntlet-core/dist/utils'
 import { JSONSchemaType } from 'ajv'
 import { existsSync, readFileSync } from 'fs'
 import path from 'path'
-import fetch from 'node-fetch';
+import fetch from 'node-fetch'
 
-const { Octokit } = require("@octokit/core");
-const octokit = new Octokit();
-const http = require('http');
+const { Octokit } = require('@octokit/core')
+const octokit = new Octokit()
+const http = require('http')
 
-export const RELEASE_VERSION = "v0.0.4"
+export const RELEASE_VERSION = 'v0.0.4'
 
 export enum CONTRACT_LIST {
   FLAGS = 'flags',
@@ -57,14 +57,14 @@ export const getContractCode = async (contractId: CONTRACT_LIST, version): Promi
   const release = await octokit.request('GET /repos/{owner}/{repo}/releases/tags/{tag}', {
     owner: 'smartcontractkit',
     repo: 'chainlink-terra',
-    tag: version
+    tag: version,
   })
 
   const codes = release.data.assets
-    .filter((asset) => (asset.name === `${contractId}.wasm`))
+    .filter((asset) => asset.name === `${contractId}.wasm`)
     .map(async (asset) => {
-      const response = await fetch(asset.browser_download_url);
-      const body = await response.text();
+      const response = await fetch(asset.browser_download_url)
+      const body = await response.text()
       return body.toString(`base64`)
     })
   return codes[0]
