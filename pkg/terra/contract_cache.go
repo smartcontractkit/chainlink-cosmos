@@ -89,12 +89,14 @@ func (cc *ContractCache) updateConfig(ctx context.Context) {
 		cc.lggr.Errorf("Failed to get latest config details", "err", err)
 		return
 	}
-	cc.configMu.RLock()
-	sameBlock := cc.configBlock == changedInBlock
-	digest := cc.config.ConfigDigest
-	cc.configMu.RUnlock()
-	if sameBlock && digest == configDigest {
-		// no change
+	now := time.Now()
+	cc.configMu.Lock()
+	same := cc.configBlock == changedInBlock && cc.config.ConfigDigest == configDigest
+	if same {
+		cc.configTS = now // refresh TTL
+	}
+	cc.configMu.Unlock()
+	if same {
 		return
 	}
 	contractConfig, err := cc.fetchLatestConfig(ctx, changedInBlock)
@@ -102,7 +104,7 @@ func (cc *ContractCache) updateConfig(ctx context.Context) {
 		cc.lggr.Errorf("Failed to get latest config", "block", changedInBlock, "err", err)
 		return
 	}
-	now := time.Now()
+	now = time.Now()
 	cc.configMu.Lock()
 	cc.configTS = now
 	cc.configBlock = changedInBlock
