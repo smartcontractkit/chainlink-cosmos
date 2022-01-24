@@ -27,7 +27,7 @@ var DefaultConfigSet = ConfigSet{
 	// have in a batch on average roughly corresponds to the number of terra ocr jobs we're running (do not expect more than 100),
 	// we can set a max msgs per batch of 100.
 	MaxMsgsPerBatch:     100,
-	OCR2CachePollPeriod: 10 * time.Second,
+	OCR2CachePollPeriod: 6 * time.Second,
 	OCR2CacheTTL:        time.Minute,
 }
 
