@@ -15,6 +15,7 @@ require (
 	github.com/terra-money/core v0.5.14
 	go.uber.org/multierr v1.7.0
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
+	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
 	gopkg.in/guregu/null.v4 v4.0.0
 )
 
@@ -211,7 +212,6 @@ require (
 	golang.org/x/sys v0.0.0-20211107104306-e0b2ad06fe42 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	google.golang.org/genproto v0.0.0-20211104193956-4c6863e31247 // indirect
 	google.golang.org/grpc v1.42.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect

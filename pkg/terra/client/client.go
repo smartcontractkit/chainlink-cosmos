@@ -8,16 +8,17 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
+	"golang.org/x/time/rate"
 
 	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/smartcontractkit/terra.go/msg"
+	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	wasmtypes "github.com/terra-money/core/x/wasm/types"
 
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
@@ -79,10 +80,13 @@ type Client struct {
 	bankClient              banktypes.QueryClient
 	tendermintServiceClient tmtypes.ServiceClient
 	log                     Logger
+	limiter                 *rate.Limiter
 }
 
 func NewClient(chainID string,
 	tendermintURL string,
+	tendermintReqRateLimit float64, // reqs/s
+	tendermintReqBurstLimit int,
 	requestTimeout time.Duration,
 	lggr Logger,
 ) (*Client, error) {
@@ -114,7 +118,6 @@ func NewClient(chainID string,
 	wasmClient := wasmtypes.NewQueryClient(clientCtx)
 	tendermintServiceClient := tmtypes.NewServiceClient(clientCtx)
 	bankClient := banktypes.NewQueryClient(clientCtx)
-
 	return &Client{
 		chainID:                 chainID,
 		cosmosServiceClient:     cosmosServiceClient,
@@ -124,10 +127,14 @@ func NewClient(chainID string,
 		bankClient:              bankClient,
 		clientCtx:               clientCtx,
 		log:                     lggr,
+		limiter:                 rate.NewLimiter(rate.Limit(tendermintReqRateLimit), tendermintReqBurstLimit),
 	}, nil
 }
 
 func (c *Client) Account(addr sdk.AccAddress) (uint64, uint64, error) {
+	if err := c.limiter.Wait(context.Background()); err != nil {
+		return 0, 0, err
+	}
 	r, err := c.authClient.Account(context.Background(), &authtypes.QueryAccountRequest{Address: addr.String()})
 	if err != nil {
 		return 0, 0, err
@@ -141,6 +148,9 @@ func (c *Client) Account(addr sdk.AccAddress) (uint64, uint64, error) {
 }
 
 func (c *Client) ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
+	if err := c.limiter.Wait(context.Background()); err != nil {
+		return nil, err
+	}
 	s, err := c.wasmClient.ContractStore(context.Background(), &wasmtypes.QueryContractStoreRequest{
 		ContractAddress: contractAddress.String(),
 		QueryMsg:        queryMsg,
@@ -157,6 +167,9 @@ func (c *Client) ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) 
 // https://docs.cosmos.network/master/core/events.html
 // Note one current issue https://github.com/cosmos/cosmos-sdk/issues/10448
 func (c *Client) TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error) {
+	if err := c.limiter.Wait(context.Background()); err != nil {
+		return nil, err
+	}
 	e, err := c.cosmosServiceClient.GetTxsEvent(context.Background(), &txtypes.GetTxsEventRequest{
 		Events:     events,
 		Pagination: nil,
@@ -166,6 +179,9 @@ func (c *Client) TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error
 }
 
 func (c *Client) Tx(hash string) (*txtypes.GetTxResponse, error) {
+	if err := c.limiter.Wait(context.Background()); err != nil {
+		return nil, err
+	}
 	e, err := c.cosmosServiceClient.GetTx(context.Background(), &txtypes.GetTxRequest{
 		Hash: hash,
 	})
@@ -173,11 +189,28 @@ func (c *Client) Tx(hash string) (*txtypes.GetTxResponse, error) {
 }
 
 func (c *Client) LatestBlock() (*tmtypes.GetLatestBlockResponse, error) {
+	if err := c.limiter.Wait(context.Background()); err != nil {
+		return nil, err
+	}
 	return c.tendermintServiceClient.GetLatestBlock(context.Background(), &tmtypes.GetLatestBlockRequest{})
 }
 
 func (c *Client) BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse, error) {
+	if err := c.limiter.Wait(context.Background()); err != nil {
+		return nil, err
+	}
 	return c.tendermintServiceClient.GetBlockByHeight(context.Background(), &tmtypes.GetBlockByHeightRequest{Height: height})
+}
+
+func (c *Client) Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error) {
+	if err := c.limiter.Wait(context.Background()); err != nil {
+		return nil, err
+	}
+	b, err := c.bankClient.Balance(context.Background(), &banktypes.QueryBalanceRequest{Address: addr.String(), Denom: denom})
+	if err != nil {
+		return nil, err
+	}
+	return b.Balance, nil
 }
 
 func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error) {
@@ -356,12 +389,4 @@ func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint6
 		return nil, err
 	}
 	return c.Broadcast(txBytes, mode)
-}
-
-func (c *Client) Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error) {
-	b, err := c.bankClient.Balance(context.Background(), &banktypes.QueryBalanceRequest{Address: addr.String(), Denom: denom})
-	if err != nil {
-		return nil, err
-	}
-	return b.Balance, nil
 }

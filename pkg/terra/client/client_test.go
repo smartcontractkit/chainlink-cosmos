@@ -1,6 +1,7 @@
 package client
 
 import (
+	"sync"
 	"time"
 
 	"fmt"
@@ -35,6 +36,8 @@ func TestBatchSim(t *testing.T) {
 	tc, err := NewClient(
 		"42",
 		tendermintURL,
+		20.0,
+		5,
 		DefaultTimeout,
 		lggr)
 	require.NoError(t, err)
@@ -127,6 +130,8 @@ func TestTerraClient(t *testing.T) {
 	tc, err := NewClient(
 		"42",
 		tendermintURL,
+		20.0,
+		5,
 		DefaultTimeout,
 		lggr)
 	require.NoError(t, err)
@@ -328,4 +333,53 @@ func TestTerraClient(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestLoadAPI(t *testing.T) {
+	t.Skip() // Locally only
+	rpc := "https://terra-testnet-1.simply-vc.com.mt:443/345DKJ45F6G5/rpc/"
+	jobs := 10
+	totalRunTime := 30 * time.Second
+	queryEvery := 50 * time.Millisecond // query 20req/s per job
+	lggr := new(mocks.Logger)
+	lggr.Test(t)
+	lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Maybe()
+	lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Maybe()
+	tc, err := NewClient(
+		"42",
+		rpc,
+		20.0,
+		10,
+		5*time.Second,
+		lggr)
+	require.NoError(t, err)
+	t.Log(tc)
+
+	var wg sync.WaitGroup
+	runStart := time.Now()
+	wg.Add(jobs)
+	for i := 0; i < jobs; i++ {
+		go func() {
+			defer wg.Done()
+			ti := time.NewTicker(queryEvery)
+			defer ti.Stop()
+			for {
+				select {
+				case tm := <-ti.C:
+					if tm.Sub(runStart) > totalRunTime {
+						return
+					}
+					s := time.Now()
+					_, err := tc.LatestBlock()
+					require.NoError(t, err)
+					f := time.Now()
+					t.Log("lb", f.Sub(s), err, time.Now())
+					if f.Sub(s) > 1*time.Second {
+						t.Log("lb slow api call", f.Sub(s), err)
+					}
+				}
+			}
+		}()
+	}
+	wg.Wait()
 }
