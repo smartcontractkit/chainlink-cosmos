@@ -1,14 +1,13 @@
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { CONTRACT_LIST } from '../../../lib/contracts'
-import { CATEGORIES } from '../../../lib/constants'
+import { CATEGORIES, CW20_BASE_CODE_IDs } from '../../../lib/constants'
 
 export default class DeployLink extends TerraCommand {
   static description = 'Deploys LINK token contract'
-  static examples = [`yarn gauntlet deploy:link --network=bombay-testnet`]
+  static examples = [`yarn gauntlet token:deploy --network=bombay-testnet`]
 
-  static id = 'deploy:link'
+  static id = 'token:deploy'
   static category = CATEGORIES.LINK
 
   static flags = {
@@ -18,13 +17,11 @@ export default class DeployLink extends TerraCommand {
 
   constructor(flags, args: string[]) {
     super(flags, args)
-
-    this.contracts = [CONTRACT_LIST.LINK]
   }
 
   execute = async () => {
     await prompt(`Begin deploying LINK Token?`)
-    const deploy = await this.deploy(this.codeIds[CONTRACT_LIST.LINK], {
+    const deploy = await this.deploy(CW20_BASE_CODE_IDs[this.flags.network], {
       name: 'ChainLink Token',
       symbol: 'LINK',
       decimals: 18,

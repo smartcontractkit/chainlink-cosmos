@@ -6,7 +6,6 @@ import path from 'path'
 export enum CONTRACT_LIST {
   FLAGS = 'flags',
   DEVIATION_FLAGGING_VALIDATOR = 'deviation_flagging_validator',
-  LINK = 'cw20_base',
   OCR_2 = 'ocr2',
   ACCESS_CONTROLLER = 'access_controller',
 }
@@ -50,9 +49,9 @@ export const loadContracts = (): Contracts => {
 export const getContractCode = (contractId: CONTRACT_LIST): string => {
   // Possible paths depending on how/where gauntlet is being executed
   const possibleContractPaths = [
-    path.join(__dirname, '../..', './artifacts'),
-    path.join(process.cwd(), './artifacts'),
-    path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts'),
+    path.join(__dirname, '../..', './artifacts/bin'),
+    path.join(process.cwd(), './artifacts/bin'),
+    path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts/bin'),
   ]
   const codes = possibleContractPaths
     .filter((contractPath) => existsSync(`${contractPath}/${contractId}.wasm`))
