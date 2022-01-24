@@ -9,6 +9,8 @@ export const CATEGORIES = {
   ACCESS_CONTROLLER: 'Access Controller',
 }
 
+export const DEFAULT_RELEASE_VERSION = 'v0.0.4'
+
 export const ORACLES_MAX_LENGTH = 31
 
 export const CW20_BASE_CODE_IDs = {
