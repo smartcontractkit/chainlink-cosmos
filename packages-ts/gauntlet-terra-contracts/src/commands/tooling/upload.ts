@@ -1,8 +1,10 @@
 import { logger, io, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand } from '@chainlink/gauntlet-terra'
 import { CONTRACT_LIST, getContract } from '../../lib/contracts'
-import { CATEGORIES } from '../../lib/constants'
+import { CATEGORIES, DEFAULT_RELEASE_VERSION } from '../../lib/constants'
+
 import path from 'path'
+
 export default class UploadContractCode extends TerraCommand {
   static description = 'Upload cosmwasm contract artifacts'
   static examples = [
@@ -15,6 +17,7 @@ export default class UploadContractCode extends TerraCommand {
   static category = CATEGORIES.TOOLING
 
   static flags = {
+    version: { description: 'The version to retrieve artifacts from (Defaults to v0.0.4)' },
     codeIDs: { description: 'The path to contract code IDs file' },
     artifacts: { description: 'The path to contract artifacts folder' },
   }
@@ -44,7 +47,9 @@ export default class UploadContractCode extends TerraCommand {
     const contractReceipts = {}
     const responses: any[] = []
     for (const contractName of askedContracts) {
-      const contract = getContract(contractName)
+      const version = this.flags.version ? this.flags.version : DEFAULT_RELEASE_VERSION
+      console.log(version)
+      const contract = getContract(contractName, this.flags.version)
       console.log('CONTRACT Bytecode exists:', !!contract.bytecode)
 
       try {
