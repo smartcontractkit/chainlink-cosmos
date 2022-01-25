@@ -115,17 +115,15 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	}
 
 	reportCodec := ReportCodec{}
-	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, senderAddr, msgEnqueuer, r.lggr, chain.Config(), reader)
-	median := NewMedianContract(contract)
+	transmitter := NewContractTransmitter(reader, externalJobID.String(), contractAddr, senderAddr, msgEnqueuer, r.lggr, chain.Config())
 
 	return &ocr2Provider{
-		digester:       digester,
-		reportCodec:    reportCodec,
-		tracker:        tracker,
-		transmitter:    transmitter,
-		medianContract: median,
-		lggr:           r.lggr,
-		contractCache:  contract,
+		digester:      digester,
+		reportCodec:   reportCodec,
+		tracker:       tracker,
+		transmitter:   transmitter,
+		lggr:          r.lggr,
+		contractCache: contract,
 	}, nil
 }
 
@@ -135,9 +133,8 @@ type ocr2Provider struct {
 	reportCodec median.ReportCodec
 	lggr        Logger
 
-	tracker        types.ContractConfigTracker
-	transmitter    types.ContractTransmitter
-	medianContract median.MedianContract
+	tracker     types.ContractConfigTracker
+	transmitter types.ContractTransmitter
 
 	contractCache *ContractCache
 }
@@ -175,5 +172,5 @@ func (p *ocr2Provider) ReportCodec() median.ReportCodec {
 }
 
 func (p *ocr2Provider) MedianContract() median.MedianContract {
-	return p.medianContract
+	return p.contractCache
 }

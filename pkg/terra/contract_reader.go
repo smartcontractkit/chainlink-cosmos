@@ -30,9 +30,9 @@ func NewOCR2Reader(addess cosmosSDK.AccAddress, chainReader client.Reader, lggr 
 	}
 }
 
-func (or *OCR2Reader) fetchLatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
-	resp, err := or.chainReader.ContractStore(
-		or.address,
+func (r *OCR2Reader) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
+	resp, err := r.chainReader.ContractStore(
+		r.address,
 		[]byte(`"latest_config_details"`),
 	)
 	if err != nil {
@@ -47,9 +47,9 @@ func (or *OCR2Reader) fetchLatestConfigDetails(ctx context.Context) (changedInBl
 	return
 }
 
-func (or *OCR2Reader) fetchLatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
-	query := []string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm-set_config.contract_address='%s'", or.address)}
-	res, err := or.chainReader.TxsEvents(query)
+func (r *OCR2Reader) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
+	query := []string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm-set_config.contract_address='%s'", r.address)}
+	res, err := r.chainReader.TxsEvents(query)
 	if err != nil {
 		return types.ContractConfig{}, err
 	}
@@ -131,8 +131,8 @@ func (or *OCR2Reader) fetchLatestConfig(ctx context.Context, changedInBlock uint
 	return types.ContractConfig{}, fmt.Errorf("No set_config event found for tx %s", res.TxResponses[0].TxHash)
 }
 
-// latestTransmissionDetails fetches the latest transmission details from address state
-func (or *OCR2Reader) fetchLatestTransmissionDetails(ctx context.Context) (
+// LatestTransmissionDetails fetches the latest transmission details from address state
+func (r *OCR2Reader) LatestTransmissionDetails(ctx context.Context) (
 	configDigest types.ConfigDigest,
 	epoch uint32,
 	round uint8,
@@ -140,15 +140,15 @@ func (or *OCR2Reader) fetchLatestTransmissionDetails(ctx context.Context) (
 	latestTimestamp time.Time,
 	err error,
 ) {
-	resp, err := or.chainReader.ContractStore(or.address, []byte(`"latest_transmission_details"`))
+	resp, err := r.chainReader.ContractStore(r.address, []byte(`"latest_transmission_details"`))
 	if err != nil {
 		// TODO: Verify if this is still necessary
 		// https://github.com/smartcontractkit/chainlink-terra/issues/23
 		// Handle the 500 error that occurs when there has not been a submission
 		// "rpc error: code = Unknown desc = ocr2::state::Transmission not found: address query failed"
 		if strings.Contains(fmt.Sprint(err), "ocr2::state::Transmission not found") {
-			or.lggr.Infof("No transmissions found when fetching `latest_transmission_details` attempting with `latest_config_digest_and_epoch`")
-			digest, epoch, err2 := or.latestConfigDigestAndEpoch(ctx)
+			r.lggr.Infof("No transmissions found when fetching `latest_transmission_details` attempting with `latest_config_digest_and_epoch`")
+			digest, epoch, err2 := r.LatestConfigDigestAndEpoch(ctx)
 
 			// return different data if no error, else continue and return previous error
 			// return config digest and epoch from query, set everything else to 0
@@ -176,8 +176,8 @@ func (or *OCR2Reader) fetchLatestTransmissionDetails(ctx context.Context) (
 	return details.LatestConfigDigest, details.Epoch, details.Round, ans, time.Unix(details.LatestTimestamp, 0), nil
 }
 
-// fetchLatestRoundRequested fetches the latest round requested by filtering event logs
-//func (cc *OCR2Reader) fetchLatestRoundRequested(ctx context.Context, lookback time.Duration) (
+// LatestRoundRequested fetches the latest round requested by filtering event logs
+//func (cc *OCR2Reader) LatestRoundRequested(ctx context.Context, lookback time.Duration) (
 //	configDigest types.ConfigDigest,
 //	epoch uint32,
 //	round uint8,
@@ -239,14 +239,14 @@ func (or *OCR2Reader) fetchLatestTransmissionDetails(ctx context.Context) (
 //	return
 //}
 
-// latestConfigDigestAndEpoch fetches the latest details from address state
-func (or *OCR2Reader) latestConfigDigestAndEpoch(ctx context.Context) (
+// LatestConfigDigestAndEpoch fetches the latest details from address state
+func (r *OCR2Reader) LatestConfigDigestAndEpoch(ctx context.Context) (
 	configDigest types.ConfigDigest,
 	epoch uint32,
 	err error,
 ) {
-	resp, err := or.chainReader.ContractStore(
-		or.address, []byte(`"latest_config_digest_and_epoch"`),
+	resp, err := r.chainReader.ContractStore(
+		r.address, []byte(`"latest_config_digest_and_epoch"`),
 	)
 	if err != nil {
 		return types.ConfigDigest{}, 0, err

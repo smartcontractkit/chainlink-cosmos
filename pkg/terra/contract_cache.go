@@ -3,14 +3,18 @@ package terra
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"math/big"
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/smartcontractkit/chainlink/core/utils"
+	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
+
+var _ median.MedianContract = (*ContractCache)(nil)
 
 type ContractCache struct {
 	cfg    Config
@@ -82,7 +86,7 @@ func (cc *ContractCache) poll() {
 }
 
 func (cc *ContractCache) updateConfig(ctx context.Context) error {
-	changedInBlock, configDigest, err := cc.reader.fetchLatestConfigDetails(ctx)
+	changedInBlock, configDigest, err := cc.reader.LatestConfigDetails(ctx)
 	if err != nil {
 		return errors.Wrap(err, "fetch latest config details")
 	}
@@ -99,7 +103,7 @@ func (cc *ContractCache) updateConfig(ctx context.Context) error {
 	if same {
 		return nil
 	}
-	contractConfig, err := cc.reader.fetchLatestConfig(ctx, changedInBlock)
+	contractConfig, err := cc.reader.LatestConfig(ctx, changedInBlock)
 	if err != nil {
 		return errors.Wrapf(err, "fetch latest config, block %d", changedInBlock)
 	}
@@ -113,7 +117,7 @@ func (cc *ContractCache) updateConfig(ctx context.Context) error {
 }
 
 func (cc *ContractCache) updateTransmission(ctx context.Context) error {
-	digest, epoch, round, latestAnswer, latestTimestamp, err := cc.reader.fetchLatestTransmissionDetails(ctx)
+	digest, epoch, round, latestAnswer, latestTimestamp, err := cc.reader.LatestTransmissionDetails(ctx)
 	if err != nil {
 		return errors.Wrap(err, "fetch latest transmission")
 	}
@@ -138,7 +142,7 @@ func (cc *ContractCache) checkTS(ts time.Time) error {
 	return nil
 }
 
-func (cc *ContractCache) latestConfigDetails() (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
+func (cc *ContractCache) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
 	cc.configMu.RLock()
 	ts := cc.configTS
 	changedInBlock = cc.configBlock
@@ -148,7 +152,7 @@ func (cc *ContractCache) latestConfigDetails() (changedInBlock uint64, configDig
 	return
 }
 
-func (cc *ContractCache) latestConfig(changedInBlock uint64) (contractConfig types.ContractConfig, err error) {
+func (cc *ContractCache) LatestConfig(ctx context.Context, changedInBlock uint64) (contractConfig types.ContractConfig, err error) {
 	cc.configMu.RLock()
 	ts := cc.configTS
 	contractConfig = cc.config
@@ -161,7 +165,7 @@ func (cc *ContractCache) latestConfig(changedInBlock uint64) (contractConfig typ
 	return
 }
 
-func (cc *ContractCache) latestTransmissionDetails() (
+func (cc *ContractCache) LatestTransmissionDetails(ctx context.Context) (
 	configDigest types.ConfigDigest,
 	epoch uint32,
 	round uint8,
@@ -181,7 +185,7 @@ func (cc *ContractCache) latestTransmissionDetails() (
 	return
 }
 
-func (cc *ContractCache) latestRoundRequested(lookback time.Duration) (
+func (cc *ContractCache) LatestRoundRequested(ctx context.Context, lookback time.Duration) (
 	configDigest types.ConfigDigest,
 	epoch uint32,
 	round uint8,

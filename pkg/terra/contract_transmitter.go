@@ -3,6 +3,7 @@ package terra
 import (
 	"context"
 	"encoding/json"
+
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 	terraSDK "github.com/terra-money/core/x/wasm/types"
 
@@ -13,31 +14,32 @@ import (
 var _ types.ContractTransmitter = (*ContractTransmitter)(nil)
 
 type ContractTransmitter struct {
+	*OCR2Reader
 	msgEnqueuer MsgEnqueuer
 	lggr        Logger
 	jobID       string
 	contract    cosmosSDK.AccAddress
 	sender      cosmosSDK.AccAddress
 	cfg         Config
-	reader      *OCR2Reader
 }
 
-func NewContractTransmitter(jobID string,
+func NewContractTransmitter(
+	reader *OCR2Reader,
+	jobID string,
 	contract cosmosSDK.AccAddress,
 	sender cosmosSDK.AccAddress,
 	msgEnqueuer MsgEnqueuer,
 	lggr Logger,
 	cfg Config,
-	reader *OCR2Reader,
 ) *ContractTransmitter {
 	return &ContractTransmitter{
+		OCR2Reader:  reader,
 		jobID:       jobID,
 		contract:    contract,
 		msgEnqueuer: msgEnqueuer,
 		sender:      sender,
 		lggr:        lggr,
 		cfg:         cfg,
-		reader:      reader,
 	}
 }
 
@@ -69,15 +71,6 @@ func (ct *ContractTransmitter) Transmit(
 	}
 	_, err = ct.msgEnqueuer.Enqueue(ct.contract.String(), d)
 	return err
-}
-
-// LatestConfigDigestAndEpoch fetches the latest details from cache
-func (ct *ContractTransmitter) LatestConfigDigestAndEpoch(ctx context.Context) (
-	configDigest types.ConfigDigest,
-	epoch uint32,
-	err error,
-) {
-	return ct.reader.latestConfigDigestAndEpoch(ctx)
 }
 
 func (ct *ContractTransmitter) FromAccount() types.Account {
