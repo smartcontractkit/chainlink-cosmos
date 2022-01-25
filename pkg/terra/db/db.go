@@ -37,6 +37,8 @@ type ChainCfg struct {
 	FallbackGasPriceULuna null.String
 	GasLimitMultiplier    null.Float
 	MaxMsgsPerBatch       null.Int
+	OCR2CachePollPeriod   *models.Duration
+	OCR2CacheTTL          *models.Duration
 }
 
 func (c *ChainCfg) Scan(value interface{}) error {

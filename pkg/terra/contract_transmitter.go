@@ -4,39 +4,42 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
-
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
+	terraSDK "github.com/terra-money/core/x/wasm/types"
+
 	"github.com/smartcontractkit/libocr/offchainreporting2/chains/evmutil"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
-	terraSDK "github.com/terra-money/core/x/wasm/types"
 )
 
 var _ types.ContractTransmitter = (*ContractTransmitter)(nil)
 
 type ContractTransmitter struct {
+	*OCR2Reader
 	msgEnqueuer MsgEnqueuer
-	chainReader client.Reader
 	lggr        Logger
 	jobID       string
 	contract    cosmosSDK.AccAddress
 	sender      cosmosSDK.AccAddress
+	cfg         Config
 }
 
-func NewContractTransmitter(jobID string,
+func NewContractTransmitter(
+	reader *OCR2Reader,
+	jobID string,
 	contract cosmosSDK.AccAddress,
 	sender cosmosSDK.AccAddress,
 	msgEnqueuer MsgEnqueuer,
-	chainReader client.Reader,
 	lggr Logger,
+	cfg Config,
 ) *ContractTransmitter {
 	return &ContractTransmitter{
+		OCR2Reader:  reader,
 		jobID:       jobID,
 		contract:    contract,
 		msgEnqueuer: msgEnqueuer,
 		sender:      sender,
-		chainReader: chainReader,
 		lggr:        lggr,
+		cfg:         cfg,
 	}
 }
 
@@ -68,27 +71,6 @@ func (ct *ContractTransmitter) Transmit(
 	}
 	_, err = ct.msgEnqueuer.Enqueue(ct.contract.String(), d)
 	return err
-}
-
-// LatestConfigDigestAndEpoch fetches the latest details from address state
-func (ct *ContractTransmitter) LatestConfigDigestAndEpoch(ctx context.Context) (
-	configDigest types.ConfigDigest,
-	epoch uint32,
-	err error,
-) {
-	resp, err := ct.chainReader.ContractStore(
-		ct.contract, []byte(`"latest_config_digest_and_epoch"`),
-	)
-	if err != nil {
-		return types.ConfigDigest{}, 0, err
-	}
-
-	var digest LatestConfigDigestAndEpoch
-	if err := json.Unmarshal(resp, &digest); err != nil {
-		return types.ConfigDigest{}, 0, err
-	}
-
-	return digest.ConfigDigest, digest.Epoch, nil
 }
 
 func (ct *ContractTransmitter) FromAccount() types.Account {
