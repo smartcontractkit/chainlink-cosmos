@@ -72,13 +72,13 @@ func (cc *ContractCache) poll() {
 		case <-tick:
 			ctx, _ := utils.ContextFromChan(cc.stop)
 			if err := cc.updateConfig(ctx); err != nil {
-				cc.lggr.Errorf("Failed to update config", "err", err)
+				cc.lggr.Errorf("Failed to update config: %v", err)
 			}
 			if ctx.Err() != nil { // b/c client doesn't use ctx
 				return
 			}
 			if err := cc.updateTransmission(ctx); err != nil {
-				cc.lggr.Errorf("Failed to update transmission", "err", err)
+				cc.lggr.Errorf("Failed to update transmission: %v", err)
 			}
 			tick = time.After(utils.WithJitter(cc.cfg.OCR2CachePollPeriod()))
 		}
