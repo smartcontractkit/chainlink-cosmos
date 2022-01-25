@@ -16,10 +16,8 @@ jobs:
           --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
           --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
           cosmwasm/workspace-optimizer:0.12.3
-      - name: Build Schemas
-        run: | 
-          apt-get install cargo
-          for d in contracts/*/; do     cd "$d"; cargo schema; cd ../..; done
+      # - name: Build Schemas
+      #   run: for d in contracts/*/; do     cd "$d"; cargo schema; cd ../..; done
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
