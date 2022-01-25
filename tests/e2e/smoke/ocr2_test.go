@@ -17,21 +17,18 @@ import (
 
 var _ = Describe("Terra OCRv2", func() {
 	var (
-		e              *environment.Environment
-		mockServer     *client.MockserverClient
-		nodes          []client.Chainlink
-		nets           *client.Networks
-		lt             contracts.LinkToken
-		bac            contracts.OCRv2AccessController
-		rac            contracts.OCRv2AccessController
-		flags          contracts.OCRv2Flags
-		validator      contracts.OCRv2Validator
-		ocr2           contracts.OCRv2
-		ocr2Proxy      contracts.OCRv2Proxy
-		validatorProxy contracts.OCRv2ValidatorProxy
-		ocConfig       contracts.OffChainAggregatorV2Config
-		nkb            []common.NodeKeysBundle
-		err            error
+		e          *environment.Environment
+		mockServer *client.MockserverClient
+		nodes      []client.Chainlink
+		nets       *client.Networks
+		lt         contracts.LinkToken
+		bac        contracts.OCRv2AccessController
+		rac        contracts.OCRv2AccessController
+		flags      contracts.OCRv2Flags
+		ocr2       contracts.OCRv2
+		ocConfig   contracts.OffChainAggregatorV2Config
+		nkb        []common.NodeKeysBundle
+		err        error
 	)
 
 	BeforeEach(func() {
@@ -61,13 +58,12 @@ var _ = Describe("Terra OCRv2", func() {
 		By("Deploying contracts", func() {
 			ocConfig, nkb, err = common.DefaultOffChainConfigParamsFromNodes(nodes)
 			Expect(err).ShouldNot(HaveOccurred())
-			log.Warn().Interface("OCConfig", ocConfig).Interface("NKB", nkb).Interface("MS", mockServer).Send()
 			cd := e2e.NewTerraContractDeployer(nets.Default)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			lt, err = cd.DeployLinkTokenContract()
 			Expect(err).ShouldNot(HaveOccurred())
-			err = common.FundOracles(nets.Default, nkb, big.NewFloat(5e4))
+			err = common.FundOracles(nets.Default, nkb, big.NewFloat(5e12))
 			Expect(err).ShouldNot(HaveOccurred())
 
 			bac, err = cd.DeployOCRv2AccessController()
@@ -78,19 +74,20 @@ var _ = Describe("Terra OCRv2", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			flags, err = cd.DeployOCRv2Flags(bac.Address(), rac.Address())
 			Expect(err).ShouldNot(HaveOccurred())
-			validator, err = cd.DeployOCRv2Validator(uint32(80000), flags.Address())
+			_, err = cd.DeployOCRv2Validator(uint32(80000), flags.Address())
 			Expect(err).ShouldNot(HaveOccurred())
 
-			ocr2Proxy, err = cd.DeployOCRv2Proxy(ocr2.Address())
-			Expect(err).ShouldNot(HaveOccurred())
-			validatorProxy, err = cd.DeployOCRv2ValidatorProxy(validator.Address())
-			Expect(err).ShouldNot(HaveOccurred())
 			err = ocr2.SetBilling(uint32(1), uint32(1), bac.Address())
 			Expect(err).ShouldNot(HaveOccurred())
 			err = ocr2.SetOffChainConfig(ocConfig)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 		By("Creating jobs", func() {
+			err = mockServer.SetValuePath("/variable", 5)
+			Expect(err).ShouldNot(HaveOccurred())
+			err = mockServer.SetValuePath("/juels", 1)
+			Expect(err).ShouldNot(HaveOccurred())
+			common.ImitateSource(mockServer, 1*time.Second, 2, 10)
 			err = common.CreateJobs(ocr2.Address(), nodes, nkb, mockServer)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
@@ -98,8 +95,14 @@ var _ = Describe("Terra OCRv2", func() {
 
 	Describe("with Terra OCR2", func() {
 		It("performs OCR2 round", func() {
-			log.Warn().Interface("ocrProxy", ocr2Proxy).Interface("validatorProxy", validatorProxy).Send()
-			time.Sleep(9999 * time.Second)
+			Eventually(func(g Gomega) {
+				answer, _, _, err := ocr2.GetLatestRoundData()
+				g.Expect(err).ShouldNot(HaveOccurred())
+				log.Debug().
+					Interface("Answer", answer).
+					Msg("OCR Round")
+				g.Expect(answer).Should(Equal(uint64(10)))
+			}, 3*time.Minute, 1*time.Second).Should(Succeed())
 		})
 	})
 

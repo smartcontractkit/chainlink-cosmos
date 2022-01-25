@@ -21,6 +21,15 @@ const (
 	QueryLinkAvailableForPayment    = "link_available_for_payment"
 )
 
+type QueryLatestRoundDataResponse struct {
+	QueryResult struct {
+		Answer                string `json:"answer"`
+		ObservationsTimestamp uint64 `json:"observations_timestamp"`
+		RoundID               uint64 `json:"round_id"`
+		TransmissionTimestamp uint64 `json:"transmission_timestamp"`
+	} `json:"query_result"`
+}
+
 type QueryOwedPaymentMsg struct {
 	OwedPayment QueryOwedPaymentTypeMsg `json:"owed_payment"`
 }

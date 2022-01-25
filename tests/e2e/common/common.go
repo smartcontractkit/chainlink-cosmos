@@ -137,7 +137,7 @@ func DefaultOffChainConfigParamsFromNodes(nodes []client.Chainlink) (contracts.O
 		DeltaResend:   5 * time.Second,
 		DeltaRound:    1 * time.Second,
 		DeltaGrace:    500 * time.Millisecond,
-		DeltaStage:    5 * time.Second,
+		DeltaStage:    10 * time.Second,
 		RMax:          3,
 		S:             s,
 		Oracles:       oi,
@@ -153,6 +153,17 @@ func DefaultOffChainConfigParamsFromNodes(nodes []client.Chainlink) (contracts.O
 		F:                                       faultyNodes,
 		OnchainConfig:                           []byte{},
 	}, nkb, nil
+}
+
+func ImitateSource(mockServer *client.MockserverClient, changeInterval time.Duration, min int, max int) {
+	go func() {
+		for {
+			_ = mockServer.SetValuePath("/variable", min)
+			time.Sleep(changeInterval)
+			_ = mockServer.SetValuePath("/variable", max)
+			time.Sleep(changeInterval)
+		}
+	}()
 }
 
 func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle, mock *client.MockserverClient) error {
@@ -189,11 +200,10 @@ func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle,
 		if err != nil {
 			return err
 		}
-		resp, err := n.CreateTerraChain(&client.TerraChainAttributes{ChainID: "localterra"})
+		_, err = n.CreateTerraChain(&client.TerraChainAttributes{ChainID: "localterra"})
 		if err != nil {
 			return err
 		}
-		log.Warn().Interface("Response", resp).Msg("Chain created")
 		relayConfig := map[string]string{
 			"nodeType":      "terra",
 			"tendermintURL": "http://terrad:26657",

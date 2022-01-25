@@ -298,7 +298,7 @@ func (t *TerraLCDClient) Instantiate(path string, instMsg interface{}) (string, 
 				sender,
 				t.CurrentCodeID,
 				instMsgBytes,
-				msg.NewCoins(msg.NewInt64Coin(t.Config.Currency, 1000)),
+				msg.NewCoins(msg.NewInt64Coin(t.Config.Currency, 1e12)),
 			),
 		},
 	}, false)

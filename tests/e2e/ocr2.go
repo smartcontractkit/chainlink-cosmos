@@ -8,6 +8,7 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/confighelper"
 	terraClient "github.com/smartcontractkit/terra.go/client"
 	"github.com/smartcontractkit/terra.go/msg"
+	"strconv"
 )
 
 // OCRv2 represents a OVR v2 contract deployed on terra as WASM
@@ -67,6 +68,15 @@ func (t *OCRv2) SetBilling(op uint32, tp uint32, controllerAddr string) error {
 		return err
 	}
 	return nil
+}
+
+func (t *OCRv2) GetLatestRoundData() (uint64, uint64, uint64, error) {
+	resp := ocr2types.QueryLatestRoundDataResponse{}
+	if err := t.client.QuerySmart(context.Background(), t.address, ocr2types.QueryLatestRoundData, &resp); err != nil {
+		return 0, 0, 0, err
+	}
+	answer, _ := strconv.Atoi(resp.QueryResult.Answer)
+	return uint64(answer), resp.QueryResult.TransmissionTimestamp, resp.QueryResult.RoundID, nil
 }
 
 func (t *OCRv2) SetOracles(ocParams contracts.OffChainAggregatorV2Config) error {
@@ -135,10 +145,6 @@ func (t *OCRv2) SetOffChainConfig(cfg contracts.OffChainAggregatorV2Config) erro
 }
 
 func (t *OCRv2) RequestNewRound() error {
-	panic("implement me")
-}
-
-func (t *OCRv2) GetLatestRoundData() (uint64, error) {
 	panic("implement me")
 }
 

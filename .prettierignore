@@ -6,4 +6,5 @@ target
 *.json
 *.md
 dist
+tests
 *.yml

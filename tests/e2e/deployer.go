@@ -118,7 +118,7 @@ func (t *ContractDeployer) DeployLinkTokenContract() (contracts.LinkToken, error
 			InitialBalances: []cw20types.InitialBalanceMsg{
 				{
 					Address: t.client.DefaultWallet.AccAddress,
-					Amount:  "1000000000",
+					Amount:  "9000000000000000000",
 				},
 			},
 		})
