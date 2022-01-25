@@ -16,15 +16,16 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	def := DefaultConfigSet
+	def := defaultConfigSet
 
 	lggr := new(mocks.Logger)
 	lggr.On("Warnf", mock.Anything, "FallbackGasPriceULuna", "not-a-number", mock.Anything, mock.Anything).Once()
-	cfg := NewConfig(db.ChainCfg{}, def, lggr)
+	cfg := NewConfig("Bombay-12", db.ChainCfg{}, lggr)
 	assert.Equal(t, def.BlockRate, cfg.BlockRate())
 	assert.Equal(t, def.BlocksUntilTxTimeout, cfg.BlocksUntilTxTimeout())
 	assert.Equal(t, def.ConfirmPollPeriod, cfg.ConfirmPollPeriod())
 	assert.Equal(t, def.FallbackGasPriceULuna, cfg.FallbackGasPriceULuna())
+	assert.Equal(t, *bombayFCDURL, cfg.FCDURL())
 	assert.Equal(t, def.GasLimitMultiplier, cfg.GasLimitMultiplier())
 	assert.Equal(t, def.MaxMsgsPerBatch, cfg.MaxMsgsPerBatch())
 
@@ -33,12 +34,15 @@ func TestConfig(t *testing.T) {
 		BlockRate:             &minute,
 		BlocksUntilTxTimeout:  null.IntFrom(1000),
 		FallbackGasPriceULuna: null.StringFrom("5.6"),
+		FCDURL:                null.StringFrom("http://example.com/fcd"),
 	}
 	cfg.Update(updated)
 	assert.Equal(t, updated.BlocksUntilTxTimeout.Int64, cfg.BlocksUntilTxTimeout())
 	assert.Equal(t, updated.BlockRate.Duration(), cfg.BlockRate())
 	assert.Equal(t, def.ConfirmPollPeriod, cfg.ConfirmPollPeriod())
 	assert.Equal(t, sdk.MustNewDecFromStr(updated.FallbackGasPriceULuna.String), cfg.FallbackGasPriceULuna())
+	fcdURL := cfg.FCDURL()
+	assert.Equal(t, updated.FCDURL.String, fcdURL.String())
 	assert.Equal(t, def.GasLimitMultiplier, cfg.GasLimitMultiplier())
 	assert.Equal(t, def.MaxMsgsPerBatch, cfg.MaxMsgsPerBatch())
 

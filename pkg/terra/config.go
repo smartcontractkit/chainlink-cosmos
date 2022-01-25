@@ -1,15 +1,51 @@
 package terra
 
 import (
+	"net/url"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
 )
 
-var DefaultConfigSet = ConfigSet{
+var (
+	mainnetFCDURL *url.URL
+	bombayFCDURL  *url.URL
+)
+
+func init() {
+	var err error
+	mainnetFCDURL, err = url.Parse("https://fcd.terra.dev/")
+	if err != nil {
+		panic(errors.Wrap(err, "failed to parse FCD URL"))
+	}
+	bombayFCDURL, err = url.Parse("https://bombay-fcd.terra.dev/")
+	if err != nil {
+		panic(errors.Wrapf(err, "failed to parse FCD URL"))
+	}
+
+}
+
+// defaultsForID returns Chain specific defaults.
+func defaultsForID(chainID string) configSet {
+	c := defaultConfigSet
+	lower := strings.ToLower(chainID)
+	switch {
+	case strings.HasPrefix(lower, "columbus-"):
+		c.FCDURL = *mainnetFCDURL
+	case strings.HasPrefix(lower, "bombay-"):
+		c.FCDURL = *bombayFCDURL
+	}
+	return c
+}
+
+// Global terra defaults.
+var defaultConfigSet = configSet{
 	BlockRate: 6 * time.Second,
 	// ~6s per block, so ~1m until we give up on the tx getting confirmed
 	// Anecdotally it appears anything more than 4 blocks would be an extremely long wait.
@@ -36,6 +72,7 @@ type Config interface {
 	BlocksUntilTxTimeout() int64
 	ConfirmPollPeriod() time.Duration
 	FallbackGasPriceULuna() sdk.Dec
+	FCDURL() url.URL
 	GasLimitMultiplier() float64
 	MaxMsgsPerBatch() int64
 	OCR2CachePollPeriod() time.Duration
@@ -45,12 +82,12 @@ type Config interface {
 	Update(db.ChainCfg)
 }
 
-// ConfigSet has configuration fields for default sets and testing.
-type ConfigSet struct {
+type configSet struct {
 	BlockRate             time.Duration
 	BlocksUntilTxTimeout  int64
 	ConfirmPollPeriod     time.Duration
 	FallbackGasPriceULuna sdk.Dec
+	FCDURL                url.URL
 	GasLimitMultiplier    float64
 	MaxMsgsPerBatch       int64
 	OCR2CachePollPeriod   time.Duration
@@ -60,16 +97,16 @@ type ConfigSet struct {
 var _ Config = (*config)(nil)
 
 type config struct {
-	defaults ConfigSet
+	defaults configSet
 	chain    db.ChainCfg
 	chainMu  sync.RWMutex
 	lggr     Logger
 }
 
-// NewConfig returns a Config with defaults overridden by dbcfg.
-func NewConfig(dbcfg db.ChainCfg, defaults ConfigSet, lggr Logger) *config {
+// NewConfig returns a Config with defaults for id overridden by dbcfg.
+func NewConfig(id string, dbcfg db.ChainCfg, lggr Logger) *config {
 	return &config{
-		defaults: defaults,
+		defaults: defaultsForID(id),
 		chain:    dbcfg,
 		lggr:     lggr,
 	}
@@ -124,6 +161,21 @@ func (c *config) FallbackGasPriceULuna() sdk.Dec {
 		c.lggr.Warnf(invalidFallbackMsg, "FallbackGasPriceULuna", str, c.defaults.FallbackGasPriceULuna, err)
 	}
 	return c.defaults.FallbackGasPriceULuna
+}
+
+func (c *config) FCDURL() url.URL {
+	c.chainMu.RLock()
+	ch := c.chain.FCDURL
+	c.chainMu.RUnlock()
+	if ch.Valid {
+		str := ch.String
+		u, err := url.Parse(str)
+		if err == nil {
+			return *u
+		}
+		c.lggr.Warnf(invalidFallbackMsg, "FCDURL", str, c.defaults.FCDURL, err)
+	}
+	return c.defaults.FCDURL
 }
 
 func (c *config) GasLimitMultiplier() float64 {

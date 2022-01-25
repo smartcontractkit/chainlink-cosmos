@@ -50,20 +50,17 @@ func (gpe *ClosureGasPriceEstimator) GasPrices() (map[string]sdk.DecCoin, error)
 var _ GasPricesEstimator = (*FCDGasPriceEstimator)(nil)
 
 type FCDGasPriceEstimator struct {
-	fcdURL url.URL
+	cfg    Config
 	client http.Client
 	lggr   Logger
 }
 
-func NewFCDGasPriceEstimator(fcdURLRaw string, requestTimeout time.Duration, lggr Logger) (*FCDGasPriceEstimator, error) {
-	// Sanity check the URL works and populate the cached value
-	fcdURL, err := url.Parse(fcdURLRaw)
-	if err != nil {
-		return nil, err
-	}
+type Config interface{ FCDURL() url.URL }
+
+func NewFCDGasPriceEstimator(cfg Config, requestTimeout time.Duration, lggr Logger) *FCDGasPriceEstimator {
 	client := http.Client{Timeout: requestTimeout}
-	gpe := FCDGasPriceEstimator{fcdURL: *fcdURL, client: client, lggr: lggr}
-	return &gpe, nil
+	gpe := FCDGasPriceEstimator{cfg: cfg, client: client, lggr: lggr}
+	return &gpe
 }
 
 type prices struct {
@@ -91,7 +88,11 @@ type prices struct {
 }
 
 func (gpe *FCDGasPriceEstimator) request() (map[string]sdk.DecCoin, error) {
-	req, _ := http.NewRequest(http.MethodGet, gpe.fcdURL.String(), nil)
+	fcdURL := gpe.cfg.FCDURL()
+	req, err := http.NewRequest(http.MethodGet, fcdURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 	resp, err := gpe.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -99,12 +100,12 @@ func (gpe *FCDGasPriceEstimator) request() (map[string]sdk.DecCoin, error) {
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		gpe.lggr.Errorf("error reading body, err %v", gpe.fcdURL.RequestURI(), err)
+		gpe.lggr.Errorf("error reading body, err %v", req.URL.RequestURI(), err)
 		return nil, err
 	}
 	var prices prices
 	if err := json.Unmarshal(b, &prices); err != nil {
-		gpe.lggr.Errorf("error unmarshalling, err %v", gpe.fcdURL.RequestURI(), err)
+		gpe.lggr.Errorf("error unmarshalling, err %v", req.URL.RequestURI(), err)
 		return nil, err
 	}
 	results := make(map[string]sdk.DecCoin)

@@ -32,11 +32,13 @@ type MsgEnqueuer interface {
 
 // CL Core OCR2 job spec RelayConfig member for Terra
 type RelayConfig struct {
-	ChainID string `json:"chainID"`
+	ChainID  string `json:"chainID"`  // required
+	NodeName string `json:"nodeName"` // optional
 }
 
 type OCR2Spec struct {
-	ChainID string
+	ChainID  string
+	NodeName string
 
 	ID          int32
 	IsBootstrap bool
@@ -87,7 +89,10 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	if err != nil {
 		return nil, err
 	}
-	chainReader := chain.Reader()
+	chainReader, err := chain.Reader(spec.NodeName)
+	if err != nil {
+		return nil, err
+	}
 	msgEnqueuer := chain.MsgEnqueuer()
 
 	contractAddr, err := cosmosSDK.AccAddressFromBech32(spec.ContractID)

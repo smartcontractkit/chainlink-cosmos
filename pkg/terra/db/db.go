@@ -13,7 +13,6 @@ import (
 
 type Chain struct {
 	ID        string
-	Nodes     []Node
 	Cfg       ChainCfg
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -25,7 +24,6 @@ type Node struct {
 	Name          string
 	TerraChainID  string
 	TendermintURL string `db:"tendermint_url"`
-	FCDURL        string `db:"fcd_url"`
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -35,6 +33,7 @@ type ChainCfg struct {
 	BlocksUntilTxTimeout  null.Int
 	ConfirmPollPeriod     *models.Duration
 	FallbackGasPriceULuna null.String
+	FCDURL                null.String
 	GasLimitMultiplier    null.Float
 	MaxMsgsPerBatch       null.Int
 	OCR2CachePollPeriod   *models.Duration
