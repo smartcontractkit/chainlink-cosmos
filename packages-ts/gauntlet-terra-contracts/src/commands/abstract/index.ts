@@ -88,12 +88,16 @@ export const parseParams = (commandOpts: AbstractOpts, params: any): AbstractPar
   const schemas = [...(abiSchema.oneOf || []), ...(abiSchema.anyOf || [])]
   // isEnum means the function doesn't receive any parameter
   const isEnumData = schemas.some((subSchema) => !!subSchema.enum && subSchema.enum.includes(commandOpts.function))
+  const parsedParams = Object.entries(params).reduce((acc, entry) => {
+    const _parseValue = (value: string) => (isNaN(Number(value)) ? value : Number(value))
+    return { ...acc, [entry[0]]: _parseValue(entry[1] as string) }
+  }, {})
   const data = isEnumData
     ? commandOpts.function
     : commandOpts.action === TERRA_OPERATIONS.DEPLOY
-    ? params
+    ? parsedParams
     : {
-        [commandOpts.function]: params,
+        [commandOpts.function]: parsedParams,
       }
 
   if (!validate(data)) {
