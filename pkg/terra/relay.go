@@ -2,6 +2,7 @@ package terra
 
 import (
 	"errors"
+
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 	uuid "github.com/satori/go.uuid"
 

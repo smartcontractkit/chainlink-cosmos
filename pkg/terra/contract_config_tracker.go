@@ -2,6 +2,7 @@ package terra
 
 import (
 	"context"
+
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
