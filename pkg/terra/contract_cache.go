@@ -2,8 +2,8 @@ package terra
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"math/big"
 	"sync"
 	"time"
@@ -84,7 +84,7 @@ func (cc *ContractCache) poll() {
 func (cc *ContractCache) updateConfig(ctx context.Context) error {
 	changedInBlock, configDigest, err := cc.reader.fetchLatestConfigDetails(ctx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "fetch latest config details")
 	}
 	if err = ctx.Err(); err != nil { // b/c client doesn't use ctx
 		return err
@@ -101,7 +101,7 @@ func (cc *ContractCache) updateConfig(ctx context.Context) error {
 	}
 	contractConfig, err := cc.reader.fetchLatestConfig(ctx, changedInBlock)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "fetch latest config, block %d", changedInBlock)
 	}
 	now = time.Now()
 	cc.configMu.Lock()
@@ -115,7 +115,7 @@ func (cc *ContractCache) updateConfig(ctx context.Context) error {
 func (cc *ContractCache) updateTransmission(ctx context.Context) error {
 	digest, epoch, round, latestAnswer, latestTimestamp, err := cc.reader.fetchLatestTransmissionDetails(ctx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "fetch latest transmission")
 	}
 	now := time.Now()
 	cc.transMu.Lock()
