@@ -148,7 +148,7 @@ func (c *config) MaxMsgsPerBatch() int64 {
 
 func (c *config) OCR2CachePollPeriod() time.Duration {
 	c.chainMu.RLock()
-	ch := c.chain.OCRCachePollPeriod
+	ch := c.chain.OCR2CachePollPeriod
 	c.chainMu.RUnlock()
 	if ch != nil {
 		return ch.Duration()
@@ -158,7 +158,7 @@ func (c *config) OCR2CachePollPeriod() time.Duration {
 
 func (c *config) OCR2CacheTTL() time.Duration {
 	c.chainMu.RLock()
-	ch := c.chain.OCRCacheTTL
+	ch := c.chain.OCR2CacheTTL
 	c.chainMu.RUnlock()
 	if ch != nil {
 		return ch.Duration()
