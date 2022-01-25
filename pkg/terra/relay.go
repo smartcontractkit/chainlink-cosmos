@@ -94,7 +94,8 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 		return nil, err
 	}
 
-	contract := NewContractCache(contractAddr, chain.Config(), chainReader, r.lggr)
+	reader := NewOCR2Reader(contractAddr, chainReader, r.lggr)
+	contract := NewContractCache(chain.Config(), reader, r.lggr)
 	tracker := NewContractTracker(chainReader, contract)
 	digester := NewOffchainConfigDigester(spec.ChainID, contractAddr)
 
@@ -114,7 +115,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	}
 
 	reportCodec := ReportCodec{}
-	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, senderAddr, msgEnqueuer, r.lggr, chain.Config(), contract)
+	transmitter := NewContractTransmitter(externalJobID.String(), contractAddr, senderAddr, msgEnqueuer, r.lggr, chain.Config(), reader)
 	median := NewMedianContract(contract)
 
 	return &ocr2Provider{

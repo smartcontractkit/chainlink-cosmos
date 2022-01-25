@@ -13,13 +13,13 @@ import (
 var _ types.ContractTransmitter = (*ContractTransmitter)(nil)
 
 type ContractTransmitter struct {
-	msgEnqueuer   MsgEnqueuer
-	lggr          Logger
-	jobID         string
-	contract      cosmosSDK.AccAddress
-	sender        cosmosSDK.AccAddress
-	cfg           Config
-	contractCache *ContractCache
+	msgEnqueuer MsgEnqueuer
+	lggr        Logger
+	jobID       string
+	contract    cosmosSDK.AccAddress
+	sender      cosmosSDK.AccAddress
+	cfg         Config
+	reader      *OCR2Reader
 }
 
 func NewContractTransmitter(jobID string,
@@ -28,16 +28,16 @@ func NewContractTransmitter(jobID string,
 	msgEnqueuer MsgEnqueuer,
 	lggr Logger,
 	cfg Config,
-	contractCache *ContractCache,
+	reader *OCR2Reader,
 ) *ContractTransmitter {
 	return &ContractTransmitter{
-		jobID:         jobID,
-		contract:      contract,
-		msgEnqueuer:   msgEnqueuer,
-		sender:        sender,
-		lggr:          lggr,
-		cfg:           cfg,
-		contractCache: contractCache,
+		jobID:       jobID,
+		contract:    contract,
+		msgEnqueuer: msgEnqueuer,
+		sender:      sender,
+		lggr:        lggr,
+		cfg:         cfg,
+		reader:      reader,
 	}
 }
 
@@ -77,7 +77,7 @@ func (ct *ContractTransmitter) LatestConfigDigestAndEpoch(ctx context.Context) (
 	epoch uint32,
 	err error,
 ) {
-	return ct.contractCache.latestConfigDigestAndEpoch(ctx)
+	return ct.reader.latestConfigDigestAndEpoch(ctx)
 }
 
 func (ct *ContractTransmitter) FromAccount() types.Account {
