@@ -325,7 +325,7 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) error {
 		5*time.Second,        // deltaResend time.Duration,
 		1*time.Second,        // deltaRound time.Duration,
 		500*time.Millisecond, // deltaGrace time.Duration,
-		5*time.Second,        // deltaStage time.Duration,
+		10*time.Second,       // deltaStage time.Duration,
 		3,                    // rMax uint8,
 		S,                    // s []int,
 		helperOracles,        // oracles []OracleIdentityExtra,

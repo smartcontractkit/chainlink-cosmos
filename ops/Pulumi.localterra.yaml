@@ -16,12 +16,14 @@ config:
   terra-env:CL-RELAY_CHAINID: localterra
   terra-env:CL-ENV_VARS: # specify which chainlink env variables to include, and define below
     - CHAINLINK_DEV
+    - LOG_LEVEL
     - ETH_DISABLED
     - USE_LEGACY_ETH_ENV_VARS
     - FEATURE_OFFCHAIN_REPORTING2
     - P2P_NETWORKING_STACK
     - P2P_LISTEN_PORT
   terra-env:CL-CHAINLINK_DEV: true
+  terra-env:CL-LOG_LEVEL: "debug"
   terra-env:CL-ETH_DISABLED: true
   terra-env:CL-USE_LEGACY_ETH_ENV_VARS: false
   terra-env:CL-FEATURE_OFFCHAIN_REPORTING2: true
