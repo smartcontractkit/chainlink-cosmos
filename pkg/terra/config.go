@@ -20,15 +20,14 @@ var (
 
 func init() {
 	var err error
-	mainnetFCDURL, err = url.Parse("https://fcd.terra.dev/")
+	mainnetFCDURL, err = url.Parse("https://fcd.terra.dev/v1/txs/gas_prices")
 	if err != nil {
 		panic(errors.Wrap(err, "failed to parse FCD URL"))
 	}
-	bombayFCDURL, err = url.Parse("https://bombay-fcd.terra.dev/")
+	bombayFCDURL, err = url.Parse("https://bombay-fcd.terra.dev/v1/txs/gas_prices")
 	if err != nil {
 		panic(errors.Wrapf(err, "failed to parse FCD URL"))
 	}
-
 }
 
 // defaultsForID returns Chain specific defaults.
