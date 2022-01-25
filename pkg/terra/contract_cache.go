@@ -401,7 +401,7 @@ func (cc *ContractCache) latestRoundRequested(lookback time.Duration) (
 	configDigest = cc.digest
 	epoch = cc.epoch
 	round = cc.round
-	cc.transMu.Unlock()
+	cc.transMu.RUnlock()
 	err = cc.checkTS(ts)
 	return
 }
