@@ -113,6 +113,8 @@ func (cc *ContractCache) updateConfig(ctx context.Context) error {
 	cc.configBlock = changedInBlock
 	cc.config = contractConfig
 	cc.configMu.Unlock()
+	cc.lggr.Infof("updated config. [config %v, config block %v]",
+		contractConfig, changedInBlock)
 	return nil
 }
 
@@ -130,6 +132,8 @@ func (cc *ContractCache) updateTransmission(ctx context.Context) error {
 	cc.latestAnswer = latestAnswer
 	cc.latestTimestamp = latestTimestamp
 	cc.transMu.Unlock()
+	cc.lggr.Infof("updated transmission details. [epoch %v, round %v, answer %v, ts %v]",
+		epoch, round, latestAnswer, latestTimestamp)
 	return nil
 }
 

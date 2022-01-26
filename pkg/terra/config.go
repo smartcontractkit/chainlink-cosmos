@@ -18,7 +18,7 @@ var defaultConfigSet = configSet{
 	BlocksUntilTxTimeout:  10,
 	ConfirmPollPeriod:     time.Second,
 	FallbackGasPriceULuna: sdk.MustNewDecFromStr("0.015"),
-	GasLimitMultiplier:    1.5,
+	GasLimitMultiplier:    1.2,
 	// The max gas limit per block is 1_000_000_000
 	// https://github.com/terra-money/core/blob/d6037b9a12c8bf6b09fe861c8ad93456aac5eebb/app/legacy/migrate.go#L69.
 	// The max msg size is 10KB https://github.com/terra-money/core/blob/d6037b9a12c8bf6b09fe861c8ad93456aac5eebb/x/wasm/types/params.go#L15.
@@ -29,7 +29,7 @@ var defaultConfigSet = configSet{
 	// have in a batch on average roughly corresponds to the number of terra ocr jobs we're running (do not expect more than 100),
 	// we can set a max msgs per batch of 100.
 	MaxMsgsPerBatch:     100,
-	OCR2CachePollPeriod: 6 * time.Second,
+	OCR2CachePollPeriod: 4 * time.Second,
 	OCR2CacheTTL:        time.Minute,
 }
 
