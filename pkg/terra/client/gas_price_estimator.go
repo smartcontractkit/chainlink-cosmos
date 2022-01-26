@@ -91,6 +91,9 @@ type prices struct {
 
 func (gpe *FCDGasPriceEstimator) request() (map[string]sdk.DecCoin, error) {
 	fcdURL := gpe.cfg.FCDURL()
+	if fcdURL == (url.URL{}) {
+		return nil, errors.New("fcd url missing from chain config")
+	}
 	req, err := http.NewRequest(http.MethodGet, fcdURL.String(), nil)
 	if err != nil {
 		return nil, err
