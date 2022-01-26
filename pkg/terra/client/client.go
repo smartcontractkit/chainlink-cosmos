@@ -60,7 +60,7 @@ var _ ReaderWriter = (*Client)(nil)
 
 const (
 	DefaultTimeout            = 10 * time.Second
-	DefaultGasLimitMultiplier = 1.5
+	DefaultGasLimitMultiplier = 1.2
 )
 
 //go:generate mockery --name Logger --output ./mocks/
@@ -265,7 +265,6 @@ func (tc *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSi
 	var failed []SimMsg
 	toSim := msgs
 	for {
-		tc.log.Infof("simulating %v", toSim)
 		_, err := tc.SimulateUnsigned(toSim.GetMsgs(), sequence)
 		containsFailure, failureIndex := tc.failedMsgIndex(err)
 		if err != nil && !containsFailure {
