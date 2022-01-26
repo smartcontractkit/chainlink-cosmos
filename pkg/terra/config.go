@@ -105,9 +105,9 @@ type config struct {
 }
 
 // NewConfig returns a Config with defaults for id overridden by dbcfg.
-func NewConfig(id ChainID, dbcfg db.ChainCfg, lggr Logger) *config {
+func NewConfig(id string, dbcfg db.ChainCfg, lggr Logger) *config {
 	return &config{
-		defaults: id.defaults(),
+		defaults: ChainID(id).defaults(),
 		chain:    dbcfg,
 		lggr:     lggr,
 	}
