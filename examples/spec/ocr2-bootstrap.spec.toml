@@ -1,20 +1,13 @@
-type                                   = "offchainreporting2"
-schemaVersion                          = 1
-blockchainTimeout                      = "20s"
-contractConfigConfirmations            = 3
-contractConfigTrackerPollInterval      = "1m"
-contractConfigTrackerSubscribeInterval = "2m"
-name                                   = "<insert job name here>"
-relay                                  = "terra"
-contractID                             = "<insert terra ocr2 contract ID/address>"
-p2pBootstrapPeers                      = []
-isBootstrapPeer                        = true
-p2pPeerID                              = "<insert p2p id>"
-ocrKeyBundleID                         = "<insert ocr2 key bundle id>"
-monitoringEndpoint                     = "<insert monitoring endpoint>"
-transmitterID                          = "<insert terra transmitter key id>"
+type            = "offchainreporting2"
+schemaVersion   = 1
+relay           = "terra"
+name            = "<insert job name here>"
+contractID      = "<insert terra ocr2 contract ID/address>"
+isBootstrapPeer = true
+p2pPeerID       = "<insert p2p id>"                   # optional, overrides P2P_PEER_ID
+ocrKeyBundleID  = "<insert terra ocr2 key bundle id>" # optional, overrides OCR2_KEY_BUNDLE_ID
+transmitterID   = "<insert terra transmitter key id>"
 
 [relayConfig]
-nodeEndpointHTTP = "http:..."
-nodeEndpointWS   = "ws:..."
-chainID          = "bombay-12"
+chainID  = "bombay-12"
+nodeName = "bombay-12-node-1" # optional, defaults to random node with 'chainID'
