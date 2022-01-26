@@ -47,11 +47,28 @@ export const loadContracts = (version): Contracts => {
 }
 
 export const getContractCode = async (contractId: CONTRACT_LIST, version): Promise<string> => {
-  const response = await fetch(
-    `https://github.com/smartcontractkit/chainlink-terra/releases/download/${version}/${contractId}.wasm`,
-  )
-  const body = await response.text()
-  return body.toString(`base64`)
+  if (version === 'local') {
+    // Possible paths depending on how/where gauntlet is being executed
+    const possibleContractPaths = [
+      path.join(__dirname, '../..', './artifacts/bin'),
+      path.join(process.cwd(), './artifacts/bin'),
+      path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts/bin'),
+    ]
+
+    const codes = possibleContractPaths
+      .filter((contractPath) => existsSync(`${contractPath}/${contractId}.wasm`))
+      .map((contractPath) => {
+        const wasm = readFileSync(`${contractPath}/${contractId}.wasm`)
+        return wasm.toString('base64')
+      })
+    return codes[0]
+  } else {
+    const response = await fetch(
+      `https://github.com/smartcontractkit/chainlink-terra/releases/download/${version}/${contractId}.wasm`,
+    )
+    const body = await response.text()
+    return body.toString(`base64`)
+  }
 }
 
 const contractDirName = {
