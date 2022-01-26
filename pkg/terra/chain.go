@@ -15,7 +15,8 @@ type Chain interface {
 	ID() string
 	Config() Config
 	MsgEnqueuer() MsgEnqueuer
-	Reader() client.Reader
+	// Reader returns a new Reader. If nodeName is provided, the underlying client must use that node.
+	Reader(nodeName string) (client.Reader, error)
 }
 
 type Service interface {
