@@ -30,10 +30,12 @@ func init() {
 	}
 }
 
-// defaultsForID returns Chain specific defaults.
-func defaultsForID(chainID string) configSet {
+type ChainID string
+
+// defaults returns Chain specific defaults.
+func (id ChainID) defaults() configSet {
 	c := defaultConfigSet
-	lower := strings.ToLower(chainID)
+	lower := strings.ToLower(string(id))
 	switch {
 	case strings.HasPrefix(lower, "columbus-"):
 		c.FCDURL = *mainnetFCDURL
@@ -103,9 +105,9 @@ type config struct {
 }
 
 // NewConfig returns a Config with defaults for id overridden by dbcfg.
-func NewConfig(id string, dbcfg db.ChainCfg, lggr Logger) *config {
+func NewConfig(id ChainID, dbcfg db.ChainCfg, lggr Logger) *config {
 	return &config{
-		defaults: defaultsForID(id),
+		defaults: id.defaults(),
 		chain:    dbcfg,
 		lggr:     lggr,
 	}

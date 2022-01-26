@@ -49,12 +49,14 @@ func (gpe *ClosureGasPriceEstimator) GasPrices() (map[string]sdk.DecCoin, error)
 
 var _ GasPricesEstimator = (*FCDGasPriceEstimator)(nil)
 
+// FCDGasPriceEstimator is a GasPricesEstimator which fetches from the latest configured fcd url.
 type FCDGasPriceEstimator struct {
 	cfg    Config
 	client http.Client
 	lggr   Logger
 }
 
+// Config is a subset of pkg/terra.Config, which cannot be imported here.
 type Config interface{ FCDURL() url.URL }
 
 func NewFCDGasPriceEstimator(cfg Config, requestTimeout time.Duration, lggr Logger) *FCDGasPriceEstimator {
@@ -100,12 +102,12 @@ func (gpe *FCDGasPriceEstimator) request() (map[string]sdk.DecCoin, error) {
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		gpe.lggr.Errorf("error reading body, err %v", req.URL.RequestURI(), err)
+		gpe.lggr.Errorf("error reading body from %s, err %v", req.URL.RequestURI(), err)
 		return nil, err
 	}
 	var prices prices
 	if err := json.Unmarshal(b, &prices); err != nil {
-		gpe.lggr.Errorf("error unmarshalling, err %v", req.URL.RequestURI(), err)
+		gpe.lggr.Errorf("error unmarshalling from %s, err %v", req.URL.RequestURI(), err)
 		return nil, err
 	}
 	results := make(map[string]sdk.DecCoin)

@@ -33,12 +33,11 @@ type MsgEnqueuer interface {
 // CL Core OCR2 job spec RelayConfig member for Terra
 type RelayConfig struct {
 	ChainID  string `json:"chainID"`  // required
-	NodeName string `json:"nodeName"` // optional
+	NodeName string `json:"nodeName"` // optional, defaults to a random node with ChainID
 }
 
 type OCR2Spec struct {
-	ChainID  string
-	NodeName string
+	RelayConfig
 
 	ID          int32
 	IsBootstrap bool
