@@ -47,11 +47,9 @@ export const loadContracts = (version): Contracts => {
 }
 
 export const getContractCode = async (contractId: CONTRACT_LIST, version): Promise<string> => {
-  console.log(version)
   const response = await fetch(
     `https://github.com/smartcontractkit/chainlink-terra/releases/download/${version}/${contractId}.wasm`,
   )
-  console.log(response)
   const body = await response.text()
   return body.toString(`base64`)
 }
