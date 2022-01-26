@@ -15,6 +15,7 @@ export default class UploadContractCode extends TerraCommand {
   static category = CATEGORIES.TOOLING
 
   static flags = {
+    version: { description: 'The version to retrieve artifacts from (Defaults to latest)' },
     codeIDs: { description: 'The path to contract code IDs file' },
     artifacts: { description: 'The path to contract artifacts folder' },
   }
@@ -44,7 +45,7 @@ export default class UploadContractCode extends TerraCommand {
     const contractReceipts = {}
     const responses: any[] = []
     for (const contractName of askedContracts) {
-      const contract = getContract(contractName)
+      const contract = getContract(contractName, this.flags.version)
       console.log('CONTRACT Bytecode exists:', !!contract.bytecode)
 
       try {

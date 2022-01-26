@@ -4,12 +4,6 @@ import { existsSync, readFileSync } from 'fs'
 import path from 'path'
 import fetch from 'node-fetch'
 
-const { Octokit } = require('@octokit/core')
-const octokit = new Octokit()
-const http = require('http')
-
-export const RELEASE_VERSION = 'v0.0.4'
-
 export enum CONTRACT_LIST {
   FLAGS = 'flags',
   DEVIATION_FLAGGING_VALIDATOR = 'deviation_flagging_validator',
@@ -37,7 +31,7 @@ export type Contract = {
 
 export type Contracts = Record<CONTRACT_LIST, Contract>
 
-export const loadContracts = (): Contracts => {
+export const loadContracts = (version): Contracts => {
   return Object.values(CONTRACT_LIST).reduce((agg, id) => {
     return {
       ...agg,
@@ -45,7 +39,7 @@ export const loadContracts = (): Contracts => {
         [id]: {
           id,
           abi: getContractABI(id),
-          bytecode: getContractCode(id, RELEASE_VERSION),
+          bytecode: getContractCode(id, version),
         },
       },
     }
@@ -53,21 +47,13 @@ export const loadContracts = (): Contracts => {
 }
 
 export const getContractCode = async (contractId: CONTRACT_LIST, version): Promise<string> => {
-  // get requested release
-  const release = await octokit.request('GET /repos/{owner}/{repo}/releases/tags/{tag}', {
-    owner: 'smartcontractkit',
-    repo: 'chainlink-terra',
-    tag: version,
-  })
-
-  const codes = release.data.assets
-    .filter((asset) => asset.name === `${contractId}.wasm`)
-    .map(async (asset) => {
-      const response = await fetch(asset.browser_download_url)
-      const body = await response.text()
-      return body.toString(`base64`)
-    })
-  return codes[0]
+  console.log(version)
+  const response = await fetch(
+    `https://github.com/smartcontractkit/chainlink-terra/releases/download/${version}/${contractId}.wasm`,
+  )
+  console.log(response)
+  const body = await response.text()
+  return body.toString(`base64`)
 }
 
 const contractDirName = {
@@ -105,7 +91,9 @@ export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
 }
 
 export const getContract = (() => {
-  // Preload contracts
-  const contracts = loadContracts()
-  return (contractId: CONTRACT_LIST): Contract => contracts[contractId]
+  return (contractId: CONTRACT_LIST, version): Contract => {
+    // Preload contracts
+    const contracts = loadContracts(version)
+    return contracts[contractId]
+  }
 })()
