@@ -2,6 +2,7 @@ import { io, logger } from '@chainlink/gauntlet-core/dist/utils'
 import { JSONSchemaType } from 'ajv'
 import { existsSync, readFileSync } from 'fs'
 import path from 'path'
+import fetch from 'node-fetch'
 
 export enum CONTRACT_LIST {
   FLAGS = 'flags',
@@ -30,7 +31,7 @@ export type Contract = {
 
 export type Contracts = Record<CONTRACT_LIST, Contract>
 
-export const loadContracts = (): Contracts => {
+export const loadContracts = (version): Contracts => {
   return Object.values(CONTRACT_LIST).reduce((agg, id) => {
     return {
       ...agg,
@@ -38,28 +39,36 @@ export const loadContracts = (): Contracts => {
         [id]: {
           id,
           abi: getContractABI(id),
-          bytecode: getContractCode(id),
+          bytecode: getContractCode(id, version),
         },
       },
     }
   }, {} as Contracts)
 }
 
-// TODO: Pull it from a Github versioned release artifact
-export const getContractCode = (contractId: CONTRACT_LIST): string => {
-  // Possible paths depending on how/where gauntlet is being executed
-  const possibleContractPaths = [
-    path.join(__dirname, '../..', './artifacts/bin'),
-    path.join(process.cwd(), './artifacts/bin'),
-    path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts/bin'),
-  ]
-  const codes = possibleContractPaths
-    .filter((contractPath) => existsSync(`${contractPath}/${contractId}.wasm`))
-    .map((contractPath) => {
-      const wasm = readFileSync(`${contractPath}/${contractId}.wasm`)
-      return wasm.toString('base64')
-    })
-  return codes[0]
+export const getContractCode = async (contractId: CONTRACT_LIST, version): Promise<string> => {
+  if (version === 'local') {
+    // Possible paths depending on how/where gauntlet is being executed
+    const possibleContractPaths = [
+      path.join(__dirname, '../..', './artifacts/bin'),
+      path.join(process.cwd(), './artifacts/bin'),
+      path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts/bin'),
+    ]
+
+    const codes = possibleContractPaths
+      .filter((contractPath) => existsSync(`${contractPath}/${contractId}.wasm`))
+      .map((contractPath) => {
+        const wasm = readFileSync(`${contractPath}/${contractId}.wasm`)
+        return wasm.toString('base64')
+      })
+    return codes[0]
+  } else {
+    const response = await fetch(
+      `https://github.com/smartcontractkit/chainlink-terra/releases/download/${version}/${contractId}.wasm`,
+    )
+    const body = await response.text()
+    return body.toString(`base64`)
+  }
 }
 
 const contractDirName = {
@@ -97,7 +106,9 @@ export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
 }
 
 export const getContract = (() => {
-  // Preload contracts
-  const contracts = loadContracts()
-  return (contractId: CONTRACT_LIST): Contract => contracts[contractId]
+  return (contractId: CONTRACT_LIST, version): Contract => {
+    // Preload contracts
+    const contracts = loadContracts(version)
+    return contracts[contractId]
+  }
 })()
