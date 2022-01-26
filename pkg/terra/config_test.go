@@ -20,12 +20,12 @@ func TestConfig(t *testing.T) {
 
 	lggr := new(mocks.Logger)
 	lggr.On("Warnf", mock.Anything, "FallbackGasPriceULuna", "not-a-number", mock.Anything, mock.Anything).Once()
-	cfg := NewConfig("Bombay-12", db.ChainCfg{}, lggr)
+	cfg := NewConfig(db.ChainCfg{}, lggr)
 	assert.Equal(t, def.BlockRate, cfg.BlockRate())
 	assert.Equal(t, def.BlocksUntilTxTimeout, cfg.BlocksUntilTxTimeout())
 	assert.Equal(t, def.ConfirmPollPeriod, cfg.ConfirmPollPeriod())
 	assert.Equal(t, def.FallbackGasPriceULuna, cfg.FallbackGasPriceULuna())
-	assert.Equal(t, *bombayFCDURL, cfg.FCDURL())
+	assert.Equal(t, def.FCDURL, cfg.FCDURL())
 	assert.Equal(t, def.GasLimitMultiplier, cfg.GasLimitMultiplier())
 	assert.Equal(t, def.MaxMsgsPerBatch, cfg.MaxMsgsPerBatch())
 

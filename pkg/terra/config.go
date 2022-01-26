@@ -2,48 +2,13 @@ package terra
 
 import (
 	"net/url"
-	"strings"
 	"sync"
 	"time"
-
-	"github.com/pkg/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
 )
-
-var (
-	mainnetFCDURL *url.URL
-	bombayFCDURL  *url.URL
-)
-
-func init() {
-	var err error
-	mainnetFCDURL, err = url.Parse("https://fcd.terra.dev/v1/txs/gas_prices")
-	if err != nil {
-		panic(errors.Wrap(err, "failed to parse FCD URL"))
-	}
-	bombayFCDURL, err = url.Parse("https://bombay-fcd.terra.dev/v1/txs/gas_prices")
-	if err != nil {
-		panic(errors.Wrapf(err, "failed to parse FCD URL"))
-	}
-}
-
-type ChainID string
-
-// defaults returns Chain specific defaults.
-func (id ChainID) defaults() configSet {
-	c := defaultConfigSet
-	lower := strings.ToLower(string(id))
-	switch {
-	case strings.HasPrefix(lower, "columbus-"):
-		c.FCDURL = *mainnetFCDURL
-	case strings.HasPrefix(lower, "bombay-"):
-		c.FCDURL = *bombayFCDURL
-	}
-	return c
-}
 
 // Global terra defaults.
 var defaultConfigSet = configSet{
@@ -104,10 +69,10 @@ type config struct {
 	lggr     Logger
 }
 
-// NewConfig returns a Config with defaults for id overridden by dbcfg.
-func NewConfig(id string, dbcfg db.ChainCfg, lggr Logger) *config {
+// NewConfig returns a Config with defaults overridden by dbcfg.
+func NewConfig(dbcfg db.ChainCfg, lggr Logger) *config {
 	return &config{
-		defaults: ChainID(id).defaults(),
+		defaults: defaultConfigSet,
 		chain:    dbcfg,
 		lggr:     lggr,
 	}
