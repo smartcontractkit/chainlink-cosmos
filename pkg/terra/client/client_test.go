@@ -31,7 +31,6 @@ func TestBatchSim(t *testing.T) {
 
 	lggr := new(mocks.Logger)
 	lggr.Test(t)
-	//lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Once()
 	tc, err := NewClient(
 		"42",
 		tendermintURL,

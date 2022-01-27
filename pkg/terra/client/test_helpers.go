@@ -70,8 +70,8 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string) {
 			Mnemonic string `json:"mnemonic"`
 		}
 		require.NoError(t, json.Unmarshal(key, &k))
-		expAcctAddr, err := sdk.AccAddressFromBech32(k.Address)
-		require.NoError(t, err)
+		expAcctAddr, err3 := sdk.AccAddressFromBech32(k.Address)
+		require.NoError(t, err3)
 		privateKey, address := createKeyFromMnemonic(t, k.Mnemonic)
 		require.Equal(t, expAcctAddr, address)
 		// Give it 100 luna
