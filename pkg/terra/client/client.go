@@ -285,7 +285,7 @@ type BatchSimResults struct {
 
 var failedMsgIndexRe, _ = regexp.Compile(`^.*failed to execute message; message index: (?P<Index>\d{1}):.*$`)
 
-func (tc *Client) failedMsgIndex(err error) (bool, int) {
+func (c *Client) failedMsgIndex(err error) (bool, int) {
 	if err == nil {
 		return false, 0
 	}
@@ -301,7 +301,7 @@ func (tc *Client) failedMsgIndex(err error) (bool, int) {
 	return true, int(index)
 }
 
-func (tc *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSimResults, error) {
+func (c *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSimResults, error) {
 	// Assumes at least one msg is present.
 	// If we fail to simulate the batch, remove the offending tx
 	// and try again. Repeat until we have a successful batch.
@@ -313,8 +313,8 @@ func (tc *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSi
 	var failed []SimMsg
 	toSim := msgs
 	for {
-		_, err := tc.SimulateUnsigned(toSim.GetMsgs(), sequence)
-		containsFailure, failureIndex := tc.failedMsgIndex(err)
+		_, err := c.SimulateUnsigned(toSim.GetMsgs(), sequence)
+		containsFailure, failureIndex := c.failedMsgIndex(err)
 		if err != nil && !containsFailure {
 			return nil, err
 		}
@@ -324,11 +324,11 @@ func (tc *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSi
 			// remove offending msg and retry
 			if failureIndex == len(toSim)-1 {
 				// we're done, last one failed
-				tc.log.Errorf("simulation error found in last msg, failure %v, index %v, err %v", toSim[failureIndex], failureIndex, err)
+				c.log.Errorf("simulation error found in last msg, failure %v, index %v, err %v", toSim[failureIndex], failureIndex, err)
 				break
 			}
 			// otherwise there may be more to sim
-			tc.log.Errorf("simulation error found in a msg, retrying with %v, failure %v, index %v, err %v", toSim[failureIndex+1:], toSim[failureIndex], failureIndex, err)
+			c.log.Errorf("simulation error found in a msg, retrying with %v, failure %v, index %v, err %v", toSim[failureIndex+1:], toSim[failureIndex], failureIndex, err)
 			toSim = toSim[failureIndex+1:]
 		} else {
 			// we're done they all succeeded

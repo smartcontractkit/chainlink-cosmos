@@ -1,6 +1,9 @@
 package smoke_test
 
 import (
+	"math/big"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rs/zerolog/log"
@@ -11,8 +14,6 @@ import (
 	"github.com/smartcontractkit/integrations-framework/actions"
 	"github.com/smartcontractkit/integrations-framework/client"
 	"github.com/smartcontractkit/integrations-framework/contracts"
-	"math/big"
-	"time"
 )
 
 var _ = Describe("Terra OCRv2", func() {

@@ -24,8 +24,8 @@ func HexToByteArray(s string, b *[]byte) (err error) {
 func HexToConfigDigest(s string, digest *types.ConfigDigest) (err error) {
 	// parse byte array encoded as hex string
 	var byteArr []byte
-	if err := HexToByteArray(s, &byteArr); err != nil {
-		return err
+	if err = HexToByteArray(s, &byteArr); err != nil {
+		return
 	}
 
 	*digest, err = types.BytesToConfigDigest(byteArr)

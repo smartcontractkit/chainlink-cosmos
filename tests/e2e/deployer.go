@@ -1,6 +1,8 @@
 package e2e
 
 import (
+	"path/filepath"
+
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/actypes"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/cw20types"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/flagstypes"
@@ -10,7 +12,6 @@ import (
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/validatortypes"
 	"github.com/smartcontractkit/integrations-framework/client"
 	"github.com/smartcontractkit/terra.go/msg"
-	"path/filepath"
 )
 
 // ContractDeployer provides the implementations for deploying Terra based contracts

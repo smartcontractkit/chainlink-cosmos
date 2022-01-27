@@ -96,6 +96,6 @@ func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.C
 }
 
 // This should return the same constant value on every invocation
-func (_ OffchainConfigDigester) ConfigDigestPrefix() types.ConfigDigestPrefix {
+func (OffchainConfigDigester) ConfigDigestPrefix() types.ConfigDigestPrefix {
 	return ConfigDigestPrefixTerra
 }

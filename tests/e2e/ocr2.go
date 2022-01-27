@@ -3,12 +3,13 @@ package e2e
 import (
 	"context"
 	"encoding/json"
+	"strconv"
+
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/ocr2types"
 	"github.com/smartcontractkit/integrations-framework/contracts"
 	"github.com/smartcontractkit/libocr/offchainreporting2/confighelper"
 	terraClient "github.com/smartcontractkit/terra.go/client"
 	"github.com/smartcontractkit/terra.go/msg"
-	"strconv"
 )
 
 // OCRv2 represents a OVR v2 contract deployed on terra as WASM

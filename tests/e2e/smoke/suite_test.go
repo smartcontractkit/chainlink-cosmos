@@ -1,8 +1,9 @@
 package smoke_test
 
 import (
-	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 	"testing"
+
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 
 	. "github.com/onsi/ginkgo/v2"
 )

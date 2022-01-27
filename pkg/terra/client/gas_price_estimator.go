@@ -65,7 +65,7 @@ func NewFCDGasPriceEstimator(cfg Config, requestTimeout time.Duration, lggr Logg
 	return &gpe
 }
 
-type prices struct {
+type pricesFCD struct {
 	Uluna string `json:"uluna"`
 	Usdr  string `json:"usdr"`
 	Uusd  string `json:"uusd"`
@@ -108,7 +108,7 @@ func (gpe *FCDGasPriceEstimator) request() (map[string]sdk.DecCoin, error) {
 		gpe.lggr.Errorf("error reading body from %s, err %v", req.URL.RequestURI(), err)
 		return nil, err
 	}
-	var prices prices
+	var prices pricesFCD
 	if err := json.Unmarshal(b, &prices); err != nil {
 		gpe.lggr.Errorf("error unmarshalling from %s, err %v", req.URL.RequestURI(), err)
 		return nil, err

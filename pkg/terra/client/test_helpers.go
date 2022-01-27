@@ -56,15 +56,15 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string) {
 	require.NoError(t, err)
 	// Enable if desired to use lcd endpoints config.Set("api.enable", "true")
 	config.Set("minimum-gas-prices", minGasPrice.String())
-	require.NoError(t, os.WriteFile(p, []byte(config.String()), 0644))
+	require.NoError(t, os.WriteFile(p, []byte(config.String()), 0600))
 	// TODO: could also speed up the block mining config
 
 	// Create 2 test accounts
 	var accounts []Account
 	for i := 0; i < 2; i++ {
 		account := fmt.Sprintf("test%d", i)
-		key, err := exec.Command("terrad", "keys", "add", account, "--output", "json", "--keyring-backend", "test", "--keyring-dir", testdir).CombinedOutput()
-		require.NoError(t, err, string(key))
+		key, err2 := exec.Command("terrad", "keys", "add", account, "--output", "json", "--keyring-backend", "test", "--keyring-dir", testdir).CombinedOutput()
+		require.NoError(t, err2, string(key))
 		var k struct {
 			Address  string `json:"address"`
 			Mnemonic string `json:"mnemonic"`
@@ -120,11 +120,11 @@ func DeployTestContract(t *testing.T, deployAccount, ownerAccount Account, tc *C
 	out, err := exec.Command("terrad", "tx", "wasm", "store", wasmTestContractPath,
 		"--from", deployAccount.Name, "--gas", "auto", "--fees", "100000uluna", "--chain-id", "42", "--broadcast-mode", "block", "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes").CombinedOutput()
 	require.NoError(t, err, string(out))
-	an, sn, err := tc.Account(ownerAccount.Address)
-	require.NoError(t, err)
-	r, err := tc.SignAndBroadcast([]msg.Msg{
+	an, sn, err2 := tc.Account(ownerAccount.Address)
+	require.NoError(t, err2)
+	r, err3 := tc.SignAndBroadcast([]msg.Msg{
 		msg.NewMsgInstantiateContract(ownerAccount.Address, nil, 1, []byte(`{"count":0}`), nil)}, an, sn, minGasPrice, ownerAccount.PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
-	require.NoError(t, err)
+	require.NoError(t, err3)
 	return GetContractAddr(t, tc, r.TxResponse.TxHash)
 }
 
