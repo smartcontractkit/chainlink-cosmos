@@ -210,7 +210,7 @@ func (c *Client) ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) 
 	return s.QueryResult, err
 }
 
-// TxEvents returns in tx events in descending order (latest txes first).
+// TxsEvents returns in tx events in descending order (latest txes first).
 // Each event is ANDed together and follows the query language defined
 // https://docs.cosmos.network/master/core/events.html
 // Note one current issue https://github.com/cosmos/cosmos-sdk/issues/10448
@@ -287,7 +287,7 @@ func (simMsgs SimMsgs) GetMsgs() []sdk.Msg {
 	return msgs
 }
 
-// GetMsgs extracts all IDs from SimMsgs
+// GetSimMsgsIDs extracts all IDs from SimMsgs
 func (simMsgs SimMsgs) GetSimMsgsIDs() []int64 {
 	ids := make([]int64, len(simMsgs))
 	for i := range simMsgs {
@@ -390,7 +390,7 @@ func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.Sim
 	return s, err
 }
 
-// SimulateUnsigned simulates a signed transaction
+// Simulate simulates a signed transaction
 func (c *Client) Simulate(txBytes []byte) (*txtypes.SimulateResponse, error) {
 	s, err := c.cosmosServiceClient.Simulate(context.Background(), &txtypes.SimulateRequest{
 		TxBytes: txBytes,
