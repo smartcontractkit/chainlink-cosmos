@@ -1,7 +1,11 @@
 package client
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"regexp"
@@ -81,6 +85,27 @@ type Client struct {
 	log                     Logger
 }
 
+// responseRoundTripper is a http.RoundTripper which calls respFn with each response body.
+type responseRoundTripper struct {
+	original http.RoundTripper
+	respFn   func([]byte)
+}
+
+func (rt *responseRoundTripper) RoundTrip(r *http.Request) (resp *http.Response, err error) {
+	resp, err = rt.original.RoundTrip(r)
+	if err != nil {
+		return
+	}
+	b, err := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read response")
+	}
+	go rt.respFn(b)
+	resp.Body = ioutil.NopCloser(bytes.NewReader(b))
+	return
+}
+
 func NewClient(chainID string,
 	tendermintURL string,
 	requestTimeout time.Duration,
@@ -92,7 +117,25 @@ func NewClient(chainID string,
 	// Note rpchttp.New or rpchttp.NewWithTimeout use a (buggy) custom transport
 	// which results in new connections being created per request.
 	// Pass our own client here which uses a default transport and caches connections properly.
-	tmClient, err := rpchttp.NewWithClient(tendermintURL, "/websocket", &http.Client{Timeout: requestTimeout})
+	tmClient, err := rpchttp.NewWithClient(tendermintURL, "/websocket", &http.Client{
+		Timeout: requestTimeout,
+		Transport: &responseRoundTripper{original: http.DefaultTransport,
+			// Log any response that is missing the JSONRPC 'id' field, because the tendermint/rpc/jsonrpc/client rejects them.
+			respFn: func(b []byte) {
+				jsonRPC := struct {
+					ID json.RawMessage `json:"id"`
+				}{}
+				if err := json.Unmarshal(b, &jsonRPC); err != nil {
+					lggr.Errorf("Response is not a JSON object: %s: %v", string(b), err)
+					return
+				}
+				if len(jsonRPC.ID) == 0 || string(jsonRPC.ID) == "null" {
+					lggr.Errorf("Response is missing JSONRPC ID: %s", string(b))
+					return
+				}
+			},
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
