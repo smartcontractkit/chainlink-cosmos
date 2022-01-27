@@ -2031,6 +2031,8 @@ github.com/onsi/ginkgo v1.16.4/go.mod h1:dX+/inL/fNMqNlz0e9LfyB9TswhZpCVdJM/Z6Vv
 github.com/onsi/ginkgo v1.16.5 h1:8xi0RTUf59SOSfEtZMvwTvXYMzG4gV23XVHOZiXNtnE=
 github.com/onsi/ginkgo v1.16.5/go.mod h1:+E8gABHa3K6zRBolWtd+ROzc/U5bkGt0FwiG042wbpU=
 github.com/onsi/ginkgo/v2 v2.0.0-rc2/go.mod h1:vw5CSIxN1JObi/U8gcbwft7ZxR2dgaR70JSE3/PpL4c=
+github.com/onsi/ginkgo/v2 v2.0.0 h1:CcuG/HvWNkkaqCUpJifQY8z7qEMBJya6aLPx6ftGyjQ=
+github.com/onsi/ginkgo/v2 v2.0.0/go.mod h1:vw5CSIxN1JObi/U8gcbwft7ZxR2dgaR70JSE3/PpL4c=
 github.com/onsi/ginkgo/v2 v2.1.0 h1:Rj+Was8Gt/ICSZY/CihVKK2cGy3rDqBYKSxVnmOXZzI=
 github.com/onsi/ginkgo/v2 v2.1.0/go.mod h1:vw5CSIxN1JObi/U8gcbwft7ZxR2dgaR70JSE3/PpL4c=
 github.com/onsi/gomega v0.0.0-20151007035656-2152b45fa28a/go.mod h1:C1qb7wdrVGGVU+Z6iS04AVkA3Q65CEZX59MT0QO5uiA=
@@ -2350,6 +2352,8 @@ github.com/smartcontractkit/helmenv v1.0.27 h1:BVxTQZQlFElh6YVK8mY9LSljX7uyx4jyI
 github.com/smartcontractkit/helmenv v1.0.27/go.mod h1:ef0doolSZf8ckqaWMIK2M+EPXdIKYVzttd6EXaCgCK4=
 github.com/smartcontractkit/integrations-framework v1.0.21/go.mod h1:mceWG89OYgDkqIVD64Ocp2pn1utqoHAC4ycVV33JOTo=
 github.com/smartcontractkit/integrations-framework v1.0.24/go.mod h1:yFgbE88F6+om0jo5mFskgKEQBnxqfYg6H1OL2dCIekk=
+github.com/smartcontractkit/integrations-framework v1.0.40 h1:UETdnb5D5gVKzGJgtoOrNLW34O0hq7E9SZHdJQl6dlo=
+github.com/smartcontractkit/integrations-framework v1.0.40/go.mod h1:uAO2/yrAdSDJk9YrPi+MF/xg48pQ7khHr9pwQgEkJWQ=
 github.com/smartcontractkit/integrations-framework v1.0.41 h1:nf/0k2fIKlhCsFlvHfhMCrfxyNHzIV7YnAc95Q7Vv50=
 github.com/smartcontractkit/integrations-framework v1.0.41/go.mod h1:6CJgjZr1TIybPOHu4CewrKRgJUUbF6bqUGYFkC5NslI=
 github.com/smartcontractkit/libocr v0.0.0-20201203233047-5d9b24f0cbb5/go.mod h1:bfdSuLnBWCkafDvPGsQ1V6nrXhg046gh227MKi4zkpc=
