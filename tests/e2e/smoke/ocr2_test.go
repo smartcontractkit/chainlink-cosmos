@@ -21,11 +21,12 @@ var _ = Describe("Terra OCRv2", func() {
 		mockServer *client.MockserverClient
 		nodes      []client.Chainlink
 		nets       *client.Networks
-		lt         contracts.LinkToken
-		bac        contracts.OCRv2AccessController
-		rac        contracts.OCRv2AccessController
-		flags      contracts.OCRv2Flags
-		ocr2       contracts.OCRv2
+		lt         *e2e.LinkToken
+		bac        *e2e.AccessController
+		rac        *e2e.AccessController
+		flags      *e2e.OCRv2Flags
+		ocr2       *e2e.OCRv2
+		validator  *e2e.OCRv2Validator
 		ocConfig   contracts.OffChainAggregatorV2Config
 		nkb        []common.NodeKeysBundle
 		err        error
@@ -74,8 +75,9 @@ var _ = Describe("Terra OCRv2", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			flags, err = cd.DeployOCRv2Flags(bac.Address(), rac.Address())
 			Expect(err).ShouldNot(HaveOccurred())
-			_, err = cd.DeployOCRv2Validator(uint32(80000), flags.Address())
+			validator, err = cd.DeployOCRv2Validator(uint32(80000), flags.Address())
 			Expect(err).ShouldNot(HaveOccurred())
+			log.Debug().Str("Addr", validator.Address()).Msg("Validator address")
 
 			err = ocr2.SetBilling(uint32(1), uint32(1), bac.Address())
 			Expect(err).ShouldNot(HaveOccurred())
