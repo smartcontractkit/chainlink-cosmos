@@ -2,8 +2,9 @@ package ocr2types
 
 import (
 	"fmt"
-	"github.com/smartcontractkit/terra.go/msg"
 	"strings"
+
+	"github.com/smartcontractkit/terra.go/msg"
 )
 
 const (

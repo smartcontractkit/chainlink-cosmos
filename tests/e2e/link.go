@@ -3,10 +3,11 @@ package e2e
 import (
 	"context"
 	"encoding/json"
+	"math/big"
+
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/cw20types"
 	terraClient "github.com/smartcontractkit/terra.go/client"
 	"github.com/smartcontractkit/terra.go/msg"
-	"math/big"
 )
 
 type LinkToken struct {

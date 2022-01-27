@@ -38,7 +38,7 @@ type ReaderWriter interface {
 	Reader
 }
 
-// Only depends on the cosmos sdk types.
+// Reader provides methods for reading from a terra chain.
 type Reader interface {
 	Account(address sdk.AccAddress) (uint64, uint64, error)
 	ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
@@ -49,9 +49,10 @@ type Reader interface {
 	Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error)
 }
 
+// Writer provides methods for writing to a terra chain.
+// Assumes all msgs are for the same from address.
+// We may want to support multiple from addresses + signers if a use case arises.
 type Writer interface {
-	// Assumes all msgs are for the same from address.
-	// We may want to support multiple from addresses + signers if a use case arises.
 	SignAndBroadcast(msgs []sdk.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Simulate(txBytes []byte) (*txtypes.SimulateResponse, error)
@@ -68,17 +69,22 @@ const (
 	// requests can be delayed significantly (https://github.com/tendermint/tendermint/issues/6899),
 	// however there's nothing we can do but wait until the block is processed.
 	// So we set a fairly high timeout here.
-	DefaultTimeout            = 30 * time.Second
+	DefaultTimeout = 30 * time.Second
+	// DefaultGasLimitMultiplier scales up the gas limit to
+	// cover signature costs and potential state changes between
+	// estimation and execution.
 	DefaultGasLimitMultiplier = 1.5
 )
 
 //go:generate mockery --name Logger --output ./mocks/
+// Logger is for logging in the client
 type Logger interface {
 	Infof(format string, values ...interface{})
 	Warnf(format string, values ...interface{})
 	Errorf(format string, values ...interface{})
 }
 
+// Client is a terra client
 type Client struct {
 	chainID                 string
 	clientCtx               cosmosclient.Context
@@ -111,6 +117,7 @@ func (rt *responseRoundTripper) RoundTrip(r *http.Request) (resp *http.Response,
 	return
 }
 
+// NewClient creates a new terra client
 func NewClient(chainID string,
 	tendermintURL string,
 	requestTimeout time.Duration,
@@ -175,6 +182,8 @@ func NewClient(chainID string,
 	}, nil
 }
 
+// Account read the account address for the account number and sequence number.
+// !!Note only one sequence number can be used per account per block!!
 func (c *Client) Account(addr sdk.AccAddress) (uint64, uint64, error) {
 	r, err := c.authClient.Account(context.Background(), &authtypes.QueryAccountRequest{Address: addr.String()})
 	if err != nil {
@@ -188,6 +197,7 @@ func (c *Client) Account(addr sdk.AccAddress) (uint64, uint64, error) {
 	return a.GetAccountNumber(), a.GetSequence(), nil
 }
 
+// ContractStore reads from a WASM contract store
 func (c *Client) ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
 	s, err := c.wasmClient.ContractStore(context.Background(), &wasmtypes.QueryContractStoreRequest{
 		ContractAddress: contractAddress.String(),
@@ -200,7 +210,7 @@ func (c *Client) ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) 
 	return s.QueryResult, err
 }
 
-// Returns in descending order (latest txes first)
+// TxsEvents returns in tx events in descending order (latest txes first).
 // Each event is ANDed together and follows the query language defined
 // https://docs.cosmos.network/master/core/events.html
 // Note one current issue https://github.com/cosmos/cosmos-sdk/issues/10448
@@ -213,6 +223,7 @@ func (c *Client) TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error
 	return e, err
 }
 
+// Tx gets a tx by hash
 func (c *Client) Tx(hash string) (*txtypes.GetTxResponse, error) {
 	e, err := c.cosmosServiceClient.GetTx(context.Background(), &txtypes.GetTxRequest{
 		Hash: hash,
@@ -220,14 +231,17 @@ func (c *Client) Tx(hash string) (*txtypes.GetTxResponse, error) {
 	return e, err
 }
 
+// LatestBlock returns the latest block
 func (c *Client) LatestBlock() (*tmtypes.GetLatestBlockResponse, error) {
 	return c.tendermintServiceClient.GetLatestBlock(context.Background(), &tmtypes.GetLatestBlockRequest{})
 }
 
+// BlockByHeight gets a block by height
 func (c *Client) BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse, error) {
 	return c.tendermintServiceClient.GetBlockByHeight(context.Background(), &tmtypes.GetBlockByHeightRequest{Height: height})
 }
 
+// CreateAndSign creates and signs a transaction
 func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error) {
 	txbuilder := tx.NewTxBuilder(app.MakeEncodingConfig().TxConfig)
 	err := txbuilder.SetMsgs(msgs...)
@@ -255,13 +269,16 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 	return signedTx, nil
 }
 
+// SimMsg binds an ID to a msg
 type SimMsg struct {
 	ID  int64
 	Msg sdk.Msg
 }
 
+// SimMsgs is a slice of SimMsg
 type SimMsgs []SimMsg
 
+// GetMsgs extracts all msgs from SimMsgs
 func (simMsgs SimMsgs) GetMsgs() []sdk.Msg {
 	msgs := make([]sdk.Msg, len(simMsgs))
 	for i := range simMsgs {
@@ -270,6 +287,7 @@ func (simMsgs SimMsgs) GetMsgs() []sdk.Msg {
 	return msgs
 }
 
+// GetSimMsgsIDs extracts all IDs from SimMsgs
 func (simMsgs SimMsgs) GetSimMsgsIDs() []int64 {
 	ids := make([]int64, len(simMsgs))
 	for i := range simMsgs {
@@ -278,6 +296,7 @@ func (simMsgs SimMsgs) GetSimMsgsIDs() []int64 {
 	return ids
 }
 
+// BatchSimResults indicates which msgs failed and which succeeded
 type BatchSimResults struct {
 	Failed    SimMsgs
 	Succeeded SimMsgs
@@ -285,7 +304,7 @@ type BatchSimResults struct {
 
 var failedMsgIndexRe = regexp.MustCompile(`^.*failed to execute message; message index: (?P<Index>\d{1}):.*$`)
 
-func (tc *Client) failedMsgIndex(err error) (bool, int) {
+func (c *Client) failedMsgIndex(err error) (bool, int) {
 	if err == nil {
 		return false, 0
 	}
@@ -301,20 +320,21 @@ func (tc *Client) failedMsgIndex(err error) (bool, int) {
 	return true, int(index)
 }
 
-func (tc *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSimResults, error) {
-	// Assumes at least one msg is present.
-	// If we fail to simulate the batch, remove the offending tx
-	// and try again. Repeat until we have a successful batch.
-	// Keep track of failures so we can mark them as errored.
-	// Note that the error from simulating indicates the first
-	// msg in the slice which failed (it simply loops over the msgs
-	// and simulates them one by one, breaking at the first failure).
+// BatchSimulateUnsigned simulates a group of msgs.
+// Assumes at least one msg is present.
+// If we fail to simulate the batch, remove the offending tx
+// and try again. Repeat until we have a successful batch.
+// Keep track of failures so we can mark them as errored.
+// Note that the error from simulating indicates the first
+// msg in the slice which failed (it simply loops over the msgs
+// and simulates them one by one, breaking at the first failure).
+func (c *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSimResults, error) {
 	var succeeded []SimMsg
 	var failed []SimMsg
 	toSim := msgs
 	for {
-		_, err := tc.SimulateUnsigned(toSim.GetMsgs(), sequence)
-		containsFailure, failureIndex := tc.failedMsgIndex(err)
+		_, err := c.SimulateUnsigned(toSim.GetMsgs(), sequence)
+		containsFailure, failureIndex := c.failedMsgIndex(err)
 		if err != nil && !containsFailure {
 			return nil, err
 		}
@@ -324,11 +344,11 @@ func (tc *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSi
 			// remove offending msg and retry
 			if failureIndex == len(toSim)-1 {
 				// we're done, last one failed
-				tc.log.Errorf("simulation error found in last msg, failure %v, index %v, err %v", toSim[failureIndex], failureIndex, err)
+				c.log.Errorf("simulation error found in last msg, failure %v, index %v, err %v", toSim[failureIndex], failureIndex, err)
 				break
 			}
 			// otherwise there may be more to sim
-			tc.log.Errorf("simulation error found in a msg, retrying with %v, failure %v, index %v, err %v", toSim[failureIndex+1:], toSim[failureIndex], failureIndex, err)
+			c.log.Errorf("simulation error found in a msg, retrying with %v, failure %v, index %v, err %v", toSim[failureIndex+1:], toSim[failureIndex], failureIndex, err)
 			toSim = toSim[failureIndex+1:]
 		} else {
 			// we're done they all succeeded
@@ -342,6 +362,7 @@ func (tc *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSi
 	}, nil
 }
 
+// SimulateUnsigned simulates an unsigned msg
 func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error) {
 	txbuilder := tx.NewTxBuilder(app.MakeEncodingConfig().TxConfig)
 	if err := txbuilder.SetMsgs(msgs...); err != nil {
@@ -369,6 +390,7 @@ func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.Sim
 	return s, err
 }
 
+// Simulate simulates a signed transaction
 func (c *Client) Simulate(txBytes []byte) (*txtypes.SimulateResponse, error) {
 	s, err := c.cosmosServiceClient.Simulate(context.Background(), &txtypes.SimulateRequest{
 		TxBytes: txBytes,
@@ -376,6 +398,7 @@ func (c *Client) Simulate(txBytes []byte) (*txtypes.SimulateResponse, error) {
 	return s, err
 }
 
+// Broadcast broadcasts a tx
 func (c *Client) Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
 	res, err := c.cosmosServiceClient.BroadcastTx(context.Background(), &txtypes.BroadcastTxRequest{
 		Mode:    mode,
@@ -393,6 +416,7 @@ func (c *Client) Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes
 	return res, err
 }
 
+// SignAndBroadcast signs and broadcasts a group of msgs.
 func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
 	sim, err := c.SimulateUnsigned(msgs, sequence)
 	if err != nil {
@@ -405,6 +429,7 @@ func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint6
 	return c.Broadcast(txBytes, mode)
 }
 
+// Balance returns the balance of an address
 func (c *Client) Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error) {
 	b, err := c.bankClient.Balance(context.Background(), &banktypes.QueryBalanceRequest{Address: addr.String(), Denom: denom})
 	if err != nil {

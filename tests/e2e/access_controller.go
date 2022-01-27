@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"encoding/json"
+
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/actypes"
 	terraClient "github.com/smartcontractkit/terra.go/client"
 	"github.com/smartcontractkit/terra.go/msg"

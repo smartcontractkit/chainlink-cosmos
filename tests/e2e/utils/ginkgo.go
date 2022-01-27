@@ -1,9 +1,10 @@
 package utils
 
 import (
-	"github.com/smartcontractkit/integrations-framework/config"
 	"os"
 	"path/filepath"
+
+	"github.com/smartcontractkit/integrations-framework/config"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

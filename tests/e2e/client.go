@@ -4,6 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"net/url"
+	"os"
+	"time"
+
 	cosmtypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
@@ -14,10 +19,6 @@ import (
 	"github.com/smartcontractkit/terra.go/key"
 	"github.com/smartcontractkit/terra.go/msg"
 	"gopkg.in/yaml.v2"
-	"math/big"
-	"net/url"
-	"os"
-	"time"
 )
 
 const (
@@ -169,10 +170,7 @@ func (t *TerraLCDClient) LoadWallets(nc interface{}) error {
 		}
 		t.Wallets = append(t.Wallets, w)
 	}
-	if err := t.SetWallet(1); err != nil {
-		return err
-	}
-	return nil
+	return t.SetWallet(1)
 }
 
 func (t *TerraLCDClient) SetWallet(num int) error {
