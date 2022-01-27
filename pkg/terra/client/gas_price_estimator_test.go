@@ -31,8 +31,7 @@ func TestGasPriceEstimators(t *testing.T) {
 
 	t.Run("fcd", func(t *testing.T) {
 		// Note this test runs in CI against a real api, we do want to know if this API changes or becomes slow
-		gpeFCD, err := NewFCDGasPriceEstimator("https://fcd.terra.dev:443/v1/txs/gas_prices", 10*time.Second, lggr)
-		require.NoError(t, err)
+		gpeFCD := NewFCDGasPriceEstimator(newConfig(t, "https://fcd.terra.dev:443/v1/txs/gas_prices"), 10*time.Second, lggr)
 		p, err := gpeFCD.GasPrices()
 		require.NoError(t, err)
 		for _, price := range []string{
@@ -63,8 +62,7 @@ func TestGasPriceEstimators(t *testing.T) {
 	})
 
 	t.Run("caching", func(t *testing.T) {
-		gpeFCD, err := NewFCDGasPriceEstimator("https://fcd.terra.dev:443/v1/txs/gas_prices", 10*time.Second, lggr)
-		require.NoError(t, err)
+		gpeFCD := NewFCDGasPriceEstimator(newConfig(t, "https://fcd.terra.dev:443/v1/txs/gas_prices"), 10*time.Second, lggr)
 		cachingFCD := NewCachingGasPriceEstimator(gpeFCD, lggr)
 
 		// Fill cache
@@ -72,9 +70,8 @@ func TestGasPriceEstimators(t *testing.T) {
 		require.NoError(t, err)
 
 		// Use cache
-		badURL, err := url.Parse("https://does.not.exist:443/v1/txs/gas_prices")
-		require.NoError(t, err)
-		gpeFCD.fcdURL = *badURL
+		const badURL = "https://does.not.exist:443/v1/txs/gas_prices"
+		gpeFCD.cfg = newConfig(t, badURL)
 		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything).Once()
 		cachedPrices, err := cachingFCD.GasPrices()
 		require.NoError(t, err)
@@ -96,8 +93,7 @@ func TestGasPriceEstimators(t *testing.T) {
 	})
 
 	t.Run("composed", func(t *testing.T) {
-		gpeFCD, err := NewFCDGasPriceEstimator("https://does.not.exist:443/v1/txs/gas_prices", 10*time.Second, lggr)
-		require.NoError(t, err)
+		gpeFCD := NewFCDGasPriceEstimator(newConfig(t, "https://does.not.exist:443/v1/txs/gas_prices"), 10*time.Second, lggr)
 		cachingFCD := NewCachingGasPriceEstimator(gpeFCD, lggr)
 		gpeFixed := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
 			"uluna": sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("10")),
@@ -109,12 +105,25 @@ func TestGasPriceEstimators(t *testing.T) {
 		assert.True(t, ok)
 		assert.Equal(t, "10.000000000000000000", uluna.Amount.String())
 		// If the url starts working, it should use that.
-		goodURL, err := url.Parse("https://fcd.terra.dev:443/v1/txs/gas_prices")
-		require.NoError(t, err)
-		gpeFCD.fcdURL = *goodURL
+		const goodURL = "https://fcd.terra.dev:443/v1/txs/gas_prices"
+		gpeFCD.cfg = newConfig(t, goodURL)
 		fcdPrices := gpe.GasPrices()
 		uluna, ok = fcdPrices["uluna"]
 		assert.True(t, ok)
 		assert.NotEqual(t, "10.000000000000000000", uluna.Amount.String())
 	})
+}
+
+type config struct {
+	fcdURL url.URL
+}
+
+func newConfig(t *testing.T, u string) *config {
+	parsed, err := url.Parse(u)
+	require.NoError(t, err)
+	return &config{*parsed}
+}
+
+func (c *config) FCDURL() url.URL {
+	return c.fcdURL
 }
