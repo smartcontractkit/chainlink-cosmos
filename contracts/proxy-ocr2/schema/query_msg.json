@@ -5,18 +5,14 @@
     {
       "type": "string",
       "enum": [
-        "latest_config_details",
-        "transmitters",
-        "latest_transmission_details",
-        "latest_config_digest_and_epoch",
-        "description",
         "decimals",
+        "version",
+        "description",
         "latest_round_data",
-        "link_token",
-        "billing",
-        "billing_access_controller",
-        "requester_access_controller",
-        "link_available_for_payment",
+        "proposed_latest_round_data",
+        "aggregator",
+        "phase_id",
+        "proposed_aggregator",
         "owner"
       ]
     },
@@ -27,6 +23,28 @@
       ],
       "properties": {
         "round_data": {
+          "type": "object",
+          "required": [
+            "round_id"
+          ],
+          "properties": {
+            "round_id": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "proposed_round_data"
+      ],
+      "properties": {
+        "proposed_round_data": {
           "type": "object",
           "required": [
             "round_id"
@@ -45,37 +63,19 @@
     {
       "type": "object",
       "required": [
-        "owed_payment"
+        "phase_aggregators"
       ],
       "properties": {
-        "owed_payment": {
+        "phase_aggregators": {
           "type": "object",
           "required": [
-            "transmitter"
+            "phase_id"
           ],
           "properties": {
-            "transmitter": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "oracle_observation_count"
-      ],
-      "properties": {
-        "oracle_observation_count": {
-          "type": "object",
-          "required": [
-            "transmitter"
-          ],
-          "properties": {
-            "transmitter": {
-              "type": "string"
+            "phase_id": {
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0.0
             }
           }
         }

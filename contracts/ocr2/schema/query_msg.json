@@ -17,6 +17,7 @@
         "billing_access_controller",
         "requester_access_controller",
         "link_available_for_payment",
+        "version",
         "owner"
       ]
     },
