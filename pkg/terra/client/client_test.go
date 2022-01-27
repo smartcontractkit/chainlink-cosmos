@@ -31,7 +31,7 @@ func TestBatchSim(t *testing.T) {
 
 	lggr := new(mocks.Logger)
 	lggr.Test(t)
-	lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Once()
+	//lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Once()
 	tc, err := NewClient(
 		"42",
 		tendermintURL,
@@ -46,7 +46,6 @@ func TestBatchSim(t *testing.T) {
 	t.Run("single success", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		lggr.On("Infof", mock.Anything, mock.Anything).Once()
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}}, sn)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(res.Succeeded))
@@ -57,7 +56,6 @@ func TestBatchSim(t *testing.T) {
 	t.Run("single failure", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		lggr.On("Infof", mock.Anything, mock.Anything).Once()
 		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: fail}}, sn)
 		require.NoError(t, err)
@@ -69,7 +67,6 @@ func TestBatchSim(t *testing.T) {
 	t.Run("multi failure", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		lggr.On("Infof", mock.Anything, mock.Anything).Once()
 		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once() // retry
 		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
@@ -84,7 +81,6 @@ func TestBatchSim(t *testing.T) {
 	t.Run("multi succeed", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		lggr.On("Infof", mock.Anything, mock.Anything).Once()
 		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: fail}}, sn)
 		require.NoError(t, err)
@@ -95,7 +91,6 @@ func TestBatchSim(t *testing.T) {
 	t.Run("all succeed", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Once()
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: succeed}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 3, len(res.Succeeded))
@@ -105,7 +100,6 @@ func TestBatchSim(t *testing.T) {
 	t.Run("all fail", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Times(3)
 		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Times(2) // retry
 		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: fail}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)

@@ -63,7 +63,12 @@ type Writer interface {
 var _ ReaderWriter = (*Client)(nil)
 
 const (
-	DefaultTimeout            = 10 * time.Second
+	// DefaultTimeout is the default Terra client timeout.
+	// Note that while the terra node is processing a heavy block,
+	// requests can be delayed significantly (https://github.com/tendermint/tendermint/issues/6899),
+	// however there's nothing we can do but wait until the block is processed.
+	// So we set a fairly high timeout here.
+	DefaultTimeout            = 30 * time.Second
 	DefaultGasLimitMultiplier = 1.5
 )
 
@@ -308,7 +313,6 @@ func (tc *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSi
 	var failed []SimMsg
 	toSim := msgs
 	for {
-		tc.log.Infof("simulating %v", toSim)
 		_, err := tc.SimulateUnsigned(toSim.GetMsgs(), sequence)
 		containsFailure, failureIndex := tc.failedMsgIndex(err)
 		if err != nil && !containsFailure {
