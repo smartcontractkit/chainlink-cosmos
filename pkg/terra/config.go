@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
@@ -21,7 +23,7 @@ var DefaultConfigSet = ConfigSet{
 	// but you need to specify a gas limit when signing.
 	// TODO: Determine how much gas a signature adds and then
 	// add that directly so we can be more accurate.
-	GasLimitMultiplier:    1.5,
+	GasLimitMultiplier: client.DefaultGasLimitMultiplier,
 	// The max gas limit per block is 1_000_000_000
 	// https://github.com/terra-money/core/blob/d6037b9a12c8bf6b09fe861c8ad93456aac5eebb/app/legacy/migrate.go#L69.
 	// The max msg size is 10KB https://github.com/terra-money/core/blob/d6037b9a12c8bf6b09fe861c8ad93456aac5eebb/x/wasm/types/params.go#L15.

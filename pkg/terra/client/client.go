@@ -65,7 +65,7 @@ const (
 	// however there's nothing we can do but wait until the block is processed.
 	// So we set a fairly high timeout here.
 	DefaultTimeout            = 30 * time.Second
-	DefaultGasLimitMultiplier = 1.2
+	DefaultGasLimitMultiplier = 1.5
 )
 
 //go:generate mockery --name Logger --output ./mocks/
