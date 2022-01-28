@@ -1,8 +1,8 @@
 {
-  "flags": 15,
-  "deviation_flagging_validator": 6,
-  "ocr2": 7,
-  "access_controller": 8,
-  "cw3_flex_multisig": 13,
-  "cw4_group": 14
+  "flags": 26,
+  "deviation_flagging_validator": 27,
+  "ocr2": 28,
+  "access_controller": 29,
+  "cw3_flex_multisig": 30,
+  "cw4_group": 31
 }
