@@ -55,7 +55,7 @@ func TestBatchSim(t *testing.T) {
 	t.Run("single failure", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: fail}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(res.Succeeded))
@@ -66,8 +66,8 @@ func TestBatchSim(t *testing.T) {
 	t.Run("multi failure", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once() // retry
-		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once() // retry
+		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(res.Succeeded))
@@ -80,7 +80,7 @@ func TestBatchSim(t *testing.T) {
 	t.Run("multi succeed", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: fail}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 2, len(res.Succeeded))
@@ -99,8 +99,8 @@ func TestBatchSim(t *testing.T) {
 	t.Run("all fail", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Times(2) // retry
-		lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Times(2) // retry
+		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: fail}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(res.Succeeded))
