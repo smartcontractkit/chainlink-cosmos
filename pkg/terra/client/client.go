@@ -344,11 +344,11 @@ func (c *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSim
 			// remove offending msg and retry
 			if failureIndex == len(toSim)-1 {
 				// we're done, last one failed
-				c.log.Errorf("simulation error found in last msg, failure %v, index %v, err %v", toSim[failureIndex], failureIndex, err)
+				c.log.Warnf("simulation error found in last msg, failure %v, index %v, err %v", toSim[failureIndex], failureIndex, err)
 				break
 			}
 			// otherwise there may be more to sim
-			c.log.Errorf("simulation error found in a msg, retrying with %v, failure %v, index %v, err %v", toSim[failureIndex+1:], toSim[failureIndex], failureIndex, err)
+			c.log.Warnf("simulation error found in a msg, retrying with %v, failure %v, index %v, err %v", toSim[failureIndex+1:], toSim[failureIndex], failureIndex, err)
 			toSim = toSim[failureIndex+1:]
 		} else {
 			// we're done they all succeeded
