@@ -14,6 +14,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 
 	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -70,9 +71,14 @@ const (
 	// however there's nothing we can do but wait until the block is processed.
 	// So we set a fairly high timeout here.
 	DefaultTimeout = 30 * time.Second
-	// DefaultGasLimitMultiplier scales up the gas limit to
-	// cover signature costs and potential state changes between
-	// estimation and execution.
+	// DefaultGasLimitMultiplier is the default gas limit multiplier.
+	// It scales up the gas limit for 3 reasons:
+	// 1. We simulate without a fee present (since we're simulating in order to determine the fee)
+	// since we simulate unsigned. The fee is included in the signing data:
+	// https://github.com/cosmos/cosmos-sdk/blob/master/x/auth/tx/direct.go#L40)
+	// 2. Potential state changes between estimation and execution.
+	// 3. The simulation doesn't include db writes in the tendermint node
+	// (https://github.com/cosmos/cosmos-sdk/issues/4938)
 	DefaultGasLimitMultiplier = 1.5
 )
 
@@ -370,6 +376,7 @@ func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.Sim
 	}
 	// Create an empty signature literal as the ante handler will populate with a
 	// sentinel pubkey.
+	// Note the simulation actually won't work without this
 	sig := signing.SignatureV2{
 		PubKey: &secp256k1.PubKey{},
 		Data: &signing.SingleSignatureData{
