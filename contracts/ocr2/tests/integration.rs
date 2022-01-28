@@ -186,7 +186,7 @@ fn init_works() {
     let _response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
 
     let gas_used = gas_before - deps.get_gas_left();
-    unimplemented!("gas used: {} for {} signatures", gas_used, n);
+    // unimplemented!("gas used: {} for {} signatures", gas_used, n);
     // 1 = 403574 / 406205 / 405237
     // 2 = 447190 / 445798 / 448000
     // 3 = 512726 / 513410 / 514216
