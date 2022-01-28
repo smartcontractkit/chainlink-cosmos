@@ -194,7 +194,7 @@ fn setup() -> Env {
         .unwrap();
     // generate a few signer keypairs
     let mut keypairs = Vec::new();
-    for _ in 0..19 {
+    for _ in 0..16 {
         let sk = SigningKey::new(thread_rng());
         keypairs.push(sk);
     }
@@ -441,7 +441,7 @@ fn transmit_happy_path() {
 
     // use a new set of keypairs and signers
     let mut keypairs = Vec::new();
-    for _ in 0..19 {
+    for _ in 0..16 {
         let sk = SigningKey::new(thread_rng());
         keypairs.push(sk);
     }
@@ -453,7 +453,7 @@ fn transmit_happy_path() {
     let msg = ExecuteMsg::SetConfig {
         signers,
         transmitters: env.transmitters.clone(),
-        f: 6,
+        f: 5,
         onchain_config: Binary(vec![]),
         offchain_config_version: 2,
         offchain_config: Binary(vec![1; 2165]),
@@ -693,7 +693,8 @@ fn set_link_token() {
         )
         .unwrap();
     let expected_balance = Decimal(deposit)
-        - (Decimal(Uint128::new(19) * observation_payment) + Decimal(reimbursement));
+        - (Decimal(Uint128::new(env.transmitters.len() as u128) * observation_payment)
+            + Decimal(reimbursement));
     assert_eq!(Decimal(balance).to_string(), expected_balance.to_string());
 
     // token address should be changed
