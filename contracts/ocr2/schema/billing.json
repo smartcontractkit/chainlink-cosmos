@@ -4,9 +4,35 @@
   "type": "object",
   "required": [
     "observation_payment",
-    "recommended_gas_price"
+    "recommended_gas_price",
+    "transmission_payment"
   ],
   "properties": {
+    "base_gas": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "gas_adjustment": {
+      "description": "In percent",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint8",
+      "minimum": 0.0
+    },
+    "gas_per_signature": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint64",
+      "minimum": 0.0
+    },
     "observation_payment": {
       "type": "integer",
       "format": "uint64",
@@ -14,6 +40,11 @@
     },
     "recommended_gas_price": {
       "description": "Should match https://fcd.terra.dev/v1/txs/gas_prices NOTE: needs to be scaled to the same amount of decimals places as LINK token",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "transmission_payment": {
       "type": "integer",
       "format": "uint64",
       "minimum": 0.0
