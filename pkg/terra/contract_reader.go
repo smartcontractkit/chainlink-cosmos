@@ -66,69 +66,70 @@ func (r *OCR2Reader) LatestConfig(ctx context.Context, changedInBlock uint64) (t
 
 	for _, event := range res.TxResponses[0].Logs[0].Events {
 		if event.Type == "wasm-set_config" {
-			output := types.ContractConfig{}
-			// TODO: is there a better way to parse an array of structs to an struct
-			// https://github.com/smartcontractkit/chainlink-terra/issues/21
-			for _, attr := range event.Attributes {
-				key, value := string(attr.Key), string(attr.Value)
-				switch key {
-				case "latest_config_digest":
-					// parse byte array encoded as hex string
-					if err := HexToConfigDigest(value, &output.ConfigDigest); err != nil {
-						return types.ContractConfig{}, err
-					}
-				case "config_count":
-					i, err := strconv.ParseInt(value, 10, 64)
-					if err != nil {
-						return types.ContractConfig{}, err
-					}
-					output.ConfigCount = uint64(i)
-				case "signers":
-					// this assumes the value will be a hex encoded string which each signer 32 bytes and each signer will be a separate parameter
-					var v []byte
-					if err := HexToByteArray(value, &v); err != nil {
-						return types.ContractConfig{}, err
-					}
-					output.Signers = append(output.Signers, v)
-				case "transmitters":
-					// this assumes the return value be a string for each transmitter and each transmitter will be separate
-					output.Transmitters = append(output.Transmitters, types.Account(attr.Value))
-				case "f":
-					i, err := strconv.ParseInt(value, 10, 8)
-					if err != nil {
-						return types.ContractConfig{}, err
-					}
-					output.F = uint8(i)
-				case "onchain_config":
-					// parse byte array encoded as hex string
-					var config33 []byte
-					if err := HexToByteArray(value, &config33); err != nil {
-						return types.ContractConfig{}, err
-					}
-					// convert byte array to encoding expected by lib OCR
-					config49, err := ContractConfigToOCRConfig(config33)
-					if err != nil {
-						return types.ContractConfig{}, err
-
-					}
-					output.OnchainConfig = config49
-				case "offchain_config_version":
-					i, err := strconv.ParseInt(value, 10, 64)
-					if err != nil {
-						return types.ContractConfig{}, err
-					}
-					output.OffchainConfigVersion = uint64(i)
-				case "offchain_config":
-					// parse byte array encoded as hex string
-					if err := HexToByteArray(value, &output.OffchainConfig); err != nil {
-						return types.ContractConfig{}, err
-					}
-				}
-			}
-			return output, nil
+			return parseAttributes(event.Attributes)
 		}
 	}
 	return types.ContractConfig{}, fmt.Errorf("No set_config event found for tx %s", res.TxResponses[0].TxHash)
+}
+
+func parseAttributes(attrs []cosmosSDK.Attribute) (output types.ContractConfig, err error) {
+	for _, attr := range attrs {
+		key, value := attr.Key, attr.Value
+		switch key {
+		case "latest_config_digest":
+			// parse byte array encoded as hex string
+			if err := HexToConfigDigest(value, &output.ConfigDigest); err != nil {
+				return types.ContractConfig{}, err
+			}
+		case "config_count":
+			i, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				return types.ContractConfig{}, err
+			}
+			output.ConfigCount = uint64(i)
+		case "signers":
+			// this assumes the value will be a hex encoded string which each signer 32 bytes and each signer will be a separate parameter
+			var v []byte
+			if err := HexToByteArray(value, &v); err != nil {
+				return types.ContractConfig{}, err
+			}
+			output.Signers = append(output.Signers, v)
+		case "transmitters":
+			// this assumes the return value be a string for each transmitter and each transmitter will be separate
+			output.Transmitters = append(output.Transmitters, types.Account(attr.Value))
+		case "f":
+			i, err := strconv.ParseInt(value, 10, 8)
+			if err != nil {
+				return types.ContractConfig{}, err
+			}
+			output.F = uint8(i)
+		case "onchain_config":
+			// parse byte array encoded as hex string
+			var config33 []byte
+			if err := HexToByteArray(value, &config33); err != nil {
+				return types.ContractConfig{}, err
+			}
+			// convert byte array to encoding expected by lib OCR
+			config49, err := ContractConfigToOCRConfig(config33)
+			if err != nil {
+				return types.ContractConfig{}, err
+
+			}
+			output.OnchainConfig = config49
+		case "offchain_config_version":
+			i, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				return types.ContractConfig{}, err
+			}
+			output.OffchainConfigVersion = uint64(i)
+		case "offchain_config":
+			// parse byte array encoded as hex string
+			if err := HexToByteArray(value, &output.OffchainConfig); err != nil {
+				return types.ContractConfig{}, err
+			}
+		}
+	}
+	return output, nil
 }
 
 // LatestTransmissionDetails fetches the latest transmission details from address state
