@@ -21,7 +21,7 @@ type ContractCache struct {
 	reader *OCR2Reader
 	lggr   Logger
 
-	stop, done chan struct{}
+	stop, done, contractReady chan struct{}
 
 	configMu    sync.RWMutex
 	configTS    time.Time
@@ -37,13 +37,14 @@ type ContractCache struct {
 	latestTimestamp time.Time
 }
 
-func NewContractCache(cfg Config, reader *OCR2Reader, lggr Logger) *ContractCache {
+func NewContractCache(cfg Config, reader *OCR2Reader, lggr Logger, contractReady chan struct{}) *ContractCache {
 	return &ContractCache{
-		cfg:    cfg,
-		reader: reader,
-		lggr:   lggr,
-		stop:   make(chan struct{}),
-		done:   make(chan struct{}),
+		cfg:           cfg,
+		reader:        reader,
+		lggr:          lggr,
+		stop:          make(chan struct{}),
+		done:          make(chan struct{}),
+		contractReady: contractReady,
 	}
 }
 
@@ -94,12 +95,23 @@ func (cc *ContractCache) updateConfig(ctx context.Context) error {
 		return err
 	}
 	now := time.Now()
+	var same, firstTimeConfig bool
 	cc.configMu.Lock()
-	same := cc.configBlock == changedInBlock && cc.config.ConfigDigest == configDigest
-	if same {
-		cc.configTS = now // refresh TTL
+	{
+		if cc.configBlock == 0 && changedInBlock != 0 {
+			cc.lggr.Infof("detected first time configuration")
+			firstTimeConfig = true
+		}
+		same := cc.configBlock == changedInBlock && cc.config.ConfigDigest == configDigest
+		if same {
+			cc.configTS = now // refresh TTL
+		}
 	}
 	cc.configMu.Unlock()
+
+	if firstTimeConfig {
+		cc.contractReady <- struct{}{}
+	}
 	if same {
 		return nil
 	}
@@ -109,9 +121,11 @@ func (cc *ContractCache) updateConfig(ctx context.Context) error {
 	}
 	now = time.Now()
 	cc.configMu.Lock()
-	cc.configTS = now
-	cc.configBlock = changedInBlock
-	cc.config = contractConfig
+	{
+		cc.configTS = now
+		cc.configBlock = changedInBlock
+		cc.config = contractConfig
+	}
 	cc.configMu.Unlock()
 	cc.lggr.Infof("updated config. [config %v, config block %v]",
 		contractConfig, changedInBlock)

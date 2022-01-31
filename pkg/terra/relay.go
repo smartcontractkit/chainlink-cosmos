@@ -78,7 +78,7 @@ func (r *Relayer) Healthy() error {
 	return r.chainSet.Healthy()
 }
 
-func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relaytypes.OCR2Provider, error) {
+func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}, contractReady chan struct{}) (relaytypes.OCR2Provider, error) {
 	spec, ok := s.(OCR2Spec)
 	if !ok {
 		return nil, errors.New("unsuccessful cast to 'terra.OCR2Spec'")
@@ -100,7 +100,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	}
 
 	reader := NewOCR2Reader(contractAddr, chainReader, r.lggr)
-	contract := NewContractCache(chain.Config(), reader, r.lggr)
+	contract := NewContractCache(chain.Config(), reader, r.lggr, contractReady)
 	tracker := NewContractTracker(chainReader, contract)
 	digester := NewOffchainConfigDigester(spec.ChainID, contractAddr)
 
