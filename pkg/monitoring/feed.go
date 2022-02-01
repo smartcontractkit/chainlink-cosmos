@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
@@ -16,12 +17,18 @@ type TerraFeedConfig struct {
 	HeartbeatSec   int64  `json:"heartbeat,omitempty"`
 	ContractType   string `json:"contract_type,omitempty"`
 	ContractStatus string `json:"status,omitempty"`
+	MultiplyRaw    string `json:"multiply,omitempty"`
+	Multiply       uint64 `json:"-"`
 
 	ContractAddressBech32 string         `json:"contract_address_bech32,omitempty"`
 	ContractAddress       sdk.AccAddress `json:"-"`
 }
 
 var _ relayMonitoring.FeedConfig = TerraFeedConfig{}
+
+func (t TerraFeedConfig) GetID() string {
+	return t.ContractAddressBech32
+}
 
 func (t TerraFeedConfig) GetName() string {
 	return t.Name
@@ -59,6 +66,10 @@ func (t TerraFeedConfig) GetContractAddressBytes() []byte {
 	return t.ContractAddress.Bytes()
 }
 
+func (s TerraFeedConfig) GetMultiply() uint64 {
+	return s.Multiply
+}
+
 func (t TerraFeedConfig) ToMapping() map[string]interface{} {
 	return map[string]interface{}{
 		"feed_name":        t.Name,
@@ -83,6 +94,8 @@ func TerraFeedParser(buf io.ReadCloser) ([]relayMonitoring.FeedConfig, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse contract address '%s' from JSON at index i=%d: %w", rawFeed.ContractAddressBech32, i, err)
 		}
+		multiply, _ := strconv.ParseUint(rawFeed.MultiplyRaw, 10, 64)
+		// NOTE: multiply is not required so if a parse error occurs, we'll use 0.
 		feeds[i] = relayMonitoring.FeedConfig(TerraFeedConfig{
 			rawFeed.Name,
 			rawFeed.Path,
@@ -90,7 +103,8 @@ func TerraFeedParser(buf io.ReadCloser) ([]relayMonitoring.FeedConfig, error) {
 			rawFeed.HeartbeatSec,
 			rawFeed.ContractType,
 			rawFeed.ContractStatus,
-
+			rawFeed.MultiplyRaw,
+			multiply,
 			rawFeed.ContractAddressBech32,
 			contractAddress,
 		})

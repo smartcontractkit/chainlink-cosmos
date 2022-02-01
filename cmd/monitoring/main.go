@@ -18,16 +18,22 @@ func main() {
 		log.Fatalw("failed to parse terra specific configuration", "error", err)
 	}
 
-	terraSourceFactory := monitoring.NewTerraSourceFactory(
+	terraSourceFactory, err := monitoring.NewTerraSourceFactory(
+		terraConfig,
 		log.With("component", "source"),
 	)
+	if err != nil {
+		log.Fatalw("failed to initialize Terra source", "error", err)
+	}
 
-	relayMonitoring.Facade(
+	relayMonitoring.Entrypoint(
 		ctx,
 		logWrapper{log},
 		terraConfig,
 		terraSourceFactory,
 		monitoring.TerraFeedParser,
+		[]relayMonitoring.SourceFactory{},
+		[]relayMonitoring.ExporterFactory{},
 	)
 
 	log.Info("monitor stopped")
@@ -36,6 +42,8 @@ func main() {
 type logWrapper struct {
 	logger.Logger
 }
+
+var _ relayMonitoring.Logger = logWrapper{}
 
 func (l logWrapper) Criticalw(format string, values ...interface{}) {
 	l.Logger.CriticalW(format, values...)
