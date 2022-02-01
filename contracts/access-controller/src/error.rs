@@ -6,6 +6,9 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
+    #[error("{0}")]
+    OwnedError(#[from] owned::Error),
+
     #[error("Unauthorized")]
     Unauthorized,
 }

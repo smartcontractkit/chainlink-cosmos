@@ -23,3 +23,12 @@ impl AccessControllerContract {
             .map(|value| value.is_some())
     }
 }
+
+#[macro_export]
+macro_rules! require {
+    ($expr:expr, $error:tt) => {
+        if !$expr {
+            return core::result::Result::Err(ContractError::$error);
+        }
+    };
+}
