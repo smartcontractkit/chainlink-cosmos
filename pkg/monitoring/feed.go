@@ -66,8 +66,8 @@ func (t TerraFeedConfig) GetContractAddressBytes() []byte {
 	return t.ContractAddress.Bytes()
 }
 
-func (s TerraFeedConfig) GetMultiply() uint64 {
-	return s.Multiply
+func (t TerraFeedConfig) GetMultiply() uint64 {
+	return t.Multiply
 }
 
 func (t TerraFeedConfig) ToMapping() map[string]interface{} {

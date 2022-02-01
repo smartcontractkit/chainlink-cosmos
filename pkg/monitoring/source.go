@@ -123,14 +123,14 @@ func (s *terraSource) fetchLatestTransmission() (
 			return pkgTerra.HexToConfigDigest(value, &configDigest)
 		},
 		"epoch": func(value string) error {
-			rawEpoch, err := strconv.ParseUint(value, 10, 32)
+			rawEpoch, parseErr := strconv.ParseUint(value, 10, 32)
 			epoch = uint32(rawEpoch)
-			return err
+			return parseErr
 		},
 		"round": func(value string) error {
-			rawRound, err := strconv.ParseUint(value, 10, 8)
+			rawRound, parseErr := strconv.ParseUint(value, 10, 8)
 			round = uint8(rawRound)
-			return err
+			return parseErr
 		},
 		"answer": func(value string) error {
 			if _, success := latestAnswer.SetString(value, 10); !success {
@@ -139,9 +139,9 @@ func (s *terraSource) fetchLatestTransmission() (
 			return nil
 		},
 		"observations_timestamp": func(value string) error {
-			rawTimestamp, err := strconv.ParseInt(value, 10, 64)
+			rawTimestamp, parseErr := strconv.ParseInt(value, 10, 64)
 			latestTimestamp = time.Unix(rawTimestamp, 0)
-			return err
+			return parseErr
 		},
 		"transmitter": func(value string) error {
 			transmitter = types.Account(value)
@@ -171,17 +171,17 @@ func (s *terraSource) fetchLatestConfig() (types.ContractConfig, error) {
 			return pkgTerra.HexToConfigDigest(value, &output.ConfigDigest)
 		},
 		"config_count": func(value string) error {
-			i, err := strconv.ParseInt(value, 10, 64)
+			i, parseErr := strconv.ParseInt(value, 10, 64)
 			output.ConfigCount = uint64(i)
-			return err
+			return parseErr
 		},
 		"signers": func(value string) error {
 			// this assumes the value will be a hex encoded string which each signer
 			// 32 bytes and each signer will be a separate parameter
 			var v []byte
-			err := pkgTerra.HexToByteArray(value, &v)
+			convertErr := pkgTerra.HexToByteArray(value, &v)
 			output.Signers = append(output.Signers, v)
-			return err
+			return convertErr
 		},
 		"transmitters": func(value string) error {
 			// this assumes the return value be a string for each transmitter and each transmitter will be separate
@@ -189,25 +189,25 @@ func (s *terraSource) fetchLatestConfig() (types.ContractConfig, error) {
 			return nil
 		},
 		"f": func(value string) error {
-			i, err := strconv.ParseInt(value, 10, 8)
+			i, parseErr := strconv.ParseInt(value, 10, 8)
 			output.F = uint8(i)
-			return err
+			return parseErr
 		},
 		"onchain_config": func(value string) error {
 			// parse byte array encoded as hex string
 			var config33 []byte
-			if err := pkgTerra.HexToByteArray(value, &config33); err != nil {
-				return err
+			if convertErr := pkgTerra.HexToByteArray(value, &config33); convertErr != nil {
+				return convertErr
 			}
 			// convert byte array to encoding expected by lib OCR
-			config49, err := pkgTerra.ContractConfigToOCRConfig(config33)
+			config49, convertErr := pkgTerra.ContractConfigToOCRConfig(config33)
 			output.OnchainConfig = config49
-			return err
+			return convertErr
 		},
 		"offchain_config_version": func(value string) error {
-			i, err := strconv.ParseInt(value, 10, 64)
+			i, parseErr := strconv.ParseInt(value, 10, 64)
 			output.OffchainConfigVersion = uint64(i)
-			return err
+			return parseErr
 		},
 		"offchain_config": func(value string) error {
 			// parse byte array encoded as hex string
