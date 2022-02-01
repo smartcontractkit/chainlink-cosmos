@@ -2,7 +2,6 @@ package terra
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
@@ -59,8 +58,7 @@ func (ct *ContractTransmitter) Transmit(
 	}
 	msgStruct.Transmit.Report = []byte(report)
 	for _, sig := range sigs {
-		sigBase64 := []byte(base64.StdEncoding.EncodeToString(sig.Signature))
-		msgStruct.Transmit.Signatures = append(msgStruct.Transmit.Signatures, sigBase64)
+		msgStruct.Transmit.Signatures = append(msgStruct.Transmit.Signatures, sig.Signature)
 	}
 	msgBytes, err := json.Marshal(msgStruct)
 	if err != nil {
