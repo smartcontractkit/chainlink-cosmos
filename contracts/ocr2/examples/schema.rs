@@ -7,7 +7,7 @@ use ocr2::msg::{
     ExecuteMsg, InstantiateMsg, LatestConfigDetailsResponse, LatestTransmissionDetailsResponse,
     LinkAvailableForPaymentResponse, QueryMsg, TransmittersResponse,
 };
-use ocr2::state::{Billing, Config, Transmitter};
+use ocr2::state::{Billing, Config, Transmitter, Validator};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
@@ -20,6 +20,7 @@ fn main() {
     export_schema(&schema_for!(QueryMsg), &out_dir);
     export_schema(&schema_for!(Config), &out_dir);
     export_schema(&schema_for!(Billing), &out_dir);
+    export_schema(&schema_for!(Validator), &out_dir);
     export_schema(&schema_for!(Transmitter), &out_dir);
     export_schema(&schema_for!(LatestConfigDetailsResponse), &out_dir);
     export_schema(&schema_for!(TransmittersResponse), &out_dir);

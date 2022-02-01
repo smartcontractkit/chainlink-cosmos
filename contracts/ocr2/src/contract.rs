@@ -148,6 +148,9 @@ pub fn execute(
         } => execute_set_link_token(deps, env, info, link_token, recipient),
         ExecuteMsg::Receive(msg) => execute_receive(deps, env, info, msg),
         ExecuteMsg::SetBilling { config } => execute_set_billing(deps, env, info, config),
+        ExecuteMsg::SetValidatorConfig { config } => {
+            execute_set_validator_config(deps, env, info, config)
+        }
         ExecuteMsg::SetBillingAccessController { access_controller } => {
             execute_set_billing_access_controller(deps, env, info, access_controller)
         }
