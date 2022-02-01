@@ -6,7 +6,7 @@ use crate::msg::{
     ExecuteMsg, InstantiateMsg, LatestConfigDetailsResponse, LatestTransmissionDetailsResponse,
     LinkAvailableForPaymentResponse, QueryMsg,
 };
-use crate::state::{Billing, Round, Transmission};
+use crate::state::{Billing, Round};
 use crate::Decimal;
 use cosmwasm_std::{to_binary, Addr, Binary, Empty, Uint128};
 use cw20::Cw20Coin;
@@ -43,6 +43,7 @@ pub fn contract_access_controller() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
+#[allow(unused)]
 struct Env {
     router: App,
     owner: Addr,
@@ -256,7 +257,8 @@ fn setup() -> Env {
 fn transmit_happy_path() {
     let mut env = setup();
     let deposit = Decimal::from_str("1000").unwrap().0;
-    let observation_payment = Decimal::from_str("5").unwrap().0;
+    // expected in juels
+    let observation_payment = Uint128::from(5 * 10u128.pow(9));
     let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
 
     // -- set billing
@@ -270,8 +272,8 @@ fn transmit_happy_path() {
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
             recommended_gas_price: u64::try_from(recommended_gas_price.u128()).unwrap(),
-            observation_payment: u64::try_from(observation_payment.u128()).unwrap(),
-            transmission_payment: 0,
+            observation_payment_gjuels: 5,
+            transmission_payment_gjuels: 0,
             ..Default::default()
         },
     };
@@ -512,7 +514,8 @@ fn transmit_happy_path() {
 fn set_link_token() {
     let mut env = setup();
     let deposit = Decimal::from_str("1000").unwrap().0;
-    let observation_payment = Decimal::from_str("5").unwrap().0;
+    // expected in juels
+    let observation_payment = Uint128::from(5 * 10u128.pow(9));
     let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
 
     // -- set billing
@@ -526,8 +529,8 @@ fn set_link_token() {
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
             recommended_gas_price: u64::try_from(recommended_gas_price.u128()).unwrap(),
-            observation_payment: u64::try_from(observation_payment.u128()).unwrap(),
-            transmission_payment: 0,
+            observation_payment_gjuels: 5,
+            transmission_payment_gjuels: 0,
             ..Default::default()
         },
     };
