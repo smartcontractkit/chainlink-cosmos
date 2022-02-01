@@ -3,6 +3,12 @@
   "title": "ExecuteMsg",
   "oneOf": [
     {
+      "type": "string",
+      "enum": [
+        "accept_ownership"
+      ]
+    },
+    {
       "type": "object",
       "required": [
         "add_access"
@@ -35,6 +41,26 @@
           ],
           "properties": {
             "address": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "transfer_ownership"
+      ],
+      "properties": {
+        "transfer_ownership": {
+          "type": "object",
+          "required": [
+            "to"
+          ],
+          "properties": {
+            "to": {
               "type": "string"
             }
           }
