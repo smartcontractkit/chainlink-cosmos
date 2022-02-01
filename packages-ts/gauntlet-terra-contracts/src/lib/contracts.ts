@@ -31,19 +31,19 @@ export type Contract = {
 
 export type Contracts = Record<CONTRACT_LIST, Contract>
 
-export const loadContracts = (version): Contracts => {
-  return Object.values(CONTRACT_LIST).reduce((agg, id) => {
+export const loadContracts = async (version): Promise<Contracts> => {
+  return Object.values(CONTRACT_LIST).reduce( async (agg, id) => {
     return {
       ...agg,
       ...{
         [id]: {
           id,
           abi: getContractABI(id),
-          bytecode: getContractCode(id, version),
+          bytecode: await getContractCode(id, version),
         },
       },
     }
-  }, {} as Contracts)
+  }, {} as Promise<Contracts>)
 }
 
 export const getContractCode = async (contractId: CONTRACT_LIST, version): Promise<string> => {
@@ -105,10 +105,11 @@ export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
   return abi[0]
 }
 
-export const getContract = (() => {
-  return (contractId: CONTRACT_LIST, version): Contract => {
-    // Preload contracts
-    const contracts = loadContracts(version)
-    return contracts[contractId]
+export const getContract = async (id: CONTRACT_LIST, version): Promise<Contract> => {
+  // Preload contracts
+  return {
+    id,
+    abi: getContractABI(id),
+    bytecode: await getContractCode(id, version),
   }
-})()
+}
