@@ -46,7 +46,7 @@ export default class UploadContractCode extends TerraCommand {
     const responses: any[] = []
     for (const contractName of askedContracts) {
       const version = this.flags.version ? this.flags.version : DEFAULT_RELEASE_VERSION
-      const contract = getContract(contractName, version)
+      const contract = await getContract(contractName, version)
       console.log('CONTRACT Bytecode exists:', !!contract.bytecode)
 
       try {

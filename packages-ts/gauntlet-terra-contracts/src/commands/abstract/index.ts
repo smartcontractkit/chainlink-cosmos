@@ -21,12 +21,12 @@ export const makeAbstractCommand = async (
   args: string[],
   input?: any,
 ): Promise<TerraCommand> => {
-  const commandOpts = parseInstruction(instruction, flags.version)
+  const commandOpts = await parseInstruction(instruction, flags.version)
   const params = parseParams(commandOpts, input || flags)
   return new AbstractCommand(flags, args, commandOpts, params)
 }
 
-export const parseInstruction = (instruction: string, inputVersion: string): AbstractOpts => {
+export const parseInstruction = async (instruction: string, inputVersion: string): Promise<AbstractOpts> => {
   const isValidContract = (contractName: string): boolean => {
     // Validate that we have this contract available
     return Object.values(CONTRACT_LIST).includes(contractName as CONTRACT_LIST)
@@ -54,7 +54,8 @@ export const parseInstruction = (instruction: string, inputVersion: string): Abs
   if (!command.length || command.length > 2) throw new Error(`Abstract: Contract ${command[0]} not found`)
 
   const version = inputVersion ? inputVersion : DEFAULT_RELEASE_VERSION
-  const contract = isValidContract(command[0]) && getContract(command[0] as CONTRACT_LIST, version)
+  const contractByteCode = await getContract(command[0] as CONTRACT_LIST, version)
+  const contract = isValidContract(command[0]) && contractByteCode
   if (!contract) throw new Error(`Abstract: Contract ${command[0]} not found`)
 
   if (command[1] === 'help') {
