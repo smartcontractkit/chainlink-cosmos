@@ -32,7 +32,7 @@ export type Contract = {
 export type Contracts = Record<CONTRACT_LIST, Contract>
 
 export const loadContracts = async (version): Promise<Contracts> => {
-  return Object.values(CONTRACT_LIST).reduce( async (agg, id) => {
+  return Object.values(CONTRACT_LIST).reduce(async (agg, id) => {
     return {
       ...agg,
       ...{
