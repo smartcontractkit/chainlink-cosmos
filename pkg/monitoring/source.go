@@ -3,26 +3,42 @@ package monitoring
 import (
 	"context"
 	"fmt"
+	"math/big"
+	"strconv"
+	"sync"
+	"time"
 
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 	pkgTerra "github.com/smartcontractkit/chainlink-terra/pkg/terra"
 	pkgClient "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+	"github.com/smartcontractkit/chainlink/core/logger"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
-func NewTerraSourceFactory(log pkgTerra.Logger) relayMonitoring.SourceFactory {
-	return &sourceFactory{log}
+func NewTerraSourceFactory(terraConfig TerraConfig, log logger.Logger) (relayMonitoring.SourceFactory, error) {
+	client, err := pkgClient.NewClient(
+		terraConfig.ChainID,
+		terraConfig.TendermintURL,
+		terraConfig.ReadTimeout,
+		log,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &sourceFactory{client, log}, nil
 }
 
 type sourceFactory struct {
-	log pkgTerra.Logger
+	client *pkgClient.Client
+	log    logger.Logger
 }
 
 func (s *sourceFactory) NewSource(
 	chainConfig relayMonitoring.ChainConfig,
 	feedConfig relayMonitoring.FeedConfig,
 ) (relayMonitoring.Source, error) {
-	terraChainConfig, ok := chainConfig.(TerraConfig)
+	terraConfig, ok := chainConfig.(TerraConfig)
 	if !ok {
 		return nil, fmt.Errorf("expected chainConfig to be of type TerraConfig not %T", chainConfig)
 	}
@@ -30,64 +46,202 @@ func (s *sourceFactory) NewSource(
 	if !ok {
 		return nil, fmt.Errorf("expected feedConfig to be of type TerraFeedConfig not %T", feedConfig)
 	}
-	client, err := pkgClient.NewClient(
-		terraChainConfig.TendermintURL,
-		terraChainConfig.FCDURL,
-		terraChainConfig.ReadTimeout,
-		s.log,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create a new terra client: %w", err)
-	}
-	medianContract := pkgTerra.NewMedianContract(
-		terraFeedConfig.ContractAddress,
-		client,
-		s.log,
-		nil, // transmitter is not needed because we don't read the chain.
-		nil, // config is also not needed for reading the chain.
-	)
-	contractTracker := pkgTerra.NewContractTracker(
-		terraFeedConfig.ContractAddress,
-		"fake-job-id", //jobID
-		client,
-		s.log,
-	)
 	return &terraSource{
-		medianContract,
-		contractTracker,
+		s.client,
+		s.log,
+		terraConfig,
+		terraFeedConfig,
 	}, nil
 }
 
 type terraSource struct {
-	medianContract  *pkgTerra.MedianContract
-	contractTracker *pkgTerra.ContractTracker
+	client          *pkgClient.Client
+	log             logger.Logger
+	terraConfig     TerraConfig
+	terraFeedConfig TerraFeedConfig
 }
 
 func (s *terraSource) Fetch(ctx context.Context) (interface{}, error) {
-	changedInBlock, _, err := s.contractTracker.LatestConfigDetails(ctx)
-	if err != nil {
-		return relayMonitoring.Envelope{}, fmt.Errorf("failed to fetch latest config details from on-chain: %w", err)
-	}
-	cfg, err := s.contractTracker.LatestConfig(ctx, changedInBlock)
-	if err != nil {
-		return relayMonitoring.Envelope{}, fmt.Errorf("failed to read latest config from on-chain: %w", err)
-	}
-	configDigest, epoch, round, latestAnswer, latestTimestamp, err := s.medianContract.LatestTransmissionDetails(ctx)
-	if err != nil {
-		return relayMonitoring.Envelope{}, fmt.Errorf("failed to read latest transmission from on-chain: %w", err)
-	}
-	transmitter := types.Account("test")
+	envelope := relayMonitoring.Envelope{}
+	var envelopeErr error
+	envelopeMu := &sync.Mutex{}
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		configDigest, epoch, round, latestAnswer, latestTimestamp, blockNumber, transmitter, err := s.fetchLatestTransmission()
+		envelopeMu.Lock()
+		defer envelopeMu.Unlock()
+		if err != nil {
+			envelopeErr = err
+			return
+		}
+		envelope.ConfigDigest = configDigest
+		envelope.Epoch = epoch
+		envelope.Round = round
+		envelope.LatestAnswer = latestAnswer
+		envelope.LatestTimestamp = latestTimestamp
+		envelope.BlockNumber = blockNumber
+		envelope.Transmitter = transmitter
+	}()
+	go func() {
+		defer wg.Done()
+		contractConfig, err := s.fetchLatestConfig()
+		envelopeMu.Lock()
+		defer envelopeMu.Unlock()
+		if err != nil {
+			envelopeErr = err
+			return
+		}
+		envelope.ContractConfig = contractConfig
+	}()
+	wg.Wait()
+	return envelope, envelopeErr
+}
 
-	return relayMonitoring.Envelope{
-		configDigest,
-		epoch,
-		round,
-		latestAnswer,
-		latestTimestamp,
+func (s *terraSource) fetchLatestTransmission() (
+	configDigest types.ConfigDigest,
+	epoch uint32,
+	round uint8,
+	latestAnswer *big.Int,
+	latestTimestamp time.Time,
+	blockNumber uint64,
+	transmitter types.Account,
+	err error,
+) {
+	query := []string{
+		"tm.event='wasm-new_transmission'",
+		fmt.Sprintf("message.sender='%s'", s.terraFeedConfig.ContractAddressBech32),
+	}
+	res, err := s.client.TxsEvents(query)
+	if err != nil {
+		return types.ConfigDigest{}, 0, 0, nil, time.Time{}, 0, "",
+			fmt.Errorf("failed to fetch latest 'new_transmission' event: %w", err)
+	}
+	err = extractDataFromTxResponse("wasm-new_transmission", res, map[string]func(string) error{
+		"config_digest": func(value string) error {
+			return pkgTerra.HexToConfigDigest(value, &configDigest)
+		},
+		"epoch": func(value string) error {
+			rawEpoch, err := strconv.ParseUint(value, 10, 32)
+			epoch = uint32(rawEpoch)
+			return err
+		},
+		"round": func(value string) error {
+			rawRound, err := strconv.ParseUint(value, 10, 8)
+			round = uint8(rawRound)
+			return err
+		},
+		"answer": func(value string) error {
+			if _, success := latestAnswer.SetString(value, 10); !success {
+				return fmt.Errorf("failed to read latest answer from value '%s'", value)
+			}
+			return nil
+		},
+		"observations_timestamp": func(value string) error {
+			rawTimestamp, err := strconv.ParseInt(value, 10, 64)
+			latestTimestamp = time.Unix(rawTimestamp, 0)
+			return err
+		},
+		"transmitter": func(value string) error {
+			transmitter = types.Account(value)
+			return nil
+		},
+	})
+	if err != nil {
+		return types.ConfigDigest{}, 0, 0, nil, time.Time{}, 0, "",
+			fmt.Errorf("failed to extract config from logs: %w", err)
+	}
+	return configDigest, epoch, round, latestAnswer, latestTimestamp, blockNumber, transmitter, nil
+}
 
-		cfg,
+func (s *terraSource) fetchLatestConfig() (types.ContractConfig, error) {
+	query := []string{
+		"tm.event='wasm-set_config'",
+		fmt.Sprintf("message.sender='%s'", s.terraFeedConfig.ContractAddressBech32),
+	}
+	res, err := s.client.TxsEvents(query)
+	if err != nil {
+		return types.ContractConfig{}, fmt.Errorf("failed to fetch latest 'set_config' event: %w", err)
+	}
+	output := types.ContractConfig{}
+	err = extractDataFromTxResponse("wasm-set_config", res, map[string]func(string) error{
+		"latest_config_digest": func(value string) error {
+			// parse byte array encoded as hex string
+			return pkgTerra.HexToConfigDigest(value, &output.ConfigDigest)
+		},
+		"config_count": func(value string) error {
+			i, err := strconv.ParseInt(value, 10, 64)
+			output.ConfigCount = uint64(i)
+			return err
+		},
+		"signers": func(value string) error {
+			// this assumes the value will be a hex encoded string which each signer
+			// 32 bytes and each signer will be a separate parameter
+			var v []byte
+			err := pkgTerra.HexToByteArray(value, &v)
+			output.Signers = append(output.Signers, v)
+			return err
+		},
+		"transmitters": func(value string) error {
+			// this assumes the return value be a string for each transmitter and each transmitter will be separate
+			output.Transmitters = append(output.Transmitters, types.Account(value))
+			return nil
+		},
+		"f": func(value string) error {
+			i, err := strconv.ParseInt(value, 10, 8)
+			output.F = uint8(i)
+			return err
+		},
+		"onchain_config": func(value string) error {
+			// parse byte array encoded as hex string
+			var config33 []byte
+			if err := pkgTerra.HexToByteArray(value, &config33); err != nil {
+				return err
+			}
+			// convert byte array to encoding expected by lib OCR
+			config49, err := pkgTerra.ContractConfigToOCRConfig(config33)
+			output.OnchainConfig = config49
+			return err
+		},
+		"offchain_config_version": func(value string) error {
+			i, err := strconv.ParseInt(value, 10, 64)
+			output.OffchainConfigVersion = uint64(i)
+			return err
+		},
+		"offchain_config": func(value string) error {
+			// parse byte array encoded as hex string
+			return pkgTerra.HexToByteArray(value, &output.OffchainConfig)
+		},
+	})
+	if err != nil {
+		return types.ContractConfig{}, fmt.Errorf("failed to extract config from logs: %w", err)
+	}
+	return output, nil
+}
 
-		changedInBlock,
-		transmitter,
-	}, nil
+// Helpers
+
+func extractDataFromTxResponse(eventType string, res *txtypes.GetTxsEventResponse, extractors map[string]func(string) error) error {
+	if len(res.TxResponses) == 0 ||
+		len(res.TxResponses[0].Logs) == 0 ||
+		len(res.TxResponses[0].Logs[0].Events) == 0 {
+		return fmt.Errorf("no events found")
+	}
+	for _, event := range res.TxResponses[0].Logs[0].Events {
+		if event.Type != eventType {
+			continue
+		}
+		for _, attribute := range event.Attributes {
+			key, value := attribute.Key, attribute.Value
+			extractor, found := extractors[key]
+			if !found {
+				continue
+			}
+			if err := extractor(value); err != nil {
+				return fmt.Errorf("failed to extract '%s' from raw value '%s': %w", key, value, err)
+			}
+		}
+	}
+	return nil
 }
