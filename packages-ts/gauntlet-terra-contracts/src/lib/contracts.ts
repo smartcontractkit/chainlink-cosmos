@@ -31,21 +31,6 @@ export type Contract = {
 
 export type Contracts = Record<CONTRACT_LIST, Contract>
 
-export const loadContracts = async (version): Promise<Contracts> => {
-  return Object.values(CONTRACT_LIST).reduce(async (agg, id) => {
-    return {
-      ...agg,
-      ...{
-        [id]: {
-          id,
-          abi: getContractABI(id),
-          bytecode: await getContractCode(id, version),
-        },
-      },
-    }
-  }, {} as Promise<Contracts>)
-}
-
 export const getContractCode = async (contractId: CONTRACT_LIST, version): Promise<string> => {
   if (version === 'local') {
     // Possible paths depending on how/where gauntlet is being executed
