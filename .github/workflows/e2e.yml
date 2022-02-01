@@ -74,6 +74,8 @@ jobs:
         with:
           name: artifacts
           path: artifacts
+      - name: Generate gauntlet executable
+        run: make build_js
       - name: Run Tests
         env:
           SELECTED_NETWORKS: localterra
