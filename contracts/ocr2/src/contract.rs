@@ -72,8 +72,8 @@ pub fn instantiate(
 
         billing: Billing {
             recommended_gas_price: 0,
-            observation_payment: 0,
-            transmission_payment: 0,
+            observation_payment_gjuels: 0,
+            transmission_payment_gjuels: 0,
             base_gas: None,
             gas_per_signature: None,
             gas_adjustment: None,
@@ -585,8 +585,8 @@ pub fn execute_transmit(
     )?;
 
     // pay transmitter and reimburse gas spent
-    let amount = Uint128::from(config.billing.transmission_payment)
-        + calculate_reimbursement(&config.billing, juels_per_luna, raw_signatures.len());
+    let amount = Uint128::new(u128::from(config.billing.transmission_payment_gjuels) * 10u128.pow(9)) // scale to juels
+            + calculate_reimbursement(&config.billing, juels_per_luna, raw_signatures.len());
     oracle.payment += amount;
     TRANSMITTERS.save(deps.storage, &info.sender, &oracle)?;
 
@@ -934,8 +934,12 @@ pub fn execute_set_billing(
                 config.billing.recommended_gas_price.to_string(),
             )
             .add_attribute(
-                "observation_payment",
-                config.billing.observation_payment.to_string(),
+                "observation_payment_gjuels",
+                config.billing.observation_payment_gjuels.to_string(),
+            )
+            .add_attribute(
+                "transmission_payment_gjuels",
+                config.billing.transmission_payment_gjuels.to_string(),
             ),
     ))
 }
@@ -971,10 +975,12 @@ pub fn execute_withdraw_payment(
 fn owed_payment(config: &Config, transmitter: &Transmitter) -> StdResult<Uint128> {
     let rounds = config.latest_aggregator_round_id - transmitter.from_round_id;
 
-    Ok(Uint128::from(config.billing.observation_payment)
-        .checked_mul(rounds.into())?
-        // + transmitter gas reimbursement
-        .checked_add(transmitter.payment)?)
+    Ok(
+        Uint128::new(u128::from(config.billing.observation_payment_gjuels) * 10u128.pow(9)) // scale to juels
+            .checked_mul(rounds.into())?
+            // + transmitter gas reimbursement
+            .checked_add(transmitter.payment)?,
+    )
 }
 
 pub fn query_owed_payment(deps: Deps, transmitter: String) -> StdResult<Uint128> {
@@ -1144,9 +1150,10 @@ fn total_link_due(deps: Deps) -> StdResult<Uint128> {
             },
         )?;
 
-    let amount = Uint128::from(config.billing.observation_payment)
-        .checked_mul(rounds)?
-        .checked_add(reimbursements)?;
+    let amount =
+        Uint128::new(u128::from(config.billing.observation_payment_gjuels) * 10u128.pow(9)) // scale to juels
+            .checked_mul(rounds)?
+            .checked_add(reimbursements)?;
 
     Ok(amount)
 }
