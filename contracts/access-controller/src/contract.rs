@@ -5,7 +5,8 @@ use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Config, ACCESS, CONFIG};
+use crate::require;
+use crate::state::{ACCESS, OWNER};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:access-controller";
@@ -19,7 +20,7 @@ pub fn instantiate(
     _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    CONFIG.save(deps.storage, &Config { owner: info.sender })?;
+    OWNER.initialize(deps.storage, info.sender)?;
 
     Ok(Response::default())
 }
@@ -31,9 +32,14 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
+    let api = deps.api;
     match msg {
         ExecuteMsg::AddAccess { address } => execute_add_access(deps, env, info, address),
         ExecuteMsg::RemoveAccess { address } => execute_remove_access(deps, env, info, address),
+        ExecuteMsg::TransferOwnership { to } => {
+            Ok(OWNER.execute_transfer_ownership(deps, info, api.addr_validate(&to)?)?)
+        }
+        ExecuteMsg::AcceptOwnership => Ok(OWNER.execute_accept_ownership(deps, info)?),
     }
 }
 
@@ -41,6 +47,7 @@ pub fn execute(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::HasAccess { address } => to_binary(&query_has_access(deps, address)?),
+        QueryMsg::Owner => Ok(to_binary(&OWNER.query_owner(deps)?)?),
     }
 }
 
@@ -50,11 +57,7 @@ pub fn execute_add_access(
     info: MessageInfo,
     address: String,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-
-    if info.sender != config.owner {
-        return Err(ContractError::Unauthorized);
-    }
+    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
 
     let address = deps.api.addr_validate(&address)?;
     ACCESS.save(deps.storage, &address, &())?;
@@ -68,11 +71,7 @@ pub fn execute_remove_access(
     info: MessageInfo,
     address: String,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-
-    if info.sender != config.owner {
-        return Err(ContractError::Unauthorized);
-    }
+    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
 
     let address = deps.api.addr_validate(&address)?;
     ACCESS.remove(deps.storage, &address);
