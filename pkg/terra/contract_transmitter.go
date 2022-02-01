@@ -59,7 +59,7 @@ func (ct *ContractTransmitter) Transmit(
 	}
 	msgStruct.Transmit.Report = []byte(report)
 	for _, sig := range sigs {
-                sigBase64 := []byte(base64.StdEncoding.EncodeToString(sig.Signature))
+		sigBase64 := []byte(base64.StdEncoding.EncodeToString(sig.Signature))
 		msgStruct.Transmit.Signatures = append(msgStruct.Transmit.Signatures, sigBase64)
 	}
 	msgBytes, err := json.Marshal(msgStruct)
