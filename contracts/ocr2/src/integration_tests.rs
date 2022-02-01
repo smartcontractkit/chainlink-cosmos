@@ -265,13 +265,10 @@ fn transmit_happy_path() {
 
     // price in uLUNA
     let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
-    // price in LUNA
-    let micro = Decimal::from_str("0.000001").unwrap();
-    let recommended_gas_price = (recommended_gas_price * micro).0;
 
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
-            recommended_gas_price: u64::try_from(recommended_gas_price.u128()).unwrap(),
+            recommended_gas_price_uluna: recommended_gas_price,
             observation_payment_gjuels: 5,
             transmission_payment_gjuels: 0,
             ..Default::default()
@@ -522,13 +519,10 @@ fn set_link_token() {
 
     // price in uLUNA
     let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
-    // price in LUNA
-    let micro = Decimal::from_str("0.000001").unwrap();
-    let recommended_gas_price = (recommended_gas_price * micro).0;
 
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
-            recommended_gas_price: u64::try_from(recommended_gas_price.u128()).unwrap(),
+            recommended_gas_price_uluna: recommended_gas_price,
             observation_payment_gjuels: 5,
             transmission_payment_gjuels: 0,
             ..Default::default()
