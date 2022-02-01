@@ -1,4 +1,4 @@
-use crate::state::{bignum, Billing};
+use crate::state::{bignum, Billing, Validator};
 use cosmwasm_std::{Addr, Binary, Uint128};
 use cw20::Cw20ReceiveMsg;
 use schemars::JsonSchema;
@@ -54,6 +54,10 @@ pub enum ExecuteMsg {
 
     SetBilling {
         config: Billing,
+    },
+
+    SetValidatorConfig {
+        config: Option<Validator>,
     },
 
     SetBillingAccessController {
