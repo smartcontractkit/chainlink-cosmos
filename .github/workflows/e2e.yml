@@ -75,7 +75,11 @@ jobs:
           name: artifacts
           path: artifacts
       - name: Generate gauntlet executable
-        run: make build_js
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm config set -- '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
+          make build_js
       - name: Run Tests
         env:
           SELECTED_NETWORKS: localterra
