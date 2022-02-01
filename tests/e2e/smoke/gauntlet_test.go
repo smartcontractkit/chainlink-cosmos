@@ -81,7 +81,7 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 	})
 
 	Describe("Run Gauntlet Commands", func() {
-		It("should up the contracts", func() {
+		It("should upload the contracts", func() {
 			_, err = g.ExecCommandWithRetries([]string{
 				"upload",
 				g.Flag("version", "local"),
