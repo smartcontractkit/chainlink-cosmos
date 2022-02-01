@@ -2,6 +2,7 @@ package terra
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -104,9 +105,9 @@ func parseAttributes(attrs []cosmosSDK.Attribute) (output types.ContractConfig, 
 			}
 			output.F = uint8(i)
 		case "onchain_config":
-			// parse byte array encoded as hex string
-			var config33 []byte
-			if err := HexToByteArray(value, &config33); err != nil {
+			// parse byte array encoded as base64
+			config33, err := base64.StdEncoding.DecodeString(value)
+			if err != nil {
 				return types.ContractConfig{}, err
 			}
 			// convert byte array to encoding expected by lib OCR
@@ -123,10 +124,12 @@ func parseAttributes(attrs []cosmosSDK.Attribute) (output types.ContractConfig, 
 			}
 			output.OffchainConfigVersion = uint64(i)
 		case "offchain_config":
-			// parse byte array encoded as hex string
-			if err := HexToByteArray(value, &output.OffchainConfig); err != nil {
+			// parse byte array encoded as base64
+			bytes, err := base64.StdEncoding.DecodeString(value)
+			if err != nil {
 				return types.ContractConfig{}, err
 			}
+			output.OffchainConfig = bytes
 		}
 	}
 	return output, nil
