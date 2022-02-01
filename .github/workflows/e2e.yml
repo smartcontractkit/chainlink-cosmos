@@ -93,4 +93,4 @@ jobs:
         uses: actions/upload-artifact@v2.2.4
         with:
           name: test-logs
-          path: ./logs
+          path: /home/runner/work/chainlink-terra/chainlink-terra/tests/e2e/logs

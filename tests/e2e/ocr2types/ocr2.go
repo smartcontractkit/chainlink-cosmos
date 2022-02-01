@@ -1,9 +1,6 @@
 package ocr2types
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/smartcontractkit/terra.go/msg"
 )
 
@@ -57,6 +54,32 @@ type OCRv2InstantiateMsg struct {
 	MaxAnswer                 string `json:"max_answer"`
 }
 
+// ExecuteSetValidator execute set validator msg
+type ExecuteSetValidator struct {
+	SetValidator ExecuteSetValidatorConfig `json:"set_validator_config"`
+}
+
+// ExecuteSetValidatorConfig execute set validator msg
+type ExecuteSetValidatorConfig struct {
+	Config ExecuteSetValidatorConfigType `json:"config"`
+}
+
+// ExecuteSetValidatorConfigType execute set validator msg
+type ExecuteSetValidatorConfigType struct {
+	Address  string `json:"address"`
+	GasLimit uint64 `json:"gas_limit"`
+}
+
+// ExecuteSetPayees set payees msg
+type ExecuteSetPayees struct {
+	SetPayees ExecuteSetPayeesConfig `json:"set_payees"`
+}
+
+// ExecuteSetPayeesConfig set payees msg
+type ExecuteSetPayeesConfig struct {
+	Payees [][]string `json:"payees"`
+}
+
 type ExecuteSetBillingMsg struct {
 	SetBilling ExecuteSetBillingMsgType `json:"set_billing"`
 }
@@ -66,8 +89,10 @@ type ExecuteSetBillingMsgType struct {
 }
 
 type ExecuteSetBillingConfigMsgType struct {
-	ObservationPayment  uint32 `json:"observation_payment"`
-	RecommendedGasPrice uint32 `json:"recommended_gas_price"`
+	BaseGas             uint64 `json:"base_gas"`
+	TransmissionPayment uint64 `json:"transmission_payment_gjuels"`
+	ObservationPayment  uint64 `json:"observation_payment_gjuels"`
+	RecommendedGasPrice string `json:"recommended_gas_price_uluna"`
 }
 
 type ExecuteTransferOwnershipMsg struct {
@@ -78,52 +103,15 @@ type ExecuteTransferOwnershipMsgType struct {
 	To msg.AccAddress `json:"to"`
 }
 
-type ExecuteSetConfigMsg struct {
-	SetConfig ExecuteSetConfigMsgType `json:"set_config"`
-}
-
-type ExecuteSetConfigMsgType struct {
-	Signers               ByteArrayArray `json:"signers"`
-	Transmitters          []string       `json:"transmitters"`
-	F                     uint8          `json:"f"`
-	OnchainConfig         ByteArray      `json:"onchain_config"`
-	OffchainConfigVersion uint64         `json:"offchain_config_version"`
-	OffchainConfig        ByteArray      `json:"offchain_config"`
-}
-
 type ExecuteSetConfig struct {
 	SetConfig SetConfigDetails `json:"set_config"`
 }
 
 type SetConfigDetails struct {
-	Signers               ByteArrayArray `json:"signers"`
-	Transmitters          []string       `json:"transmitters"`
-	F                     uint8          `json:"f"`
-	OnchainConfig         ByteArray      `json:"onchain_config"`
-	OffchainConfigVersion uint64         `json:"offchain_config_version"`
-	OffchainConfig        ByteArray      `json:"offchain_config"`
-}
-
-type ByteArray []byte
-
-func (b ByteArray) MarshalJSON() ([]byte, error) {
-	var result string
-	if b == nil {
-		result = "null"
-	} else {
-		result = strings.Join(strings.Fields(fmt.Sprintf("%d", b)), ",")
-	}
-	return []byte(result), nil
-}
-
-type ByteArrayArray [][]byte
-
-func (b ByteArrayArray) MarshalJSON() ([]byte, error) {
-	var result string
-	if b == nil {
-		result = "null"
-	} else {
-		result = strings.Join(strings.Fields(fmt.Sprintf("%d", b)), ",")
-	}
-	return []byte(result), nil
+	Signers               [][]byte `json:"signers"`
+	Transmitters          []string `json:"transmitters"`
+	F                     uint8    `json:"f"`
+	OnchainConfig         []byte   `json:"onchain_config"`
+	OffchainConfigVersion uint64   `json:"offchain_config_version"`
+	OffchainConfig        []byte   `json:"offchain_config"`
 }

@@ -116,7 +116,7 @@ func ClientInitFunc() func(networkName string, networkConfig map[string]interfac
 			return nil, err
 		}
 		var cfg *NetworkConfig
-		if err := yaml.Unmarshal(d, &cfg); err != nil {
+		if err = yaml.Unmarshal(d, &cfg); err != nil {
 			return nil, err
 		}
 		cfg.ID = networkName
