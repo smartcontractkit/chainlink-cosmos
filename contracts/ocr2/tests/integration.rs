@@ -6,9 +6,12 @@ use cosmwasm_vm::Instance;
 
 use ocr2::msg::{ExecuteMsg, InstantiateMsg};
 use ocr2::state::Billing;
+use ocr2::Decimal;
 
 use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes};
 use rand::thread_rng;
+
+use std::str::FromStr;
 
 // Output of cargo wasm
 // NOTE: by swapping the lines below you switch between testing against the local contract build,
@@ -107,7 +110,7 @@ fn init_works() {
     // set billing
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
-            recommended_gas_price: 10,
+            recommended_gas_price_uluna: Decimal::from_str("10").unwrap(),
             observation_payment_gjuels: 5,
             transmission_payment_gjuels: 0,
             ..Default::default()

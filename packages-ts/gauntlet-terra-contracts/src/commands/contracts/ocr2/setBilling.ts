@@ -10,7 +10,7 @@ type CommandInput = {
 
 type ContractInput = {
   config: {
-    recommended_gas_price: number
+    recommended_gas_price_uluna: number
     observation_payment_gjuels: number
     transmission_payment_gjuels: number
   }
@@ -33,7 +33,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
     config: {
       observation_payment_gjuels: new BN(input.observationPaymentGjuels).toNumber(),
       transmission_payment_gjuels: new BN(input.transmissionPaymentGjuels).toNumber(),
-      recommended_gas_price: new BN(input.recommendedGasPrice).toNumber(),
+      recommended_gas_price_uluna: new BN(input.recommendedGasPrice).toNumber(),
     },
   }
 }
