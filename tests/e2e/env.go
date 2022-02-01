@@ -3,7 +3,18 @@ package e2e
 import "github.com/smartcontractkit/helmenv/environment"
 
 // NewChainlinkTerraEnv returns a cluster config with LocalTerra node
-func NewChainlinkTerraEnv() *environment.Config {
+func NewChainlinkTerraEnv(nodes int, stateful bool) *environment.Config {
+	var db map[string]interface{}
+	if stateful {
+		db = map[string]interface{}{
+			"stateful": true,
+			"capacity": "2Gi",
+		}
+	} else {
+		db = map[string]interface{}{
+			"stateful": false,
+		}
+	}
 	return &environment.Config{
 		NamespacePrefix: "chainlink-terra",
 		Charts: environment.Charts{
@@ -19,14 +30,18 @@ func NewChainlinkTerraEnv() *environment.Config {
 			"chainlink": {
 				Index: 4,
 				Values: map[string]interface{}{
-					"replicas": 5,
+					"replicas": nodes,
 					"chainlink": map[string]interface{}{
 						"image": map[string]interface{}{
 							"image":   "public.ecr.aws/z0b1w9r9/chainlink",
-							"version": "develop.3abacbfc0761b4f6cf4d4d897bb4f94d05a4f793",
+							"version": "candidate-develop-terr-qa-test-b64-decode-signers-3.233d4d167de902af193b8c83cc79e707d7e74541",
 						},
 					},
+					"db": db,
 					"env": map[string]interface{}{
+						"EVM_ENABLED":                 "false",
+						"EVM_RPC_ENABLED":             "false",
+						"TERRA_ENABLED":               "true",
 						"eth_disabled":                "true",
 						"CHAINLINK_DEV":               "true",
 						"USE_LEGACY_ETH_ENV_VARS":     "false",

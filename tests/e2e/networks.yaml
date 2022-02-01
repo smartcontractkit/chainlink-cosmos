@@ -5,6 +5,7 @@ networks:
     name: "localterra"
     type: terra
     currency: uluna
+    contracts_deployed: false
     mnemonics:
       # prefunded default LocalTerra mnemonics
       - satisfy adjust timber high purchase tuition stool faith fine install that you unaware feed domain license impose boss human eager hat rent enjoy dawn
