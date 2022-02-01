@@ -71,7 +71,7 @@ pub fn instantiate(
         latest_aggregator_round_id: 0,
 
         billing: Billing {
-            recommended_gas_price: 0,
+            recommended_gas_price_uluna: Decimal::zero(),
             observation_payment_gjuels: 0,
             transmission_payment_gjuels: 0,
             base_gas: None,
@@ -931,7 +931,7 @@ pub fn execute_set_billing(
         Event::new("set_billing")
             .add_attribute(
                 "recommended_gas_price",
-                config.billing.recommended_gas_price.to_string(),
+                config.billing.recommended_gas_price_uluna.to_string(),
             )
             .add_attribute(
                 "observation_payment_gjuels",
@@ -1219,7 +1219,9 @@ fn calculate_reimbursement(
     // gas allocated seems to be about 1.4 of gas used
     let gas = gas * gas_adjustment;
     // gas cost in LUNA
-    let gas_cost = Decimal(Uint128::new(u128::from(config.recommended_gas_price))) * gas;
+    let recommended_gas_price =
+        config.recommended_gas_price_uluna * Decimal::from_ratio(1u128, 10u128.pow(6));
+    let gas_cost = recommended_gas_price * gas;
     // total in juels
     let total = gas_cost * Decimal(Uint128::new(juels_per_luna));
     // NOTE: no stability tax is charged on transactions in LUNA
