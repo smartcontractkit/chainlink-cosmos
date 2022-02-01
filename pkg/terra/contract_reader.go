@@ -2,6 +2,7 @@ package terra
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -100,11 +101,12 @@ func (r *OCR2Reader) LatestConfig(ctx context.Context, changedInBlock uint64) (t
 					}
 					output.F = uint8(i)
 				case "onchain_config":
-					// parse byte array encoded as hex string
-					var config33 []byte
-					if err := HexToByteArray(value, &config33); err != nil {
+					// parse byte array encoded as base64
+					config33, err := base64.StdEncoding.DecodeString(value)
+					if err != nil {
 						return types.ContractConfig{}, err
 					}
+
 					// convert byte array to encoding expected by lib OCR
 					config49, err := ContractConfigToOCRConfig(config33)
 					if err != nil {
@@ -119,10 +121,12 @@ func (r *OCR2Reader) LatestConfig(ctx context.Context, changedInBlock uint64) (t
 					}
 					output.OffchainConfigVersion = uint64(i)
 				case "offchain_config":
-					// parse byte array encoded as hex string
-					if err := HexToByteArray(value, &output.OffchainConfig); err != nil {
+					// parse byte array encoded as base64
+					bytes, err := base64.StdEncoding.DecodeString(value)
+					if err != nil {
 						return types.ContractConfig{}, err
 					}
+					output.OffchainConfig = bytes
 				}
 			}
 			return output, nil

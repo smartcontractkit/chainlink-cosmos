@@ -340,12 +340,12 @@ pub fn execute_set_config(
             .add_attributes(signers)
             .add_attributes(transmitters)
             .add_attribute("f", f.to_string())
-            .add_attribute("onchain_config", hex::encode(onchain_calc))
+            .add_attribute("onchain_config", Binary(onchain_calc).to_base64())
             .add_attribute(
                 "offchain_config_version",
                 offchain_config_version.to_string(),
             )
-            .add_attribute("offchain_config", hex::encode(offchain_config)),
+            .add_attribute("offchain_config", Binary(offchain_config).to_base64()),
     );
 
     Ok(response)
