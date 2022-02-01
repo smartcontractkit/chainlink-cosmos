@@ -9,12 +9,6 @@ install:
 	go get github.com/onsi/ginkgo/v2/ginkgo/labels@v2.0.0
 	go install github.com/onsi/ginkgo/v2/ginkgo
 
-start_test_env:
-	echo "TODO"
-
-start_pulumi_env:
-	echo "TODO"
-
 build_js:
 	yarn install --frozen-lockfile && yarn bundle
 

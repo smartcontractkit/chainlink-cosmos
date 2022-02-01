@@ -28,10 +28,6 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 		err   error
 	)
 
-	// terraCommandError := []string{
-	// 	"Terra Command execution error",
-	// }
-
 	BeforeEach(func() {
 		By("Deploying the environment", func() {
 			e, err = environment.DeployOrLoadEnvironment(
@@ -57,8 +53,6 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 		By("Funding Wallets", func() {
 			_, nkb, err = common.DefaultOffChainConfigParamsFromNodes(nodes)
 			Expect(err).ShouldNot(HaveOccurred())
-			// cd := e2e.NewTerraContractDeployer(nets.Default)
-			// Expect(err).ShouldNot(HaveOccurred())
 
 			err = common.FundOracles(nets.Default, nkb, big.NewFloat(5e12))
 			Expect(err).ShouldNot(HaveOccurred())
@@ -98,11 +92,6 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 				"Error deploying access_controller code",
 			}, 10)
 			Expect(err).ShouldNot(HaveOccurred(), "Failed to upload contracts")
-
-			// _, err = g.ExecCommandWithRetries([]string{
-			// 	"token:deploy",
-			// }, terraCommandError, 2)
-			// Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy link token")
 		})
 	})
 
