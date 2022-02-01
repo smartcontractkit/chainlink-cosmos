@@ -108,8 +108,8 @@ fn init_works() {
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
             recommended_gas_price: 10,
-            observation_payment: 5,
-            transmission_payment: 0,
+            observation_payment_gjuels: 5,
+            transmission_payment_gjuels: 0,
             ..Default::default()
         },
     };
