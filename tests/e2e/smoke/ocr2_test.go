@@ -36,7 +36,7 @@ var _ = Describe("Terra OCRv2", func() {
 	BeforeEach(func() {
 		By("Deploying the environment", func() {
 			e, err = environment.DeployOrLoadEnvironment(
-				e2e.NewChainlinkTerraEnv(),
+				e2e.NewChainlinkTerraEnv(5),
 				tools.ChartsRoot,
 			)
 			Expect(err).ShouldNot(HaveOccurred())

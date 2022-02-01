@@ -3,7 +3,7 @@ package e2e
 import "github.com/smartcontractkit/helmenv/environment"
 
 // NewChainlinkTerraEnv returns a cluster config with LocalTerra node
-func NewChainlinkTerraEnv() *environment.Config {
+func NewChainlinkTerraEnv(nodeCount int) *environment.Config {
 	return &environment.Config{
 		NamespacePrefix: "chainlink-terra",
 		Charts: environment.Charts{
@@ -19,7 +19,7 @@ func NewChainlinkTerraEnv() *environment.Config {
 			"chainlink": {
 				Index: 4,
 				Values: map[string]interface{}{
-					"replicas": 5,
+					"replicas": nodeCount,
 					"chainlink": map[string]interface{}{
 						"image": map[string]interface{}{
 							"image":   "public.ecr.aws/z0b1w9r9/chainlink",

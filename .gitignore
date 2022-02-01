@@ -1,6 +1,7 @@
 .direnv
 target/
 tarpaulin-report.html
+artifacts
 
 # TS
 node_modules
@@ -9,5 +10,11 @@ dist
 .env
 flow-report.json
 .envrc
+bin
 
 packages-ts/gauntlet-terra-contracts/artifacts/bin
+
+# test
+packages-ts/gauntlet-terra-contracts/codeIds/test*
+tests/e2e/logs
+networks/.env.test*
