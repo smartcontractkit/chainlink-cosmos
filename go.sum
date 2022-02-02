@@ -2140,8 +2140,8 @@ github.com/smartcontractkit/chainlink v0.8.10-0.20200825114219-81dd2fc95bac/go.m
 github.com/smartcontractkit/chainlink v0.9.5-0.20201207211610-6c7fee37d5b7/go.mod h1:kmdLJbVZRCnBLiL6gG+U+1+0ofT3bB48DOF8tjQvcoI=
 github.com/smartcontractkit/chainlink v1.0.1-0.20220114200720-95a78cb9fc2b h1:n9RuQUtWWow5Z/l0PydBEi/GKIBXa+mUYB3EGDaHE94=
 github.com/smartcontractkit/chainlink v1.0.1-0.20220114200720-95a78cb9fc2b/go.mod h1:f4WOXzmo07DayD1vLXie1RPsH99hGvslb85MNQ+O8l4=
-github.com/smartcontractkit/chainlink-relay v0.0.0-20220131140217-877223dd0545 h1:2vNstMWl2LySax939I1GSeAsDJOy1gEfX/TsjWlheN8=
-github.com/smartcontractkit/chainlink-relay v0.0.0-20220131140217-877223dd0545/go.mod h1:ojPwXEIk6xHFAoVMM5PoybiN/ici+FrVs5pI9/lq/WI=
+github.com/smartcontractkit/chainlink-relay v0.0.0-20220202143116-9b0c8ba3f278 h1:ivstrPjXYSbJFWpeR2GNPA3Oah82vQKEFv5D0GQpZ4Y=
+github.com/smartcontractkit/chainlink-relay v0.0.0-20220202143116-9b0c8ba3f278/go.mod h1:ojPwXEIk6xHFAoVMM5PoybiN/ici+FrVs5pI9/lq/WI=
 github.com/smartcontractkit/chainlink-solana v0.0.0-20220110150750-26cf3ee24c90 h1:ksLhwtSzUPqPUt9uQDzG90REB+c8ehGlVglY7/Fhrv8=
 github.com/smartcontractkit/ed25519consensus v0.0.1 h1:Ta23Y6YJTACLCpKWSWAwgHCtkmWrGGfrUAV8Ns5r4z0=
 github.com/smartcontractkit/ed25519consensus v0.0.1/go.mod h1:8Wf0F4mu3B5DdEOFKMMLgSoZ8EyaA2Cmf4YMUsNHXzE=
