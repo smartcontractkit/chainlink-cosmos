@@ -12,26 +12,42 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-
-	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/smartcontractkit/terra.go/msg"
-	wasmtypes "github.com/terra-money/core/x/wasm/types"
+	"github.com/pkg/errors"
 
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
-	"github.com/pkg/errors"
+	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	"github.com/cosmos/cosmos-sdk/codec/legacy"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/cosmos/cosmos-sdk/std"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	"github.com/terra-money/core/app"
+	"github.com/terra-money/core/app/params"
+	wasmtypes "github.com/terra-money/core/x/wasm/types"
 
 	"github.com/smartcontractkit/terra.go/key"
+	"github.com/smartcontractkit/terra.go/msg"
 	"github.com/smartcontractkit/terra.go/tx"
 )
+
+var encodingConfig = params.MakeEncodingConfig()
+
+func init() {
+	// Extracted from app.MakeEncodingConfig() to ensure that we only call them once, since they race and can panic.
+	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	app.ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	app.ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+
+	// authz module use this codec to get signbytes.
+	// authz MsgExec can execute all message types,
+	// so legacy.Cdc need to register all amino messages to get proper signature
+	app.ModuleBasics.RegisterLegacyAminoCodec(legacy.Cdc)
+}
 
 //go:generate mockery --name ReaderWriter --output ./mocks/
 type ReaderWriter interface {
@@ -157,7 +173,7 @@ func NewClient(chainID string,
 	if err != nil {
 		return nil, err
 	}
-	ec := app.MakeEncodingConfig()
+	ec := encodingConfig
 	// Note should terra nodes start exposing grpc, its preferable
 	// to connect directly with grpc.Dial to avoid using clientCtx (according to tendermint team).
 	// If so then we would start putting timeouts on the ctx we pass in to the generate grpc client calls.
@@ -249,7 +265,7 @@ func (c *Client) BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse,
 
 // CreateAndSign creates and signs a transaction
 func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error) {
-	txbuilder := tx.NewTxBuilder(app.MakeEncodingConfig().TxConfig)
+	txbuilder := tx.NewTxBuilder(encodingConfig.TxConfig)
 	err := txbuilder.SetMsgs(msgs...)
 	if err != nil {
 		return nil, err
@@ -370,7 +386,7 @@ func (c *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSim
 
 // SimulateUnsigned simulates an unsigned msg
 func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error) {
-	txbuilder := tx.NewTxBuilder(app.MakeEncodingConfig().TxConfig)
+	txbuilder := tx.NewTxBuilder(encodingConfig.TxConfig)
 	if err := txbuilder.SetMsgs(msgs...); err != nil {
 		return nil, err
 	}
