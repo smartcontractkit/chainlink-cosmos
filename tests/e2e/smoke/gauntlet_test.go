@@ -28,6 +28,8 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 		err   error
 	)
 
+	terraCommandError := "Terra Command execution error"
+
 	BeforeEach(func() {
 		By("Deploying the environment", func() {
 			e, err = environment.DeployOrLoadEnvironment(
@@ -90,6 +92,7 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 				"Error deploying deviation_flagging_validator code",
 				"Error deploying ocr2 code",
 				"Error deploying access_controller code",
+				terraCommandError,
 			}, 10)
 			Expect(err).ShouldNot(HaveOccurred(), "Failed to upload contracts")
 		})
