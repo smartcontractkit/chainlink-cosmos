@@ -27,6 +27,8 @@ use std::{
     mem,
 };
 
+const GIGA: u128 = 10u128.pow(9);
+
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:ocr2";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -588,7 +590,7 @@ pub fn execute_transmit(
     )?;
 
     // pay transmitter and reimburse gas spent
-    let amount = Uint128::new(u128::from(config.billing.transmission_payment_gjuels) * 10u128.pow(9)) // scale to juels
+    let amount = Uint128::new(u128::from(config.billing.transmission_payment_gjuels) * GIGA) // scale to juels
             + calculate_reimbursement(&config.billing, juels_per_luna, raw_signatures.len());
     oracle.payment += amount;
     TRANSMITTERS.save(deps.storage, &info.sender, &oracle)?;
@@ -979,7 +981,7 @@ fn owed_payment(config: &Config, transmitter: &Transmitter) -> StdResult<Uint128
     let rounds = config.latest_aggregator_round_id - transmitter.from_round_id;
 
     Ok(
-        Uint128::new(u128::from(config.billing.observation_payment_gjuels) * 10u128.pow(9)) // scale to juels
+        Uint128::new(u128::from(config.billing.observation_payment_gjuels) * GIGA) // scale to juels
             .checked_mul(rounds.into())?
             // + transmitter gas reimbursement
             .checked_add(transmitter.payment)?,
@@ -1153,10 +1155,9 @@ fn total_link_due(deps: Deps) -> StdResult<Uint128> {
             },
         )?;
 
-    let amount =
-        Uint128::new(u128::from(config.billing.observation_payment_gjuels) * 10u128.pow(9)) // scale to juels
-            .checked_mul(rounds)?
-            .checked_add(reimbursements)?;
+    let amount = Uint128::new(u128::from(config.billing.observation_payment_gjuels) * GIGA) // scale to juels
+        .checked_mul(rounds)?
+        .checked_add(reimbursements)?;
 
     Ok(amount)
 }
