@@ -118,7 +118,7 @@ func (s *terraSource) Fetch(ctx context.Context) (interface{}, error) {
 			return
 		}
 		balanceRes := linkBalanceResponse{}
-		if err := json.Unmarshal(res, &balanceRes); err != nil {
+		if err = json.Unmarshal(res, &balanceRes); err != nil {
 			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to unmarshal balance response: %w", err))
 			return
 		}
