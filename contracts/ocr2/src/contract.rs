@@ -74,7 +74,7 @@ pub fn instantiate(
             recommended_gas_price_uluna: Decimal::zero(),
             observation_payment_gjuels: 0,
             transmission_payment_gjuels: 0,
-            base_gas: None,
+            gas_base: None,
             gas_per_signature: None,
             gas_adjustment: None,
         },
@@ -1214,11 +1214,11 @@ fn calculate_reimbursement(
 ) -> Uint128 {
     let signature_count = decimal(signature_count as u64);
     let gas_per_signature = decimal(config.gas_per_signature.unwrap_or(17_000));
-    let base_gas = decimal(config.base_gas.unwrap_or(84_000));
+    let gas_base = decimal(config.gas_base.unwrap_or(84_000));
     let gas_adjustment = Decimal::percent(u64::from(config.gas_adjustment.unwrap_or(140)));
 
     // total gas spent
-    let gas = gas_per_signature * signature_count + base_gas;
+    let gas = gas_per_signature * signature_count + gas_base;
     // gas allocated seems to be about 1.4 of gas used
     let gas = gas * gas_adjustment;
     // gas cost in LUNA
