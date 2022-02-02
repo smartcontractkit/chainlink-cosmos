@@ -2,8 +2,10 @@ BIN_DIR = bin
 export GOPATH ?= $(shell go env GOPATH)
 export GO111MODULE ?= on
 
-install:
+download:
 	go mod download
+
+install:
 	go get github.com/onsi/ginkgo/v2/ginkgo/generators@v2.0.0
 	go get github.com/onsi/ginkgo/v2/ginkgo/internal@v2.0.0
 	go get github.com/onsi/ginkgo/v2/ginkgo/labels@v2.0.0
