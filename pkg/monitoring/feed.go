@@ -79,6 +79,11 @@ func (t TerraFeedConfig) ToMapping() map[string]interface{} {
 		"contract_type":    t.ContractType,
 		"contract_status":  t.ContractStatus,
 		"contract_address": t.ContractAddress.Bytes(),
+
+		// These fields are legacy. They are required in the schema but they
+		// should be set to a zero value for any other chain.
+		"transmissions_account": []byte{},
+		"state_account":         []byte{},
 	}
 }
 
