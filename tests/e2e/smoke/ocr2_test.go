@@ -16,7 +16,7 @@ import (
 	"github.com/smartcontractkit/integrations-framework/contracts"
 )
 
-var _ = Describe("Terra OCRv2", func() {
+var _ = Describe("Terra OCRv2 @ocr", func() {
 	var (
 		e          *environment.Environment
 		mockServer *client.MockserverClient
