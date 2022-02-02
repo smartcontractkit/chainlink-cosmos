@@ -25,9 +25,9 @@ const (
 	// NewRoundCheckPollInterval new round check interval
 	NewRoundCheckPollInterval = 1 * time.Second
 	// SourceChangeInterval EA value change interval
-	SourceChangeInterval = 5 * time.Second
+	SourceChangeInterval = 1250 * time.Millisecond
 	// ChaosAwaitingApply time to wait for chaos experiment to apply
-	ChaosAwaitingApply = 1 * time.Minute
+	ChaosAwaitingApply = 60 * time.Second
 	// ChaosGroupFaulty Group of faulty nodes, even if they fail OCR must work
 	ChaosGroupFaulty = "chaosGroupFaulty"
 	// ChaosGroupYellow if nodes from that group fail we may not work while some experiments are going
@@ -69,7 +69,7 @@ type OCRv2State struct {
 // ContractsAddresses deployed contract addresses
 type ContractsAddresses struct {
 	OCR       string `json:"ocr"`
-	LinkToken string `json:"mint"`
+	LinkToken string `json:"link"`
 	BAC       string `json:"bac"`
 	RAC       string `json:"rac"`
 	Flags     string `json:"flags"`
@@ -179,7 +179,10 @@ func (m *OCRv2State) LoadContracts() error {
 	if err != nil {
 		return err
 	}
-	m.OCR2.SetAddress(accAddr)
+	m.OCR2 = &e2e.OCRv2{
+		Client: m.Nets.Default.(*e2e.TerraLCDClient),
+		Addr:   accAddr,
+	}
 	return nil
 }
 

@@ -22,8 +22,8 @@ func NewChainlinkTerraEnv(nodes int, stateful bool) *environment.Config {
 					"replicas": nodes,
 					"chainlink": map[string]interface{}{
 						"image": map[string]interface{}{
-							"image":   "public.ecr.aws/z0b1w9r9/chainlink",
-							"version": "candidate-develop-terr-qa-test-b64-decode-signers-3.233d4d167de902af193b8c83cc79e707d7e74541",
+							"image":   "795953128386.dkr.ecr.us-west-2.amazonaws.com/chainlink",
+							"version": "develop.latest",
 						},
 					},
 					"env": map[string]interface{}{

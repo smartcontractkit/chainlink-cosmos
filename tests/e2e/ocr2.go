@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/ocr2types"
 	"github.com/smartcontractkit/integrations-framework/contracts"
 	"github.com/smartcontractkit/libocr/offchainreporting2/confighelper"
@@ -14,13 +16,13 @@ import (
 
 // OCRv2 represents a OVR v2 contract deployed on terra as WASM
 type OCRv2 struct {
-	client  *TerraLCDClient
-	address msg.AccAddress
+	Client *TerraLCDClient
+	Addr   msg.AccAddress
 }
 
 // SetValidatorConfig sets validator config
 func (t *OCRv2) SetValidatorConfig(gasLimit uint64, validatorAddr string) error {
-	sender := t.client.DefaultWallet.AccAddress
+	sender := t.Client.DefaultWallet.AccAddress
 	executeMsg := ocr2types.ExecuteSetValidator{
 		SetValidator: ocr2types.ExecuteSetValidatorConfig{
 			Config: ocr2types.ExecuteSetValidatorConfigType{
@@ -32,11 +34,11 @@ func (t *OCRv2) SetValidatorConfig(gasLimit uint64, validatorAddr string) error 
 	if err != nil {
 		return err
 	}
-	_, err = t.client.SendTX(terraClient.CreateTxOptions{
+	_, err = t.Client.SendTX(terraClient.CreateTxOptions{
 		Msgs: []msg.Msg{
 			msg.NewMsgExecuteContract(
 				sender,
-				t.address,
+				t.Addr,
 				executeMsgBytes,
 				msg.NewCoins(),
 			),
@@ -58,7 +60,7 @@ func payeesTuple(transmitters []string, receiver string) [][]string {
 
 // SetPayees sets payees for observations
 func (t *OCRv2) SetPayees(transmitters []string) error {
-	sender := t.client.DefaultWallet.AccAddress
+	sender := t.Client.DefaultWallet.AccAddress
 	payees := payeesTuple(transmitters, sender.String())
 	executeMsg := ocr2types.ExecuteSetPayees{
 		SetPayees: ocr2types.ExecuteSetPayeesConfig{
@@ -68,11 +70,11 @@ func (t *OCRv2) SetPayees(transmitters []string) error {
 	if err != nil {
 		return err
 	}
-	_, err = t.client.SendTX(terraClient.CreateTxOptions{
+	_, err = t.Client.SendTX(terraClient.CreateTxOptions{
 		Msgs: []msg.Msg{
 			msg.NewMsgExecuteContract(
 				sender,
-				t.address,
+				t.Addr,
 				executeMsgBytes,
 				msg.NewCoins(),
 			),
@@ -86,7 +88,7 @@ func (t *OCRv2) SetPayees(transmitters []string) error {
 
 // SetBilling sets billing params for OCR
 func (t *OCRv2) SetBilling(baseGas uint64, op uint64, tp uint64, recommendedGasPriceULuna string, controllerAddr string) error {
-	sender := t.client.DefaultWallet.AccAddress
+	sender := t.Client.DefaultWallet.AccAddress
 	executeMsg := ocr2types.ExecuteSetBillingMsg{
 		SetBilling: ocr2types.ExecuteSetBillingMsgType{
 			Config: ocr2types.ExecuteSetBillingConfigMsgType{
@@ -100,11 +102,11 @@ func (t *OCRv2) SetBilling(baseGas uint64, op uint64, tp uint64, recommendedGasP
 	if err != nil {
 		return err
 	}
-	_, err = t.client.SendTX(terraClient.CreateTxOptions{
+	_, err = t.Client.SendTX(terraClient.CreateTxOptions{
 		Msgs: []msg.Msg{
 			msg.NewMsgExecuteContract(
 				sender,
-				t.address,
+				t.Addr,
 				executeMsgBytes,
 				msg.NewCoins(),
 			),
@@ -118,7 +120,8 @@ func (t *OCRv2) SetBilling(baseGas uint64, op uint64, tp uint64, recommendedGasP
 
 func (t *OCRv2) GetLatestRoundData() (uint64, uint64, uint64, error) {
 	resp := ocr2types.QueryLatestRoundDataResponse{}
-	if err := t.client.QuerySmart(context.Background(), t.address, ocr2types.QueryLatestRoundData, &resp); err != nil {
+	log.Warn().Interface("Addr", t.Addr)
+	if err := t.Client.QuerySmart(context.Background(), t.Addr, ocr2types.QueryLatestRoundData, &resp); err != nil {
 		return 0, 0, 0, err
 	}
 	answer, _ := strconv.Atoi(resp.QueryResult.Answer)
@@ -127,7 +130,7 @@ func (t *OCRv2) GetLatestRoundData() (uint64, uint64, uint64, error) {
 
 // SetOffChainConfig sets offchain config
 func (t *OCRv2) SetOffChainConfig(cfg contracts.OffChainAggregatorV2Config) ([]string, error) {
-	sender := t.client.DefaultWallet.AccAddress
+	sender := t.Client.DefaultWallet.AccAddress
 	signers, transmitters, f, onChainCfg, version, offChainConfigBytes, err := confighelper.ContractSetConfigArgsForTests(
 		cfg.DeltaProgress,
 		cfg.DeltaResend,
@@ -171,11 +174,11 @@ func (t *OCRv2) SetOffChainConfig(cfg contracts.OffChainAggregatorV2Config) ([]s
 	if err != nil {
 		return nil, err
 	}
-	_, err = t.client.SendTX(terraClient.CreateTxOptions{
+	_, err = t.Client.SendTX(terraClient.CreateTxOptions{
 		Msgs: []msg.Msg{
 			msg.NewMsgExecuteContract(
 				sender,
-				t.address,
+				t.Addr,
 				executeMsgBytes,
 				msg.NewCoins(),
 			),
@@ -194,9 +197,9 @@ func (t *OCRv2) RequestNewRound() error {
 func (t *OCRv2) GetOwedPayment(transmitter string) (map[string]interface{}, error) {
 	transmitterAddr, _ := msg.AccAddressFromBech32(transmitter)
 	resp := make(map[string]interface{})
-	if err := t.client.QuerySmart(
+	if err := t.Client.QuerySmart(
 		context.Background(),
-		t.address,
+		t.Addr,
 		ocr2types.QueryOwedPaymentMsg{
 			OwedPayment: ocr2types.QueryOwedPaymentTypeMsg{
 				Transmitter: transmitterAddr,
@@ -211,9 +214,9 @@ func (t *OCRv2) GetOwedPayment(transmitter string) (map[string]interface{}, erro
 
 func (t *OCRv2) GetRoundData(roundID uint32) (map[string]interface{}, error) {
 	resp := make(map[string]interface{})
-	if err := t.client.QuerySmart(
+	if err := t.Client.QuerySmart(
 		context.Background(),
-		t.address,
+		t.Addr,
 		ocr2types.QueryRoundDataMsg{
 			RoundData: ocr2types.QueryRoundDataTypeMsg{
 				RoundID: roundID,
@@ -228,14 +231,14 @@ func (t *OCRv2) GetRoundData(roundID uint32) (map[string]interface{}, error) {
 
 func (t *OCRv2) GetLatestConfigDetails() (map[string]interface{}, error) {
 	resp := make(map[string]interface{})
-	if err := t.client.QuerySmart(context.Background(), t.address, ocr2types.QueryLatestConfigDetails, &resp); err != nil {
+	if err := t.Client.QuerySmart(context.Background(), t.Addr, ocr2types.QueryLatestConfigDetails, &resp); err != nil {
 		return nil, err
 	}
 	return resp, nil
 }
 
 func (t *OCRv2) TransferOwnership(to string) error {
-	sender := t.client.DefaultWallet.AccAddress
+	sender := t.Client.DefaultWallet.AccAddress
 	toAddr, _ := msg.AccAddressFromHex(to)
 	executeMsg := ocr2types.ExecuteTransferOwnershipMsg{
 		TransferOwnership: ocr2types.ExecuteTransferOwnershipMsgType{
@@ -245,11 +248,11 @@ func (t *OCRv2) TransferOwnership(to string) error {
 	if err != nil {
 		return err
 	}
-	_, err = t.client.SendTX(terraClient.CreateTxOptions{
+	_, err = t.Client.SendTX(terraClient.CreateTxOptions{
 		Msgs: []msg.Msg{
 			msg.NewMsgExecuteContract(
 				sender,
-				t.address,
+				t.Addr,
 				executeMsgBytes,
 				msg.NewCoins(),
 			),
@@ -261,12 +264,7 @@ func (t *OCRv2) TransferOwnership(to string) error {
 	return nil
 }
 
-// Address gets OCR2 address
+// Address gets OCR2 Address
 func (t *OCRv2) Address() string {
-	return t.address.String()
-}
-
-// SetAddress sets OCR2 address
-func (t *OCRv2) SetAddress(addr msg.AccAddress) {
-	t.address = addr
+	return t.Addr.String()
 }
