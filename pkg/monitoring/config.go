@@ -9,6 +9,7 @@ import (
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 )
 
+// TerraConfig contains configuration for connecting to a terra client.
 type TerraConfig struct {
 	TendermintURL string
 	NetworkName   string
@@ -20,13 +21,25 @@ type TerraConfig struct {
 
 var _ relayMonitoring.ChainConfig = TerraConfig{}
 
-func (t TerraConfig) GetRPCEndpoint() string         { return t.TendermintURL }
-func (t TerraConfig) GetNetworkName() string         { return t.NetworkName }
-func (t TerraConfig) GetNetworkID() string           { return t.NetworkID }
-func (t TerraConfig) GetChainID() string             { return t.ChainID }
-func (t TerraConfig) GetReadTimeout() time.Duration  { return t.ReadTimeout }
+// GetRPCEndpoint return the tendermint url of a terra client.
+func (t TerraConfig) GetRPCEndpoint() string { return t.TendermintURL }
+
+// GetNetworkName returns the network name.
+func (t TerraConfig) GetNetworkName() string { return t.NetworkName }
+
+// GetNetworkID returns the network id.
+func (t TerraConfig) GetNetworkID() string { return t.NetworkID }
+
+// GetChainID returns the chain id.
+func (t TerraConfig) GetChainID() string { return t.ChainID }
+
+// GetReadTimeout returns the max allowed duration of a request to a Terra client.
+func (t TerraConfig) GetReadTimeout() time.Duration { return t.ReadTimeout }
+
+// GetPollInterval returns the interval at which data from the chain is read.
 func (t TerraConfig) GetPollInterval() time.Duration { return t.PollInterval }
 
+// ToMapping returns a data structure expected by the Avro schema encoders.
 func (t TerraConfig) ToMapping() map[string]interface{} {
 	return map[string]interface{}{
 		"network_name": t.NetworkName,
@@ -35,6 +48,7 @@ func (t TerraConfig) ToMapping() map[string]interface{} {
 	}
 }
 
+// ParseTerraConfig extracts chain specific configuration from env vars.
 func ParseTerraConfig() (TerraConfig, error) {
 	cfg := TerraConfig{}
 

@@ -17,6 +17,8 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
+// NewTerraSourceFactory build a new object that reads observations and
+// configurations from the Terra chain.
 func NewTerraSourceFactory(terraConfig TerraConfig, log logger.Logger) (relayMonitoring.SourceFactory, error) {
 	client, err := pkgClient.NewClient(
 		terraConfig.ChainID,
