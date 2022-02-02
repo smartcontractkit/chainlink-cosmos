@@ -16,6 +16,8 @@ use rand::thread_rng;
 use std::convert::TryFrom;
 use std::str::FromStr;
 
+const GIGA: u128 = 10u128.pow(9);
+
 fn mock_app() -> App {
     AppBuilder::new().build()
 }
@@ -258,7 +260,7 @@ fn transmit_happy_path() {
     let mut env = setup();
     let deposit = Decimal::from_str("1000").unwrap().0;
     // expected in juels
-    let observation_payment = Uint128::from(5 * 10u128.pow(9));
+    let observation_payment = Uint128::from(5 * GIGA);
     let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
 
     // -- set billing
@@ -512,7 +514,7 @@ fn set_link_token() {
     let mut env = setup();
     let deposit = Decimal::from_str("1000").unwrap().0;
     // expected in juels
-    let observation_payment = Uint128::from(5 * 10u128.pow(9));
+    let observation_payment = Uint128::from(5 * GIGA);
     let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
 
     // -- set billing
