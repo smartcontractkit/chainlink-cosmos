@@ -2,6 +2,7 @@ package monitoring
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -15,6 +16,7 @@ import (
 	pkgClient "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 	"github.com/smartcontractkit/chainlink/core/logger"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+	"go.uber.org/multierr"
 )
 
 // NewTerraSourceFactory build a new object that reads observations and
@@ -64,19 +66,23 @@ type terraSource struct {
 	terraFeedConfig TerraFeedConfig
 }
 
+type linkBalanceResponse struct {
+	Balance string `json:"balance"`
+}
+
 func (s *terraSource) Fetch(ctx context.Context) (interface{}, error) {
 	envelope := relayMonitoring.Envelope{}
 	var envelopeErr error
 	envelopeMu := &sync.Mutex{}
 	wg := &sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(3)
 	go func() {
 		defer wg.Done()
 		configDigest, epoch, round, latestAnswer, latestTimestamp, blockNumber, transmitter, err := s.fetchLatestTransmission()
 		envelopeMu.Lock()
 		defer envelopeMu.Unlock()
 		if err != nil {
-			envelopeErr = err
+			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to fetch transmission: %w", err))
 			return
 		}
 		envelope.ConfigDigest = configDigest
@@ -93,10 +99,35 @@ func (s *terraSource) Fetch(ctx context.Context) (interface{}, error) {
 		envelopeMu.Lock()
 		defer envelopeMu.Unlock()
 		if err != nil {
-			envelopeErr = err
+			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to fetch config: %w", err))
 			return
 		}
 		envelope.ContractConfig = contractConfig
+	}()
+	go func() {
+		defer wg.Done()
+		query := fmt.Sprintf(`{"balance":{"address":"%s"}}`, s.terraFeedConfig.ContractAddressBech32)
+		res, err := s.client.ContractStore(
+			s.terraConfig.LinkTokenAddress,
+			[]byte(query),
+		)
+		envelopeMu.Lock()
+		defer envelopeMu.Unlock()
+		if err != nil {
+			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to fetch balance: %w", err))
+			return
+		}
+		balanceRes := linkBalanceResponse{}
+		if err := json.Unmarshal(res, &balanceRes); err != nil {
+			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to unmarshal balance response: %w", err))
+			return
+		}
+		balance, err := strconv.ParseUint(balanceRes.Balance, 10, 64)
+		if err != nil {
+			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to parse uint64 balance from '%s': %w", balanceRes.Balance, err))
+			return
+		}
+		envelope.LinkBalance = balance
 	}()
 	wg.Wait()
 	return envelope, envelopeErr

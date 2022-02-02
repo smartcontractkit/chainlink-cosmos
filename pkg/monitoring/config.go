@@ -6,17 +6,20 @@ import (
 	"os"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
+	"github.com/smartcontractkit/terra.go/msg"
 )
 
 // TerraConfig contains configuration for connecting to a terra client.
 type TerraConfig struct {
-	TendermintURL string
-	NetworkName   string
-	NetworkID     string
-	ChainID       string
-	ReadTimeout   time.Duration
-	PollInterval  time.Duration
+	TendermintURL    string
+	NetworkName      string
+	NetworkID        string
+	ChainID          string
+	ReadTimeout      time.Duration
+	PollInterval     time.Duration
+	LinkTokenAddress sdk.AccAddress
 }
 
 var _ relayMonitoring.ChainConfig = TerraConfig{}
@@ -88,6 +91,13 @@ func parseEnvVars(cfg *TerraConfig) error {
 			return fmt.Errorf("failed to parse env var TERRA_POLL_INTERVAL, see https://pkg.go.dev/time#ParseDuration: %w", err)
 		}
 		cfg.PollInterval = pollInterval
+	}
+	if value, isPresent := os.LookupEnv("TERRA_LINK_TOKEN_ADDRESS"); isPresent {
+		address, err := msg.AccAddressFromBech32(value)
+		if err != nil {
+			return fmt.Errorf("failed to parse the bech32-encoded link token address from '%s': %w", value, err)
+		}
+		cfg.LinkTokenAddress = address
 	}
 	return nil
 }
