@@ -33,13 +33,39 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
     config: {
       observation_payment_gjuels: new BN(input.observationPaymentGjuels).toNumber(),
       transmission_payment_gjuels: new BN(input.transmissionPaymentGjuels).toNumber(),
-      recommended_gas_price_uluna: new BN(input.recommendedGasPriceUluna).toString(),
+      recommended_gas_price_uluna: input.recommendedGasPriceUluna,
     },
   }
 }
 
-// TODO: Add validation
 const validateInput = (input: CommandInput): boolean => {
+  let observationPayment: BN
+  let transmissionPayment: BN
+
+  const gasPrice: number = Number(input.recommendedGasPriceUluna) // parse as float64
+  if (!isFinite(gasPrice)) {
+    throw new Error(`recommendedGasPriceUluna=${input.recommendedGasPriceUluna} is not a valid floating point number.`)
+  }
+
+  if (gasPrice < 0.0) {
+    throw new Error(`recommendedGasPriceUluna=${input.recommendedGasPriceUluna} cannot be negative`)
+  }
+
+  try {
+    observationPayment = BN(input.observationPaymentGjuels)
+    transmissionPayment = BN(input.transmissionPaymentGjuels) // parse as integers
+  } catch {
+    throw new Error(
+      `observationPaymentGjuels=${input.observationPaymentGjuels} and ` +
+        `transmissionPaymentGjuels=${input.transmissionPaymentGjuels} must both be integers`,
+    )
+  }
+  if (observationPayment.isNeg() || transmissionPayment.isNeg()) {
+    throw new Error(
+      `observationPaymentGjuels=${input.observationPaymentGjuels} and ` +
+        `transmissionPaymentGjuels=${input.transmissionPaymentGjuels} cannot be negative`,
+    )
+  }
   return true
 }
 
