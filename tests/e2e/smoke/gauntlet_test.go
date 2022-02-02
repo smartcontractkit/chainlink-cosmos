@@ -78,7 +78,8 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			terraNodeUrl, err := e.Charts.Connections("localterra").LocalURLByPort("lcd", environment.HTTP)
 			Expect(err).ShouldNot(HaveOccurred())
 			g.NetworkConfig = common.GetDefaultGauntletConfig(terraNodeUrl)
-			g.WriteNetworkConfigMap()
+			err = g.WriteNetworkConfigMap()
+			Expect(err).ShouldNot(HaveOccurred(), "failed to write the .env file")
 		})
 	})
 
