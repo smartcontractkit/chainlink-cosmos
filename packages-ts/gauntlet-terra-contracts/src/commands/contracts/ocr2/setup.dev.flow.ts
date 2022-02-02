@@ -9,6 +9,7 @@ import DeployOCR2 from './deploy'
 import SetBilling from './setBilling'
 import SetConfig from './setConfig'
 import SetPayees from './setPayees'
+import { MnemonicKey } from '@terra-money/terra.js'
 
 export default class DeployOCR2Flow extends FlowCommand<TransactionResponse> {
   static id = 'ocr2:setup:flow'
@@ -16,6 +17,17 @@ export default class DeployOCR2Flow extends FlowCommand<TransactionResponse> {
 
   constructor(flags, args) {
     super(flags, args, waitExecute, makeAbstractCommand)
+
+    const oraclesLength = this.flags.oracles || 16
+
+    const oracles = new Array(oraclesLength).fill('').map((_, i) => ({
+      offchainPublicKey: '5cd10bf991c8b0db7bee3ec371c7795a69297b6bccf7b4d738e0920b56131772',
+      peerId: 'DxRwKpwNBuMzKf5YEG1vLpnRbWeKo1Z4tKHfFGt8vUkj',
+      configPublicKey: '5cd10bf991c8b0db7bee3ec371c7795a69297b6bccf7b4d738e0920b56131772',
+      signer: new Array(64).fill(i.toString(16)).join(''),
+      payee: new MnemonicKey().publicKey?.address(),
+      transmitter: new MnemonicKey().publicKey?.address(),
+    }))
 
     this.stepIds = {
       BILLING_ACCESS_CONTROLLER: 1,
@@ -25,7 +37,7 @@ export default class DeployOCR2Flow extends FlowCommand<TransactionResponse> {
     }
 
     const billingInput = {
-      recommendedGasPrice: 1,
+      recommendedGasPriceUluna: 1,
       observationPaymentGjuels: 1,
       transmissionPaymentGjuels: 1,
     }
@@ -38,17 +50,9 @@ export default class DeployOCR2Flow extends FlowCommand<TransactionResponse> {
       deltaGraceNanoseconds: 30,
       deltaStageNanoseconds: 30,
       rMax: 30,
-      s: [1, 1, 1, 1],
-      offchainPublicKeys: [
-        '5cd10bf991c8b0db7bee3ec371c7795a69297b6bccf7b4d738e0920b56131772',
-        'd58a9b179d5ac550376734ce1da5ee4572718fd6d315e0541b1da1d1671d0d71',
-        'ef104fe8812c2c73d4c1b57dc82a15f8dd5a23149bd91917abad295f305ed21a',
-      ],
-      peerIds: [
-        'DxRwKpwNBuMzKf5YEG1vLpnRbWeKo1Z4tKHfFGt8vUkj',
-        '8sdUrh9LQdAXhrgFEBDxnUauJTTLfEq5PNsJbn9Pw19K',
-        '9n1sSGA5rhfsQyaX3tHz3ZU1ffR6V8KffvWtFPBcFrJw',
-      ],
+      s: oracles.map(() => 1),
+      offchainPublicKeys: oracles.map((o) => o.offchainPublicKey),
+      peerIds: oracles.map((o) => o.peerId),
       reportingPluginConfig: {
         alphaReportInfinite: false,
         alphaReportPpb: 0,
@@ -61,39 +65,20 @@ export default class DeployOCR2Flow extends FlowCommand<TransactionResponse> {
       maxDurationReportNanoseconds: 30,
       maxDurationShouldAcceptFinalizedReportNanoseconds: 30,
       maxDurationShouldTransmitAcceptedReportNanoseconds: 30,
-      configPublicKeys: [
-        '5cd10bf991c8b0db7bee3ec371c7795a69297b6bccf7b4d738e0920b56131772',
-        'd58a9b179d5ac550376734ce1da5ee4572718fd6d315e0541b1da1d1671d0d71',
-        'ef104fe8812c2c73d4c1b57dc82a15f8dd5a23149bd91917abad295f305ed21a',
-      ],
+      configPublicKeys: oracles.map((o) => o.configPublicKey),
     }
 
-    const transmitters = [
-      'terra1fcksmfjncl6m7apvpalvhwv5jxd9djv5lwyu82',
-      'terra1trcufj64y53hxk7g8cra33xw3jkyvlr9lu99eu',
-      'terra1s38kfu4qp0ttwxkka9zupaysefl5qruhv5rc0z',
-      'terra19ty8cgqjvl26aj809xgd3kksj4kdqu0gkssxca',
-    ]
+    const transmitters = oracles.map((o) => o.transmitter)
     const configInput = {
-      signers: [
-        '0cAFF71b6Dbb4f9Ebc862F8E9C124E737C917e80',
-        '6b211EdeF015C9931eA7D65CD326472891ecf501',
-        'C6CD7e27Ea7653362906A7C9923c15602dC04F41',
-        '1b7c57E22a4D4B6c94365A73AD5FF743DBE9c55E',
-      ],
+      signers: oracles.map((o) => o.signer),
       transmitters,
       offchainConfig: offchainConfigInput,
       offchainConfigVersion: 2,
-      onchainConfig: [],
+      onchainConfig: '',
     }
 
     const payeesInput = {
-      payees: [
-        'terra18lq43mfarxmyuvpyj0wu40selmpgfmss69vj2d',
-        'terra1rd37efmhvscdjcpakqxym68zv9da7uvt5ld62y',
-        'terra1c66g2zcd7ch0rpmgkpmnqkxma49rwtt74wgzex',
-        'terra1404zfsh35k383akcs9hg4z6r27cgy3h96tq4tx',
-      ],
+      payees: oracles.map((o) => o.payee),
       transmitters,
     }
 
