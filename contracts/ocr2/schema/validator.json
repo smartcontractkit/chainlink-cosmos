@@ -1,13 +1,19 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Config",
+  "title": "Validator",
   "type": "object",
   "required": [
-    "owner"
+    "address",
+    "gas_limit"
   ],
   "properties": {
-    "owner": {
+    "address": {
       "$ref": "#/definitions/Addr"
+    },
+    "gas_limit": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
     }
   },
   "definitions": {

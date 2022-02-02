@@ -7,6 +7,8 @@ use cw20::Cw20Contract;
 use cw_storage_plus::{Item, Map, U32Key};
 use owned::Auth;
 
+use crate::Decimal;
+
 /// Maximum number of oracles the offchain reporting protocol is designed for
 pub const MAX_ORACLES: usize = 31;
 
@@ -35,12 +37,16 @@ pub struct Validator {
     pub gas_limit: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, JsonSchema)]
 pub struct Billing {
     /// Should match https://fcd.terra.dev/v1/txs/gas_prices
-    /// NOTE: needs to be scaled to the same amount of decimals places as LINK token
-    pub recommended_gas_price: u64,
-    pub observation_payment: u64,
+    pub recommended_gas_price_uluna: Decimal,
+    pub observation_payment_gjuels: u64,
+    pub transmission_payment_gjuels: u64,
+    pub gas_base: Option<u64>,
+    pub gas_per_signature: Option<u64>,
+    /// In percent
+    pub gas_adjustment: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

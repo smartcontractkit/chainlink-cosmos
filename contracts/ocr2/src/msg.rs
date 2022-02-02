@@ -1,5 +1,5 @@
-use crate::state::{bignum, Billing};
-use cosmwasm_std::{Addr, Uint128};
+use crate::state::{bignum, Billing, Validator};
+use cosmwasm_std::{Addr, Binary, Uint128};
 use cw20::Cw20ReceiveMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -29,12 +29,12 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     SetConfig {
-        signers: Vec<Vec<u8>>,
+        signers: Vec<Binary>,
         transmitters: Vec<String>,
         f: u8,
-        onchain_config: Vec<u8>,
+        onchain_config: Binary,
         offchain_config_version: u64,
-        offchain_config: Vec<u8>,
+        offchain_config: Binary,
     },
     TransferOwnership {
         to: String,
@@ -42,18 +42,22 @@ pub enum ExecuteMsg {
     AcceptOwnership,
 
     Transmit {
-        report_context: Vec<u8>,
-        report: Vec<u8>,
+        report_context: Binary,
+        report: Binary,
 
         // TODO: use signatures: Vec<[u8; 32+64]>, when it becomes possible
         // https://github.com/GREsau/schemars/issues/111
-        signatures: Vec<Vec<u8>>,
+        signatures: Vec<Binary>,
     },
 
     RequestNewRound,
 
     SetBilling {
         config: Billing,
+    },
+
+    SetValidatorConfig {
+        config: Option<Validator>,
     },
 
     SetBillingAccessController {

@@ -5,12 +5,12 @@ import { serializeOffchainConfig } from '../../../lib/encoding'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
 
 type ContractInput = {
-  signers: number[][]
+  signers: string[]
   transmitters: string[]
   f: number
-  onchain_config: number[]
+  onchain_config: string
   offchain_config_version: number
-  offchain_config: number[]
+  offchain_config: string
 }
 
 type CommandInput = {
@@ -107,22 +107,22 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     transmitters,
     offchainConfig: getOffchainConfigInput(rdd, contract),
     offchainConfigVersion: 2,
-    onchainConfig: [],
+    onchainConfig: '',
   }
 }
 
 // Transforms the user input to a valid input for the contract function
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
   const offchainConfig = await serializeOffchainConfig(input.offchainConfig)
-  const signers = input.signers.map((s) => Array.from(Buffer.from(s, 'hex')))
+  const signers = input.signers.map((s) => Buffer.from(s, 'hex').toString('base64'))
 
   return {
-    signers,
+    signers: signers,
     transmitters: input.transmitters,
     f: input.offchainConfig.f,
-    onchain_config: Array.from(Buffer.from(input.onchainConfig)),
+    onchain_config: input.onchainConfig,
     offchain_config_version: 2,
-    offchain_config: Array.from(offchainConfig),
+    offchain_config: offchainConfig,
   }
 }
 

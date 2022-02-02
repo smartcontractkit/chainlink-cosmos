@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Response};
+use cosmwasm_std::{Addr, Binary, Response};
 use cosmwasm_vm::testing::{
     execute, instantiate, mock_env, mock_info, mock_instance, MockApi, MockQuerier, MockStorage,
 };
@@ -6,9 +6,12 @@ use cosmwasm_vm::Instance;
 
 use ocr2::msg::{ExecuteMsg, InstantiateMsg};
 use ocr2::state::Billing;
+use ocr2::Decimal;
 
 use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes};
 use rand::thread_rng;
+
+use std::str::FromStr;
 
 // Output of cargo wasm
 // NOTE: by swapping the lines below you switch between testing against the local contract build,
@@ -66,7 +69,7 @@ fn init_works() {
 
     let signers = keypairs
         .iter()
-        .map(|sk| VerificationKeyBytes::from(sk).as_ref().to_vec())
+        .map(|sk| Binary(VerificationKeyBytes::from(sk).as_ref().to_vec()))
         .collect();
 
     let transmitters = keypairs
@@ -79,9 +82,9 @@ fn init_works() {
         signers,
         transmitters: transmitters.clone(),
         f,
-        onchain_config: vec![],
+        onchain_config: Binary(vec![]),
         offchain_config_version: 1,
-        offchain_config: vec![4, 5, 6],
+        offchain_config: Binary(vec![4, 5, 6]),
     };
 
     let execute_info = mock_info(OWNER, &[]);
@@ -107,8 +110,10 @@ fn init_works() {
     // set billing
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
-            recommended_gas_price: 10,
-            observation_payment: 5,
+            recommended_gas_price_uluna: Decimal::from_str("10").unwrap(),
+            observation_payment_gjuels: 5,
+            transmission_payment_gjuels: 0,
+            ..Default::default()
         },
     };
 
@@ -165,7 +170,7 @@ fn init_works() {
             let mut result = Vec::new();
             result.extend_from_slice(&pk_bytes);
             result.extend_from_slice(&sig_bytes);
-            result
+            Binary(result)
         })
         .collect();
 
@@ -175,8 +180,8 @@ fn init_works() {
 
     let transmitter = Addr::unchecked(transmitters.first().cloned().unwrap());
     let msg = ExecuteMsg::Transmit {
-        report_context,
-        report,
+        report_context: Binary(report_context),
+        report: Binary(report),
         signatures,
     };
 
@@ -184,7 +189,7 @@ fn init_works() {
     let _response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
 
     let gas_used = gas_before - deps.get_gas_left();
-    unimplemented!("gas used: {} for {} signatures", gas_used, n);
+    // unimplemented!("gas used: {} for {} signatures", gas_used, n);
     // 1 = 403574 / 406205 / 405237
     // 2 = 447190 / 445798 / 448000
     // 3 = 512726 / 513410 / 514216

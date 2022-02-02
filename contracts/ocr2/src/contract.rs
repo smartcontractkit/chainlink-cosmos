@@ -27,6 +27,8 @@ use std::{
     mem,
 };
 
+const GIGA: u128 = 10u128.pow(9);
+
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:ocr2";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -71,8 +73,12 @@ pub fn instantiate(
         latest_aggregator_round_id: 0,
 
         billing: Billing {
-            recommended_gas_price: 0,
-            observation_payment: 0,
+            recommended_gas_price_uluna: Decimal::zero(),
+            observation_payment_gjuels: 0,
+            transmission_payment_gjuels: 0,
+            gas_base: None,
+            gas_per_signature: None,
+            gas_adjustment: None,
         },
         validator: None,
     };
@@ -102,6 +108,7 @@ pub fn execute(
             offchain_config,
         } => {
             let api = &deps.api;
+            let signers = signers.into_iter().map(|s| s.0).collect::<Vec<Vec<u8>>>();
             let transmitters = transmitters
                 .iter()
                 .map(|t| api.addr_validate(t))
@@ -113,9 +120,9 @@ pub fn execute(
                 signers,
                 transmitters,
                 f,
-                onchain_config,
+                onchain_config.0,
                 offchain_config_version,
-                offchain_config,
+                offchain_config.0,
             )
         }
         ExecuteMsg::TransferOwnership { to } => {
@@ -131,11 +138,11 @@ pub fn execute(
             // since we currently use Vec instead of [u8; N], verify each raw signature length first
             let signatures = signatures
                 .into_iter()
-                .map(|signature| signature.try_into())
+                .map(|signature| signature.0.try_into())
                 .collect::<Result<_, _>>()
                 .map_err(|_| ContractError::InvalidInput)?;
 
-            execute_transmit(deps, env, info, report_context, report, signatures)
+            execute_transmit(deps, env, info, report_context.0, report.0, signatures)
         }
         ExecuteMsg::SetLinkToken {
             link_token,
@@ -143,6 +150,9 @@ pub fn execute(
         } => execute_set_link_token(deps, env, info, link_token, recipient),
         ExecuteMsg::Receive(msg) => execute_receive(deps, env, info, msg),
         ExecuteMsg::SetBilling { config } => execute_set_billing(deps, env, info, config),
+        ExecuteMsg::SetValidatorConfig { config } => {
+            execute_set_validator_config(deps, env, info, config)
+        }
         ExecuteMsg::SetBillingAccessController { access_controller } => {
             execute_set_billing_access_controller(deps, env, info, access_controller)
         }
@@ -335,12 +345,12 @@ pub fn execute_set_config(
             .add_attributes(signers)
             .add_attributes(transmitters)
             .add_attribute("f", f.to_string())
-            .add_attribute("onchain_config", hex::encode(onchain_calc))
+            .add_attribute("onchain_config", Binary(onchain_calc).to_base64())
             .add_attribute(
                 "offchain_config_version",
                 offchain_config_version.to_string(),
             )
-            .add_attribute("offchain_config", hex::encode(offchain_config)),
+            .add_attribute("offchain_config", Binary(offchain_config).to_base64()),
     );
 
     Ok(response)
@@ -579,12 +589,9 @@ pub fn execute_transmit(
         &raw_report,
     )?;
 
-    // pay transmitter the gas reimbursement
-    let amount = calculate_reimbursement(
-        u128::from(config.billing.recommended_gas_price),
-        juels_per_luna,
-        raw_signatures.len(),
-    );
+    // pay transmitter and reimburse gas spent
+    let amount = Uint128::new(u128::from(config.billing.transmission_payment_gjuels) * GIGA) // scale to juels
+            + calculate_reimbursement(&config.billing, juels_per_luna, raw_signatures.len());
     oracle.payment += amount;
     TRANSMITTERS.save(deps.storage, &info.sender, &oracle)?;
 
@@ -928,12 +935,16 @@ pub fn execute_set_billing(
     Ok(Response::default().add_event(
         Event::new("set_billing")
             .add_attribute(
-                "recommended_gas_price",
-                config.billing.recommended_gas_price.to_string(),
+                "recommended_gas_price_uluna",
+                config.billing.recommended_gas_price_uluna.to_string(),
             )
             .add_attribute(
-                "observation_payment",
-                config.billing.observation_payment.to_string(),
+                "observation_payment_gjuels",
+                config.billing.observation_payment_gjuels.to_string(),
+            )
+            .add_attribute(
+                "transmission_payment_gjuels",
+                config.billing.transmission_payment_gjuels.to_string(),
             ),
     ))
 }
@@ -969,10 +980,12 @@ pub fn execute_withdraw_payment(
 fn owed_payment(config: &Config, transmitter: &Transmitter) -> StdResult<Uint128> {
     let rounds = config.latest_aggregator_round_id - transmitter.from_round_id;
 
-    Ok(Uint128::from(config.billing.observation_payment)
-        .checked_mul(rounds.into())?
-        // + transmitter gas reimbursement
-        .checked_add(transmitter.payment)?)
+    Ok(
+        Uint128::new(u128::from(config.billing.observation_payment_gjuels) * GIGA) // scale to juels
+            .checked_mul(rounds.into())?
+            // + transmitter gas reimbursement
+            .checked_add(transmitter.payment)?,
+    )
 }
 
 pub fn query_owed_payment(deps: Deps, transmitter: String) -> StdResult<Uint128> {
@@ -1142,7 +1155,7 @@ fn total_link_due(deps: Deps) -> StdResult<Uint128> {
             },
         )?;
 
-    let amount = Uint128::from(config.billing.observation_payment)
+    let amount = Uint128::new(u128::from(config.billing.observation_payment_gjuels) * GIGA) // scale to juels
         .checked_mul(rounds)?
         .checked_add(reimbursements)?;
 
@@ -1196,18 +1209,23 @@ pub fn query_oracle_observation_count(deps: Deps, transmitter: String) -> StdRes
 
 // Returns amount in juels
 fn calculate_reimbursement(
-    recommended_gas_price: u128,
+    config: &Billing,
     juels_per_luna: u128,
     signature_count: usize,
 ) -> Uint128 {
-    const BASE_GAS: Decimal = decimal(338_000);
-    const GAS_PER_SIGNATURE: Decimal = decimal(67_000);
+    let signature_count = decimal(signature_count as u64);
+    let gas_per_signature = decimal(config.gas_per_signature.unwrap_or(17_000));
+    let gas_base = decimal(config.gas_base.unwrap_or(84_000));
+    let gas_adjustment = Decimal::percent(u64::from(config.gas_adjustment.unwrap_or(140)));
 
-    let signature_count = decimal(signature_count);
     // total gas spent
-    let gas = GAS_PER_SIGNATURE * signature_count + BASE_GAS;
+    let gas = gas_per_signature * signature_count + gas_base;
+    // gas allocated seems to be about 1.4 of gas used
+    let gas = gas * gas_adjustment;
     // gas cost in LUNA
-    let gas_cost = Decimal(Uint128::new(recommended_gas_price)) * gas;
+    let recommended_gas_price =
+        config.recommended_gas_price_uluna * Decimal::from_ratio(1u128, 10u128.pow(6));
+    let gas_cost = recommended_gas_price * gas;
     // total in juels
     let total = gas_cost * Decimal(Uint128::new(juels_per_luna));
     // NOTE: no stability tax is charged on transactions in LUNA
@@ -1361,7 +1379,12 @@ pub(crate) mod tests {
         let owner = "owner".to_string();
 
         let msg = ExecuteMsg::SetConfig {
-            signers: vec![vec![1; 64], vec![2; 64], vec![3; 64], vec![4; 64]],
+            signers: vec![
+                Binary(vec![1; 64]),
+                Binary(vec![2; 64]),
+                Binary(vec![3; 64]),
+                Binary(vec![4; 64]),
+            ],
             transmitters: vec![
                 "transmitter0".to_string(),
                 "transmitter1".to_string(),
@@ -1369,9 +1392,9 @@ pub(crate) mod tests {
                 "transmitter3".to_string(),
             ],
             f: 1,
-            onchain_config: vec![],
+            onchain_config: Binary(vec![]),
             offchain_config_version: 1,
-            offchain_config: vec![4, 5, 6],
+            offchain_config: Binary(vec![4, 5, 6]),
         };
 
         let execute_info = mock_info(owner.as_str(), &[]);

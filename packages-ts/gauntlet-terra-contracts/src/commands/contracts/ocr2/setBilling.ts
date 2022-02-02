@@ -3,15 +3,16 @@ import { getRDD } from '../../../lib/rdd'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/wrapper'
 
 type CommandInput = {
-  recommendedGasPrice: number
+  recommendedGasPriceUluna: string
   observationPaymentGjuels: number
   transmissionPaymentGjuels: number
 }
 
 type ContractInput = {
   config: {
-    recommended_gas_price: number
-    observation_payment: number
+    recommended_gas_price_uluna: string
+    observation_payment_gjuels: number
+    transmission_payment_gjuels: number
   }
 }
 
@@ -23,15 +24,16 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   return {
     observationPaymentGjuels: billingInfo.observationPaymentGjuels,
     transmissionPaymentGjuels: billingInfo.transmissionPaymentGjuels,
-    recommendedGasPrice: billingInfo.recommendedGasPrice,
+    recommendedGasPriceUluna: billingInfo.recommendedGasPriceUluna,
   }
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
   return {
     config: {
-      recommended_gas_price: new BN(input.recommendedGasPrice).toNumber(),
-      observation_payment: new BN(input.observationPaymentGjuels).toNumber(),
+      observation_payment_gjuels: new BN(input.observationPaymentGjuels).toNumber(),
+      transmission_payment_gjuels: new BN(input.transmissionPaymentGjuels).toNumber(),
+      recommended_gas_price_uluna: new BN(input.recommendedGasPriceUluna).toString(),
     },
   }
 }

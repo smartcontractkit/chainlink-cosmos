@@ -6,15 +6,17 @@ use crate::msg::{
     ExecuteMsg, InstantiateMsg, LatestConfigDetailsResponse, LatestTransmissionDetailsResponse,
     LinkAvailableForPaymentResponse, QueryMsg,
 };
-use crate::state::{Billing, Round, Transmission};
+use crate::state::{Billing, Round};
 use crate::Decimal;
-use cosmwasm_std::{Addr, Binary, Empty, Uint128};
+use cosmwasm_std::{to_binary, Addr, Binary, Empty, Uint128};
 use cw20::Cw20Coin;
 use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes};
 use rand::thread_rng;
 use std::convert::TryFrom;
 use std::str::FromStr;
+
+const GIGA: u128 = 10u128.pow(9);
 
 fn mock_app() -> App {
     AppBuilder::new().build()
@@ -43,6 +45,7 @@ pub fn contract_access_controller() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
+#[allow(unused)]
 struct Env {
     router: App,
     owner: Addr,
@@ -90,14 +93,14 @@ fn transmit_report(env: &mut Env, epoch: u32, round: u8) {
             let mut result = Vec::new();
             result.extend_from_slice(&pk_bytes);
             result.extend_from_slice(&sig_bytes);
-            result
+            Binary(result)
         })
         .collect();
 
     let transmitter = Addr::unchecked(env.transmitters.first().cloned().unwrap());
     let msg = ExecuteMsg::Transmit {
-        report_context,
-        report,
+        report_context: Binary(report_context),
+        report: Binary(report),
         signatures,
     };
     env.router
@@ -194,14 +197,14 @@ fn setup() -> Env {
         .unwrap();
     // generate a few signer keypairs
     let mut keypairs = Vec::new();
-    for _ in 0..4 {
+    for _ in 0..16 {
         let sk = SigningKey::new(thread_rng());
         keypairs.push(sk);
     }
 
     let signers = keypairs
         .iter()
-        .map(|sk| VerificationKeyBytes::from(sk).as_ref().to_vec())
+        .map(|sk| Binary(VerificationKeyBytes::from(sk).as_ref().to_vec()))
         .collect();
 
     let transmitters = keypairs
@@ -214,9 +217,9 @@ fn setup() -> Env {
         signers,
         transmitters: transmitters.clone(),
         f: 1,
-        onchain_config: vec![],
+        onchain_config: Binary(vec![]),
         offchain_config_version: 1,
-        offchain_config: vec![4, 5, 6],
+        offchain_config: Binary(vec![4, 5, 6]),
     };
     let response = router
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
@@ -256,21 +259,21 @@ fn setup() -> Env {
 fn transmit_happy_path() {
     let mut env = setup();
     let deposit = Decimal::from_str("1000").unwrap().0;
-    let observation_payment = Decimal::from_str("5").unwrap().0;
-    let reimbursement = Decimal::from_str("0.00534776").unwrap().0;
+    // expected in juels
+    let observation_payment = Uint128::from(5 * GIGA);
+    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
 
     // -- set billing
 
     // price in uLUNA
     let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
-    // price in LUNA
-    let micro = Decimal::from_str("0.000001").unwrap();
-    let recommended_gas_price = (recommended_gas_price * micro).0;
 
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
-            recommended_gas_price: u64::try_from(recommended_gas_price.u128()).unwrap(),
-            observation_payment: u64::try_from(observation_payment.u128()).unwrap(),
+            recommended_gas_price_uluna: recommended_gas_price,
+            observation_payment_gjuels: 5,
+            transmission_payment_gjuels: 0,
+            ..Default::default()
         },
     };
     env.router
@@ -439,23 +442,27 @@ fn transmit_happy_path() {
 
     // use a new set of keypairs and signers
     let mut keypairs = Vec::new();
-    for _ in 0..4 {
+    for _ in 0..16 {
         let sk = SigningKey::new(thread_rng());
         keypairs.push(sk);
     }
     let signers = keypairs
         .iter()
-        .map(|sk| VerificationKeyBytes::from(sk).as_ref().to_vec())
+        .map(|sk| Binary(VerificationKeyBytes::from(sk).as_ref().to_vec()))
         .collect();
 
     let msg = ExecuteMsg::SetConfig {
         signers,
         transmitters: env.transmitters.clone(),
-        f: 1,
-        onchain_config: vec![],
+        f: 5,
+        onchain_config: Binary(vec![]),
         offchain_config_version: 2,
-        offchain_config: vec![5, 5, 6],
+        offchain_config: Binary(vec![1; 2165]),
     };
+
+    const MAX_MSG_SIZE: usize = 4 * 1024; // 4kb
+    assert!(to_binary(&msg).unwrap().len() <= MAX_MSG_SIZE);
+
     env.router
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();
@@ -506,21 +513,21 @@ fn transmit_happy_path() {
 fn set_link_token() {
     let mut env = setup();
     let deposit = Decimal::from_str("1000").unwrap().0;
-    let observation_payment = Decimal::from_str("5").unwrap().0;
-    let reimbursement = Decimal::from_str("0.00534776").unwrap().0;
+    // expected in juels
+    let observation_payment = Uint128::from(5 * GIGA);
+    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
 
     // -- set billing
 
     // price in uLUNA
     let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
-    // price in LUNA
-    let micro = Decimal::from_str("0.000001").unwrap();
-    let recommended_gas_price = (recommended_gas_price * micro).0;
 
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
-            recommended_gas_price: u64::try_from(recommended_gas_price.u128()).unwrap(),
-            observation_payment: u64::try_from(observation_payment.u128()).unwrap(),
+            recommended_gas_price_uluna: recommended_gas_price,
+            observation_payment_gjuels: 5,
+            transmission_payment_gjuels: 0,
+            ..Default::default()
         },
     };
 
@@ -685,7 +692,8 @@ fn set_link_token() {
         )
         .unwrap();
     let expected_balance = Decimal(deposit)
-        - (Decimal(Uint128::new(4) * observation_payment) + Decimal(reimbursement));
+        - (Decimal(Uint128::new(env.transmitters.len() as u128) * observation_payment)
+            + Decimal(reimbursement));
     assert_eq!(Decimal(balance).to_string(), expected_balance.to_string());
 
     // token address should be changed
