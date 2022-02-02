@@ -50,7 +50,7 @@ func (r *OCR2Reader) LatestConfigDetails(ctx context.Context) (changedInBlock ui
 
 func (r *OCR2Reader) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
 	query := []string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm-set_config.contract_address='%s'", r.address)}
-	res, err := r.chainReader.TxsEvents(query)
+	res, err := r.chainReader.TxsEvents(query, nil)
 	if err != nil {
 		return types.ContractConfig{}, err
 	}
@@ -194,7 +194,7 @@ func (r *OCR2Reader) LatestTransmissionDetails(ctx context.Context) (
 //		return
 //	}
 //	blockNum := uint64(latestBlock.Block.Header.Height) - uint64(lookback/cc.cfg.BlockRate())
-//	res, err := cc.chainReader.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", blockNum+1), fmt.Sprintf("wasm-new_round.contract_address='%s'", cc.address.String())})
+//	res, err := cc.chainReader.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", blockNum+1), fmt.Sprintf("wasm-new_round.contract_address='%s'", cc.address.String())}, nil)
 //	if err != nil {
 //		return
 //	}

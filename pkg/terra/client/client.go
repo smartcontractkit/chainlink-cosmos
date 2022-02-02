@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/pkg/errors"
 
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
@@ -59,7 +60,7 @@ type ReaderWriter interface {
 type Reader interface {
 	Account(address sdk.AccAddress) (uint64, uint64, error)
 	ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
-	TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error)
+	TxsEvents(events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error)
 	Tx(hash string) (*txtypes.GetTxResponse, error)
 	LatestBlock() (*tmtypes.GetLatestBlockResponse, error)
 	BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse, error)
@@ -236,10 +237,10 @@ func (c *Client) ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) 
 // Each event is ANDed together and follows the query language defined
 // https://docs.cosmos.network/master/core/events.html
 // Note one current issue https://github.com/cosmos/cosmos-sdk/issues/10448
-func (c *Client) TxsEvents(events []string) (*txtypes.GetTxsEventResponse, error) {
+func (c *Client) TxsEvents(events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error) {
 	e, err := c.cosmosServiceClient.GetTxsEvent(context.Background(), &txtypes.GetTxsEventRequest{
 		Events:     events,
-		Pagination: nil,
+		Pagination: paginationParams,
 		OrderBy:    txtypes.OrderBy_ORDER_BY_DESC,
 	})
 	return e, err

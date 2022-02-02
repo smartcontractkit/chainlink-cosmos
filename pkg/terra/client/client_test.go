@@ -163,7 +163,7 @@ func TestTerraClient(t *testing.T) {
 		require.Error(t, err)
 
 		// Ensure we can read back the tx with Query
-		tr, err := tc.TxsEvents([]string{fmt.Sprintf("tx.height=%v", resp.TxResponse.Height)})
+		tr, err := tc.TxsEvents([]string{fmt.Sprintf("tx.height=%v", resp.TxResponse.Height)}, nil)
 		require.NoError(t, err)
 		assert.Equal(t, 1, len(tr.TxResponses))
 		assert.Equal(t, resp.TxResponse.TxHash, tr.TxResponses[0].TxHash)
@@ -223,7 +223,7 @@ func TestTerraClient(t *testing.T) {
 
 		// Check events querying works
 		// TxEvents sorts in a descending manner, so latest txes are first
-		ev, err := tc.TxsEvents([]string{fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())})
+		ev, err := tc.TxsEvents([]string{fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 2, len(ev.TxResponses))
 		foundCount := false
@@ -247,10 +247,10 @@ func TestTerraClient(t *testing.T) {
 		assert.True(t, foundContract)
 
 		// Ensure the height filtering works
-		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", resp1.TxResponse.Height+1), fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())})
+		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", resp1.TxResponse.Height+1), fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(ev.TxResponses))
-		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height=%d", resp1.TxResponse.Height), fmt.Sprintf("wasm-reset.contract_address='%s'", contract)})
+		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height=%d", resp1.TxResponse.Height), fmt.Sprintf("wasm-reset.contract_address='%s'", contract)}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(ev.TxResponses))
 		for _, ev := range ev.TxResponses[0].Logs[0].Events {
