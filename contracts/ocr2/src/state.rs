@@ -43,7 +43,7 @@ pub struct Billing {
     pub recommended_gas_price_uluna: Decimal,
     pub observation_payment_gjuels: u64,
     pub transmission_payment_gjuels: u64,
-    pub base_gas: Option<u64>,
+    pub gas_base: Option<u64>,
     pub gas_per_signature: Option<u64>,
     /// In percent
     pub gas_adjustment: Option<u8>,
