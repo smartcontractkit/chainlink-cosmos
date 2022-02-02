@@ -933,7 +933,7 @@ pub fn execute_set_billing(
     Ok(Response::default().add_event(
         Event::new("set_billing")
             .add_attribute(
-                "recommended_gas_price",
+                "recommended_gas_price_uluna",
                 config.billing.recommended_gas_price_uluna.to_string(),
             )
             .add_attribute(
