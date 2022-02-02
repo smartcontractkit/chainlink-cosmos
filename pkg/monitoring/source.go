@@ -8,7 +8,8 @@ import (
 	"sync"
 	"time"
 
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+	cosmosQuery "github.com/cosmos/cosmos-sdk/types/query"
+	cosmosTx "github.com/cosmos/cosmos-sdk/types/tx"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 	pkgTerra "github.com/smartcontractkit/chainlink-terra/pkg/terra"
 	pkgClient "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
@@ -30,7 +31,7 @@ func NewTerraSourceFactory(terraConfig TerraConfig, log logger.Logger) (relayMon
 }
 
 type sourceFactory struct {
-	client *pkgClient.Client
+	client pkgClient.Reader
 	log    logger.Logger
 }
 
@@ -55,7 +56,7 @@ func (s *sourceFactory) NewSource(
 }
 
 type terraSource struct {
-	client          *pkgClient.Client
+	client          pkgClient.Reader
 	log             logger.Logger
 	terraConfig     TerraConfig
 	terraFeedConfig TerraFeedConfig
@@ -110,10 +111,9 @@ func (s *terraSource) fetchLatestTransmission() (
 	err error,
 ) {
 	query := []string{
-		"tm.event='wasm-new_transmission'",
-		fmt.Sprintf("message.sender='%s'", s.terraFeedConfig.ContractAddressBech32),
+		fmt.Sprintf("wasm-new_transmission.contract_address='%s'", s.terraFeedConfig.ContractAddressBech32),
 	}
-	res, err := s.client.TxsEvents(query)
+	res, err := s.client.TxsEvents(query, &cosmosQuery.PageRequest{Limit: 1})
 	if err != nil {
 		return types.ConfigDigest{}, 0, 0, nil, time.Time{}, 0, "",
 			fmt.Errorf("failed to fetch latest 'new_transmission' event: %w", err)
@@ -133,7 +133,9 @@ func (s *terraSource) fetchLatestTransmission() (
 			return parseErr
 		},
 		"answer": func(value string) error {
-			if _, success := latestAnswer.SetString(value, 10); !success {
+			var success bool
+			latestAnswer, success = new(big.Int).SetString(value, 10)
+			if !success {
 				return fmt.Errorf("failed to read latest answer from value '%s'", value)
 			}
 			return nil
@@ -150,17 +152,17 @@ func (s *terraSource) fetchLatestTransmission() (
 	})
 	if err != nil {
 		return types.ConfigDigest{}, 0, 0, nil, time.Time{}, 0, "",
-			fmt.Errorf("failed to extract config from logs: %w", err)
+			fmt.Errorf("failed to extract transmission from logs: %w", err)
 	}
+	blockNumber = uint64(res.TxResponses[0].Height)
 	return configDigest, epoch, round, latestAnswer, latestTimestamp, blockNumber, transmitter, nil
 }
 
 func (s *terraSource) fetchLatestConfig() (types.ContractConfig, error) {
 	query := []string{
-		"tm.event='wasm-set_config'",
-		fmt.Sprintf("message.sender='%s'", s.terraFeedConfig.ContractAddressBech32),
+		fmt.Sprintf("wasm-set_config.contract_address='%s'", s.terraFeedConfig.ContractAddressBech32),
 	}
-	res, err := s.client.TxsEvents(query)
+	res, err := s.client.TxsEvents(query, &cosmosQuery.PageRequest{Limit: 1})
 	if err != nil {
 		return types.ContractConfig{}, fmt.Errorf("failed to fetch latest 'set_config' event: %w", err)
 	}
@@ -222,7 +224,7 @@ func (s *terraSource) fetchLatestConfig() (types.ContractConfig, error) {
 
 // Helpers
 
-func extractDataFromTxResponse(eventType string, res *txtypes.GetTxsEventResponse, extractors map[string]func(string) error) error {
+func extractDataFromTxResponse(eventType string, res *cosmosTx.GetTxsEventResponse, extractors map[string]func(string) error) error {
 	if len(res.TxResponses) == 0 ||
 		len(res.TxResponses[0].Logs) == 0 ||
 		len(res.TxResponses[0].Logs[0].Events) == 0 {
