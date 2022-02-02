@@ -33,7 +33,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
     config: {
       observation_payment_gjuels: new BN(input.observationPaymentGjuels).toNumber(),
       transmission_payment_gjuels: new BN(input.transmissionPaymentGjuels).toNumber(),
-      recommended_gas_price_uluna: input.recommendedGasPriceUluna
+      recommended_gas_price_uluna: new BN(input.recommendedGasPriceUluna).toString(),
     },
   }
 }
