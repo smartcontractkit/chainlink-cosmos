@@ -79,6 +79,9 @@ issues:
       text: "^G404:"
       linters:
         - gosec
+    - path: tests
+      linters:
+        - revive
   include:
     # Enable GoDoc comment checks.
     - EXC0002

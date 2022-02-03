@@ -150,8 +150,8 @@ func (t *ContractDeployer) DeployOCRv2(paymentControllerAddr string, requesterCo
 		return nil, err
 	}
 	return &OCRv2{
-		client:  t.client,
-		address: addr,
+		Client: t.client,
+		Addr:   addr,
 	}, nil
 }
 

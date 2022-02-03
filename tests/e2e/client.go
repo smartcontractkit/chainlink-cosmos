@@ -33,7 +33,7 @@ const (
 )
 
 type NetworkConfig struct {
-	ContractDeployed bool          `mapstructure:"contracts_deployed" yaml:"contract_deployed"`
+	ContractDeployed bool          `mapstructure:"contracts_deployed" yaml:"contracts_deployed"`
 	External         bool          `mapstructure:"external" yaml:"external"`
 	Currency         string        `mapstructure:"currency" yaml:"currency"`
 	Name             string        `mapstructure:"name" yaml:"name"`
@@ -116,7 +116,7 @@ func ClientInitFunc() func(networkName string, networkConfig map[string]interfac
 			return nil, err
 		}
 		var cfg *NetworkConfig
-		if err := yaml.Unmarshal(d, &cfg); err != nil {
+		if err = yaml.Unmarshal(d, &cfg); err != nil {
 			return nil, err
 		}
 		cfg.ID = networkName
