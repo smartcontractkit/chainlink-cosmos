@@ -33,7 +33,7 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 	BeforeEach(func() {
 		By("Deploying the environment", func() {
 			e, err = environment.DeployOrLoadEnvironment(
-				e2e.NewChainlinkTerraEnv(1),
+				e2e.NewChainlinkTerraEnv(1, false),
 				tools.ChartsRoot,
 			)
 			Expect(err).ShouldNot(HaveOccurred())
