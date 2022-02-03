@@ -577,7 +577,7 @@ pub fn execute_transmit(
     let verified = deps.api.ed25519_batch_verify(&[&hash], &sigs, &pkeys)?;
     require!(verified, InvalidSignature);
 
-    let (juels_per_luna, response) = report(
+    let (reimbursement, response) = report(
         response,
         &mut deps,
         env,
@@ -587,11 +587,12 @@ pub fn execute_transmit(
         epoch,
         round,
         &raw_report,
+        raw_signatures.len(),
     )?;
 
     // pay transmitter and reimburse gas spent
     let amount = Uint128::new(u128::from(config.billing.transmission_payment_gjuels) * GIGA) // scale to juels
-            + calculate_reimbursement(&config.billing, juels_per_luna, raw_signatures.len());
+        + reimbursement;
     oracle.payment += amount;
     TRANSMITTERS.save(deps.storage, &info.sender, &oracle)?;
 
@@ -671,7 +672,8 @@ fn report(
     epoch: u32,
     round: u8,
     raw_report: &[u8],
-) -> Result<(u128, Response), ContractError> {
+    signature_count: usize,
+) -> Result<(Uint128, Response), ContractError> {
     let report = decode_report(raw_report)?;
 
     require!(report.observations.len() <= MAX_ORACLES, InvalidInput);
@@ -697,6 +699,9 @@ fn report(
         .iter()
         .map(|observation| attr("observations", observation.to_string()));
 
+    let reimbursement =
+        calculate_reimbursement(&config.billing, report.juels_per_luna, signature_count);
+
     // emit new transmission
     response = response.add_event(
         Event::new("new_transmission")
@@ -716,6 +721,7 @@ fn report(
                 attr("config_digest", hex::encode(config_digest)),
                 attr("epoch", config.epoch.to_string()),
                 attr("round", config.round.to_string()),
+                attr("reimbursement", reimbursement.to_string()),
             ])
             .add_attributes(observations),
     );
@@ -742,7 +748,7 @@ fn report(
         response = response.add_submessage(validate_msg);
     }
 
-    Ok((report.juels_per_luna, response))
+    Ok((reimbursement, response))
 }
 
 pub fn query_latest_transmission_details(
@@ -1213,18 +1219,19 @@ fn calculate_reimbursement(
     juels_per_luna: u128,
     signature_count: usize,
 ) -> Uint128 {
-    let signature_count = decimal(signature_count as u64);
-    let gas_per_signature = decimal(config.gas_per_signature.unwrap_or(17_000));
-    let gas_base = decimal(config.gas_base.unwrap_or(84_000));
+    let signature_count = signature_count as u64;
+    let gas_per_signature = config.gas_per_signature.unwrap_or(17_000);
+    let gas_base = config.gas_base.unwrap_or(84_000);
     let gas_adjustment = Decimal::percent(u64::from(config.gas_adjustment.unwrap_or(140)));
 
+    let micro = Decimal::from_ratio(1u128, 10u128.pow(6));
     // total gas spent
     let gas = gas_per_signature * signature_count + gas_base;
     // gas allocated seems to be about 1.4 of gas used
-    let gas = gas * gas_adjustment;
+    let gas = decimal(gas) * gas_adjustment;
+    // scale uLUNA to LUNA
+    let recommended_gas_price = config.recommended_gas_price_uluna * micro;
     // gas cost in LUNA
-    let recommended_gas_price =
-        config.recommended_gas_price_uluna * Decimal::from_ratio(1u128, 10u128.pow(6));
     let gas_cost = recommended_gas_price * gas;
     // total in juels
     let total = gas_cost * Decimal(Uint128::new(juels_per_luna));
