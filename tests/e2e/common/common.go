@@ -21,6 +21,8 @@ import (
 	"golang.org/x/crypto/curve25519"
 )
 
+// TODO: those should be moved as a common part of integrations-framework
+
 const (
 	ChainName = "terra"
 )

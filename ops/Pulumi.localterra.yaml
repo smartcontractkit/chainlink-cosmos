@@ -22,7 +22,13 @@ config:
     - FEATURE_OFFCHAIN_REPORTING2
     - P2P_NETWORKING_STACK
     - P2P_LISTEN_PORT
+    - EVM_ENABLED
+    - EVM_RPC_ENABLED
+    - TERRA_ENABLED
   terra-env:CL-CHAINLINK_DEV: true
+  terra-env:CL-EVM_ENABLED: false
+  terra-env:CL-EVM_RPC_ENABLED: false
+  terra-env:CL-TERRA_ENABLED: true
   terra-env:CL-LOG_LEVEL: "debug"
   terra-env:CL-ETH_DISABLED: true
   terra-env:CL-USE_LEGACY_ETH_ENV_VARS: false
