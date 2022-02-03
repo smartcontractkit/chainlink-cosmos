@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var _ = Describe("Terra OCRv2", func() {
+var _ = Describe("Terra OCRv2 @ocr", func() {
 	var state *tc.OCRv2State
 
 	BeforeEach(func() {

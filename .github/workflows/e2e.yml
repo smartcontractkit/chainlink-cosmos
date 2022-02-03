@@ -1,6 +1,8 @@
 name: e2e_tests
-on: [push]
-
+on:
+  push:
+  pull_request:
+    types: [opened, reopened]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -65,21 +67,24 @@ jobs:
         if: steps.cache-packages.outputs.cache-hit != 'true'
         run: go mod download
       - name: Install Ginkgo CLI
-        run: |
-          go get github.com/onsi/ginkgo/v2/ginkgo/generators@v2.0.0
-          go get github.com/onsi/ginkgo/v2/ginkgo/internal@v2.0.0
-          go get github.com/onsi/ginkgo/v2/ginkgo/labels@v2.0.0
-          go install github.com/onsi/ginkgo/v2/ginkgo
+        run: make install
       - uses: actions/download-artifact@master
         with:
           name: artifacts
           path: artifacts
+      - name: Generate gauntlet executable
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm config set -- '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
+          make build_js
       - name: Run Tests
         env:
           SELECTED_NETWORKS: localterra
           NETWORK_SETTINGS: /home/runner/work/chainlink-terra/chainlink-terra/tests/e2e/networks.yaml
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
+          cp -r artifacts packages-ts/gauntlet-terra-contracts/artifacts/bin
           ginkgo tests/e2e/smoke
       - name: Publish Test Results
         uses: mikepenz/action-junit-report@v2
