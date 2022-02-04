@@ -25,7 +25,7 @@ const (
 	// NewRoundCheckPollInterval new round check interval
 	NewRoundCheckPollInterval = 1 * time.Second
 	// SourceChangeInterval EA value change interval
-	SourceChangeInterval = 1250 * time.Millisecond
+	SourceChangeInterval = 5 * time.Second
 	// ChaosAwaitingApply time to wait for chaos experiment to apply
 	ChaosAwaitingApply = 60 * time.Second
 	// ChaosGroupFaulty Group of faulty nodes, even if they fail OCR must work
@@ -33,6 +33,12 @@ const (
 	// ChaosGroupYellow if nodes from that group fail we may not work while some experiments are going
 	// but after experiment it must recover
 	ChaosGroupYellow = "chaosGroupYellow"
+	// ChaosGroupBootstrap only bootstrap node
+	ChaosGroupBootstrap = "chaosGroupBootstrap"
+	// ChaosGroupOracles only oracles except bootstrap
+	ChaosGroupOracles = "chaosGroupOracles"
+	// ChaosGroupOraclesMinusOne all oracles except one
+	ChaosGroupOraclesMinusOne = "chaosGroupOraclesMinusOne"
 	// ChaosGroupLeftHalf an equal half of all nodes
 	ChaosGroupLeftHalf = "chaosGroupLeftHalf"
 	// ChaosGroupRightHalf an equal half of all nodes
