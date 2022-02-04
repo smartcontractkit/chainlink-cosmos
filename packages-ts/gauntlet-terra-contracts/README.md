@@ -5,6 +5,7 @@
 ## Getting started
 
 ```
+nvm use
 yarn
 yarn build
 yarn gauntlet <command> --<flags>=<x> <arguments>
