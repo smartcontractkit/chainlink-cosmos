@@ -3,7 +3,7 @@
 FROM ubuntu:20.04 AS build
 
 # OS dependencies
-RUN apt-get update && apt-get install -y wget gcc
+RUN apt-get update && apt-get install -y wget gcc build-essential git
 
 # Copy source
 
@@ -25,12 +25,18 @@ ENV PATH /usr/local/go/bin:$PATH
 WORKDIR /terra-monitoring
 RUN go build -o ./monitoring ./cmd/monitoring/*.go
 
+RUN go get github.com/CosmWasm/wasmvm
+
 # Production image
 
 FROM ubuntu:20.04
 
 RUN apt-get update && apt-get install -y ca-certificates
 COPY --from=build /terra-monitoring/monitoring /monitoring
+
+# dependency of terra-money/core
+COPY --from=build /root/go/pkg/mod/github.com/\!cosm\!wasm/wasmvm@v*/api/libwasmvm.so /usr/lib/libwasmvm.so
+RUN chmod 755 /usr/lib/libwasmvm.so
 
 # Expose prometheus default port
 EXPOSE 9090/tcp
