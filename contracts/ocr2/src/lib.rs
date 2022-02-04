@@ -6,14 +6,10 @@ pub mod msg;
 pub mod state;
 
 pub use crate::decimal::Decimal;
+// NOTE: if cosmwasm ever fixes https://github.com/CosmWasm/cosmwasm/issues/1156
+// switch back after upgrading to cosmwasm-std 1.0 which also supports (Decimal * Decimal)
+// pub use cosmwasm_std::Decimal;
 pub use crate::error::ContractError;
-
-pub const fn decimal(i: u64) -> Decimal {
-    use cosmwasm_std::Uint128;
-    let decimals = 10u128.pow(18);
-    let n = i as u128 * decimals;
-    Decimal(Uint128::new(n))
-}
 
 #[macro_export]
 macro_rules! require {
