@@ -26,9 +26,6 @@ var _ = Describe("Solana chaos suite", func() {
 		By("Can work with faulty nodes offline", func() {
 			state.CanWorkWithFaultyNodesOffline()
 		})
-		By("Can't work when more than faulty nodes are offline", func() {
-			state.CantWorkWithMoreThanFaultyNodesSplit()
-		})
 		By("Can't work with two parts network split, restored after", func() {
 			state.RestoredAfterNetworkSplit()
 		})
@@ -39,7 +36,10 @@ var _ = Describe("Solana chaos suite", func() {
 			state.CanRecoverAllNodesValidatorConnectionLoss()
 		})
 		By("Can work after all nodes restarted", func() {
-			state.CanWorkAfterAllNodesRestarted()
+			state.CanWorkAfterAllOraclesIPChange()
+		})
+		By("Can work when bootstrap migrated", func() {
+			state.CanMigrateBootstrap()
 		})
 	})
 	AfterEach(func() {

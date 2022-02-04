@@ -12,8 +12,8 @@ charts:
       replicas: 5
       chainlink:
         image:
-          image: "public.ecr.aws/z0b1w9r9/chainlink"
-          version: "candidate-develop-terr-qa-test-feb-02.ea461a08f1927b99f37fac4b078cd4b42a88995a"
+          image: "795953128386.dkr.ecr.us-west-2.amazonaws.com/chainlink"
+          version: "develop.latest"
       db:
         stateful: true
         capacity: 2Gi

@@ -10,8 +10,11 @@ import (
 
 // LabelChaosGroups sets labels for chaos groups
 func (m *OCRv2State) LabelChaosGroups() {
+	m.LabelChaosGroup(0, 0, ChaosGroupBootstrap)
+	m.LabelChaosGroup(1, 4, ChaosGroupOracles)
+	m.LabelChaosGroup(1, 3, ChaosGroupOraclesMinusOne)
 	m.LabelChaosGroup(0, 1, ChaosGroupFaulty)
-	m.LabelChaosGroup(2, 4, ChaosGroupOnline)
+	m.LabelChaosGroup(3, 4, ChaosGroupOnline)
 	m.LabelChaosGroup(0, 2, ChaosGroupYellow)
 	m.LabelChaosGroup(0, 2, ChaosGroupLeftHalf)
 	m.LabelChaosGroup(3, 4, ChaosGroupRightHalf)
@@ -115,24 +118,6 @@ func (m *OCRv2State) CantWorkWithMoreThanFaultyNodesOffline() {
 	m.ValidateRoundsAfter(time.Now(), 10)
 }
 
-func (m *OCRv2State) CantWorkWithMoreThanFaultyNodesSplit() {
-	// nolint
-	defer m.Env.ClearAllChaosExperiments()
-	_, err := m.Env.ApplyChaosExperiment(
-		&experiments.NetworkPartition{
-			FromMode:       "all",
-			FromLabelKey:   ChaosGroupYellow,
-			FromLabelValue: "1",
-			ToMode:         "all",
-			ToLabelKey:     ChaosGroupOnline,
-			ToLabelValue:   "1",
-		},
-	)
-	Expect(err).ShouldNot(HaveOccurred())
-	time.Sleep(ChaosAwaitingApply)
-	m.ValidateNoRoundsAfter(time.Now())
-}
-
 func (m *OCRv2State) NetworkCorrupt(group string, corrupt int, rounds int) {
 	// nolint
 	defer m.Env.ClearAllChaosExperiments()
@@ -151,15 +136,41 @@ func (m *OCRv2State) NetworkCorrupt(group string, corrupt int, rounds int) {
 	m.ValidateRoundsAfter(time.Now(), rounds)
 }
 
-func (m *OCRv2State) CanWorkAfterAllNodesRestarted() {
+func (m *OCRv2State) CanWorkAfterAllOraclesIPChange() {
 	// nolint
 	defer m.Env.ClearAllChaosExperiments()
 	_, err := m.Env.ApplyChaosExperiment(
-		&experiments.ContainerKill{
+		&experiments.PodKill{
 			Mode:       "all",
-			LabelKey:   "app",
-			LabelValue: "chainlink-node",
-			Container:  "node",
+			LabelKey:   ChaosGroupOracles,
+			LabelValue: "1",
+		},
+	)
+	Expect(err).ShouldNot(HaveOccurred())
+	time.Sleep(ChaosAwaitingApply)
+	m.ValidateRoundsAfter(time.Now(), 10)
+}
+
+func (m *OCRv2State) CanMigrateBootstrap() {
+	// nolint
+	defer m.Env.ClearAllChaosExperiments()
+	_, err := m.Env.ApplyChaosExperiment(
+		&experiments.PodFailure{
+			Mode:       "all",
+			LabelKey:   ChaosGroupBootstrap,
+			LabelValue: "1",
+			Duration:   UntilStop,
+		},
+	)
+	Expect(err).ShouldNot(HaveOccurred())
+	time.Sleep(ChaosAwaitingApply)
+	m.ValidateRoundsAfter(time.Now(), 10)
+	// now we working without bootstrap, killing all oracles except one, remaining one must bootstrap
+	_, err = m.Env.ApplyChaosExperiment(
+		&experiments.PodKill{
+			Mode:       "all",
+			LabelKey:   ChaosGroupOraclesMinusOne,
+			LabelValue: "1",
 		},
 	)
 	Expect(err).ShouldNot(HaveOccurred())
@@ -185,5 +196,23 @@ func (m *OCRv2State) RestoredAfterNetworkSplit() {
 	m.ValidateNoRoundsAfter(time.Now())
 	err = m.Env.ClearAllChaosExperiments()
 	Expect(err).ShouldNot(HaveOccurred())
+	m.ValidateRoundsAfter(time.Now(), 10)
+}
+
+func (m *OCRv2State) CanWorkWithTimeSkewYellowGroup() {
+	// target pod linux must have method https://man7.org/linux/man-pages/man2/clock_gettime.2.html in order to work
+	// nolint
+	defer m.Env.ClearAllChaosExperiments()
+	_, err := m.Env.ApplyChaosExperiment(
+		&experiments.TimeShift{
+			Mode:       "all",
+			LabelKey:   ChaosGroupYellow,
+			LabelValue: "1",
+			TimeOffset: -20 * time.Hour,
+			Duration:   UntilStop,
+		},
+	)
+	Expect(err).ShouldNot(HaveOccurred())
+	time.Sleep(ChaosAwaitingApply)
 	m.ValidateRoundsAfter(time.Now(), 10)
 }
