@@ -17,7 +17,7 @@ use crate::state::{
     config_digest_from_data, Billing, Config, Round, Transmission, Transmitter, Validator, CONFIG,
     MAX_ORACLES, OWNER, PAYEES, PROPOSED_PAYEES, SIGNERS, TRANSMISSIONS, TRANSMITTERS,
 };
-use crate::{decimal, require, Decimal};
+use crate::{require, Decimal};
 
 use access_controller::AccessControllerContract;
 use deviation_flagging_validator::msg::ExecuteMsg as ValidatorMsg;
@@ -1228,7 +1228,7 @@ fn calculate_reimbursement(
     // total gas spent
     let gas = gas_per_signature * signature_count + gas_base;
     // gas allocated seems to be about 1.4 of gas used
-    let gas = decimal(gas) * gas_adjustment;
+    let gas = Uint128::new(gas as u128) * gas_adjustment;
     // scale uLUNA to LUNA
     let recommended_gas_price = config.recommended_gas_price_uluna * micro;
     // gas cost in LUNA

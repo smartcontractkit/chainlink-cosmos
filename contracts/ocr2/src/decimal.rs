@@ -290,20 +290,16 @@ impl ops::Mul for Decimal {
 /// specific reason for this decision other than the initial use cases we have. If you
 /// need a Decimal result for the same calculation, use Decimal(d*u) or Decimal(u*d).
 impl ops::Mul<Decimal> for Uint128 {
-    type Output = Self;
+    type Output = Decimal;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn mul(self, rhs: Decimal) -> Self::Output {
-        // 0*a and b*0 is always 0
-        if self.is_zero() || rhs.is_zero() {
-            return Uint128::zero();
-        }
-        self.multiply_ratio(rhs.0, Decimal::DECIMAL_FRACTIONAL)
+        Decimal(self * rhs.0)
     }
 }
 
 impl ops::Mul<Uint128> for Decimal {
-    type Output = Uint128;
+    type Output = Decimal;
 
     fn mul(self, rhs: Uint128) -> Self::Output {
         rhs * self
@@ -914,17 +910,17 @@ mod tests {
         // a*b
         let left = Uint128::new(300);
         let right = Decimal::one() + Decimal::percent(50); // 1.5
-        assert_eq!(left * right, Uint128::new(450));
+        assert_eq!(left * right, Decimal::from_str("450").unwrap());
 
         // a*0
         let left = Uint128::new(300);
         let right = Decimal::zero();
-        assert_eq!(left * right, Uint128::new(0));
+        assert_eq!(left * right, Decimal::zero());
 
         // 0*a
         let left = Uint128::new(0);
         let right = Decimal::one() + Decimal::percent(50); // 1.5
-        assert_eq!(left * right, Uint128::new(0));
+        assert_eq!(left * right, Decimal::zero());
     }
 
     #[test]
@@ -933,17 +929,17 @@ mod tests {
         // a*b
         let left = Decimal::one() + Decimal::percent(50); // 1.5
         let right = Uint128::new(300);
-        assert_eq!(left * right, Uint128::new(450));
+        assert_eq!(left * right, Decimal::from_str("450").unwrap());
 
         // 0*a
         let left = Decimal::zero();
         let right = Uint128::new(300);
-        assert_eq!(left * right, Uint128::new(0));
+        assert_eq!(left * right, Decimal::zero());
 
         // a*0
         let left = Decimal::one() + Decimal::percent(50); // 1.5
         let right = Uint128::new(0);
-        assert_eq!(left * right, Uint128::new(0));
+        assert_eq!(left * right, Decimal::zero());
     }
 
     #[test]
