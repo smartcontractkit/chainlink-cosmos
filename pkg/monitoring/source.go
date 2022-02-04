@@ -231,7 +231,9 @@ func (s *terraSource) fetchLatestConfig() (types.ContractConfig, error) {
 		"onchain_config": func(value string) error {
 			// parse byte array encoded as hex string
 			var config33 []byte
-			if convertErr := pkgTerra.HexToByteArray(value, &config33); convertErr != nil {
+			convertErr := pkgTerra.HexToByteArray(value, &config33)
+			//config33, convertErr := base64.StdEncoding.DecodeString(value)
+			if convertErr != nil {
 				return convertErr
 			}
 			// convert byte array to encoding expected by lib OCR
@@ -247,6 +249,9 @@ func (s *terraSource) fetchLatestConfig() (types.ContractConfig, error) {
 		"offchain_config": func(value string) error {
 			// parse byte array encoded as hex string
 			return pkgTerra.HexToByteArray(value, &output.OffchainConfig)
+			//config, converErr := base64.StdEncoding.DecodeString(value)
+			//output.OffchainConfig = config
+			//return convertErr
 		},
 	})
 	if err != nil {
