@@ -22,7 +22,7 @@
     "lint:format": "yarn prettier --check .",
     "format": "yarn prettier --write .",
     "clean": "tsc -b --clean ./tsconfig.json",
-    "build": "nvm use && yarn clean && tsc -b ./tsconfig.json",
+    "build": "yarn clean && tsc -b ./tsconfig.json",
     "bundle": "yarn build && pkg .",
     "release": "yarn changeset publish"
   },

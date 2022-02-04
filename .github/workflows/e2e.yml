@@ -40,6 +40,10 @@ jobs:
         uses: actions/setup-go@v1
         with:
           go-version: 1.17
+      - name: Setup Node Version
+        uses: actions/setup-node@v2
+        with:
+          node-version-file: '.nvmrc'
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
