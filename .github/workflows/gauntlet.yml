@@ -58,10 +58,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Setup Node Version
-        uses: actions/setup-node@v2
-        with:
-          node-version-file: '.nvmrc'
       - name: Install Nix
         uses: cachix/install-nix-action@v14
         with:
@@ -72,7 +68,6 @@ jobs:
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - run: |
           npm config set -- '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-          nix develop -c node --version
           nix develop -c yarn install --frozen-lockfile
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

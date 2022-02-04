@@ -26,6 +26,7 @@ pkgs.mkShell {
 
     # NodeJS + TS
     nodePackages.typescript-language-server
+    # Keep this nodejs version in sync with the version in .npmrc please
     nodejs-14_x
     (yarn.override { nodejs = nodejs-14_x; })
   ];
