@@ -16,7 +16,7 @@ func (m *OCRv2State) LabelChaosGroups() {
 	m.LabelChaosGroup(0, 1, ChaosGroupFaulty)
 	m.LabelChaosGroup(3, 4, ChaosGroupOnline)
 	m.LabelChaosGroup(0, 2, ChaosGroupYellow)
-	m.LabelChaosGroup(0, 2, ChaosGroupLeftHalf)
+	m.LabelChaosGroup(1, 2, ChaosGroupLeftHalf)
 	m.LabelChaosGroup(3, 4, ChaosGroupRightHalf)
 }
 
@@ -182,6 +182,15 @@ func (m *OCRv2State) RestoredAfterNetworkSplit() {
 	// nolint
 	defer m.Env.ClearAllChaosExperiments()
 	_, err := m.Env.ApplyChaosExperiment(
+		&experiments.PodFailure{
+			Mode:       "all",
+			LabelKey:   ChaosGroupBootstrap,
+			LabelValue: "1",
+			Duration:   UntilStop,
+		},
+	)
+	Expect(err).ShouldNot(HaveOccurred())
+	_, err = m.Env.ApplyChaosExperiment(
 		&experiments.NetworkPartition{
 			FromMode:       "all",
 			FromLabelKey:   ChaosGroupLeftHalf,
