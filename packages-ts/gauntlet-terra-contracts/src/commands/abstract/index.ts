@@ -4,6 +4,9 @@ import { TransactionResponse, TerraCommand } from '@chainlink/gauntlet-terra'
 import { Contract, CONTRACT_LIST, getContract, TerraABI, TERRA_OPERATIONS } from '../../lib/contracts'
 import { DEFAULT_RELEASE_VERSION } from '../../lib/constants'
 import schema from '../../lib/schema'
+import findPolymorphic from './polymorphic'
+
+export { findPolymorphic }
 
 export interface AbstractOpts {
   contract: Contract

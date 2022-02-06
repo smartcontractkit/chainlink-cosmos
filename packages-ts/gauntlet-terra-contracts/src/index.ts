@@ -2,14 +2,14 @@ import { executeCLI } from '@chainlink/gauntlet-core'
 import { existsSync } from 'fs'
 import path from 'path'
 import Terra from './commands'
-import { makeAbstractCommand } from './commands/abstract'
+import { makeAbstractCommand, findPolymorphic } from './commands/abstract'
 import { defaultFlags } from './lib/args'
 
 const commands = {
   custom: [...Terra],
   loadDefaultFlags: () => defaultFlags,
   abstract: {
-    findPolymorphic: () => undefined,
+    findPolymorphic: () => findPolymorphic,
     makeCommand: makeAbstractCommand,
   },
 }
