@@ -5,6 +5,7 @@
 ## Getting started
 
 ```
+asdf install
 yarn
 yarn build
 yarn gauntlet <command> --<flags>=<x> <arguments>
