@@ -18,6 +18,7 @@ pkgs.mkShell {
     (pkgs.callPackage ./terrad.nix {})
 
     # Golang
+    # Keep this golang version in sync with the version in .tool-versions please
     go_1_17
     gopls
     delve
@@ -26,7 +27,7 @@ pkgs.mkShell {
 
     # NodeJS + TS
     nodePackages.typescript-language-server
-    # Keep this nodejs version in sync with the version in .npmrc please
+    # Keep this nodejs version in sync with the version in .tool-versions please
     nodejs-14_x
     (yarn.override { nodejs = nodejs-14_x; })
   ];

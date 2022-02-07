@@ -5,7 +5,7 @@
 ## Getting started
 
 ```
-nvm use
+asdf install
 yarn
 yarn build
 yarn gauntlet <command> --<flags>=<x> <arguments>

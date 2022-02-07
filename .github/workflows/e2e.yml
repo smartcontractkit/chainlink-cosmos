@@ -36,14 +36,14 @@ jobs:
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v2
-      - name: Setup go
-        uses: actions/setup-go@v1
+      - name: Install Nix
+        uses: cachix/install-nix-action@v14
         with:
-          go-version: 1.17
-      - name: Setup Node Version
-        uses: actions/setup-node@v2
-        with:
-          node-version-file: '.nvmrc'
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -71,7 +71,11 @@ jobs:
         if: steps.cache-packages.outputs.cache-hit != 'true'
         run: go mod download
       - name: Install Ginkgo CLI
-        run: make install
+        run: |
+          nix develop -c go get github.com/onsi/ginkgo/v2/ginkgo/generators@v2.0.0
+          nix develop -c go get github.com/onsi/ginkgo/v2/ginkgo/internal@v2.0.0
+          nix develop -c go get github.com/onsi/ginkgo/v2/ginkgo/labels@v2.0.0
+          nix develop -c go install github.com/onsi/ginkgo/v2/ginkgo
       - uses: actions/download-artifact@master
         with:
           name: artifacts
@@ -82,6 +86,8 @@ jobs:
         run: |
           npm config set -- '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
           make build_js
+          nix develop -c yarn install --frozen-lockfile
+          nix develop -c yarn bundle
       - name: Run Tests
         env:
           SELECTED_NETWORKS: localterra
@@ -89,7 +95,7 @@ jobs:
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           cp -r artifacts packages-ts/gauntlet-terra-contracts/artifacts/bin
-          ginkgo tests/e2e/smoke
+          nix develop -c ginkgo tests/e2e/smoke
       - name: Publish Test Results
         uses: mikepenz/action-junit-report@v2
         if: always()
