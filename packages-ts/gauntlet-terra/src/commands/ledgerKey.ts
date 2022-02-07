@@ -8,7 +8,7 @@ export class LedgerKey extends Key {
     private path: Array<number>
     private ledgerConnector: LedgerTerraConnector
 
-    constructor(path: Array<number>) {
+    private constructor(path: Array<number>) {
         super()
         this.path = path
     }
@@ -20,8 +20,8 @@ export class LedgerKey extends Key {
 
         const response = await ledgerConnector.getPublicKey(this.path)
         if (response.return_code !== ERROR_CODE.NoError) {
-          logger.error(`LedgerKey init failed: ${response.error_message}. Is Ledger unlocked and Terra app open?`)
-          throw new Error(response.error_message)
+            logger.error(`LedgerKey init failed: ${response.error_message}. Is Ledger unlocked and Terra app open?`)
+            throw new Error(response.error_message)
         }
 
         this.publicKey = new SimplePublicKey(Buffer.from(response.compressed_pk.data).toString('base64'))
