@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use access_controller::AccessControllerContract;
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Binary, Uint128};
 use cw20::Cw20Contract;
 use cw_storage_plus::{Item, Map, U32Key};
 use owned::Auth;
@@ -87,13 +87,20 @@ pub struct Config {
     pub validator: Option<Validator>,
 } // TODO: group some of these into sub-structs
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ProposedConfig {
+    pub oracles: Vec<(Binary, Addr)>,
+    pub f: u8,
+    pub offchain_config_version: u64,
+    pub offchain_config: Binary,
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn config_digest_from_data(
     chain_id: &str,
     contract_address: &Addr,
     config_count: u32,
-    signers: &[Vec<u8>],
-    transmitters: &[Addr],
+    oracles: &[(Binary, Addr)],
     f: u8,
     onchain_config: &[u8],
     offchain_config_version: u64,
@@ -104,11 +111,11 @@ pub fn config_digest_from_data(
     hasher.update(chain_id.as_bytes());
     hasher.update(contract_address.as_bytes());
     hasher.update(&config_count.to_be_bytes());
-    hasher.update([(signers.len() as u8)]);
-    for signer in signers {
-        hasher.update(signer);
+    hasher.update([(oracles.len() as u8)]);
+    for (signer, _) in oracles {
+        hasher.update(&signer.0);
     }
-    for transmitter in transmitters {
+    for (_, transmitter) in oracles {
         hasher.update(transmitter.as_bytes());
     }
     hasher.update(&[f]);
@@ -155,6 +162,7 @@ pub struct Round {
 pub const OWNER: Auth = Auth::new("owner");
 
 pub const CONFIG: Item<Config> = Item::new("config");
+pub const PROPOSED_CONFIG: Item<ProposedConfig> = Item::new("proposed_config");
 
 // An addr currently can't be converted to pubkey: https://docs.cosmos.network/master/architecture/adr-028-public-key-addresses.html
 

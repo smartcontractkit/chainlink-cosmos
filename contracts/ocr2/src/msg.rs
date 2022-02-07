@@ -28,11 +28,19 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    BeginConfigProposal,
+    ClearConfigProposal,
+    CommitConfigProposal,
+    ApproveConfigProposal {
+        digest: [u8; 32],
+    },
     SetConfig {
         signers: Vec<Binary>,
         transmitters: Vec<String>,
         f: u8,
         onchain_config: Binary,
+    },
+    SetOffchainConfig {
         offchain_config_version: u64,
         offchain_config: Binary,
     },

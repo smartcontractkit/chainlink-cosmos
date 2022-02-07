@@ -213,17 +213,42 @@ fn setup() -> Env {
         .map(|(i, _)| format!("transmitter{}", i))
         .collect::<Vec<_>>();
 
+    let msg = ExecuteMsg::BeginConfigProposal;
+    router
+        .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
     let msg = ExecuteMsg::SetConfig {
         signers,
         transmitters: transmitters.clone(),
         f: 1,
         onchain_config: Binary(vec![]),
+    };
+
+    router
+        .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    let msg = ExecuteMsg::SetOffchainConfig {
         offchain_config_version: 1,
         offchain_config: Binary(vec![4, 5, 6]),
     };
+    router
+        .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    let msg = ExecuteMsg::CommitConfigProposal;
+    router
+        .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    let digest = [0u8; 32]; // TODO
+    let msg = ExecuteMsg::ApproveConfigProposal { digest };
+
     let response = router
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
         .unwrap();
+
     let set_config = response
         .events
         .iter()
@@ -451,18 +476,40 @@ fn transmit_happy_path() {
         .map(|sk| Binary(VerificationKeyBytes::from(sk).as_ref().to_vec()))
         .collect();
 
+    const MAX_MSG_SIZE: usize = 4 * 1024; // 4kb
+
+    let msg = ExecuteMsg::BeginConfigProposal;
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
     let msg = ExecuteMsg::SetConfig {
         signers,
         transmitters: env.transmitters.clone(),
         f: 5,
         onchain_config: Binary(vec![]),
+    };
+    assert!(to_binary(&msg).unwrap().len() <= MAX_MSG_SIZE);
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    let msg = ExecuteMsg::SetOffchainConfig {
         offchain_config_version: 2,
         offchain_config: Binary(vec![1; 2165]),
     };
-
-    const MAX_MSG_SIZE: usize = 4 * 1024; // 4kb
     assert!(to_binary(&msg).unwrap().len() <= MAX_MSG_SIZE);
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
 
+    let msg = ExecuteMsg::CommitConfigProposal;
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    let digest = [0u8; 32]; // TODO
+    let msg = ExecuteMsg::ApproveConfigProposal { digest };
     env.router
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();

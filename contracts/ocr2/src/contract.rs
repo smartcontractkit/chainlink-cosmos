@@ -14,8 +14,9 @@ use crate::msg::{
     TransmittersResponse,
 };
 use crate::state::{
-    config_digest_from_data, Billing, Config, Round, Transmission, Transmitter, Validator, CONFIG,
-    MAX_ORACLES, OWNER, PAYEES, PROPOSED_PAYEES, SIGNERS, TRANSMISSIONS, TRANSMITTERS,
+    config_digest_from_data, Billing, Config, ProposedConfig, Round, Transmission, Transmitter,
+    Validator, CONFIG, MAX_ORACLES, OWNER, PAYEES, PROPOSED_CONFIG, PROPOSED_PAYEES, SIGNERS,
+    TRANSMISSIONS, TRANSMITTERS,
 };
 use crate::{require, Decimal};
 
@@ -99,32 +100,29 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     let api = deps.api;
     match msg {
+        ExecuteMsg::BeginConfigProposal => execute_begin_config_proposal(deps, env, info),
+        ExecuteMsg::ClearConfigProposal => execute_clear_config_proposal(deps, env, info),
+        ExecuteMsg::CommitConfigProposal => execute_commit_config_proposal(deps, env, info),
+        ExecuteMsg::ApproveConfigProposal { digest } => {
+            execute_approve_config_proposal(deps, env, info, digest)
+        }
         ExecuteMsg::SetConfig {
             signers,
             transmitters,
             f,
             onchain_config,
-            offchain_config_version,
-            offchain_config,
         } => {
             let api = &deps.api;
-            let signers = signers.into_iter().map(|s| s.0).collect::<Vec<Vec<u8>>>();
             let transmitters = transmitters
                 .iter()
                 .map(|t| api.addr_validate(t))
                 .collect::<StdResult<Vec<Addr>>>()?;
-            execute_set_config(
-                deps,
-                env,
-                info,
-                signers,
-                transmitters,
-                f,
-                onchain_config.0,
-                offchain_config_version,
-                offchain_config.0,
-            )
+            execute_set_config(deps, env, info, signers, transmitters, f, onchain_config.0)
         }
+        ExecuteMsg::SetOffchainConfig {
+            offchain_config_version,
+            offchain_config,
+        } => execute_set_offchain_config(deps, env, info, offchain_config_version, offchain_config),
         ExecuteMsg::TransferOwnership { to } => {
             Ok(OWNER.execute_transfer_ownership(deps, info, api.addr_validate(&to)?)?)
         }
@@ -229,33 +227,70 @@ pub fn execute_receive(
 // --- OCR2Abstract Configuration
 // ---
 
-#[allow(clippy::too_many_arguments)]
-pub fn execute_set_config(
+// TODO: add config_access_controller
+// TODO: use for setPayees too?
+
+pub fn execute_begin_config_proposal(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
+
+    // Add an empty proposal
+    PROPOSED_CONFIG.save(
+        deps.storage,
+        &ProposedConfig {
+            oracles: Vec::new(),
+            f: 0,
+            offchain_config_version: 0,
+            offchain_config: Binary(Vec::new()),
+        },
+    )?;
+
+    Ok(Response::default())
+}
+
+pub fn execute_clear_config_proposal(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
+
+    // Clear out proposal
+    PROPOSED_CONFIG.remove(deps.storage);
+
+    Ok(Response::default())
+}
+
+pub fn execute_commit_config_proposal(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
+
+    Ok(Response::default())
+}
+
+// TODO: add commit that also generates a digest
+
+pub fn execute_approve_config_proposal(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    signers: Vec<Vec<u8>>,
-    transmitters: Vec<Addr>,
-    f: u8,
-    onchain_config: Vec<u8>,
-    offchain_config_version: u64,
-    offchain_config: Vec<u8>,
+    digest: [u8; 32],
 ) -> Result<Response, ContractError> {
     require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
 
     let mut config = CONFIG.load(deps.storage)?;
 
+    let proposal = PROPOSED_CONFIG.load(deps.storage)?;
+
     let response = Response::new().add_attribute("method", "set_config");
 
-    let signers_len = signers.len();
-
-    // validate new config
-    require!(f != 0, InvalidInput);
-    require!(signers_len <= MAX_ORACLES, TooManySigners);
-    require!(transmitters.len() == signers.len(), InvalidInput);
-    require!(3 * (usize::from(f)) < signers_len, InvalidInput);
-    require!(onchain_config.is_empty(), InvalidInput);
-    require!(!offchain_config.is_empty(), InvalidInput);
+    // TODO: validate proposal again, only one of the two methods might have been called!!
 
     let (_total, mut response) = pay_oracles(&mut deps, &config, response)?;
 
@@ -276,7 +311,12 @@ pub fn execute_set_config(
     }
 
     // Update oracle set
-    for transmitter in &transmitters {
+    for (signer, transmitter) in &proposal.oracles {
+        SIGNERS.update(deps.storage, signer, |value| {
+            require!(value.is_none(), RepeatedAddress);
+            Ok(())
+        })?;
+
         TRANSMITTERS.update(deps.storage, transmitter, |value| {
             require!(value.is_none(), RepeatedAddress);
             Ok(Transmitter {
@@ -285,16 +325,12 @@ pub fn execute_set_config(
             })
         })?;
     }
-    for signer in &signers {
-        SIGNERS.update(deps.storage, signer, |value| {
-            require!(value.is_none(), RepeatedAddress);
-            Ok(())
-        })?;
-    }
+
+    let onchain_config = Vec::new(); // TODO move onchain_calc higher
 
     // Update config
     let (previous_config_block_number, config) = {
-        config.f = f;
+        config.f = proposal.f;
         let previous_config_block_number = config.latest_config_block_number;
         config.latest_config_block_number = env.block.height;
         config.config_count += 1;
@@ -302,14 +338,13 @@ pub fn execute_set_config(
             &env.block.chain_id,
             &env.contract.address,
             config.config_count,
-            &signers,
-            &transmitters,
-            f,
+            &proposal.oracles,
+            proposal.f,
             &onchain_config,
-            offchain_config_version,
-            &offchain_config,
+            proposal.offchain_config_version,
+            &proposal.offchain_config,
         );
-        config.n = signers_len as u8;
+        config.n = proposal.oracles.len() as u8;
 
         config.epoch = 0;
         config.round = 0;
@@ -317,13 +352,15 @@ pub fn execute_set_config(
         (previous_config_block_number, config)
     };
 
-    let signers = signers
+    let signers = proposal
+        .oracles
         .iter()
-        .map(|signer| attr("signers", hex::encode(signer)));
+        .map(|(signer, _)| attr("signers", hex::encode(&signer.0)));
 
-    let transmitters = transmitters
+    let transmitters = proposal
+        .oracles
         .iter()
-        .map(|transmitter| attr("transmitters", transmitter));
+        .map(|(_, transmitter)| attr("transmitters", transmitter));
 
     // calculate onchain_config from stored config
     let mut onchain_calc: Vec<u8> = Vec::new();
@@ -344,16 +381,76 @@ pub fn execute_set_config(
             .add_attribute("config_count", config.config_count.to_string())
             .add_attributes(signers)
             .add_attributes(transmitters)
-            .add_attribute("f", f.to_string())
+            .add_attribute("f", proposal.f.to_string())
             .add_attribute("onchain_config", Binary(onchain_calc).to_base64())
             .add_attribute(
                 "offchain_config_version",
-                offchain_config_version.to_string(),
+                proposal.offchain_config_version.to_string(),
             )
-            .add_attribute("offchain_config", Binary(offchain_config).to_base64()),
+            .add_attribute("offchain_config", proposal.offchain_config.to_base64()),
     );
 
+    // Persist updated config
+    CONFIG.save(deps.storage, &config)?;
+
+    // Clear out proposal
+    PROPOSED_CONFIG.remove(deps.storage);
+
     Ok(response)
+}
+
+pub fn execute_set_config(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    signers: Vec<Binary>,
+    transmitters: Vec<Addr>,
+    f: u8,
+    onchain_config: Vec<u8>,
+) -> Result<Response, ContractError> {
+    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
+
+    let signers_len = signers.len();
+
+    // validate new config
+    require!(f != 0, InvalidInput);
+    require!(signers_len <= MAX_ORACLES, TooManySigners);
+    require!(transmitters.len() == signers.len(), InvalidInput);
+    require!(3 * (usize::from(f)) < signers_len, InvalidInput);
+    require!(onchain_config.is_empty(), InvalidInput);
+
+    // store on proposal
+    PROPOSED_CONFIG.update(deps.storage, |mut config| {
+        config.f = f;
+        config.oracles = signers.into_iter().zip(transmitters.into_iter()).collect();
+
+        Ok::<_, ContractError>(config)
+    })?;
+
+    Ok(Response::default())
+}
+
+pub fn execute_set_offchain_config(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    offchain_config_version: u64,
+    offchain_config: Binary,
+) -> Result<Response, ContractError> {
+    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
+
+    // validate new config
+    require!(!offchain_config.is_empty(), InvalidInput);
+
+    // store on proposal
+    PROPOSED_CONFIG.update(deps.storage, |mut config| {
+        config.offchain_config_version = offchain_config_version;
+        config.offchain_config = offchain_config;
+
+        Ok::<_, ContractError>(config)
+    })?;
+
+    Ok(Response::default())
 }
 
 pub fn query_latest_config_details(deps: Deps) -> StdResult<LatestConfigDetailsResponse> {
@@ -1385,6 +1482,10 @@ pub(crate) mod tests {
         let mut deps = setup();
         let owner = "owner".to_string();
 
+        let msg = ExecuteMsg::BeginConfigProposal;
+        let execute_info = mock_info(owner.as_str(), &[]);
+        execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+
         let msg = ExecuteMsg::SetConfig {
             signers: vec![
                 Binary(vec![1; 64]),
@@ -1400,10 +1501,25 @@ pub(crate) mod tests {
             ],
             f: 1,
             onchain_config: Binary(vec![]),
+        };
+        let execute_info = mock_info(owner.as_str(), &[]);
+        execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+
+        let msg = ExecuteMsg::SetOffchainConfig {
             offchain_config_version: 1,
             offchain_config: Binary(vec![4, 5, 6]),
         };
 
+        let execute_info = mock_info(owner.as_str(), &[]);
+        execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+
+        let msg = ExecuteMsg::CommitConfigProposal;
+        let execute_info = mock_info(owner.as_str(), &[]);
+        execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+
+        let digest = [0u8; 32]; // TODO
+
+        let msg = ExecuteMsg::ApproveConfigProposal { digest };
         let execute_info = mock_info(owner.as_str(), &[]);
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
     }
