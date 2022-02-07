@@ -1,9 +1,11 @@
-import { LCDClient, MnemonicKey } from '@terra-money/terra.js'
+import { LCDClient, Key, MnemonicKey } from '@terra-money/terra.js'
+import { LedgerKey } from './ledgerKey'
 import { Middleware, Next } from '@chainlink/gauntlet-core'
 import { assertions, io, logger } from '@chainlink/gauntlet-core/dist/utils'
 import TerraCommand from './internal/terra'
 import path from 'path'
 import { existsSync } from 'fs'
+import { LEDGER_ULUNA_PATH } from '../lib/constants'
 
 const isValidURL = (a) => true
 export const withProvider: Middleware = (c: TerraCommand, next: Next) => {
@@ -20,15 +22,21 @@ export const withProvider: Middleware = (c: TerraCommand, next: Next) => {
   return next()
 }
 
-export const withWallet: Middleware = (c: TerraCommand, next: Next) => {
-  const mnemonic = process.env.MNEMONIC
-  assertions.assert(!!mnemonic, `Missing MNEMONIC, please add one`)
+export const withWallet: Middleware = async (c: TerraCommand, next: Next) => {
+  let key: Key
+  if (c.flags.withLedger || !!process.env.WITH_LEDGER) {
+    const path = c.flags.ledgerPath || LEDGER_ULUNA_PATH
+    key = await LedgerKey.create(path)
+  } else {
+    const mnemonic = process.env.MNEMONIC
+    assertions.assert(!!mnemonic, `Missing MNEMONIC, please add one`)
 
-  const mk = new MnemonicKey({
-    mnemonic: mnemonic,
-  })
+    key = new MnemonicKey({
+      mnemonic: mnemonic,
+    })
+  }
 
-  const wallet = c.provider.wallet(mk)
+  const wallet = c.provider.wallet(key)
   c.wallet = wallet
   console.info(`Operator address is ${wallet.key.accAddress}`)
   return next()
