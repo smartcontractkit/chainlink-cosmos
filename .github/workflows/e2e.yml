@@ -72,10 +72,7 @@ jobs:
         run: go mod download
       - name: Install Ginkgo CLI
         run: |
-          nix develop -c go get github.com/onsi/ginkgo/v2/ginkgo/generators@v2.0.0
-          nix develop -c go get github.com/onsi/ginkgo/v2/ginkgo/internal@v2.0.0
-          nix develop -c go get github.com/onsi/ginkgo/v2/ginkgo/labels@v2.0.0
-          nix develop -c go install github.com/onsi/ginkgo/v2/ginkgo
+          nix develop -c make install
       - uses: actions/download-artifact@master
         with:
           name: artifacts
@@ -85,9 +82,9 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm config set -- '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-          nix develop -c yarn install --frozen-lockfile
-          nix develop -c yarn bundle
+          nix develop -c make build_js
           ls ./bin
+          nix develop -c ./bin/gauntlet-terra-linux && echo "DID WE REACH THIS"
       - name: Run Tests
         env:
           SELECTED_NETWORKS: localterra
