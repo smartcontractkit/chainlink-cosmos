@@ -83,17 +83,11 @@ jobs:
         run: |
           npm config set -- '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
           nix develop -c make build_js
-          ls ./bin
-          nix develop -c ./bin/gauntlet-terra-linux && echo "DID WE REACH THIS"
       - name: Run Tests
-        env:
-          SELECTED_NETWORKS: localterra
-          NETWORK_SETTINGS: /home/runner/work/chainlink-terra/chainlink-terra/tests/e2e/networks.yaml
         run: |
-          ls ./bin
           export PATH=$PATH:$(go env GOPATH)/bin
           cp -r artifacts packages-ts/gauntlet-terra-contracts/artifacts/bin
-          nix develop -c ginkgo tests/e2e/smoke
+          nix develop -c make test_smoke
       - name: Publish Test Results
         uses: mikepenz/action-junit-report@v2
         if: always()

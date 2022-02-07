@@ -12,7 +12,6 @@ pkgs.mkShell {
     cargo-generate
     cargo-tarpaulin
     gcc
-    glibc
     # pkg-config
     # openssl
 
@@ -33,7 +32,6 @@ pkgs.mkShell {
     (yarn.override { nodejs = nodejs-14_x; })
   ];
   RUST_BACKTRACE = "1";
-  #LD_LIBRARY_PATH="${stdenv.cc.cc.lib}/lib64:$LD_LIBRARY_PATH";
   GOROOT="${pkgs.go_1_17}/share/go";
   
   # Avoids issues with delve
