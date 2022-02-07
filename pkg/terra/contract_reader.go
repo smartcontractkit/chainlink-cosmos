@@ -146,18 +146,23 @@ func (r *OCR2Reader) LatestTransmissionDetails(ctx context.Context) (
 ) {
 	resp, err := r.chainReader.ContractStore(r.address, []byte(`"latest_transmission_details"`))
 	if err != nil {
-		// TODO: Verify if this is still necessary
-		// https://github.com/smartcontractkit/chainlink-terra/issues/23
 		// Handle the 500 error that occurs when there has not been a submission
-		// "rpc error: code = Unknown desc = ocr2::state::Transmission not found: address query failed"
+		// "rpc error: code = Unknown desc = ocr2::state::Transmission not found: contract query failed: unknown request"
+		// which is thrown if this map lookup fails https://github.com/smartcontractkit/chainlink-terra/blob/main/contracts/ocr2/src/contract.rs#L759
 		if strings.Contains(fmt.Sprint(err), "ocr2::state::Transmission not found") {
 			r.lggr.Infof("No transmissions found when fetching `latest_transmission_details` attempting with `latest_config_digest_and_epoch`")
 			digest, epoch, err2 := r.LatestConfigDigestAndEpoch(ctx)
 
-			// return different data if no error, else continue and return previous error
-			// return config digest and epoch from query, set everything else to 0
+			// In the case that there have been no transmissions, we expect the epoch to be zero.
+			// We return just the contract digest here and set the rest of the
+			// transmission details to their zero value.
 			if err2 == nil {
+				if epoch != 0 {
+					r.lggr.Errorf("unexpected non-zero epoch and no transmissions found", "epoch", epoch, "contract", r.address)
+				}
 				return digest, epoch, 0, big.NewInt(0), time.Unix(0, 0), nil
+			} else {
+				r.lggr.Errorf("error reading latest config digest and epoch", "err", err2, "contract", r.address)
 			}
 		}
 
