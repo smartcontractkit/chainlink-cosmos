@@ -85,7 +85,6 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm config set -- '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-          make build_js
           nix develop -c yarn install --frozen-lockfile
           nix develop -c yarn bundle
       - name: Run Tests
