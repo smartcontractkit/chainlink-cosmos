@@ -3,6 +3,8 @@ import { getRDD } from '../../../../lib/rdd'
 import { InspectInstruction, InspectionInput, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
 import { getOffchainConfigInput, OffchainConfig } from '../setConfig'
 
+const MIN_LINK_AVAILABLE = '100'
+
 type Expected = {
   description: string
   decimals: string | number
@@ -12,9 +14,10 @@ type Expected = {
   billingAccessController: string
   requesterAccessController: string
   link: string
+  linkAvailable: string
   billing: {
     observationPaymentGjuels: string
-    recommendedGasPrice: string
+    recommendedGasPriceUluna: string
     transmissionPaymentGjuels: string
   }
   offchainConfig: OffchainConfig
@@ -41,10 +44,11 @@ const makeInput = async (flags: any, args: string[]): Promise<InspectionInput<an
       billingAccessController,
       requesterAccessController,
       link,
+      linkAvailable: MIN_LINK_AVAILABLE,
       offchainConfig,
       billing: {
         observationPaymentGjuels: info.billing.observationPaymentGjuels,
-        recommendedGasPrice: info.billing.recommendedGasPrice,
+        recommendedGasPriceUluna: info.billing.recommendedGasPriceUluna,
         transmissionPaymentGjuels: info.billing.transmissionPaymentGjuels,
       },
     },
@@ -62,6 +66,7 @@ const makeOnchainData = (instructionsData: any[]): Expected => {
   const billingAC = instructionsData[5]
   const requesterAC = instructionsData[6]
   const link = instructionsData[7]
+  const linkAvailable = instructionsData[8]
 
   return {
     description,
@@ -72,11 +77,12 @@ const makeOnchainData = (instructionsData: any[]): Expected => {
     billingAccessController: billingAC,
     requesterAccessController: requesterAC,
     link,
+    linkAvailable: linkAvailable.amount,
     offchainConfig: {} as OffchainConfig,
     billing: {
-      observationPaymentGjuels: billing.observation_payment,
-      transmissionPaymentGjuels: 'INFO NOT AVAILABLE IN CONTRACT',
-      recommendedGasPrice: billing.recommended_gas_price,
+      observationPaymentGjuels: billing.observation_payment_gjuels,
+      transmissionPaymentGjuels: billing.transmission_payment_gjuels,
+      recommendedGasPriceUluna: billing.recommended_gas_price_uluna,
     },
   }
 }
@@ -97,6 +103,7 @@ const inspect = (expected: Expected, onchainData: Expected): boolean => {
       'Requester Access Controller',
     ),
     inspection.makeInspection(onchainData.link, expected.link, 'LINK'),
+    inspection.makeInspection(onchainData.linkAvailable, expected.linkAvailable, 'LINK Available'),
     inspection.makeInspection(onchainData.minAnswer, expected.minAnswer, 'Min Answer'),
     inspection.makeInspection(onchainData.maxAnswer, expected.maxAnswer, 'Max Answer'),
     inspection.makeInspection(
@@ -105,8 +112,8 @@ const inspect = (expected: Expected, onchainData: Expected): boolean => {
       'Observation Payment',
     ),
     inspection.makeInspection(
-      onchainData.billing.recommendedGasPrice,
-      expected.billing.recommendedGasPrice,
+      onchainData.billing.recommendedGasPriceUluna,
+      expected.billing.recommendedGasPriceUluna,
       'Recommended Gas Price',
     ),
     inspection.makeInspection(
@@ -155,6 +162,10 @@ const instruction: InspectInstruction<any, Expected> = {
     {
       contract: 'ocr2',
       function: 'link_token',
+    },
+    {
+      contract: 'ocr2',
+      function: 'link_available_for_payment',
     },
   ],
   makeInput,

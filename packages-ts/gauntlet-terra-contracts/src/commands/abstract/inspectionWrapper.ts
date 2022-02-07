@@ -1,6 +1,7 @@
 import AbstractCommand, { makeAbstractCommand } from '.'
 import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
+import { logger } from '@chainlink/gauntlet-core/dist/utils'
 
 export type InspectionInput<CommandInput, Expected> = {
   commandInput?: CommandInput
@@ -38,7 +39,6 @@ export const instructionToInspectCommand = <CommandInput, Expected>(
   const id = `${inspectInstruction.command.contract}:${inspectInstruction.command.id}`
   return class Command extends TerraCommand {
     static id = id
-    command: AbstractCommand
 
     constructor(flags, args) {
       super(flags, args)
@@ -57,9 +57,10 @@ export const instructionToInspectCommand = <CommandInput, Expected>(
         ),
       )
 
+      logger.loading('Fetching contract information...')
       const data = await Promise.all(
         commands.map(async (command) => {
-          command.invokeMiddlewares(command, command.middlewares)
+          await command.invokeMiddlewares(command, command.middlewares)
           const { data } = await command.execute()
           return data
         }),
