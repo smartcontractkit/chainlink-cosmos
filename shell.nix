@@ -12,6 +12,7 @@ pkgs.mkShell {
     cargo-generate
     cargo-tarpaulin
     gcc
+    glibc
     # pkg-config
     # openssl
 
