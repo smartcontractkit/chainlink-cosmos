@@ -47,6 +47,7 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     let link_token = deps.api.addr_validate(&msg.link_token)?;
+    let config_access_controller = deps.api.addr_validate(&msg.config_access_controller)?;
     let requester_access_controller = deps.api.addr_validate(&msg.requester_access_controller)?;
     let billing_access_controller = deps.api.addr_validate(&msg.billing_access_controller)?;
 
@@ -54,6 +55,7 @@ pub fn instantiate(
 
     let config = Config {
         link_token: Cw20Contract(link_token),
+        config_access_controller: AccessControllerContract(config_access_controller),
         requester_access_controller: AccessControllerContract(requester_access_controller),
         billing_access_controller: AccessControllerContract(billing_access_controller),
         min_answer: msg.min_answer,
@@ -151,6 +153,9 @@ pub fn execute(
         ExecuteMsg::SetValidatorConfig { config } => {
             execute_set_validator_config(deps, env, info, config)
         }
+        ExecuteMsg::SetConfigAccessController { access_controller } => {
+            execute_set_config_access_controller(deps, env, info, access_controller)
+        }
         ExecuteMsg::SetBillingAccessController { access_controller } => {
             execute_set_billing_access_controller(deps, env, info, access_controller)
         }
@@ -191,6 +196,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
         QueryMsg::LinkToken => to_binary(&query_link_token(deps)?),
         QueryMsg::Billing => to_binary(&query_billing(deps)?),
+        QueryMsg::ConfigAccessController => to_binary(&query_config_access_controller(deps)?),
         QueryMsg::BillingAccessController => to_binary(&query_billing_access_controller(deps)?),
         QueryMsg::RequesterAccessController => to_binary(&query_requester_access_controller(deps)?),
         QueryMsg::OwedPayment { transmitter } => to_binary(&query_owed_payment(deps, transmitter)?),
@@ -227,7 +233,6 @@ pub fn execute_receive(
 // --- OCR2Abstract Configuration
 // ---
 
-// TODO: add config_access_controller
 // TODO: use for setPayees too?
 
 pub fn execute_begin_config_proposal(
@@ -235,7 +240,16 @@ pub fn execute_begin_config_proposal(
     _env: Env,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
+    let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
+
+    require!(
+        is_owner
+            || CONFIG
+                .load(deps.storage)?
+                .config_access_controller
+                .has_access(&deps.querier, &info.sender)?,
+        Unauthorized
+    );
 
     // Add an empty proposal
     PROPOSED_CONFIG.save(
@@ -256,7 +270,16 @@ pub fn execute_clear_config_proposal(
     _env: Env,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
+    let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
+
+    require!(
+        is_owner
+            || CONFIG
+                .load(deps.storage)?
+                .config_access_controller
+                .has_access(&deps.querier, &info.sender)?,
+        Unauthorized
+    );
 
     // Clear out proposal
     PROPOSED_CONFIG.remove(deps.storage);
@@ -269,7 +292,18 @@ pub fn execute_commit_config_proposal(
     _env: Env,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
+    let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
+
+    require!(
+        is_owner
+            || CONFIG
+                .load(deps.storage)?
+                .config_access_controller
+                .has_access(&deps.querier, &info.sender)?,
+        Unauthorized
+    );
+
+    // TODO: validate proposal again, only one of the two methods might have been called!!
 
     Ok(Response::default())
 }
@@ -290,7 +324,7 @@ pub fn execute_approve_config_proposal(
 
     let response = Response::new().add_attribute("method", "set_config");
 
-    // TODO: validate proposal again, only one of the two methods might have been called!!
+    // TODO: only approve proposal if commited!
 
     let (_total, mut response) = pay_oracles(&mut deps, &config, response)?;
 
@@ -406,7 +440,16 @@ pub fn execute_set_config(
     f: u8,
     onchain_config: Vec<u8>,
 ) -> Result<Response, ContractError> {
-    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
+    let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
+    let config = CONFIG.load(deps.storage)?;
+
+    require!(
+        is_owner
+            || config
+                .config_access_controller
+                .has_access(&deps.querier, &info.sender)?,
+        Unauthorized
+    );
 
     let signers_len = signers.len();
 
@@ -435,7 +478,16 @@ pub fn execute_set_offchain_config(
     offchain_config_version: u64,
     offchain_config: Binary,
 ) -> Result<Response, ContractError> {
-    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
+    let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
+    let config = CONFIG.load(deps.storage)?;
+
+    require!(
+        is_owner
+            || config
+                .config_access_controller
+                .has_access(&deps.querier, &info.sender)?,
+        Unauthorized
+    );
 
     // validate new config
     require!(!offchain_config.is_empty(), InvalidInput);
@@ -466,6 +518,29 @@ pub fn query_transmitters(deps: Deps) -> StdResult<TransmittersResponse> {
         .map(to_addr)
         .collect();
     Ok(TransmittersResponse { addresses })
+}
+
+pub fn query_config_access_controller(deps: Deps) -> StdResult<Addr> {
+    let config = CONFIG.load(deps.storage)?;
+    Ok(config.config_access_controller.addr())
+}
+
+pub fn execute_set_config_access_controller(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    access_controller: String,
+) -> Result<Response, ContractError> {
+    let access_controller = deps.api.addr_validate(&access_controller)?;
+
+    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
+
+    CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
+        config.config_access_controller = AccessControllerContract(access_controller);
+        Ok(config)
+    })?;
+
+    Ok(Response::default())
 }
 
 // ---
@@ -1457,6 +1532,7 @@ pub(crate) mod tests {
             link_token: "LINK".to_string(),
             min_answer: 1i128,
             max_answer: 1_000_000_000i128,
+            config_access_controller: "config_controller".to_string(),
             billing_access_controller: "billing_controller".to_string(),
             requester_access_controller: "requester_controller".to_string(),
             decimals: 18,
