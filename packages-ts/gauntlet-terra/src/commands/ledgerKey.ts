@@ -6,7 +6,6 @@ import { logger } from '@chainlink/gauntlet-core/dist/utils'
 
 export class LedgerKey extends Key {
     private path: Array<number>
-    private ledgerConnector: LedgerTerraConnector
 
     private constructor(path: Array<number>) {
         super()
@@ -14,9 +13,7 @@ export class LedgerKey extends Key {
     }
 
     public async initialize() {
-        const transport = await TransportNodeHid.create()
-        const ledgerConnector = new LedgerTerraConnector(transport)
-        await ledgerConnector.initialize()
+        const {ledgerConnector, terminateConnection} = await this.connectToLedger()
 
         const response = await ledgerConnector.getPublicKey(this.path)
         if (response.return_code !== ERROR_CODE.NoError) {
@@ -25,7 +22,7 @@ export class LedgerKey extends Key {
         }
 
         this.publicKey = new SimplePublicKey(Buffer.from(response.compressed_pk.data).toString('base64'))
-        this.ledgerConnector = ledgerConnector
+        await terminateConnection()
     }
 
     public static async create(path: string): Promise<LedgerKey> {
@@ -42,11 +39,9 @@ export class LedgerKey extends Key {
 
     public async sign(payload: Buffer): Promise<Buffer> {
         try { 
-            if (!this.publicKey) {
-                await this.initialize()
-            }
+            const {ledgerConnector} = await this.connectToLedger()
 
-            const response = await this.ledgerConnector.sign(this.path, payload)
+            const response = await ledgerConnector.sign(this.path, payload)
             if (response.return_code !== ERROR_CODE.NoError) {
                 throw new Error(response.error_message)
             }
@@ -55,6 +50,17 @@ export class LedgerKey extends Key {
         } catch (e) {
             logger.error(`LedgerKey sign failed: ${e.message}. Is Ledger unlocked and Terra app open?`)
             throw e
+        }
+    }
+
+    private async connectToLedger(){
+        const transport = await TransportNodeHid.create()
+        const ledgerConnector = new LedgerTerraConnector(transport)
+        await ledgerConnector.initialize()
+
+        return {
+            ledgerConnector, 
+            terminateConnection: transport.close.bind(transport) 
         }
     }
 }

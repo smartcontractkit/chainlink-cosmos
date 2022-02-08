@@ -36,9 +36,8 @@ export const withWallet: Middleware = async (c: TerraCommand, next: Next) => {
     })
   }
 
-  const wallet = c.provider.wallet(key)
-  c.wallet = wallet
-  console.info(`Operator address is ${wallet.key.accAddress}`)
+  c.wallet = c.provider.wallet(key)
+  console.info(`Operator address is ${c.wallet.key.accAddress}`)
   return next()
 }
 
