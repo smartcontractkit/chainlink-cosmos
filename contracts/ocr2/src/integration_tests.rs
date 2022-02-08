@@ -250,25 +250,38 @@ fn setup() -> Env {
         .unwrap();
 
     let msg = ExecuteMsg::CommitConfigProposal;
-    router
+    let response = router
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
-    let digest = [0u8; 32]; // TODO
+    // Extract the proposal digest from the wasm execute event
+    let mut digest = [0u8; 32];
+    let execute = response
+        .events
+        .iter()
+        .find(|event| event.ty == "wasm")
+        .unwrap();
+    let proposal_digest = &execute
+        .attributes
+        .iter()
+        .find(|attr| attr.key == "digest")
+        .unwrap()
+        .value;
+    hex::decode_to_slice(proposal_digest, &mut digest).unwrap();
+
     let msg = ExecuteMsg::ApproveConfigProposal { digest };
 
     let response = router
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
+    // determine the config_digest using events returned from set_config
+    let mut config_digest = [0u8; 32];
     let set_config = response
         .events
         .iter()
         .find(|event| event.ty == "wasm-set_config")
         .unwrap();
-
-    // determine the config_digest using events returned from set_config
-    let mut config_digest = [0u8; 32];
     let digest = &set_config
         .attributes
         .iter()
@@ -516,11 +529,26 @@ fn transmit_happy_path() {
         .unwrap();
 
     let msg = ExecuteMsg::CommitConfigProposal;
-    env.router
+    let response = env
+        .router
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
-    let digest = [0u8; 32]; // TODO
+    // Extract the proposal digest from the wasm execute event
+    let mut digest = [0u8; 32];
+    let execute = response
+        .events
+        .iter()
+        .find(|event| event.ty == "wasm")
+        .unwrap();
+    let proposal_digest = &execute
+        .attributes
+        .iter()
+        .find(|attr| attr.key == "digest")
+        .unwrap()
+        .value;
+    hex::decode_to_slice(proposal_digest, &mut digest).unwrap();
+
     let msg = ExecuteMsg::ApproveConfigProposal { digest };
     env.router
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])

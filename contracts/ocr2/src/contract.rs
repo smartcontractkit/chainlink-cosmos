@@ -255,6 +255,7 @@ pub fn execute_begin_config_proposal(
     PROPOSED_CONFIG.save(
         deps.storage,
         &ProposedConfig {
+            digest: [0u8; 32],
             oracles: Vec::new(),
             f: 0,
             offchain_config_version: 0,
@@ -303,12 +304,29 @@ pub fn execute_commit_config_proposal(
         Unauthorized
     );
 
-    // TODO: validate proposal again, only one of the two methods might have been called!!
+    let mut config = PROPOSED_CONFIG.load(deps.storage)?;
 
-    Ok(Response::default())
+    // Can't commit if already committed
+    require!(config.digest == [0u8; 32], InvalidInput);
+
+    // Validate proposal again, only one of the two methods might have been called!!
+
+    // offchain_config won't be empty if setOffchainConfig was called
+    require!(!config.offchain_config.is_empty(), InvalidInput);
+    // oracles won't be empty if setConfig was called
+    require!(!config.oracles.is_empty(), InvalidInput);
+
+    // store on proposal
+    let digest = config.digest();
+    config.digest = digest;
+    PROPOSED_CONFIG.save(deps.storage, &config)?;
+
+    let response = Response::new()
+        .add_attribute("method", "commit_config_proposal")
+        .add_attribute("digest", hex::encode(&digest));
+
+    Ok(response)
 }
-
-// TODO: add commit that also generates a digest
 
 pub fn execute_approve_config_proposal(
     mut deps: DepsMut,
@@ -324,7 +342,10 @@ pub fn execute_approve_config_proposal(
 
     let response = Response::new().add_attribute("method", "set_config");
 
-    // TODO: only approve proposal if commited!
+    // Only approve proposal if commited
+    require!(proposal.digest != [0u8; 32], InvalidInput);
+    // and the digest matches what we expect
+    require!(proposal.digest == digest, DigestMismatch);
 
     let (_total, mut response) = pay_oracles(&mut deps, &config, response)?;
 
@@ -462,6 +483,9 @@ pub fn execute_set_config(
 
     // store on proposal
     PROPOSED_CONFIG.update(deps.storage, |mut config| {
+        // only modify if proposal isn't committed yet
+        require!(config.digest == [0u8; 32], InvalidInput);
+
         config.f = f;
         config.oracles = signers.into_iter().zip(transmitters.into_iter()).collect();
 
@@ -494,6 +518,9 @@ pub fn execute_set_offchain_config(
 
     // store on proposal
     PROPOSED_CONFIG.update(deps.storage, |mut config| {
+        // only modify if proposal isn't committed yet
+        require!(config.digest == [0u8; 32], InvalidInput);
+
         config.offchain_config_version = offchain_config_version;
         config.offchain_config = offchain_config;
 
@@ -1589,9 +1616,17 @@ pub(crate) mod tests {
 
         let msg = ExecuteMsg::CommitConfigProposal;
         let execute_info = mock_info(owner.as_str(), &[]);
-        execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+        let response = execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
-        let digest = [0u8; 32]; // TODO
+        // Extract the proposal digest from the wasm execute event
+        let mut digest = [0u8; 32];
+        let proposal_digest = &response
+            .attributes
+            .iter()
+            .find(|attr| attr.key == "digest")
+            .unwrap()
+            .value;
+        hex::decode_to_slice(proposal_digest, &mut digest).unwrap();
 
         let msg = ExecuteMsg::ApproveConfigProposal { digest };
         let execute_info = mock_info(owner.as_str(), &[]);
