@@ -52,6 +52,7 @@ pub struct Billing {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub link_token: Cw20Contract,
+    pub config_access_controller: AccessControllerContract,
     pub requester_access_controller: AccessControllerContract,
     pub billing_access_controller: AccessControllerContract,
 

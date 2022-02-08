@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 pub struct InstantiateMsg {
     /// LINK token contract address
     pub link_token: String,
+    /// Configuration access controller address
+    pub config_access_controller: String,
     /// RequestNewRound access controller address
     pub requester_access_controller: String,
     /// Billing access controller address
@@ -68,6 +70,9 @@ pub enum ExecuteMsg {
         config: Option<Validator>,
     },
 
+    SetConfigAccessController {
+        access_controller: String,
+    },
     SetBillingAccessController {
         access_controller: String,
     },
@@ -119,6 +124,7 @@ pub enum QueryMsg {
 
     LinkToken,
     Billing,
+    ConfigAccessController,
     BillingAccessController,
     RequesterAccessController,
     OwedPayment { transmitter: String },
