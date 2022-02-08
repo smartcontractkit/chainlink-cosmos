@@ -158,11 +158,11 @@ func (r *OCR2Reader) LatestTransmissionDetails(ctx context.Context) (
 			// transmission details to their zero value.
 			if err2 == nil {
 				if epoch != 0 {
-					r.lggr.Errorf("unexpected non-zero epoch and no transmissions found", "epoch", epoch, "contract", r.address)
+					r.lggr.Errorf("unexpected non-zero epoch %v and no transmissions found contract %v", epoch, r.address)
 				}
 				return digest, epoch, 0, big.NewInt(0), time.Unix(0, 0), nil
 			} else {
-				r.lggr.Errorf("error reading latest config digest and epoch", "err", err2, "contract", r.address)
+				r.lggr.Errorf("error reading latest config digest and epoch err %v contract %v",  err2, r.address)
 			}
 		}
 
