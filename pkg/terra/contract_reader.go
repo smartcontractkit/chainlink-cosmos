@@ -162,7 +162,7 @@ func (r *OCR2Reader) LatestTransmissionDetails(ctx context.Context) (
 				}
 				return digest, epoch, 0, big.NewInt(0), time.Unix(0, 0), nil
 			} else {
-				r.lggr.Errorf("error reading latest config digest and epoch err %v contract %v",  err2, r.address)
+				r.lggr.Errorf("error reading latest config digest and epoch err %v contract %v", err2, r.address)
 			}
 		}
 
