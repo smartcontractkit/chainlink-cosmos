@@ -1,6 +1,6 @@
 import { Key, SimplePublicKey, SignatureV2, SignDoc, SignerInfo, ModeInfo } from '@terra-money/terra.js'
 import { SignMode } from '@terra-money/terra.proto/cosmos/tx/signing/v1beta1/signing'
-import LedgerTerraConnector, {ERROR_CODE} from '@terra-money/ledger-terra-js'
+import LedgerTerraConnector, {ERROR_CODE, CommonResponse} from '@terra-money/ledger-terra-js'
 import TransportNodeHid from "@ledgerhq/hw-transport-node-hid"
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { signatureImport } from 'secp256k1';
@@ -18,10 +18,7 @@ export class LedgerKey extends Key {
         const {ledgerConnector, terminateConnection} = await this.connectToLedger()
 
         const response = await ledgerConnector.getPublicKey(this.path)
-        if (response.return_code !== ERROR_CODE.NoError) {
-            logger.error(`LedgerKey init failed: ${response.error_message}. Is Ledger unlocked and Terra app open?`)
-            throw new Error(response.error_message)
-        }
+        this.checkForErrors(response)
 
         this.publicKey = new SimplePublicKey(Buffer.from(response.compressed_pk.data).toString('base64'))
         await terminateConnection()
@@ -33,10 +30,6 @@ export class LedgerKey extends Key {
         await ledgerKey.initialize()
 
         return ledgerKey
-    }
-
-    private static pathStringToArray(path: string): Array<number> {
-        return path.split('\'/').map(item => parseInt(item))
     }
 
     public async createSignature(signDoc: SignDoc): Promise<SignatureV2> {
@@ -76,14 +69,12 @@ export class LedgerKey extends Key {
         try { 
             logger.info('Approve tx on your Ledger device.')
             const response = await ledgerConnector.sign(this.path, payload)
-            if (response.return_code !== ERROR_CODE.NoError) {
-                throw new Error(response.error_message)
-            }
+            this.checkForErrors(response)
    
             const signature = signatureImport(Buffer.from(response.signature as any))
             return Buffer.from(signature)
         } catch (e) {
-            logger.error(`LedgerKey sign failed: ${e.message}. Is Ledger unlocked and Terra app open?`)
+            logger.error(`LedgerKey sign failed: ${e.message}`)
             throw e
         } finally {
             await terminateConnection()
@@ -99,5 +90,29 @@ export class LedgerKey extends Key {
             ledgerConnector, 
             terminateConnection: transport.close.bind(transport) 
         }
+    }
+
+    private static pathStringToArray(path: string): Array<number> {
+        return path.split('\'/').map(item => parseInt(item))
+    }
+
+    private checkForErrors (response: CommonResponse) {
+        const { 
+            error_message: ledgerError, 
+            return_code: returnCode,
+            device_locked: isLocked
+        } = response
+
+        if (returnCode === ERROR_CODE.NoError)
+            return
+
+        let errorMessage: string
+        if (isLocked) {
+            errorMessage = 'Is Ledger unlocked and Terra app open?'
+        } else {
+            errorMessage = ledgerError
+        }
+
+        throw new Error(errorMessage)
     }
 }
