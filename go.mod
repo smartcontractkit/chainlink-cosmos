@@ -4,13 +4,13 @@ go 1.17
 
 require (
 	github.com/cosmos/cosmos-sdk v0.44.5
-	github.com/onsi/ginkgo/v2 v2.0.0
+	github.com/onsi/ginkgo/v2 v2.1.0
 	github.com/onsi/gomega v1.17.0
 	github.com/pelletier/go-toml v1.9.4
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.26.1
 	github.com/satori/go.uuid v1.2.0
-	github.com/smartcontractkit/chainlink v1.0.1-0.20220114200720-95a78cb9fc2b
+	github.com/smartcontractkit/chainlink v1.1.1-0.20220208203357-9676993456c1
 	github.com/smartcontractkit/chainlink-relay v0.0.0-20220208185145-f90ff8f9d79a
 	github.com/smartcontractkit/helmenv v1.0.32
 	github.com/smartcontractkit/integrations-framework v1.0.44
