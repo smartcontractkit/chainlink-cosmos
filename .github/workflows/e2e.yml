@@ -1,13 +1,43 @@
 name: e2e_tests
 on:
   push:
-  pull_request:
-    types: [opened, reopened]
+  workflow_call:
+    inputs:
+      repo_name:
+        required: true
+        default: ${{ github.repository }}
+        type: string
+      ref:
+        required: true
+        default: ${{ github.sha }}
+        type: string
+      cl_repo:
+        required: true
+        default: 795953128386.dkr.ecr.us-west-2.amazonaws.com/chainlink
+        type: string
+      cl_image:
+        required: true
+        default: develop.latest
+        type: string
+    secrets:
+      QA_AWS_ACCESS_KEY_ID:
+        required: true
+      QA_AWS_SECRET_KEY:
+        required: true
+      QA_AWS_REGION:
+        required: true
+      QA_AWS_ROLE_TO_ASSUME:
+        required: true
+      QA_KUBECONFIG:
+        required: true
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          repository: ${{ inputs.repo_name }}
+          ref: ${{ inputs.ref }}
       - name: Cache cargo registry
         uses: actions/cache@v2.1.7
         with:
@@ -36,6 +66,9 @@ jobs:
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v2
+        with:
+          repository: ${{ inputs.repo_name }}
+          ref: ${{ inputs.ref }}
       - name: Install Nix
         uses: cachix/install-nix-action@v14
         with:
@@ -69,7 +102,7 @@ jobs:
             ${{ runner.os }}-go-
       - name: Download Go Vendor Packages
         if: steps.cache-packages.outputs.cache-hit != 'true'
-        run: go mod download
+        run: nix develop -c make download
       - name: Install Ginkgo CLI
         run: |
           nix develop -c make install
@@ -84,6 +117,9 @@ jobs:
           npm config set -- '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
           nix develop -c make build_js
       - name: Run Tests
+        env:
+          CHAINLINK_IMAGE: ${{ inputs.cl_repo }}
+          CHAINLINK_VERSION: ${{ inputs.cl_image }}
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           cp -r artifacts packages-ts/gauntlet-terra-contracts/artifacts/bin
