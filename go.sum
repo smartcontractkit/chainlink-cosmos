@@ -726,9 +726,8 @@ github.com/ethereum/go-ethereum v1.9.18/go.mod h1:JSSTypSMTkGZtAdAChH2wP5dZEvPGh
 github.com/ethereum/go-ethereum v1.9.24/go.mod h1:JIfVb6esrqALTExdz9hRYvrP0xBDf6wCncIu1hNwHpM=
 github.com/ethereum/go-ethereum v1.9.25/go.mod h1:vMkFiYLHI4tgPw4k2j4MHKoovchFE8plZ0M9VMk4/oM=
 github.com/ethereum/go-ethereum v1.10.4/go.mod h1:nEE0TP5MtxGzOMd7egIrbPJMQBnhVU3ELNxhBglIzhg=
+github.com/ethereum/go-ethereum v1.10.11 h1:KKIcwpmur9iTaVbR2dxlHu+peHVhU+/KX//NWvT1n9U=
 github.com/ethereum/go-ethereum v1.10.11/go.mod h1:W3yfrFyL9C1pHcwY5hmRHVDaorTiQxhYBkKyu5mEDHw=
-github.com/ethereum/go-ethereum v1.10.15 h1:E9o0kMbD8HXhp7g6UwIwntY05WTDheCGziMhegcBsQw=
-github.com/ethereum/go-ethereum v1.10.15/go.mod h1:W3yfrFyL9C1pHcwY5hmRHVDaorTiQxhYBkKyu5mEDHw=
 github.com/evanphx/json-patch v4.9.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch v4.11.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch v4.12.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
@@ -2348,8 +2347,8 @@ github.com/smartcontractkit/chainlink v1.0.1-0.20211209223503-68928efa429a/go.mo
 github.com/smartcontractkit/chainlink v1.0.1-0.20220107192117-3d2ac0e84f04/go.mod h1:L7uyrtO9qIxnjrxbpnZuLWnFHZC+qx4aTt4dWfEm99Q=
 github.com/smartcontractkit/chainlink v1.0.1-0.20220114200720-95a78cb9fc2b h1:n9RuQUtWWow5Z/l0PydBEi/GKIBXa+mUYB3EGDaHE94=
 github.com/smartcontractkit/chainlink v1.0.1-0.20220114200720-95a78cb9fc2b/go.mod h1:f4WOXzmo07DayD1vLXie1RPsH99hGvslb85MNQ+O8l4=
-github.com/smartcontractkit/chainlink-relay v0.0.0-20220202143116-9b0c8ba3f278 h1:ivstrPjXYSbJFWpeR2GNPA3Oah82vQKEFv5D0GQpZ4Y=
-github.com/smartcontractkit/chainlink-relay v0.0.0-20220202143116-9b0c8ba3f278/go.mod h1:ojPwXEIk6xHFAoVMM5PoybiN/ici+FrVs5pI9/lq/WI=
+github.com/smartcontractkit/chainlink-relay v0.0.0-20220208185145-f90ff8f9d79a h1:A5dMoZ7vDtiytYw/38wtf1kEVWXds47q3NpQYpD8Huk=
+github.com/smartcontractkit/chainlink-relay v0.0.0-20220208185145-f90ff8f9d79a/go.mod h1:/6gP9XHTQEBeBnXtC9oF1VelYhPMtGDu+6LxLtFP01g=
 github.com/smartcontractkit/chainlink-solana v0.0.0-20211203133247-1fbcc7f330d5/go.mod h1:NxZZQ0m2AGQ5vR1HptHkAyYCd68XA03SI2dEvkaalbs=
 github.com/smartcontractkit/chainlink-solana v0.0.0-20211207185700-a24214ba7afd/go.mod h1:NVHHwrCgC/7J0I872/uVgk0jEpyJIXEGAxZHrbgt190=
 github.com/smartcontractkit/chainlink-solana v0.0.0-20220105214423-218ff2c30218/go.mod h1:Y3zc38pA5rSI3kpS5MWqVyrGbugDHQPO4UMSFCunkFI=
