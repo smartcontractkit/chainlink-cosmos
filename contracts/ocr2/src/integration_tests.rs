@@ -139,7 +139,18 @@ fn setup() -> Env {
             owner.clone(),
             &access_controller::msg::InstantiateMsg {},
             &[],
-            "billing_access_controller",
+            "requester_access_controller",
+            None,
+        )
+        .unwrap();
+
+    let config_access_controller_addr = router
+        .instantiate_contract(
+            access_controller_id,
+            owner.clone(),
+            &access_controller::msg::InstantiateMsg {},
+            &[],
+            "config_access_controller",
             None,
         )
         .unwrap();
@@ -170,6 +181,7 @@ fn setup() -> Env {
                 link_token: link_token_addr.to_string(),
                 min_answer: 1i128,
                 max_answer: 1_000_000_000_000i128,
+                config_access_controller: config_access_controller_addr.to_string(),
                 billing_access_controller: billing_access_controller_addr.to_string(),
                 requester_access_controller: requester_access_controller_addr.to_string(),
                 decimals: 18,
