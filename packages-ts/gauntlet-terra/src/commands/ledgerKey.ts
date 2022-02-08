@@ -1,4 +1,5 @@
-import { Key, SimplePublicKey } from '@terra-money/terra.js'
+import { Key, SimplePublicKey, SignatureV2, SignDoc, SignerInfo, ModeInfo } from '@terra-money/terra.js'
+import { SignMode } from '@terra-money/terra.proto/cosmos/tx/signing/v1beta1/signing'
 import LedgerTerraConnector, {ERROR_CODE} from '@terra-money/ledger-terra-js'
 import TransportNodeHid from "@ledgerhq/hw-transport-node-hid"
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
@@ -35,18 +36,52 @@ export class LedgerKey extends Key {
     }
 
     private static pathStringToArray(path: string): Array<number> {
-        return path.split(',').map(item => parseInt(item))
+        return path.split('\'/').map(item => parseInt(item))
     }
+
+    public async createSignature(signDoc: SignDoc): Promise<SignatureV2> {
+        if (!this.publicKey) {
+          throw new Error(
+            'Signature could not be created: Key instance missing publicKey.'
+          );
+        }
+    
+        // backup for restore
+        const signerInfos = signDoc.auth_info.signer_infos;
+        signDoc.auth_info.signer_infos = [
+          new SignerInfo(
+            this.publicKey,
+            signDoc.sequence,
+            new ModeInfo(new ModeInfo.Single(SignMode.SIGN_MODE_DIRECT))
+          ),
+        ];
+    
+        const signDocBuffer = Buffer.from(signDoc.toAminoJSON())
+        const sigBytes = (await this.sign(signDocBuffer)).toString('base64');
+    
+        // restore signDoc to origin
+        signDoc.auth_info.signer_infos = signerInfos;
+    
+        return new SignatureV2(
+          this.publicKey,
+          new SignatureV2.Descriptor(
+            new SignatureV2.Descriptor.Single(SignMode.SIGN_MODE_DIRECT, sigBytes)
+          ),
+          signDoc.sequence
+        );
+      }
 
     public async sign(payload: Buffer): Promise<Buffer> {
         const {ledgerConnector, terminateConnection} = await this.connectToLedger()
         try { 
+            logger.info('Approve tx on your Ledger device.')
             const response = await ledgerConnector.sign(this.path, payload)
             if (response.return_code !== ERROR_CODE.NoError) {
                 throw new Error(response.error_message)
             }
-
-            return Buffer.from(signatureImport(Buffer.from(response.signature as any)));
+   
+            const signature = signatureImport(Buffer.from(response.signature as any))
+            return Buffer.from(signature)
         } catch (e) {
             logger.error(`LedgerKey sign failed: ${e.message}. Is Ledger unlocked and Terra app open?`)
             throw e
