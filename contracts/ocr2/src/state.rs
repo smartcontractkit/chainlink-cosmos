@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use access_controller::AccessControllerContract;
 use cosmwasm_std::{Addr, Binary, Uint128};
 use cw20::Cw20Contract;
-use cw_storage_plus::{Item, Map, U32Key};
+use cw_storage_plus::{Item, Map, U128Key, U32Key};
 use owned::Auth;
 
 use crate::Decimal;
@@ -52,7 +52,6 @@ pub struct Billing {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub link_token: Cw20Contract,
-    pub config_access_controller: AccessControllerContract,
     pub requester_access_controller: AccessControllerContract,
     pub billing_access_controller: AccessControllerContract,
 
@@ -90,31 +89,12 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ProposedConfig {
-    pub digest: [u8; 32],
+    pub owner: Addr,
+    pub finalized: bool,
     pub oracles: Vec<(Binary, Addr)>,
     pub f: u8,
     pub offchain_config_version: u64,
     pub offchain_config: Binary,
-}
-
-impl ProposedConfig {
-    pub fn digest(&self) -> [u8; 32] {
-        use blake2::{Blake2s, Digest};
-        let mut hasher = Blake2s::default();
-        hasher.update([(self.oracles.len() as u8)]);
-        for (signer, _) in &self.oracles {
-            hasher.update(&signer.0);
-        }
-        for (_, transmitter) in &self.oracles {
-            hasher.update(transmitter.as_bytes());
-        }
-        hasher.update(&[self.f]);
-        hasher.update(&self.offchain_config_version.to_be_bytes());
-        hasher.update((self.offchain_config.len() as u32).to_be_bytes());
-        hasher.update(&self.offchain_config.0);
-        let result = hasher.finalize();
-        result.into()
-    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -184,7 +164,10 @@ pub struct Round {
 pub const OWNER: Auth = Auth::new("owner");
 
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const PROPOSED_CONFIG: Item<ProposedConfig> = Item::new("proposed_config");
+
+pub type ProposalId = Uint128;
+pub const PROPOSALS: Map<U128Key, ProposedConfig> = Map::new("proposals");
+pub const CURRENT_PROPOSAL: Item<ProposalId> = Item::new("current_proposal");
 
 // An addr currently can't be converted to pubkey: https://docs.cosmos.network/master/architecture/adr-028-public-key-addresses.html
 
