@@ -78,7 +78,10 @@ fn init_works() {
         .map(|(i, _)| format!("transmitter{}", i))
         .collect::<Vec<_>>();
 
+    let id = 0; // TODO
+
     let msg = ExecuteMsg::SetConfig {
+        id,
         signers,
         transmitters: transmitters.clone(),
         f,
@@ -89,6 +92,7 @@ fn init_works() {
     let response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
 
     let msg = ExecuteMsg::SetOffchainConfig {
+        id,
         offchain_config_version: 1,
         offchain_config: Binary(vec![4, 5, 6]),
     };

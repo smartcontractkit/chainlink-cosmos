@@ -14,9 +14,9 @@ use crate::msg::{
     TransmittersResponse,
 };
 use crate::state::{
-    config_digest_from_data, Billing, Config, ProposedConfig, Round, Transmission, Transmitter,
-    Validator, CONFIG, MAX_ORACLES, OWNER, PAYEES, PROPOSED_CONFIG, PROPOSED_PAYEES, SIGNERS,
-    TRANSMISSIONS, TRANSMITTERS,
+    config_digest_from_data, Billing, Config, ProposalId, ProposedConfig, Round, Transmission,
+    Transmitter, Validator, CONFIG, CURRENT_PROPOSAL, MAX_ORACLES, OWNER, PAYEES, PROPOSALS,
+    PROPOSED_PAYEES, SIGNERS, TRANSMISSIONS, TRANSMITTERS,
 };
 use crate::{require, Decimal};
 
@@ -47,7 +47,6 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     let link_token = deps.api.addr_validate(&msg.link_token)?;
-    let config_access_controller = deps.api.addr_validate(&msg.config_access_controller)?;
     let requester_access_controller = deps.api.addr_validate(&msg.requester_access_controller)?;
     let billing_access_controller = deps.api.addr_validate(&msg.billing_access_controller)?;
 
@@ -55,7 +54,6 @@ pub fn instantiate(
 
     let config = Config {
         link_token: Cw20Contract(link_token),
-        config_access_controller: AccessControllerContract(config_access_controller),
         requester_access_controller: AccessControllerContract(requester_access_controller),
         billing_access_controller: AccessControllerContract(billing_access_controller),
         min_answer: msg.min_answer,
@@ -87,6 +85,7 @@ pub fn instantiate(
     };
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     CONFIG.save(deps.storage, &config)?;
+    CURRENT_PROPOSAL.save(deps.storage, &Uint128::new(0))?;
 
     Ok(Response::default().add_event(
         Event::new("set_link_token").add_attribute("new_link_token", config.link_token.0),
@@ -103,12 +102,17 @@ pub fn execute(
     let api = deps.api;
     match msg {
         ExecuteMsg::BeginConfigProposal => execute_begin_config_proposal(deps, env, info),
-        ExecuteMsg::ClearConfigProposal => execute_clear_config_proposal(deps, env, info),
-        ExecuteMsg::CommitConfigProposal => execute_commit_config_proposal(deps, env, info),
-        ExecuteMsg::ApproveConfigProposal { digest } => {
-            execute_approve_config_proposal(deps, env, info, digest)
+        ExecuteMsg::ClearConfigProposal { id } => {
+            execute_clear_config_proposal(deps, env, info, id)
+        }
+        ExecuteMsg::CommitConfigProposal { id } => {
+            execute_commit_config_proposal(deps, env, info, id)
+        }
+        ExecuteMsg::ApproveConfigProposal { id } => {
+            execute_approve_config_proposal(deps, env, info, id)
         }
         ExecuteMsg::SetConfig {
+            id,
             signers,
             transmitters,
             f,
@@ -119,12 +123,29 @@ pub fn execute(
                 .iter()
                 .map(|t| api.addr_validate(t))
                 .collect::<StdResult<Vec<Addr>>>()?;
-            execute_set_config(deps, env, info, signers, transmitters, f, onchain_config.0)
+            execute_set_config(
+                deps,
+                env,
+                info,
+                id,
+                signers,
+                transmitters,
+                f,
+                onchain_config.0,
+            )
         }
         ExecuteMsg::SetOffchainConfig {
+            id,
             offchain_config_version,
             offchain_config,
-        } => execute_set_offchain_config(deps, env, info, offchain_config_version, offchain_config),
+        } => execute_set_offchain_config(
+            deps,
+            env,
+            info,
+            id,
+            offchain_config_version,
+            offchain_config,
+        ),
         ExecuteMsg::TransferOwnership { to } => {
             Ok(OWNER.execute_transfer_ownership(deps, info, api.addr_validate(&to)?)?)
         }
@@ -152,9 +173,6 @@ pub fn execute(
         ExecuteMsg::SetBilling { config } => execute_set_billing(deps, env, info, config),
         ExecuteMsg::SetValidatorConfig { config } => {
             execute_set_validator_config(deps, env, info, config)
-        }
-        ExecuteMsg::SetConfigAccessController { access_controller } => {
-            execute_set_config_access_controller(deps, env, info, access_controller)
         }
         ExecuteMsg::SetBillingAccessController { access_controller } => {
             execute_set_billing_access_controller(deps, env, info, access_controller)
@@ -196,7 +214,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
         QueryMsg::LinkToken => to_binary(&query_link_token(deps)?),
         QueryMsg::Billing => to_binary(&query_billing(deps)?),
-        QueryMsg::ConfigAccessController => to_binary(&query_config_access_controller(deps)?),
         QueryMsg::BillingAccessController => to_binary(&query_billing_access_controller(deps)?),
         QueryMsg::RequesterAccessController => to_binary(&query_requester_access_controller(deps)?),
         QueryMsg::OwedPayment { transmitter } => to_binary(&query_owed_payment(deps, transmitter)?),
@@ -240,22 +257,18 @@ pub fn execute_begin_config_proposal(
     _env: Env,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
-
-    require!(
-        is_owner
-            || CONFIG
-                .load(deps.storage)?
-                .config_access_controller
-                .has_access(&deps.querier, &info.sender)?,
-        Unauthorized
-    );
+    // TODO: explicitly handle overflow (but already caught by overflow-checks = true)
+    let id = CURRENT_PROPOSAL.update(deps.storage, |id| -> StdResult<ProposalId> {
+        Ok(id + Uint128::new(1))
+    })?;
 
     // Add an empty proposal
-    PROPOSED_CONFIG.save(
+    PROPOSALS.save(
         deps.storage,
+        id.u128().into(),
         &ProposedConfig {
-            digest: [0u8; 32],
+            owner: info.sender,
+            finalized: false,
             oracles: Vec::new(),
             f: 0,
             offchain_config_version: 0,
@@ -263,27 +276,27 @@ pub fn execute_begin_config_proposal(
         },
     )?;
 
-    Ok(Response::default())
+    let response = Response::new()
+        .add_attribute("method", "begin_config_proposal")
+        .add_attribute("proposal_id", id.to_string());
+
+    Ok(response)
 }
 
 pub fn execute_clear_config_proposal(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
+    id: ProposalId,
 ) -> Result<Response, ContractError> {
     let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
+    let proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
 
-    require!(
-        is_owner
-            || CONFIG
-                .load(deps.storage)?
-                .config_access_controller
-                .has_access(&deps.querier, &info.sender)?,
-        Unauthorized
-    );
+    // Only contract owner or proposal owner allowed
+    require!(is_owner || proposal.owner == info.sender, Unauthorized);
 
     // Clear out proposal
-    PROPOSED_CONFIG.remove(deps.storage);
+    PROPOSALS.remove(deps.storage, id.u128().into());
 
     Ok(Response::default())
 }
@@ -292,38 +305,31 @@ pub fn execute_commit_config_proposal(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
+    id: ProposalId,
 ) -> Result<Response, ContractError> {
     let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
+    let mut proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
 
-    require!(
-        is_owner
-            || CONFIG
-                .load(deps.storage)?
-                .config_access_controller
-                .has_access(&deps.querier, &info.sender)?,
-        Unauthorized
-    );
-
-    let mut config = PROPOSED_CONFIG.load(deps.storage)?;
+    // Only contract owner or proposal owner allowed
+    require!(is_owner || proposal.owner == info.sender, Unauthorized);
 
     // Can't commit if already committed
-    require!(config.digest == [0u8; 32], InvalidInput);
+    require!(!proposal.finalized, InvalidInput);
 
     // Validate proposal again, only one of the two methods might have been called!!
 
     // offchain_config won't be empty if setOffchainConfig was called
-    require!(!config.offchain_config.is_empty(), InvalidInput);
+    require!(!proposal.offchain_config.is_empty(), InvalidInput);
     // oracles won't be empty if setConfig was called
-    require!(!config.oracles.is_empty(), InvalidInput);
+    require!(!proposal.oracles.is_empty(), InvalidInput);
 
-    // store on proposal
-    let digest = config.digest();
-    config.digest = digest;
-    PROPOSED_CONFIG.save(deps.storage, &config)?;
+    // Mark proposal as finalized
+    proposal.finalized = true;
+    PROPOSALS.save(deps.storage, id.u128().into(), &proposal)?;
 
     let response = Response::new()
         .add_attribute("method", "commit_config_proposal")
-        .add_attribute("digest", hex::encode(&digest));
+        .add_attribute("proposal_id", id.to_string());
 
     Ok(response)
 }
@@ -332,20 +338,18 @@ pub fn execute_approve_config_proposal(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    digest: [u8; 32],
+    id: ProposalId,
 ) -> Result<Response, ContractError> {
     require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
 
     let mut config = CONFIG.load(deps.storage)?;
 
-    let proposal = PROPOSED_CONFIG.load(deps.storage)?;
+    let proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
 
     let response = Response::new().add_attribute("method", "set_config");
 
-    // Only approve proposal if commited
-    require!(proposal.digest != [0u8; 32], InvalidInput);
-    // and the digest matches what we expect
-    require!(proposal.digest == digest, DigestMismatch);
+    // Only approve proposal if finalized
+    require!(proposal.finalized, InvalidInput);
 
     let (_total, mut response) = pay_oracles(&mut deps, &config, response)?;
 
@@ -447,7 +451,7 @@ pub fn execute_approve_config_proposal(
     CONFIG.save(deps.storage, &config)?;
 
     // Clear out proposal
-    PROPOSED_CONFIG.remove(deps.storage);
+    PROPOSALS.remove(deps.storage, id.u128().into());
 
     Ok(response)
 }
@@ -456,21 +460,17 @@ pub fn execute_set_config(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
+    id: ProposalId,
     signers: Vec<Binary>,
     transmitters: Vec<Addr>,
     f: u8,
     onchain_config: Vec<u8>,
 ) -> Result<Response, ContractError> {
     let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
-    let config = CONFIG.load(deps.storage)?;
+    let mut proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
 
-    require!(
-        is_owner
-            || config
-                .config_access_controller
-                .has_access(&deps.querier, &info.sender)?,
-        Unauthorized
-    );
+    // Only contract owner or proposal owner allowed
+    require!(is_owner || proposal.owner == info.sender, Unauthorized);
 
     let signers_len = signers.len();
 
@@ -482,15 +482,14 @@ pub fn execute_set_config(
     require!(onchain_config.is_empty(), InvalidInput);
 
     // store on proposal
-    PROPOSED_CONFIG.update(deps.storage, |mut config| {
-        // only modify if proposal isn't committed yet
-        require!(config.digest == [0u8; 32], InvalidInput);
 
-        config.f = f;
-        config.oracles = signers.into_iter().zip(transmitters.into_iter()).collect();
+    // only modify if proposal isn't finalized yet
+    require!(!proposal.finalized, InvalidInput);
 
-        Ok::<_, ContractError>(config)
-    })?;
+    proposal.f = f;
+    proposal.oracles = signers.into_iter().zip(transmitters.into_iter()).collect();
+
+    PROPOSALS.save(deps.storage, id.u128().into(), &proposal)?;
 
     Ok(Response::default())
 }
@@ -499,33 +498,28 @@ pub fn execute_set_offchain_config(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
+    id: ProposalId,
     offchain_config_version: u64,
     offchain_config: Binary,
 ) -> Result<Response, ContractError> {
     let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
-    let config = CONFIG.load(deps.storage)?;
+    let mut proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
 
-    require!(
-        is_owner
-            || config
-                .config_access_controller
-                .has_access(&deps.querier, &info.sender)?,
-        Unauthorized
-    );
+    // Only contract owner or proposal owner allowed
+    require!(is_owner || proposal.owner == info.sender, Unauthorized);
 
     // validate new config
     require!(!offchain_config.is_empty(), InvalidInput);
 
     // store on proposal
-    PROPOSED_CONFIG.update(deps.storage, |mut config| {
-        // only modify if proposal isn't committed yet
-        require!(config.digest == [0u8; 32], InvalidInput);
 
-        config.offchain_config_version = offchain_config_version;
-        config.offchain_config = offchain_config;
+    // only modify if proposal isn't finalized yet
+    require!(!proposal.finalized, InvalidInput);
 
-        Ok::<_, ContractError>(config)
-    })?;
+    proposal.offchain_config_version = offchain_config_version;
+    proposal.offchain_config = offchain_config;
+
+    PROPOSALS.save(deps.storage, id.u128().into(), &proposal)?;
 
     Ok(Response::default())
 }
@@ -545,29 +539,6 @@ pub fn query_transmitters(deps: Deps) -> StdResult<TransmittersResponse> {
         .map(to_addr)
         .collect();
     Ok(TransmittersResponse { addresses })
-}
-
-pub fn query_config_access_controller(deps: Deps) -> StdResult<Addr> {
-    let config = CONFIG.load(deps.storage)?;
-    Ok(config.config_access_controller.addr())
-}
-
-pub fn execute_set_config_access_controller(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    access_controller: String,
-) -> Result<Response, ContractError> {
-    let access_controller = deps.api.addr_validate(&access_controller)?;
-
-    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
-
-    CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
-        config.config_access_controller = AccessControllerContract(access_controller);
-        Ok(config)
-    })?;
-
-    Ok(Response::default())
 }
 
 // ---
@@ -1559,7 +1530,6 @@ pub(crate) mod tests {
             link_token: "LINK".to_string(),
             min_answer: 1i128,
             max_answer: 1_000_000_000i128,
-            config_access_controller: "config_controller".to_string(),
             billing_access_controller: "billing_controller".to_string(),
             requester_access_controller: "requester_controller".to_string(),
             decimals: 18,
@@ -1585,9 +1555,19 @@ pub(crate) mod tests {
 
         let msg = ExecuteMsg::BeginConfigProposal;
         let execute_info = mock_info(owner.as_str(), &[]);
-        execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+        let response = execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+
+        // Extract the proposal id from the wasm execute event
+        let id = &response
+            .attributes
+            .iter()
+            .find(|attr| attr.key == "proposal_id")
+            .unwrap()
+            .value;
+        let id = Uint128::new(u128::from_str_radix(id, 10).unwrap());
 
         let msg = ExecuteMsg::SetConfig {
+            id,
             signers: vec![
                 Binary(vec![1; 64]),
                 Binary(vec![2; 64]),
@@ -1607,6 +1587,7 @@ pub(crate) mod tests {
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
         let msg = ExecuteMsg::SetOffchainConfig {
+            id,
             offchain_config_version: 1,
             offchain_config: Binary(vec![4, 5, 6]),
         };
@@ -1614,21 +1595,11 @@ pub(crate) mod tests {
         let execute_info = mock_info(owner.as_str(), &[]);
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
-        let msg = ExecuteMsg::CommitConfigProposal;
+        let msg = ExecuteMsg::CommitConfigProposal { id };
         let execute_info = mock_info(owner.as_str(), &[]);
-        let response = execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+        execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
-        // Extract the proposal digest from the wasm execute event
-        let mut digest = [0u8; 32];
-        let proposal_digest = &response
-            .attributes
-            .iter()
-            .find(|attr| attr.key == "digest")
-            .unwrap()
-            .value;
-        hex::decode_to_slice(proposal_digest, &mut digest).unwrap();
-
-        let msg = ExecuteMsg::ApproveConfigProposal { digest };
+        let msg = ExecuteMsg::ApproveConfigProposal { id };
         let execute_info = mock_info(owner.as_str(), &[]);
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
     }
