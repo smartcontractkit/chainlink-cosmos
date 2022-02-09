@@ -30,6 +30,8 @@ on:
         required: true
       QA_KUBECONFIG:
         required: true
+      NPM_TOKEN:
+        required: true
 jobs:
   build:
     runs-on: ubuntu-latest
