@@ -1,59 +1,95 @@
 import { CATEGORIES } from '../../../lib/constants'
+import { isValidAddress } from '../../../lib/utils'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/wrapper'
-import { Duration, isValidDuration, Threshold, isValidThreshold } from './lib/types'
-import { isValidAddress } from '../../../lib/schema'
 
-type WalletInitParams = {
+type Duration = {
+  height?: number // block height
+  time?: number // length of time in seconds
+}
+
+type CommandInput = {
+  group: string
+  threshold: number
+  votingPeriod?: Duration
+}
+
+type ContractInput = {
   group_addr: string
   max_voting_period: Duration
   threshold: Threshold
 }
 
-const makeWalletInitParams = async (flags: any): Promise<WalletInitParams> => {
-  if (flags.input) return flags.input as WalletInitParams
-  return {
-    group_addr: flags.group_addr,
-    max_voting_period: flags.max_voting_period,
-    threshold: flags.threshold,
+type Threshold = {
+  absolute_count?: {
+    weight: number
+  }
+  absolute_percentage?: {
+    percentage: number
+  }
+  threshold_quorum?: {
+    threshold: number
+    quorum: number
   }
 }
 
-const validateWalletInitParams = (params: WalletInitParams): boolean => {
-  if (!isValidAddress(params.group_addr)) {
-    console.log(`group_addr=${params.group_addr} is not a valid terra address`)
-    return false
+const makeCommandInput = async (flags: any): Promise<CommandInput> => {
+  if (flags.input) return flags.input as CommandInput
+  return {
+    group: flags.group,
+    threshold: Number(flags.threshold),
+    votingPeriod: {
+      height: flags.height,
+      time: flags.time,
+    },
+  }
+}
+
+const validateInput = (input: CommandInput): boolean => {
+  // TODO: Add time validation
+  const isValidTime = (a: any) => true
+  if (!isValidAddress(input.group)) {
+    throw new Error(`group ${input.group} is not a valid terra address`)
   }
 
-  if (!isValidDuration(params.max_voting_period)) {
-    console.log(`max_voting_period=${params.max_voting_period} is not a valid Duration`)
-    return false
+  if (input.threshold === 0) {
+    throw new Error(`Threshold ${input.threshold} is not a valid. Should be higher than zero`)
   }
 
-  if (!isValidThreshold(params.threshold)) {
-    console.log(`threshold=${params.threshold} is not a valid Threshold`)
-    return false
+  if (input.votingPeriod?.height && isNaN(input.votingPeriod?.height)) {
+    throw new Error(`Voting period height ${input.votingPeriod.height} is not a valid Block`)
+  }
+
+  if (input.votingPeriod?.time && !isValidTime(input.votingPeriod?.time)) {
+    throw new Error(`Voting period time ${input.votingPeriod?.time} is not a valid time`)
   }
 
   return true
 }
 
-const makeContractInput = async (params: WalletInitParams): Promise<WalletInitParams> => {
+const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
   return {
-    group_addr: params.group_addr,
-    max_voting_period: params.max_voting_period,
-    threshold: params.threshold,
+    group_addr: input.group,
+    max_voting_period: {
+      height: input.votingPeriod?.height,
+      time: input.votingPeriod?.time,
+    },
+    threshold: {
+      absolute_count: {
+        weight: input.threshold,
+      },
+    },
   }
 }
 
 // Creates a multisig wallet backed by a previously created cw4_group
-const createWalletInstruction: AbstractInstruction<WalletInitParams, WalletInitParams> = {
+const createWalletInstruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
     category: CATEGORIES.MULTISIG,
     contract: 'cw3_flex_multisig',
     function: 'deploy',
   },
-  makeInput: makeWalletInitParams,
-  validateInput: validateWalletInitParams,
+  makeInput: makeCommandInput,
+  validateInput,
   makeContractInput: makeContractInput,
 }
 

@@ -1,52 +1,54 @@
 import { CATEGORIES } from '../../../lib/constants'
+import { isValidAddress } from '../../../lib/utils'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/wrapper'
-import { GroupMember } from './lib/types'
 
-type CreateGroupInput = {
-  members: string[]
-  weights: number[]
+type CommandInput = {
+  owners: string[]
   admin?: string
 }
 
-type GroupInitParams = {
-  members: GroupMember[]
+type ContractInput = {
+  members: {
+    addr: string
+    weight: number
+  }[]
   admin?: string
 }
 
-const makeCreateGroupInput = async (flags: any): Promise<CreateGroupInput> => {
-  if (flags.input) return flags.input as CreateGroupInput
-
+const makeCommandInput = async (flags: any, args: any[]): Promise<CommandInput> => {
+  if (flags.input) return flags.input as CommandInput
   return {
-    members: flags.members,
-    weights: flags.weights,
+    owners: args,
     admin: flags.admin,
   }
 }
-
-// TODO: Add validation
-const validateCreateGroupInput = (input: CreateGroupInput): boolean => {
+const validateInput = (input: CommandInput): boolean => {
+  const areValidOwners = input.owners.filter((owner) => !isValidAddress(owner)).length === 0
+  if (!areValidOwners) throw new Error('Owners are not valid')
+  if (input.admin && !isValidAddress(input.admin)) throw new Error('Admin is not valid')
   return true
 }
 
-const makeGroupInitParams = async (input: CreateGroupInput): Promise<GroupInitParams> => {
+const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
   return {
-    members: input.members.map((a, i) => ({
-      addr: a,
-      weight: input.weights[i],
+    members: input.owners.map((owner) => ({
+      addr: owner,
+      // Same weight for every owner
+      weight: 1,
     })),
     admin: input.admin,
   }
 }
 
-const createGroupInstruction: AbstractInstruction<CreateGroupInput, GroupInitParams> = {
+const createGroupInstruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
     category: CATEGORIES.MULTISIG,
     contract: 'cw4_group',
     function: 'deploy',
   },
-  makeInput: makeCreateGroupInput,
-  validateInput: validateCreateGroupInput,
-  makeContractInput: makeGroupInitParams,
+  makeInput: makeCommandInput,
+  validateInput,
+  makeContractInput,
 }
 
 export const CreateGroup = instructionToCommand(createGroupInstruction)
