@@ -17,4 +17,4 @@ packages-ts/gauntlet-terra-contracts/artifacts/bin
 # test
 packages-ts/gauntlet-terra-contracts/codeIds/test*
 tests/e2e/logs
-networks/.env.test*
+packages-ts/gauntlet-terra-contracts/networks/.env.test*
