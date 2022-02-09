@@ -40,6 +40,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   }
 }
 
+// yarn gauntlet cw4_group:deploy --network=bombay-testnet <OWNERS_LIST>
 const createGroupInstruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
     category: CATEGORIES.MULTISIG,

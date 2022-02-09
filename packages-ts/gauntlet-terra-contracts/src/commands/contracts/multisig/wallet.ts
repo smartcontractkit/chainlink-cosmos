@@ -10,7 +10,10 @@ type Duration = {
 type CommandInput = {
   group: string
   threshold: number
-  votingPeriod?: Duration
+  votingPeriod?: {
+    height?: number
+    time?: number
+  }
 }
 
 type ContractInput = {
@@ -70,8 +73,8 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   return {
     group_addr: input.group,
     max_voting_period: {
-      height: input.votingPeriod?.height,
-      time: input.votingPeriod?.time,
+      ...(input.votingPeriod?.height && { height: Number(input.votingPeriod?.height) }),
+      ...(input.votingPeriod?.time && { time: Number(input.votingPeriod?.time) }),
     },
     threshold: {
       absolute_count: {
@@ -82,6 +85,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
 }
 
 // Creates a multisig wallet backed by a previously created cw4_group
+// yarn gauntlet cw3_flex_multisig:deploy --network=bombay-testnet --group=<GROUP_ADDRESS> --threshold=<THRESHOLD> --height=10000100
 const createWalletInstruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
     category: CATEGORIES.MULTISIG,
