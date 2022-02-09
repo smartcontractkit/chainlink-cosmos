@@ -18,7 +18,7 @@ export class LedgerKey extends Key {
     const { ledgerConnector, terminateConnection } = await this.connectToLedger()
 
     const response = await ledgerConnector.getPublicKey(this.path)
-    this.checkForErrors(response)
+    this.assertNoErrors(response)
 
     this.publicKey = new SimplePublicKey(Buffer.from(response.compressed_pk.data).toString('base64'))
     await terminateConnection()
@@ -37,7 +37,7 @@ export class LedgerKey extends Key {
     try {
       logger.info('Approve tx on your Ledger device.')
       const response = await ledgerConnector.sign(this.path, payload)
-      this.checkForErrors(response)
+      this.assertNoErrors(response)
 
       const signature = signatureImport(Buffer.from(response.signature.data))
       return Buffer.from(signature)
@@ -53,7 +53,7 @@ export class LedgerKey extends Key {
     const transport = await TransportNodeHid.create()
     const ledgerConnector = new LedgerTerraConnector(transport)
     const response = await ledgerConnector.initialize()
-    this.checkForErrors(response)
+    this.assertNoErrors(response)
 
     return {
       ledgerConnector,
@@ -69,7 +69,7 @@ export class LedgerKey extends Key {
     return match.slice(1).map(Number)
   }
 
-  private checkForErrors(response: CommonResponse) {
+  private assertNoErrors(response: CommonResponse) {
     if (!response) return
 
     const { error_message: ledgerError, return_code: returnCode, device_locked: isLocked } = response
