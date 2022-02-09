@@ -3,13 +3,13 @@ import { bech32 } from 'bech32'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/wrapper'
 
 type CommandInput = {
-    raisingAccessController: string,
-    loweringAccessController: string
+  raisingAccessController: string
+  loweringAccessController: string
 }
 
 type ContractInput = {
-    raising_access_controller: string,
-    lowering_access_controller: string
+  raising_access_controller: string
+  lowering_access_controller: string
 }
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
