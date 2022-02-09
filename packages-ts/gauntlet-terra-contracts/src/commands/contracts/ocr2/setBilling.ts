@@ -52,8 +52,8 @@ const validateInput = (input: CommandInput): boolean => {
   }
 
   try {
-    observationPayment = BN(input.observationPaymentGjuels)
-    transmissionPayment = BN(input.transmissionPaymentGjuels) // parse as integers
+    observationPayment = new BN(input.observationPaymentGjuels)
+    transmissionPayment = new BN(input.transmissionPaymentGjuels) // parse as integers
   } catch {
     throw new Error(
       `observationPaymentGjuels=${input.observationPaymentGjuels} and ` +
