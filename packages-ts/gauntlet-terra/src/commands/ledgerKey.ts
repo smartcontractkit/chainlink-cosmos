@@ -1,5 +1,4 @@
 import { Key, SimplePublicKey, SignatureV2, SignDoc, SignerInfo, ModeInfo } from '@terra-money/terra.js'
-import { SignMode } from '@terra-money/terra.proto/cosmos/tx/signing/v1beta1/signing'
 import LedgerTerraConnector, {ERROR_CODE, CommonResponse} from '@terra-money/ledger-terra-js'
 import TransportNodeHid from "@ledgerhq/hw-transport-node-hid"
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
@@ -31,38 +30,6 @@ export class LedgerKey extends Key {
 
         return ledgerKey
     }
-
-    public async createSignature(signDoc: SignDoc): Promise<SignatureV2> {
-        if (!this.publicKey) {
-          throw new Error(
-            'Signature could not be created: Key instance missing publicKey.'
-          );
-        }
-    
-        // backup for restore
-        const signerInfos = signDoc.auth_info.signer_infos;
-        signDoc.auth_info.signer_infos = [
-          new SignerInfo(
-            this.publicKey,
-            signDoc.sequence,
-            new ModeInfo(new ModeInfo.Single(SignMode.SIGN_MODE_LEGACY_AMINO_JSON))
-          ),
-        ];
-    
-        const signDocBuffer = Buffer.from(signDoc.toAminoJSON())
-        const sigBytes = (await this.sign(signDocBuffer)).toString('base64');
-    
-        // restore signDoc to origin
-        signDoc.auth_info.signer_infos = signerInfos;
-    
-        return new SignatureV2(
-          this.publicKey,
-          new SignatureV2.Descriptor(
-            new SignatureV2.Descriptor.Single(SignMode.SIGN_MODE_LEGACY_AMINO_JSON, sigBytes)
-          ),
-          signDoc.sequence
-        );
-      }
 
     public async sign(payload: Buffer): Promise<Buffer> {
         const {ledgerConnector, terminateConnection} = await this.connectToLedger()

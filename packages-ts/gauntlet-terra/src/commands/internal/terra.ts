@@ -1,6 +1,7 @@
 import { Result, WriteCommand } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { MsgStoreCode } from '@terra-money/terra.js'
+import { SignMode } from '@terra-money/terra.proto/cosmos/tx/signing/v1beta1/signing'
 
 import { withProvider, withWallet, withCodeIds, withNetwork } from '../middlewares'
 import {
@@ -12,6 +13,7 @@ import {
   Wallet,
 } from '@terra-money/terra.js'
 import { TransactionResponse } from '../types'
+import { LedgerKey } from '../ledgerKey'
 
 type CodeIds = Record<string, number>
 
@@ -60,6 +62,9 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
 
     const tx = await this.wallet.createAndSignTx({
       msgs: [msg],
+      ...((this.wallet.key instanceof LedgerKey) && {
+        signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
+      }),
     })
 
     const res = await this.provider.tx.broadcast(tx)
@@ -78,6 +83,9 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     const instantiateTx = await this.wallet.createAndSignTx({
       msgs: [instantiate],
       memo: 'Instantiating',
+      ...((this.wallet.key instanceof LedgerKey) && {
+        signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
+      }),
     })
     logger.loading(`Deploying contract...`)
     const res = await this.provider.tx.broadcast(instantiateTx)
@@ -91,6 +99,9 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     const tx = await this.wallet.createAndSignTx({
       msgs: [code],
       memo: `Storing ${contractName}`,
+      ...((this.wallet.key instanceof LedgerKey) && {
+        signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
+      }),
     })
 
     logger.loading(`Uploading ${contractName} contract code...`)
