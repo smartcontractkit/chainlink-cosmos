@@ -62,7 +62,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
 
     const tx = await this.wallet.createAndSignTx({
       msgs: [msg],
-      ...((this.wallet.key instanceof LedgerKey) && {
+      ...(this.wallet.key instanceof LedgerKey && {
         signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
       }),
     })
@@ -83,7 +83,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     const instantiateTx = await this.wallet.createAndSignTx({
       msgs: [instantiate],
       memo: 'Instantiating',
-      ...((this.wallet.key instanceof LedgerKey) && {
+      ...(this.wallet.key instanceof LedgerKey && {
         signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
       }),
     })
@@ -99,7 +99,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     const tx = await this.wallet.createAndSignTx({
       msgs: [code],
       memo: `Storing ${contractName}`,
-      ...((this.wallet.key instanceof LedgerKey) && {
+      ...(this.wallet.key instanceof LedgerKey && {
         signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
       }),
     })
