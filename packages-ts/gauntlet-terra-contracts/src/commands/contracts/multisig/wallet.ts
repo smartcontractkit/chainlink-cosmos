@@ -55,7 +55,7 @@ const validateInput = (input: CommandInput): boolean => {
   }
 
   if (input.threshold === 0) {
-    throw new Error(`Threshold ${input.threshold} is not a valid. Should be higher than zero`)
+    throw new Error(`Threshold ${input.threshold} is invalid. Should be higher than zero`)
   }
 
   if (input.votingPeriod?.height && isNaN(input.votingPeriod?.height)) {

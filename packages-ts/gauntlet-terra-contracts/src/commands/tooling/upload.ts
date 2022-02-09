@@ -1,14 +1,14 @@
 import { logger, io, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand } from '@chainlink/gauntlet-terra'
 import { CONTRACT_LIST, getContract } from '../../lib/contracts'
-import { CATEGORIES, DEFAULT_RELEASE_VERSION } from '../../lib/constants'
+import { CATEGORIES } from '../../lib/constants'
 import path from 'path'
 export default class UploadContractCode extends TerraCommand {
   static description = 'Upload cosmwasm contract artifacts'
   static examples = [
     `yarn gauntlet upload --network=bombay-testnet`,
     `yarn gauntlet upload --network=bombay-testnet [contract names]`,
-    `yarn gauntlet upload --network=bombay-testnet flags link_token`,
+    `yarn gauntlet upload --network=bombay-testnet flags cw20_base`,
   ]
 
   static id = 'upload'
@@ -16,8 +16,6 @@ export default class UploadContractCode extends TerraCommand {
 
   static flags = {
     version: { description: 'The version to retrieve artifacts from (Defaults to v0.0.4)' },
-    codeIDs: { description: 'The path to contract code IDs file' },
-    artifacts: { description: 'The path to contract artifacts folder' },
   }
 
   constructor(flags, args: string[]) {
@@ -45,10 +43,8 @@ export default class UploadContractCode extends TerraCommand {
     const contractReceipts = {}
     const responses: any[] = []
     for (let contractName of askedContracts) {
-      const version = this.flags.version ? this.flags.version : DEFAULT_RELEASE_VERSION
-      const contract = await getContract(contractName, version)
+      const contract = await getContract(contractName, this.flags.version)
       console.log('CONTRACT Bytecode exists:', !!contract.bytecode)
-
       try {
         const res = await this.upload(contract.bytecode, contractName)
 
