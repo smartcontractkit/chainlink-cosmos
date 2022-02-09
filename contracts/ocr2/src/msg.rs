@@ -1,4 +1,4 @@
-use crate::state::{bignum, Billing, Validator};
+use crate::state::{bignum, Billing, ProposalId, Validator};
 use cosmwasm_std::{Addr, Binary, Uint128};
 use cw20::Cw20ReceiveMsg;
 use schemars::JsonSchema;
@@ -9,8 +9,6 @@ use serde::{Deserialize, Serialize};
 pub struct InstantiateMsg {
     /// LINK token contract address
     pub link_token: String,
-    /// Configuration access controller address
-    pub config_access_controller: String,
     /// RequestNewRound access controller address
     pub requester_access_controller: String,
     /// Billing access controller address
@@ -31,18 +29,24 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     BeginConfigProposal,
-    ClearConfigProposal,
-    CommitConfigProposal,
+    ClearConfigProposal {
+        id: ProposalId,
+    },
+    CommitConfigProposal {
+        id: ProposalId,
+    },
     ApproveConfigProposal {
-        digest: [u8; 32],
+        id: ProposalId,
     },
     SetConfig {
+        id: ProposalId,
         signers: Vec<Binary>,
         transmitters: Vec<String>,
         f: u8,
         onchain_config: Binary,
     },
     SetOffchainConfig {
+        id: ProposalId,
         offchain_config_version: u64,
         offchain_config: Binary,
     },
@@ -70,9 +74,6 @@ pub enum ExecuteMsg {
         config: Option<Validator>,
     },
 
-    SetConfigAccessController {
-        access_controller: String,
-    },
     SetBillingAccessController {
         access_controller: String,
     },
@@ -124,7 +125,6 @@ pub enum QueryMsg {
 
     LinkToken,
     Billing,
-    ConfigAccessController,
     BillingAccessController,
     RequesterAccessController,
     OwedPayment { transmitter: String },

@@ -144,17 +144,6 @@ fn setup() -> Env {
         )
         .unwrap();
 
-    let config_access_controller_addr = router
-        .instantiate_contract(
-            access_controller_id,
-            owner.clone(),
-            &access_controller::msg::InstantiateMsg {},
-            &[],
-            "config_access_controller",
-            None,
-        )
-        .unwrap();
-
     let link_token_addr = router
         .instantiate_contract(
             link_token_id,
@@ -181,7 +170,6 @@ fn setup() -> Env {
                 link_token: link_token_addr.to_string(),
                 min_answer: 1i128,
                 max_answer: 1_000_000_000_000i128,
-                config_access_controller: config_access_controller_addr.to_string(),
                 billing_access_controller: billing_access_controller_addr.to_string(),
                 requester_access_controller: requester_access_controller_addr.to_string(),
                 decimals: 18,
@@ -226,11 +214,26 @@ fn setup() -> Env {
         .collect::<Vec<_>>();
 
     let msg = ExecuteMsg::BeginConfigProposal;
-    router
+    let response = router
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
+    // Extract the proposal id from the wasm execute event
+    let execute = response
+        .events
+        .iter()
+        .find(|event| event.ty == "wasm")
+        .unwrap();
+    let id = &execute
+        .attributes
+        .iter()
+        .find(|attr| attr.key == "proposal_id")
+        .unwrap()
+        .value;
+    let id = Uint128::new(u128::from_str_radix(id, 10).unwrap());
+
     let msg = ExecuteMsg::SetConfig {
+        id,
         signers,
         transmitters: transmitters.clone(),
         f: 1,
@@ -242,6 +245,7 @@ fn setup() -> Env {
         .unwrap();
 
     let msg = ExecuteMsg::SetOffchainConfig {
+        id,
         offchain_config_version: 1,
         offchain_config: Binary(vec![4, 5, 6]),
     };
@@ -249,27 +253,12 @@ fn setup() -> Env {
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
-    let msg = ExecuteMsg::CommitConfigProposal;
-    let response = router
+    let msg = ExecuteMsg::CommitConfigProposal { id };
+    router
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
-    // Extract the proposal digest from the wasm execute event
-    let mut digest = [0u8; 32];
-    let execute = response
-        .events
-        .iter()
-        .find(|event| event.ty == "wasm")
-        .unwrap();
-    let proposal_digest = &execute
-        .attributes
-        .iter()
-        .find(|attr| attr.key == "digest")
-        .unwrap()
-        .value;
-    hex::decode_to_slice(proposal_digest, &mut digest).unwrap();
-
-    let msg = ExecuteMsg::ApproveConfigProposal { digest };
+    let msg = ExecuteMsg::ApproveConfigProposal { id };
 
     let response = router
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
@@ -504,11 +493,27 @@ fn transmit_happy_path() {
     const MAX_MSG_SIZE: usize = 4 * 1024; // 4kb
 
     let msg = ExecuteMsg::BeginConfigProposal;
-    env.router
+    let response = env
+        .router
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
+    // Extract the proposal id from the wasm execute event
+    let execute = response
+        .events
+        .iter()
+        .find(|event| event.ty == "wasm")
+        .unwrap();
+    let id = &execute
+        .attributes
+        .iter()
+        .find(|attr| attr.key == "proposal_id")
+        .unwrap()
+        .value;
+    let id = Uint128::new(u128::from_str_radix(id, 10).unwrap());
+
     let msg = ExecuteMsg::SetConfig {
+        id,
         signers,
         transmitters: env.transmitters.clone(),
         f: 5,
@@ -520,6 +525,7 @@ fn transmit_happy_path() {
         .unwrap();
 
     let msg = ExecuteMsg::SetOffchainConfig {
+        id,
         offchain_config_version: 2,
         offchain_config: Binary(vec![1; 2165]),
     };
@@ -528,28 +534,12 @@ fn transmit_happy_path() {
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
-    let msg = ExecuteMsg::CommitConfigProposal;
-    let response = env
-        .router
+    let msg = ExecuteMsg::CommitConfigProposal { id };
+    env.router
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
-    // Extract the proposal digest from the wasm execute event
-    let mut digest = [0u8; 32];
-    let execute = response
-        .events
-        .iter()
-        .find(|event| event.ty == "wasm")
-        .unwrap();
-    let proposal_digest = &execute
-        .attributes
-        .iter()
-        .find(|attr| attr.key == "digest")
-        .unwrap()
-        .value;
-    hex::decode_to_slice(proposal_digest, &mut digest).unwrap();
-
-    let msg = ExecuteMsg::ApproveConfigProposal { digest };
+    let msg = ExecuteMsg::ApproveConfigProposal { id };
     env.router
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();
