@@ -45,7 +45,7 @@ export class LedgerKey extends Key {
           new SignerInfo(
             this.publicKey,
             signDoc.sequence,
-            new ModeInfo(new ModeInfo.Single(SignMode.SIGN_MODE_DIRECT))
+            new ModeInfo(new ModeInfo.Single(SignMode.SIGN_MODE_LEGACY_AMINO_JSON))
           ),
         ];
     
@@ -58,7 +58,7 @@ export class LedgerKey extends Key {
         return new SignatureV2(
           this.publicKey,
           new SignatureV2.Descriptor(
-            new SignatureV2.Descriptor.Single(SignMode.SIGN_MODE_DIRECT, sigBytes)
+            new SignatureV2.Descriptor.Single(SignMode.SIGN_MODE_LEGACY_AMINO_JSON, sigBytes)
           ),
           signDoc.sequence
         );
@@ -84,7 +84,8 @@ export class LedgerKey extends Key {
     private async connectToLedger(){
         const transport = await TransportNodeHid.create()
         const ledgerConnector = new LedgerTerraConnector(transport)
-        await ledgerConnector.initialize()
+        const response = await ledgerConnector.initialize()
+        this.checkForErrors(response)
 
         return {
             ledgerConnector, 
@@ -97,6 +98,9 @@ export class LedgerKey extends Key {
     }
 
     private checkForErrors (response: CommonResponse) {
+        if (!response)
+            return
+            
         const { 
             error_message: ledgerError, 
             return_code: returnCode,
@@ -106,13 +110,9 @@ export class LedgerKey extends Key {
         if (returnCode === ERROR_CODE.NoError)
             return
 
-        let errorMessage: string
         if (isLocked) {
-            errorMessage = 'Is Ledger unlocked and Terra app open?'
-        } else {
-            errorMessage = ledgerError
+            throw new Error('Is Ledger unlocked and Terra app open?')
         }
-
-        throw new Error(errorMessage)
+        throw new Error(ledgerError)
     }
 }
