@@ -929,13 +929,13 @@
     bech32 "^2.0.0"
     ripemd160 "^2.0.2"
 
-"@terra-money/terra.js@^2.1.2":
-  version "2.1.23"
-  resolved "https://registry.yarnpkg.com/@terra-money/terra.js/-/terra.js-2.1.23.tgz#6e7ee7477b8cc5895ddcb2e4eb0446e71bb0e575"
-  integrity sha512-nSAR35zqjKUn1Jzqevf30s47XRlW/VXU01YgK3n9ndmX15lkdlgFvqaV7UezK0xAmCpm+7xWIrtBTMmZpVBkMQ==
+"@terra-money/terra.js@^3.0.6":
+  version "3.0.7"
+  resolved "https://registry.yarnpkg.com/@terra-money/terra.js/-/terra.js-3.0.7.tgz#9c413f16da3f54195ee8d7d3e113a8fc5107200b"
+  integrity sha512-moeVBWqIPZaV0HmCY127Y9H/MsuFtH1VgW0xEvDQWqu1jpKhK5CtPHMLKNje3mKSjU8A7vXZ8hlW3KobqP2poQ==
   dependencies:
     "@terra-money/terra.proto" "^0.1.7"
-    axios "^0.21.1"
+    axios "^0.24.0"
     bech32 "^2.0.0"
     bip32 "^2.0.6"
     bip39 "^3.0.3"
@@ -946,7 +946,7 @@
     secp256k1 "^4.0.2"
     tmp "^0.2.1"
     utf-8-validate "^5.0.5"
-    ws "^7.4.2"
+    ws "^7.5.5"
 
 "@terra-money/terra.proto@^0.1.7":
   version "0.1.7"
@@ -1274,13 +1274,6 @@ atob@^2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/atob/-/atob-2.1.2.tgz#6d9517eb9e030d2436666651e86bd9f6f13533c9"
   integrity sha512-Wm6ukoaOGJi/73p/cl2GvLjTI5JM1k/O14isD73YML8StrH/7/lRFgmg8nICZgD3bZZvjwCGxtMOD3wWNAu8cg==
-
-axios@^0.21.1:
-  version "0.21.4"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-0.21.4.tgz#c67b90dc0568e5c1cf2b0b858c43ba28e2eda575"
-  integrity sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==
-  dependencies:
-    follow-redirects "^1.14.0"
 
 axios@^0.24.0:
   version "0.24.0"
@@ -2316,7 +2309,7 @@ find-yarn-workspace-root2@1.2.16:
     micromatch "^4.0.2"
     pkg-dir "^4.2.0"
 
-follow-redirects@^1.14.0, follow-redirects@^1.14.4:
+follow-redirects@^1.14.4:
   version "1.14.8"
   resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.14.8.tgz#016996fb9a11a100566398b1c6839337d7bfa8fc"
   integrity sha512-1x0S9UVJHsQprFcEC/qnNzBLcIxsjAV905f/UkQxbclCsoTWlacCNOpQa/anodLl2uaEKFhfWOvM2Qg77+15zA==
@@ -5363,7 +5356,7 @@ write-file-atomic@^3.0.0:
     signal-exit "^3.0.2"
     typedarray-to-buffer "^3.1.5"
 
-ws@^7.4.2, ws@^7.4.6:
+ws@^7.4.6, ws@^7.5.5:
   version "7.5.7"
   resolved "https://registry.yarnpkg.com/ws/-/ws-7.5.7.tgz#9e0ac77ee50af70d58326ecff7e85eb3fa375e67"
   integrity sha512-KMvVuFzpKBuiIXW3E4u3mySRO2/mCHSyZDJQM5NQ9Q9KHWHWh0NHgfbRMLLrceUK5qAL4ytALJbpRMjixFZh8A==
