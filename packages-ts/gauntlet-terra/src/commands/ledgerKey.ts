@@ -71,7 +71,7 @@ export class LedgerKey extends Key {
             const response = await ledgerConnector.sign(this.path, payload)
             this.checkForErrors(response)
    
-            const signature = signatureImport(Buffer.from(response.signature as any))
+            const signature = signatureImport(Buffer.from(response.signature.data))
             return Buffer.from(signature)
         } catch (e) {
             logger.error(`LedgerKey sign failed: ${e.message}`)
@@ -100,7 +100,7 @@ export class LedgerKey extends Key {
     private checkForErrors (response: CommonResponse) {
         if (!response)
             return
-            
+
         const { 
             error_message: ledgerError, 
             return_code: returnCode,
