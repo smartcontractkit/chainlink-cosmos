@@ -1,12 +1,13 @@
 import { BN } from '@chainlink/gauntlet-core/dist/utils'
+import { bech32 } from 'bech32'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/wrapper'
 
 type CommandInput = {
-  address: String
+  address: string
 }
 
 type ContractInput = {
-  address: String
+  address: string
 }
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
