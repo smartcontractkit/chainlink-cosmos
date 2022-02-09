@@ -4,6 +4,8 @@ import TransportNodeHid from '@ledgerhq/hw-transport-node-hid'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { signatureImport } from 'secp256k1'
 
+const BIP44_REGEX = /^(44)\'\s*\/\s*(\d+)\'\s*\/\s*([0,1]+)\'\s*\/\s*(\d+)\s*\/\s*(\d+)$/
+
 export class LedgerKey extends Key {
   private path: Array<number>
 
@@ -23,7 +25,7 @@ export class LedgerKey extends Key {
   }
 
   public static async create(path: string): Promise<LedgerKey> {
-    const pathArr = this.pathStringToArray(path)
+    const pathArr = this.bip44PathtoArray(path)
     const ledgerKey = new LedgerKey(pathArr)
     await ledgerKey.initialize()
 
@@ -59,8 +61,12 @@ export class LedgerKey extends Key {
     }
   }
 
-  private static pathStringToArray(path: string): Array<number> {
-    return path.split("'/").map((item) => parseInt(item))
+  private static bip44PathtoArray(path: string): Array<number> {
+    const match = BIP44_REGEX.exec(path)
+    if (!match)
+        throw new Error('Invalid BIP44 path!')
+
+    return match.slice(1).map(Number)
   }
 
   private checkForErrors(response: CommonResponse) {

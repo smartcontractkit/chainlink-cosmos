@@ -5,7 +5,7 @@ import { assertions, io, logger } from '@chainlink/gauntlet-core/dist/utils'
 import TerraCommand from './internal/terra'
 import path from 'path'
 import { existsSync } from 'fs'
-import { LEDGER_ULUNA_PATH } from '../lib/constants'
+import { BIP44_LUNA_PATH } from '../lib/constants'
 
 const isValidURL = (a) => true
 export const withProvider: Middleware = (c: TerraCommand, next: Next) => {
@@ -25,7 +25,7 @@ export const withProvider: Middleware = (c: TerraCommand, next: Next) => {
 export const withWallet: Middleware = async (c: TerraCommand, next: Next) => {
   let key: Key
   if (c.flags.withLedger || !!process.env.WITH_LEDGER) {
-    const path = c.flags.ledgerPath || LEDGER_ULUNA_PATH
+    const path = c.flags.ledgerPath || BIP44_LUNA_PATH
     key = await LedgerKey.create(path)
   } else {
     const mnemonic = process.env.MNEMONIC
