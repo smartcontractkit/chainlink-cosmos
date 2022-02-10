@@ -133,7 +133,7 @@ func validateConfig(cfg TerraConfig) error {
 
 func applyDefaults(cfg *TerraConfig) {
 	if cfg.FCDURL == "" {
-		cfg.FCDURL = "https://fcd.terra.dev"
+		cfg.FCDURL = "https://fcd.terra.dev/"
 	}
 	if cfg.ReadTimeout == 0 {
 		cfg.ReadTimeout = 2 * time.Second
