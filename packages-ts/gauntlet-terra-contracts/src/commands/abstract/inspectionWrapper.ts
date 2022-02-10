@@ -47,6 +47,10 @@ export const instructionToInspectCommand = <CommandInput, Expected>(
       super(flags, args)
     }
 
+    makeRawTransaction = () => {
+      throw new Error('Inspection command does not involve any transaction')
+    }
+
     execute = async (): Promise<Result<TransactionResponse>> => {
       const input = await inspectInstruction.makeInput(this.flags, this.args)
       const commands = await Promise.all(
