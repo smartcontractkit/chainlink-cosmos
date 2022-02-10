@@ -99,7 +99,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   }
 
   async deploy(codeId, instantiateMsg, migrationContract = undefined) {
-    const instantiateTx = await this.prepareDeploy(codeId, instantiateMsg, migrationContract = undefined)
+    const instantiateTx = await this.prepareDeploy(codeId, instantiateMsg, (migrationContract = undefined))
     logger.loading(`Deploying contract...`)
     const res = await this.provider.tx.broadcast(instantiateTx)
 
@@ -122,7 +122,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     const tx = await this.prepareUpload(wasm, contractName)
     logger.loading(`Uploading ${contractName} contract code...`)
     const res = await this.provider.tx.broadcast(tx)
-  
+
     return this.wrapResponse(res)
   }
 }

@@ -184,6 +184,21 @@ export default class AbstractCommand extends TerraCommand {
     }
   }
 
+  // create and sign transaction, without executing
+  abstractPrepare = async () => {
+    const operations = {
+      [TERRA_OPERATIONS.DEPLOY]: this.opts.prepareDeploy()
+      [TERRA_OPERATIONS.EXECUTE]: this.opts.prepareCall()
+    }
+    return await operations[this.opts.action](address, {
+      [this.opts.function]: this.params,
+    })
+}
+
+    const address = this.args[0]
+    return operations[this.opts.action](this.params, address)
+  }
+
   execute = async () => {
     const operations = {
       [TERRA_OPERATIONS.DEPLOY]: this.abstractDeploy,
