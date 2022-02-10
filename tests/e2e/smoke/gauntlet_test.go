@@ -1,10 +1,8 @@
 package smoke_test
 
 import (
-	"fmt"
 	"math/big"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -63,19 +61,11 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 		})
 		By("Setup Gauntlet", func() {
 			networkDirPath = filepath.Join(utils.ProjectRoot, "./packages-ts/gauntlet-terra-contracts/networks")
-			_, err := exec.LookPath("yarn")
-			Expect(err).ShouldNot(HaveOccurred())
-
 			cwd, _ := os.Getwd()
 			err = os.Chdir(filepath.Join(cwd + "../../../.."))
 			Expect(err).ShouldNot(HaveOccurred())
 
-			gauntletBin := fmt.Sprintf(
-				"%s%s",
-				filepath.Join(cwd, "../../../bin/gauntlet-terra-"),
-				gauntlet.GetOsVersion(),
-			)
-			g, err = gauntlet.NewGauntlet(gauntletBin)
+			g, err = gauntlet.NewGauntlet()
 			Expect(err).ShouldNot(HaveOccurred())
 
 			terraNodeUrl, err := e.Charts.Connections("localterra").LocalURLByPort("lcd", environment.HTTP)
