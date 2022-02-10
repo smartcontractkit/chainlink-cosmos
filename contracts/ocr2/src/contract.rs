@@ -224,6 +224,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::OracleObservationCount { transmitter } => {
             to_binary(&query_oracle_observation_count(deps, transmitter)?)
         }
+        QueryMsg::Proposal { id } => to_binary(&query_proposal(deps, id)?),
         QueryMsg::Version => Ok(to_binary(CONTRACT_VERSION)?),
         QueryMsg::Owner => Ok(to_binary(&OWNER.query_owner(deps)?)?),
     }
@@ -529,6 +530,11 @@ pub fn execute_propose_offchain_config(
     PROPOSALS.save(deps.storage, id.u128().into(), &proposal)?;
 
     Ok(Response::default())
+}
+
+pub fn query_proposal(deps: Deps, id: ProposalId) -> StdResult<Proposal> {
+    let proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
+    Ok(proposal)
 }
 
 pub fn query_latest_config_details(deps: Deps) -> StdResult<LatestConfigDetailsResponse> {
