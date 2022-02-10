@@ -5,6 +5,7 @@
     {
       "type": "string",
       "enum": [
+        "begin_proposal",
         "accept_ownership",
         "request_new_round"
       ]
@@ -12,15 +13,78 @@
     {
       "type": "object",
       "required": [
-        "set_config"
+        "clear_proposal"
       ],
       "properties": {
-        "set_config": {
+        "clear_proposal": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/Uint128"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "finalize_proposal"
+      ],
+      "properties": {
+        "finalize_proposal": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/Uint128"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "accept_proposal"
+      ],
+      "properties": {
+        "accept_proposal": {
+          "type": "object",
+          "required": [
+            "digest",
+            "id"
+          ],
+          "properties": {
+            "digest": {
+              "$ref": "#/definitions/Binary"
+            },
+            "id": {
+              "$ref": "#/definitions/Uint128"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "propose_config"
+      ],
+      "properties": {
+        "propose_config": {
           "type": "object",
           "required": [
             "f",
-            "offchain_config",
-            "offchain_config_version",
+            "id",
             "onchain_config",
             "signers",
             "transmitters"
@@ -31,13 +95,8 @@
               "format": "uint8",
               "minimum": 0.0
             },
-            "offchain_config": {
-              "$ref": "#/definitions/Binary"
-            },
-            "offchain_config_version": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
+            "id": {
+              "$ref": "#/definitions/Uint128"
             },
             "onchain_config": {
               "$ref": "#/definitions/Binary"
@@ -53,6 +112,36 @@
               "items": {
                 "type": "string"
               }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "propose_offchain_config"
+      ],
+      "properties": {
+        "propose_offchain_config": {
+          "type": "object",
+          "required": [
+            "id",
+            "offchain_config",
+            "offchain_config_version"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "offchain_config": {
+              "$ref": "#/definitions/Binary"
+            },
+            "offchain_config_version": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
             }
           }
         }
