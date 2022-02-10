@@ -12,6 +12,7 @@ import (
 	"github.com/smartcontractkit/chainlink/core/logger"
 )
 
+// NewTxResultsSourceFactory builds sources of TxResults objects expected by the relay monitoring.
 func NewTxResultsSourceFactory(log logger.Logger) relayMonitoring.SourceFactory {
 	return &txResultsSourceFactory{log, &http.Client{}}
 }
@@ -107,9 +108,9 @@ func (t *txResultsSource) Fetch(ctx context.Context) (interface{}, error) {
 	for _, tx := range recentTxs {
 		// See https://github.com/terra-money/core/blob/main/x/wasm/types/errors.go
 		if tx.Code > 2 && tx.CodeSpace == "wasm" {
-			output.NumFailed += 1
+			output.NumFailed++
 		} else {
-			output.NumSucceeded += 1
+			output.NumSucceeded++
 		}
 	}
 	return output, nil
