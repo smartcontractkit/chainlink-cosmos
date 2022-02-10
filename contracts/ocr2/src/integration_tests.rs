@@ -213,7 +213,7 @@ fn setup() -> Env {
         .map(|(i, _)| format!("transmitter{}", i))
         .collect::<Vec<_>>();
 
-    let msg = ExecuteMsg::BeginConfigProposal;
+    let msg = ExecuteMsg::BeginProposal;
     let response = router
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
         .unwrap();
@@ -232,7 +232,7 @@ fn setup() -> Env {
         .value;
     let id = Uint128::new(u128::from_str_radix(id, 10).unwrap());
 
-    let msg = ExecuteMsg::SetConfig {
+    let msg = ExecuteMsg::ProposeConfig {
         id,
         signers,
         transmitters: transmitters.clone(),
@@ -244,7 +244,7 @@ fn setup() -> Env {
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
-    let msg = ExecuteMsg::SetOffchainConfig {
+    let msg = ExecuteMsg::ProposeOffchainConfig {
         id,
         offchain_config_version: 1,
         offchain_config: Binary(vec![4, 5, 6]),
@@ -253,12 +253,12 @@ fn setup() -> Env {
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
-    let msg = ExecuteMsg::CommitConfigProposal { id };
+    let msg = ExecuteMsg::FinalizeProposal { id };
     router
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
-    let msg = ExecuteMsg::ApproveConfigProposal { id };
+    let msg = ExecuteMsg::AcceptProposal { id };
 
     let response = router
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
@@ -269,7 +269,7 @@ fn setup() -> Env {
     let set_config = response
         .events
         .iter()
-        .find(|event| event.ty == "wasm-set_config")
+        .find(|event| event.ty == "wasm-propose_config")
         .unwrap();
     let digest = &set_config
         .attributes
@@ -492,7 +492,7 @@ fn transmit_happy_path() {
 
     const MAX_MSG_SIZE: usize = 4 * 1024; // 4kb
 
-    let msg = ExecuteMsg::BeginConfigProposal;
+    let msg = ExecuteMsg::BeginProposal;
     let response = env
         .router
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
@@ -512,7 +512,7 @@ fn transmit_happy_path() {
         .value;
     let id = Uint128::new(u128::from_str_radix(id, 10).unwrap());
 
-    let msg = ExecuteMsg::SetConfig {
+    let msg = ExecuteMsg::ProposeConfig {
         id,
         signers,
         transmitters: env.transmitters.clone(),
@@ -524,7 +524,7 @@ fn transmit_happy_path() {
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
-    let msg = ExecuteMsg::SetOffchainConfig {
+    let msg = ExecuteMsg::ProposeOffchainConfig {
         id,
         offchain_config_version: 2,
         offchain_config: Binary(vec![1; 2165]),
@@ -534,12 +534,12 @@ fn transmit_happy_path() {
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
-    let msg = ExecuteMsg::CommitConfigProposal { id };
+    let msg = ExecuteMsg::FinalizeProposal { id };
     env.router
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
-    let msg = ExecuteMsg::ApproveConfigProposal { id };
+    let msg = ExecuteMsg::AcceptProposal { id };
     env.router
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();

@@ -14,8 +14,8 @@ use crate::msg::{
     TransmittersResponse,
 };
 use crate::state::{
-    config_digest_from_data, Billing, Config, ProposalId, ProposedConfig, Round, Transmission,
-    Transmitter, Validator, CONFIG, CURRENT_PROPOSAL, MAX_ORACLES, OWNER, PAYEES, PROPOSALS,
+    config_digest_from_data, Billing, Config, Proposal, ProposalId, Round, Transmission,
+    Transmitter, Validator, CONFIG, MAX_ORACLES, NEXT_PROPOSAL_ID, OWNER, PAYEES, PROPOSALS,
     PROPOSED_PAYEES, SIGNERS, TRANSMISSIONS, TRANSMITTERS,
 };
 use crate::{require, Decimal};
@@ -85,7 +85,7 @@ pub fn instantiate(
     };
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     CONFIG.save(deps.storage, &config)?;
-    CURRENT_PROPOSAL.save(deps.storage, &Uint128::new(0))?;
+    NEXT_PROPOSAL_ID.save(deps.storage, &Uint128::new(0))?;
 
     Ok(Response::default().add_event(
         Event::new("set_link_token").add_attribute("new_link_token", config.link_token.0),
@@ -101,17 +101,11 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     let api = deps.api;
     match msg {
-        ExecuteMsg::BeginConfigProposal => execute_begin_config_proposal(deps, env, info),
-        ExecuteMsg::ClearConfigProposal { id } => {
-            execute_clear_config_proposal(deps, env, info, id)
-        }
-        ExecuteMsg::CommitConfigProposal { id } => {
-            execute_commit_config_proposal(deps, env, info, id)
-        }
-        ExecuteMsg::ApproveConfigProposal { id } => {
-            execute_approve_config_proposal(deps, env, info, id)
-        }
-        ExecuteMsg::SetConfig {
+        ExecuteMsg::BeginProposal => execute_begin_proposal(deps, env, info),
+        ExecuteMsg::ClearProposal { id } => execute_clear_proposal(deps, env, info, id),
+        ExecuteMsg::FinalizeProposal { id } => execute_finalize_proposal(deps, env, info, id),
+        ExecuteMsg::AcceptProposal { id } => execute_accept_proposal(deps, env, info, id),
+        ExecuteMsg::ProposeConfig {
             id,
             signers,
             transmitters,
@@ -123,7 +117,7 @@ pub fn execute(
                 .iter()
                 .map(|t| api.addr_validate(t))
                 .collect::<StdResult<Vec<Addr>>>()?;
-            execute_set_config(
+            execute_propose_config(
                 deps,
                 env,
                 info,
@@ -134,11 +128,11 @@ pub fn execute(
                 onchain_config.0,
             )
         }
-        ExecuteMsg::SetOffchainConfig {
+        ExecuteMsg::ProposeOffchainConfig {
             id,
             offchain_config_version,
             offchain_config,
-        } => execute_set_offchain_config(
+        } => execute_propose_offchain_config(
             deps,
             env,
             info,
@@ -252,13 +246,13 @@ pub fn execute_receive(
 
 // TODO: use for setPayees too?
 
-pub fn execute_begin_config_proposal(
+pub fn execute_begin_proposal(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
     // TODO: explicitly handle overflow (but already caught by overflow-checks = true)
-    let id = CURRENT_PROPOSAL.update(deps.storage, |id| -> StdResult<ProposalId> {
+    let id = NEXT_PROPOSAL_ID.update(deps.storage, |id| -> StdResult<ProposalId> {
         Ok(id + Uint128::new(1))
     })?;
 
@@ -266,7 +260,7 @@ pub fn execute_begin_config_proposal(
     PROPOSALS.save(
         deps.storage,
         id.u128().into(),
-        &ProposedConfig {
+        &Proposal {
             owner: info.sender,
             finalized: false,
             oracles: Vec::new(),
@@ -277,13 +271,13 @@ pub fn execute_begin_config_proposal(
     )?;
 
     let response = Response::new()
-        .add_attribute("method", "begin_config_proposal")
+        .add_attribute("method", "begin_proposal")
         .add_attribute("proposal_id", id.to_string());
 
     Ok(response)
 }
 
-pub fn execute_clear_config_proposal(
+pub fn execute_clear_proposal(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
@@ -301,7 +295,7 @@ pub fn execute_clear_config_proposal(
     Ok(Response::default())
 }
 
-pub fn execute_commit_config_proposal(
+pub fn execute_finalize_proposal(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
@@ -328,13 +322,13 @@ pub fn execute_commit_config_proposal(
     PROPOSALS.save(deps.storage, id.u128().into(), &proposal)?;
 
     let response = Response::new()
-        .add_attribute("method", "commit_config_proposal")
+        .add_attribute("method", "finalize_proposal")
         .add_attribute("proposal_id", id.to_string());
 
     Ok(response)
 }
 
-pub fn execute_approve_config_proposal(
+pub fn execute_accept_proposal(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -346,7 +340,7 @@ pub fn execute_approve_config_proposal(
 
     let proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
 
-    let response = Response::new().add_attribute("method", "set_config");
+    let response = Response::new().add_attribute("method", "propose_config");
 
     // Only approve proposal if finalized
     require!(proposal.finalized, InvalidInput);
@@ -426,7 +420,7 @@ pub fn execute_approve_config_proposal(
         .map(|(_, transmitter)| attr("transmitters", transmitter));
 
     response = response.add_event(
-        Event::new("set_config")
+        Event::new("propose_config")
             .add_attribute(
                 "previous_config_block_number",
                 previous_config_block_number.to_string(),
@@ -456,7 +450,7 @@ pub fn execute_approve_config_proposal(
     Ok(response)
 }
 
-pub fn execute_set_config(
+pub fn execute_propose_config(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
@@ -494,7 +488,7 @@ pub fn execute_set_config(
     Ok(Response::default())
 }
 
-pub fn execute_set_offchain_config(
+pub fn execute_propose_offchain_config(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
@@ -1549,11 +1543,11 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn set_config() {
+    fn propose_config() {
         let mut deps = setup();
         let owner = "owner".to_string();
 
-        let msg = ExecuteMsg::BeginConfigProposal;
+        let msg = ExecuteMsg::BeginProposal;
         let execute_info = mock_info(owner.as_str(), &[]);
         let response = execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
@@ -1566,7 +1560,7 @@ pub(crate) mod tests {
             .value;
         let id = Uint128::new(u128::from_str_radix(id, 10).unwrap());
 
-        let msg = ExecuteMsg::SetConfig {
+        let msg = ExecuteMsg::ProposeConfig {
             id,
             signers: vec![
                 Binary(vec![1; 64]),
@@ -1586,7 +1580,7 @@ pub(crate) mod tests {
         let execute_info = mock_info(owner.as_str(), &[]);
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
-        let msg = ExecuteMsg::SetOffchainConfig {
+        let msg = ExecuteMsg::ProposeOffchainConfig {
             id,
             offchain_config_version: 1,
             offchain_config: Binary(vec![4, 5, 6]),
@@ -1595,11 +1589,11 @@ pub(crate) mod tests {
         let execute_info = mock_info(owner.as_str(), &[]);
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
-        let msg = ExecuteMsg::CommitConfigProposal { id };
+        let msg = ExecuteMsg::FinalizeProposal { id };
         let execute_info = mock_info(owner.as_str(), &[]);
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
-        let msg = ExecuteMsg::ApproveConfigProposal { id };
+        let msg = ExecuteMsg::AcceptProposal { id };
         let execute_info = mock_info(owner.as_str(), &[]);
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
     }
