@@ -116,12 +116,12 @@ func (e *envelopeSource) Fetch(ctx context.Context) (interface{}, error) {
 			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to unmarshal balance response: %w", err))
 			return
 		}
-		balance, err := strconv.ParseUint(balanceRes.Balance, 10, 64)
-		if err != nil {
-			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to parse uint64 balance from '%s': %w", balanceRes.Balance, err))
+		balance, success := new(big.Int).SetString(balanceRes.Balance, 10)
+		if !success {
+			envelopeErr = multierr.Combine(fmt.Errorf("failed to parse link balance from '%s'", balanceRes.Balance))
 			return
 		}
-		envelope.LinkBalance = balance
+		envelope.LinkBalance = uint64(balance.Int64())
 	}()
 	wg.Wait()
 	return envelope, envelopeErr
