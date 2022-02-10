@@ -22,6 +22,10 @@ export default class UploadContractCode extends TerraCommand {
     super(flags, args)
   }
 
+  makeRawTransaction = async () => {
+    throw new Error('Upload command: makeRawTransaction method not implemented')
+  }
+
   getCodeId(response): number | undefined {
     return Number(this.parseResponseValue(response, 'store_code', 'code_id'))
   }
