@@ -120,6 +120,9 @@ pub fn execute(
             onchain_config,
         } => {
             let api = &deps.api;
+            // Require all signers are 32 byte pubkeys
+            require!(signers.iter().all(|s| s.0.len() == 32), InvalidInput);
+            // Require all transmitters are valid addresses
             let transmitters = transmitters
                 .iter()
                 .map(|t| api.addr_validate(t))
@@ -1582,10 +1585,10 @@ pub(crate) mod tests {
         let msg = ExecuteMsg::ProposeConfig {
             id,
             signers: vec![
-                Binary(vec![1; 64]),
-                Binary(vec![2; 64]),
-                Binary(vec![3; 64]),
-                Binary(vec![4; 64]),
+                Binary(vec![1; 32]),
+                Binary(vec![2; 32]),
+                Binary(vec![3; 32]),
+                Binary(vec![4; 32]),
             ],
             transmitters: vec![
                 "transmitter0".to_string(),
