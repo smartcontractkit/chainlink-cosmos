@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"reflect"
 	"strconv"
+
+	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
@@ -81,6 +84,11 @@ func MustAccAddress(addr string) cosmosSDK.AccAddress {
 	return accAddr
 }
 
+const (
+	byteWidth128 = 16
+	bitWidth128  = byteWidth128 * 8
+)
+
 // ContractConfigToOCRConfig converts the output onchain_config to the type
 // expected by OCR
 func ContractConfigToOCRConfig(in []byte) ([]byte, error) {
@@ -89,10 +97,40 @@ func ContractConfigToOCRConfig(in []byte) ([]byte, error) {
 	if len(in) != 33 {
 		return nil, fmt.Errorf("invalid config length: expected 33 got %d", len(in))
 	}
-	const byteWidth128 = 16
-	padding := make([]byte, 8) // padding to convert int to 192
 	version := in[0:1]
-	min128 := in[1 : byteWidth128+1]
-	max128 := in[1+byteWidth128:]
-	return bytes.Join([][]byte{version, padding, min128, padding, max128}, []byte{}), nil
+	min, err := Parse128BitSignedInt(in[1 : byteWidth128+1])
+	if err != nil {
+		return nil, err
+	}
+	max, err := Parse128BitSignedInt(in[1+byteWidth128:])
+	if err != nil {
+		return nil, err
+	}
+	minBytes, err := median.ToBytes(min)
+	if err != nil {
+		return nil, err
+	}
+	maxBytes, err := median.ToBytes(max)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.Join([][]byte{version, minBytes, maxBytes}, []byte{}), nil
+}
+
+func Parse128BitSignedInt(s []byte) (*big.Int, error) {
+	if len(s) != byteWidth128 {
+		return nil, fmt.Errorf("invalid int length: expected %d got %d", byteWidth128, len(s))
+	}
+	val := (&big.Int{}).SetBytes(s)
+	// 2**127 - 1
+	maxPositive := big.NewInt(0).Sub(big.NewInt(0).Lsh(big.NewInt(1), bitWidth128-1), big.NewInt(1))
+	negative := val.Cmp(maxPositive) > 0
+	if negative {
+		// Get the complement wrt to 2^128
+		maxUint := big.NewInt(1)
+		maxUint.Lsh(maxUint, bitWidth128)
+		val.Sub(maxUint, val)
+		val.Neg(val)
+	}
+	return val, nil
 }
