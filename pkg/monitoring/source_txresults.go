@@ -70,7 +70,7 @@ func (t *txResultsSource) Fetch(ctx context.Context) (interface{}, error) {
 	query.Set("account", t.terraFeedConfig.ContractAddressBech32)
 	query.Set("limit", "100")
 	query.Set("offset", "0")
-	getTxsURL := fmt.Sprintf("%s/v1/txs?%s", t.terraConfig.FCDURL, query.Encode())
+	getTxsURL := fmt.Sprintf("%sv1/txs?%s", t.terraConfig.FCDURL, query.Encode())
 	readTxsReq, err := http.NewRequestWithContext(ctx, http.MethodGet, getTxsURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to build a request to the terra FCD: %w", err)
