@@ -26,7 +26,10 @@
     "bundle": "yarn build && pkg ."
   },
   "dependencies": {
-    "@terra-money/terra.js": "^3.0.4",
-    "@chainlink/gauntlet-core": "0.0.7"
+    "@chainlink/gauntlet-core": "0.0.7",
+    "@ledgerhq/hw-transport-node-hid": "^6.20.0",
+    "@terra-money/ledger-terra-js": "^1.2.1",
+    "@terra-money/terra.js": "^3.0.6",
+    "secp256k1": "^4.0.3"
   }
 }

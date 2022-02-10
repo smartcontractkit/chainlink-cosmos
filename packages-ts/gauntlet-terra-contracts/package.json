@@ -29,7 +29,7 @@
   "dependencies": {
     "@chainlink/gauntlet-core": "0.0.7",
     "@chainlink/gauntlet-terra": "*",
-    "@terra-money/terra.js": "^3.0.4",
+    "@terra-money/terra.js": "^3.0.6",
     "ajv": "^8.6.3"
   }
 }

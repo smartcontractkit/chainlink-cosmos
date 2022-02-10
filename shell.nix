@@ -30,6 +30,7 @@ pkgs.mkShell {
     # Keep this nodejs version in sync with the version in .tool-versions please
     nodejs-14_x
     (yarn.override { nodejs = nodejs-14_x; })
+    libusb1
   ];
   RUST_BACKTRACE = "1";
   GOROOT="${pkgs.go_1_17}/share/go";

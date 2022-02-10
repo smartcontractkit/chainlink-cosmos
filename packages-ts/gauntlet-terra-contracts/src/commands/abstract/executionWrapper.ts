@@ -27,7 +27,7 @@ export const instructionToCommand = (instruction: AbstractInstruction<any, any>)
       instruction.validateInput(commandInput)
       const input = await instruction.makeContractInput(commandInput)
       const abstractCommand = await makeAbstractCommand(id, this.flags, this.args, input)
-      abstractCommand.invokeMiddlewares(abstractCommand, abstractCommand.middlewares)
+      await abstractCommand.invokeMiddlewares(abstractCommand, abstractCommand.middlewares)
       return abstractCommand.execute()
     }
   }

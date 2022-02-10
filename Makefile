@@ -12,7 +12,7 @@ install:
 	go install github.com/onsi/ginkgo/v2/ginkgo
 
 build_js:
-	yarn install --frozen-lockfile && yarn bundle
+	yarn install --frozen-lockfile
 
 build_contracts:
 	./scripts/build-contracts.sh
