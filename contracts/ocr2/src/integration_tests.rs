@@ -236,6 +236,11 @@ fn setup() -> Env {
         id,
         signers,
         transmitters: transmitters.clone(),
+        payees: transmitters
+            .iter()
+            .enumerate()
+            .map(|(i, _)| format!("payee{}", i))
+            .collect(),
         f: 1,
         onchain_config: Binary(vec![]),
     };
@@ -409,21 +414,6 @@ fn transmit_happy_path() {
         .unwrap();
     assert_eq!(owed_payment, observation_payment + reimbursement);
 
-    // set_payees so we can withdraw
-    let msg = ExecuteMsg::SetPayees {
-        payees: env
-            .transmitters
-            .iter()
-            .enumerate()
-            .map(|(i, transmitter)| (transmitter.clone(), format!("payee{}", i)))
-            .collect(),
-    };
-    env.router
-        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
-        .unwrap();
-
-    // TODO: what happens if an oracle has no payees attached?
-    // https://github.com/smartcontractkit/chainlink-terra/issues/20
     let available: LinkAvailableForPaymentResponse = env
         .router
         .wrap()
@@ -534,6 +524,12 @@ fn transmit_happy_path() {
         id,
         signers,
         transmitters: env.transmitters.clone(),
+        payees: env
+            .transmitters
+            .iter()
+            .enumerate()
+            .map(|(i, _)| format!("payee{}", i))
+            .collect(),
         f: 5,
         onchain_config: Binary(vec![]),
     };
@@ -722,19 +718,6 @@ fn set_link_token() {
 
     // 1 round + gas reimbursement
     assert_eq!(owed_payment, observation_payment + reimbursement);
-
-    // set_payees so we can withdraw
-    let msg = ExecuteMsg::SetPayees {
-        payees: env
-            .transmitters
-            .iter()
-            .enumerate()
-            .map(|(i, transmitter)| (transmitter.clone(), format!("payee{}", i)))
-            .collect(),
-    };
-    env.router
-        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
-        .unwrap();
 
     // ^ ---- all duplicated from transmit_happy_path()
 
