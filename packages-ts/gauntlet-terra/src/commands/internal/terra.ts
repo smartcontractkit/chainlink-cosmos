@@ -63,56 +63,66 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     return await this.provider.wasm.contractQuery(address, input, params)
   }
 
-  async call(address, input) {
+  async prepareCall(address, input) {
     const msg = new MsgExecuteContract(this.wallet.key.accAddress, address, input)
 
-    const tx = await this.wallet.createAndSignTx({
+    return await this.wallet.createAndSignTx({
       msgs: [msg],
       ...(this.wallet.key instanceof LedgerKey && {
         signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
       }),
     })
+  }
 
+  async call(address, input) {
+    const tx = await this.prepareCall(address, input)
     const res = await this.provider.tx.broadcast(tx)
-
     logger.debug(res)
+
     return this.wrapResponse(res)
   }
 
-  async deploy(codeId, instantiateMsg, migrationContract = undefined) {
+  async prepareDeploy(codeId, instantiateMsg, migrationContract = undefined) {
     const instantiate = new MsgInstantiateContract(
       this.wallet.key.accAddress,
       migrationContract,
       codeId,
       instantiateMsg,
     )
-    const instantiateTx = await this.wallet.createAndSignTx({
+    return await this.wallet.createAndSignTx({
       msgs: [instantiate],
       memo: 'Instantiating',
       ...(this.wallet.key instanceof LedgerKey && {
         signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
       }),
     })
+  }
+
+  async deploy(codeId, instantiateMsg, migrationContract = undefined) {
+    const instantiateTx = await this.prepareDeploy(codeId, instantiateMsg, migrationContract = undefined)
     logger.loading(`Deploying contract...`)
     const res = await this.provider.tx.broadcast(instantiateTx)
 
     return this.wrapResponse(res)
   }
 
-  async upload(wasm, contractName) {
+  async prepareUpload(wasm, contractName) {
     const code = new MsgStoreCode(this.wallet.key.accAddress, wasm)
 
-    const tx = await this.wallet.createAndSignTx({
+    return await this.wallet.createAndSignTx({
       msgs: [code],
       memo: `Storing ${contractName}`,
       ...(this.wallet.key instanceof LedgerKey && {
         signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
       }),
     })
+  }
 
+  async upload(wasm, contractName) {
+    const tx = await this.prepareUpload(wasm, contractName)
     logger.loading(`Uploading ${contractName} contract code...`)
     const res = await this.provider.tx.broadcast(tx)
-
+  
     return this.wrapResponse(res)
   }
 }
