@@ -1,5 +1,5 @@
 import { getRDD } from '../../../lib/rdd'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/wrapper'
+import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 import { time, BN } from '@chainlink/gauntlet-core/dist/utils'
 import { serializeOffchainConfig } from '../../../lib/encoding'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
@@ -49,7 +49,7 @@ export type OffchainConfig = {
   configPublicKeys: string[]
 }
 
-const getOffchainConfigInput = (rdd: any, contract: string): OffchainConfig => {
+export const getOffchainConfigInput = (rdd: any, contract: string): OffchainConfig => {
   const aggregator = rdd.contracts[contract]
   const config = aggregator.config
 

@@ -104,7 +104,7 @@ export const parseParams = (commandOpts: AbstractOpts, params: any): AbstractPar
     throw new Error(`Error validating parameters for function ${commandOpts.function}`)
   }
 
-  return params
+  return data
 }
 
 type AbstractExecute = (params: any, address?: string) => Promise<Result<TransactionResponse>>
@@ -145,9 +145,7 @@ export default class AbstractCommand extends TerraCommand {
     logger.loading(`Executing ${this.opts.function} from contract ${this.opts.contract.id} at ${address}`)
     logger.log('Input Params:', params)
     await prompt(`Continue?`)
-    const tx = await this.call(address, {
-      [this.opts.function]: params,
-    })
+    const tx = await this.call(address, params)
     logger.success(`Execution finished at tx ${tx.hash}`)
     return {
       responses: [
@@ -161,10 +159,8 @@ export default class AbstractCommand extends TerraCommand {
 
   abstractQuery: AbstractExecute = async (params: any, address: string) => {
     logger.loading(`Calling ${this.opts.function} from contract ${this.opts.contract.id} at ${address}`)
-    const result = await this.query(address, {
-      [this.opts.function]: params,
-    })
-    logger.success(`Query finished with result: ${result}`)
+    const result = await this.query(address, params)
+    logger.debug(`Query finished with result: ${JSON.stringify(result)}`)
     return {
       data: result,
       responses: [

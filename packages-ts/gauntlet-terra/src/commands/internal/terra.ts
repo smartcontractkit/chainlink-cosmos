@@ -53,8 +53,8 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     tx,
   })
 
-  async query(address, input): Promise<any> {
-    return await this.provider.wasm.contractQuery(address, input)
+  async query(address, input, params?): Promise<any> {
+    return await this.provider.wasm.contractQuery(address, input, params)
   }
 
   async call(address, input) {
