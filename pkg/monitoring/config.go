@@ -14,6 +14,7 @@ import (
 // TerraConfig contains configuration for connecting to a terra client.
 type TerraConfig struct {
 	TendermintURL    string
+	FCDURL           string
 	NetworkName      string
 	NetworkID        string
 	ChainID          string
@@ -69,6 +70,9 @@ func parseEnvVars(cfg *TerraConfig) error {
 	if value, isPresent := os.LookupEnv("TERRA_TENDERMINT_URL"); isPresent {
 		cfg.TendermintURL = value
 	}
+	if value, isPresent := os.LookupEnv("TERRA_FCD_URL"); isPresent {
+		cfg.FCDURL = value
+	}
 	if value, isPresent := os.LookupEnv("TERRA_NETWORK_NAME"); isPresent {
 		cfg.NetworkName = value
 	}
@@ -106,6 +110,7 @@ func validateConfig(cfg TerraConfig) error {
 	// Required config
 	for envVarName, currentValue := range map[string]string{
 		"TERRA_TENDERMINT_URL": cfg.TendermintURL,
+		"TERRA_FCD_URL":        cfg.FCDURL,
 		"TERRA_NETWORK_NAME":   cfg.NetworkName,
 		"TERRA_NETWORK_ID":     cfg.NetworkID,
 		"TERRA_CHAIN_ID":       cfg.ChainID,
@@ -117,8 +122,9 @@ func validateConfig(cfg TerraConfig) error {
 	// Validate URLs.
 	for envVarName, currentValue := range map[string]string{
 		"TERRA_TENDERMINT_URL": cfg.TendermintURL,
+		"TERRA_FCD_URL":        cfg.FCDURL,
 	} {
-		if _, err := url.ParseRequestURI(currentValue); err != nil {
+		if _, err := url.ParseRequestURI(currentValue); currentValue != "" && err != nil {
 			return fmt.Errorf("%s='%s' is not a valid URL: %w", envVarName, currentValue, err)
 		}
 	}
@@ -126,6 +132,9 @@ func validateConfig(cfg TerraConfig) error {
 }
 
 func applyDefaults(cfg *TerraConfig) {
+	if cfg.FCDURL == "" {
+		cfg.FCDURL = "https://fcd.terra.dev"
+	}
 	if cfg.ReadTimeout == 0 {
 		cfg.ReadTimeout = 2 * time.Second
 	}
