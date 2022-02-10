@@ -63,8 +63,7 @@ export class LedgerKey extends Key {
 
   private static bip44PathtoArray(path: string): Array<number> {
     const match = BIP44_REGEX.exec(path)
-    if (!match)
-        throw new Error('Invalid BIP44 path!')
+    if (!match) throw new Error('Invalid BIP44 path!')
 
     return match.slice(1).map(Number)
   }
