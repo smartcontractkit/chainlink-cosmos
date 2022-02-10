@@ -254,11 +254,29 @@ fn setup() -> Env {
         .unwrap();
 
     let msg = ExecuteMsg::FinalizeProposal { id };
-    router
+    let response = router
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
-    let msg = ExecuteMsg::AcceptProposal { id };
+    // Extract the proposal digest from the wasm execute event
+    let mut digest = [0u8; 32];
+    let execute = response
+        .events
+        .iter()
+        .find(|event| event.ty == "wasm")
+        .unwrap();
+    let proposal_digest = &execute
+        .attributes
+        .iter()
+        .find(|attr| attr.key == "digest")
+        .unwrap()
+        .value;
+    hex::decode_to_slice(proposal_digest, &mut digest).unwrap();
+
+    let msg = ExecuteMsg::AcceptProposal {
+        id,
+        digest: Binary(digest.to_vec()),
+    };
 
     let response = router
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
@@ -535,11 +553,30 @@ fn transmit_happy_path() {
         .unwrap();
 
     let msg = ExecuteMsg::FinalizeProposal { id };
-    env.router
+    let response = env
+        .router
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();
 
-    let msg = ExecuteMsg::AcceptProposal { id };
+    // Extract the proposal digest from the wasm execute event
+    let mut digest = [0u8; 32];
+    let execute = response
+        .events
+        .iter()
+        .find(|event| event.ty == "wasm")
+        .unwrap();
+    let proposal_digest = &execute
+        .attributes
+        .iter()
+        .find(|attr| attr.key == "digest")
+        .unwrap()
+        .value;
+    hex::decode_to_slice(proposal_digest, &mut digest).unwrap();
+
+    let msg = ExecuteMsg::AcceptProposal {
+        id,
+        digest: Binary(digest.to_vec()),
+    };
     env.router
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();

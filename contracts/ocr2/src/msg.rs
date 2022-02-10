@@ -37,6 +37,7 @@ pub enum ExecuteMsg {
     },
     AcceptProposal {
         id: ProposalId,
+        digest: Binary,
     },
     ProposeConfig {
         id: ProposalId,
