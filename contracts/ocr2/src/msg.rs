@@ -43,6 +43,7 @@ pub enum ExecuteMsg {
         id: ProposalId,
         signers: Vec<Binary>,
         transmitters: Vec<String>,
+        payees: Vec<String>,
         f: u8,
         onchain_config: Binary,
     },
@@ -98,9 +99,6 @@ pub enum ExecuteMsg {
     /// Handler for LINK token Receive message
     Receive(Cw20ReceiveMsg),
 
-    SetPayees {
-        payees: Vec<(String, String)>,
-    },
     TransferPayeeship {
         transmitter: String,
         proposed: String,

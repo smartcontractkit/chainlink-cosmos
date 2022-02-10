@@ -116,6 +116,7 @@ pub fn execute(
             id,
             signers,
             transmitters,
+            payees,
             f,
             onchain_config,
         } => {
@@ -127,6 +128,10 @@ pub fn execute(
                 .iter()
                 .map(|t| api.addr_validate(t))
                 .collect::<StdResult<Vec<Addr>>>()?;
+            let payees = payees
+                .iter()
+                .map(|t| api.addr_validate(t))
+                .collect::<StdResult<Vec<Addr>>>()?;
             execute_propose_config(
                 deps,
                 env,
@@ -134,6 +139,7 @@ pub fn execute(
                 id,
                 signers,
                 transmitters,
+                payees,
                 f,
                 onchain_config.0,
             )
@@ -190,7 +196,6 @@ pub fn execute(
         ExecuteMsg::WithdrawFunds { recipient, amount } => {
             execute_withdraw_funds(deps, env, info, recipient, amount)
         }
-        ExecuteMsg::SetPayees { payees } => execute_set_payees(deps, env, info, payees),
         ExecuteMsg::TransferPayeeship {
             transmitter,
             proposed,
@@ -379,9 +384,16 @@ pub fn execute_accept_proposal(
     for key in keys {
         SIGNERS.remove(deps.storage, &key);
     }
+    // NOTE: we don't clear payees to reduce gas
+    // let keys: Vec<_> = PAYEES
+    //     .keys(deps.storage, None, None, Order::Ascending)
+    //     .collect();
+    // for key in keys {
+    //     PAYEES.remove(deps.storage, &key);
+    // }
 
     // Update oracle set
-    for (signer, transmitter) in &proposal.oracles {
+    for (signer, transmitter, payee) in &proposal.oracles {
         SIGNERS.update(deps.storage, signer, |value| {
             require!(value.is_none(), RepeatedAddress);
             Ok(())
@@ -394,6 +406,8 @@ pub fn execute_accept_proposal(
                 from_round_id: config.latest_aggregator_round_id,
             })
         })?;
+
+        PAYEES.save(deps.storage, &transmitter, &payee)?;
     }
 
     // calculate onchain_config from stored config
@@ -401,6 +415,12 @@ pub fn execute_accept_proposal(
     onchain_config.push(1);
     onchain_config.extend_from_slice(&config.min_answer.to_be_bytes());
     onchain_config.extend_from_slice(&config.max_answer.to_be_bytes());
+
+    let oracles: Vec<_> = proposal
+        .oracles
+        .iter()
+        .map(|(signer, transmitter, _payee)| (signer, transmitter))
+        .collect();
 
     // Update config
     let (previous_config_block_number, config) = {
@@ -412,7 +432,7 @@ pub fn execute_accept_proposal(
             &env.block.chain_id,
             &env.contract.address,
             config.config_count,
-            &proposal.oracles,
+            &oracles,
             proposal.f,
             &onchain_config,
             proposal.offchain_config_version,
@@ -429,12 +449,12 @@ pub fn execute_accept_proposal(
     let signers = proposal
         .oracles
         .iter()
-        .map(|(signer, _)| attr("signers", hex::encode(&signer.0)));
+        .map(|(signer, _, _)| attr("signers", hex::encode(&signer.0)));
 
     let transmitters = proposal
         .oracles
         .iter()
-        .map(|(_, transmitter)| attr("transmitters", transmitter));
+        .map(|(_, transmitter, _)| attr("transmitters", transmitter));
 
     response = response.add_event(
         Event::new("propose_config")
@@ -467,6 +487,44 @@ pub fn execute_accept_proposal(
     Ok(response)
 }
 
+// Can't be used to change payee addresses, only to initially populate them.
+pub fn execute_propose_payees(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    payees: Vec<(String, String)>, // (transmitter, payee)
+) -> Result<Response, ContractError> {
+    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
+
+    let mut events = Vec::with_capacity(payees.len());
+
+    let payees = payees
+        .iter()
+        .map(|(transmitter, payee)| -> StdResult<(Addr, Addr)> {
+            Ok((
+                deps.api.addr_validate(transmitter)?,
+                deps.api.addr_validate(payee)?,
+            ))
+        })
+        .collect::<StdResult<Vec<_>>>()?;
+
+    for (transmitter, payee) in payees {
+        // Set the payee unless it's already set
+        PAYEES.update(deps.storage, &transmitter, |value| {
+            if value.is_some() {
+                return Err(ContractError::PayeeAlreadySet);
+            }
+            events.push(
+                Event::new("payeeship_transferred")
+                    .add_attribute("transmitter", &transmitter)
+                    .add_attribute("current", &payee),
+            );
+            Ok(payee)
+        })?;
+    }
+    Ok(Response::default().add_events(events))
+}
+
 pub fn execute_propose_config(
     deps: DepsMut,
     _env: Env,
@@ -474,6 +532,7 @@ pub fn execute_propose_config(
     id: ProposalId,
     signers: Vec<Binary>,
     transmitters: Vec<Addr>,
+    payees: Vec<Addr>,
     f: u8,
     onchain_config: Vec<u8>,
 ) -> Result<Response, ContractError> {
@@ -498,7 +557,12 @@ pub fn execute_propose_config(
     require!(!proposal.finalized, InvalidInput);
 
     proposal.f = f;
-    proposal.oracles = signers.into_iter().zip(transmitters.into_iter()).collect();
+    proposal.oracles = signers
+        .into_iter()
+        .zip(transmitters.into_iter())
+        .zip(payees.into_iter())
+        .map(|((signers, transmitters), payees)| (signers, transmitters, payees))
+        .collect();
 
     PROPOSALS.save(deps.storage, id.u128().into(), &proposal)?;
 
@@ -1428,44 +1492,6 @@ fn calculate_reimbursement(
 // --- Payee management
 // ---
 
-// Can't be used to change payee addresses, only to initially populate them.
-pub fn execute_set_payees(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    payees: Vec<(String, String)>, // (transmitter, payee)
-) -> Result<Response, ContractError> {
-    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
-
-    let mut events = Vec::with_capacity(payees.len());
-
-    let payees = payees
-        .iter()
-        .map(|(transmitter, payee)| -> StdResult<(Addr, Addr)> {
-            Ok((
-                deps.api.addr_validate(transmitter)?,
-                deps.api.addr_validate(payee)?,
-            ))
-        })
-        .collect::<StdResult<Vec<_>>>()?;
-
-    for (transmitter, payee) in payees {
-        // Set the payee unless it's already set
-        PAYEES.update(deps.storage, &transmitter, |value| {
-            if value.is_some() {
-                return Err(ContractError::PayeeAlreadySet);
-            }
-            events.push(
-                Event::new("payeeship_transferred")
-                    .add_attribute("transmitter", &transmitter)
-                    .add_attribute("current", &payee),
-            );
-            Ok(payee)
-        })?;
-    }
-    Ok(Response::default().add_events(events))
-}
-
 pub fn execute_transfer_payeeship(
     deps: DepsMut,
     _env: Env,
@@ -1596,6 +1622,12 @@ pub(crate) mod tests {
                 "transmitter2".to_string(),
                 "transmitter3".to_string(),
             ],
+            payees: vec![
+                "transmitter0".to_string(),
+                "transmitter1".to_string(),
+                "transmitter2".to_string(),
+                "transmitter3".to_string(),
+            ],
             f: 1,
             onchain_config: Binary(vec![]),
         };
@@ -1655,28 +1687,28 @@ pub(crate) mod tests {
     #[test]
     fn payees() {
         let mut deps = setup();
-        let owner = "owner".to_string();
+        // let owner = "owner".to_string();
 
-        let msg = ExecuteMsg::SetPayees {
-            payees: vec![("transmitter0".to_string(), "payee0".to_string())],
-        };
-        let execute_info = mock_info(&owner, &[]);
-        execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+        // let msg = ExecuteMsg::ProposePayees {
+        //     payees: vec![("transmitter0".to_string(), "payee0".to_string())],
+        // };
+        // let execute_info = mock_info(&owner, &[]);
+        // execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
-        // setting the same payee again fails
-        let msg = ExecuteMsg::SetPayees {
-            payees: vec![("transmitter0".to_string(), "payee1".to_string())],
-        };
-        let execute_info = mock_info(&owner, &[]);
-        let res = execute(deps.as_mut(), mock_env(), execute_info, msg);
-        assert_eq!(res.unwrap_err(), ContractError::PayeeAlreadySet);
+        // // setting the same payee again fails
+        // let msg = ExecuteMsg::ProposePayees {
+        //     payees: vec![("transmitter0".to_string(), "payee1".to_string())],
+        // };
+        // let execute_info = mock_info(&owner, &[]);
+        // let res = execute(deps.as_mut(), mock_env(), execute_info, msg);
+        // assert_eq!(res.unwrap_err(), ContractError::PayeeAlreadySet);
 
-        // setting a different payee works
-        let msg = ExecuteMsg::SetPayees {
-            payees: vec![("transmitter1".to_string(), "payee1".to_string())],
-        };
-        let execute_info = mock_info(&owner, &[]);
-        execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+        // // setting a different payee works
+        // let msg = ExecuteMsg::ProposePayees {
+        //     payees: vec![("transmitter1".to_string(), "payee1".to_string())],
+        // };
+        // let execute_info = mock_info(&owner, &[]);
+        // execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
         // can't transfer to self
         let msg = ExecuteMsg::TransferPayeeship {
