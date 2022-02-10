@@ -1,6 +1,7 @@
 import AbstractCommand, { makeAbstractCommand } from '.'
 import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
+import { MsgExecuteContract } from '@terra-money/terra.js'
 
 export interface AbstractInstruction<Input, ContractInput> {
   instruction: {
@@ -25,7 +26,7 @@ export const instructionToCommand = (instruction: AbstractInstruction<any, any>)
       super(flags, args)
     }
 
-    execute = async (): Promise<Result<TransactionResponse>> => {
+    buildCommand = async (): Promise<TerraCommand> => {
       const commandInput = await instruction.makeInput(this.flags, this.args)
       if (!instruction.validateInput(commandInput)) {
         throw new Error(`Invalid input params:  ${JSON.stringify(commandInput)}`)
@@ -33,7 +34,17 @@ export const instructionToCommand = (instruction: AbstractInstruction<any, any>)
       const input = await instruction.makeContractInput(commandInput)
       const abstractCommand = await makeAbstractCommand(id, this.flags, this.args, input)
       await abstractCommand.invokeMiddlewares(abstractCommand, abstractCommand.middlewares)
-      return abstractCommand.execute()
+      return abstractCommand
+    }
+
+    makeRawTransaction = async (): Promise<MsgExecuteContract> => {
+      const command = await this.buildCommand()
+      return command.makeRawTransaction()
+    }
+
+    execute = async (): Promise<Result<TransactionResponse>> => {
+      const command = await this.buildCommand()
+      return command.execute()
     }
   }
 }
