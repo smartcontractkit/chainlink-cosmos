@@ -1,6 +1,6 @@
 import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { getRDD } from '../../../lib/rdd'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { AbstractInstruction, instructionToCommand } from '../../abstract/wrapper'
 
 type CommandInput = {
   recommendedGasPriceUluna: string
@@ -52,8 +52,8 @@ const validateInput = (input: CommandInput): boolean => {
   }
 
   try {
-    observationPayment = new BN(input.observationPaymentGjuels)
-    transmissionPayment = new BN(input.transmissionPaymentGjuels) // parse as integers
+    observationPayment = BN(input.observationPaymentGjuels)
+    transmissionPayment = BN(input.transmissionPaymentGjuels) // parse as integers
   } catch {
     throw new Error(
       `observationPaymentGjuels=${input.observationPaymentGjuels} and ` +
@@ -71,7 +71,6 @@ const validateInput = (input: CommandInput): boolean => {
 
 const setBillingInstruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
-    category: 'OCR',
     contract: 'ocr2',
     function: 'set_billing',
   },

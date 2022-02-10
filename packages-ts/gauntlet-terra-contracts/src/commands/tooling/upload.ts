@@ -3,12 +3,13 @@ import { TerraCommand } from '@chainlink/gauntlet-terra'
 import { CONTRACT_LIST, getContract } from '../../lib/contracts'
 import { CATEGORIES, DEFAULT_RELEASE_VERSION } from '../../lib/constants'
 import path from 'path'
+import { LINK_TOKEN_ALIAS } from '../../lib/contracts'
 export default class UploadContractCode extends TerraCommand {
   static description = 'Upload cosmwasm contract artifacts'
   static examples = [
     `yarn gauntlet upload --network=bombay-testnet`,
     `yarn gauntlet upload --network=bombay-testnet [contract names]`,
-    `yarn gauntlet upload --network=bombay-testnet flags link_token`,
+    `yarn gauntlet upload --network=bombay-testnet flags ${LINK_TOKEN_ALIAS}`,
   ]
 
   static id = 'upload'
@@ -30,7 +31,7 @@ export default class UploadContractCode extends TerraCommand {
 
   execute = async () => {
     const askedContracts = !!this.args.length
-      ? Object.keys(CONTRACT_LIST)
+      ? Object.keys(CONTRACT_LIST).concat([LINK_TOKEN_ALIAS])
           .filter((contractId) => this.args.includes(CONTRACT_LIST[contractId]))
           .map((contractId) => CONTRACT_LIST[contractId])
       : Object.values(CONTRACT_LIST)
@@ -44,8 +45,9 @@ export default class UploadContractCode extends TerraCommand {
 
     const contractReceipts = {}
     const responses: any[] = []
-    for (const contractName of askedContracts) {
+    for (let contractName of askedContracts) {
       const version = this.flags.version ? this.flags.version : DEFAULT_RELEASE_VERSION
+      contractName = contractName == LINK_TOKEN_ALIAS ? CONTRACT_LIST.CW20_BASE : contractName
       const contract = await getContract(contractName, version)
       console.log('CONTRACT Bytecode exists:', !!contract.bytecode)
 
