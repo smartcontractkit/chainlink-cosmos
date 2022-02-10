@@ -88,7 +88,7 @@ pub struct Config {
 } // TODO: group some of these into sub-structs
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct ProposedConfig {
+pub struct Proposal {
     pub owner: Addr,
     pub finalized: bool,
     pub oracles: Vec<(Binary, Addr)>,
@@ -166,8 +166,8 @@ pub const OWNER: Auth = Auth::new("owner");
 pub const CONFIG: Item<Config> = Item::new("config");
 
 pub type ProposalId = Uint128;
-pub const PROPOSALS: Map<U128Key, ProposedConfig> = Map::new("proposals");
-pub const CURRENT_PROPOSAL: Item<ProposalId> = Item::new("current_proposal");
+pub const PROPOSALS: Map<U128Key, Proposal> = Map::new("proposals");
+pub const NEXT_PROPOSAL_ID: Item<ProposalId> = Item::new("next_proposal_id");
 
 // An addr currently can't be converted to pubkey: https://docs.cosmos.network/master/architecture/adr-028-public-key-addresses.html
 
