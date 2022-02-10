@@ -91,7 +91,7 @@ pub struct Config {
 pub struct Proposal {
     pub owner: Addr,
     pub finalized: bool,
-    pub oracles: Vec<(Binary, Addr)>,
+    pub oracles: Vec<(Binary, Addr, Addr)>, // (signer, transmitter, payee)
     pub f: u8,
     pub offchain_config_version: u64,
     pub offchain_config: Binary,
@@ -102,11 +102,10 @@ impl Proposal {
         use blake2::{Blake2s, Digest};
         let mut hasher = Blake2s::default();
         hasher.update([(self.oracles.len() as u8)]);
-        for (signer, _) in &self.oracles {
+        for (signer, transmitter, payee) in &self.oracles {
             hasher.update(&signer.0);
-        }
-        for (_, transmitter) in &self.oracles {
             hasher.update(transmitter.as_bytes());
+            hasher.update(payee.as_bytes());
         }
         hasher.update(&[self.f]);
         hasher.update(&self.offchain_config_version.to_be_bytes());
@@ -121,7 +120,7 @@ pub fn config_digest_from_data(
     chain_id: &str,
     contract_address: &Addr,
     config_count: u32,
-    oracles: &[(Binary, Addr)],
+    oracles: &[(&Binary, &Addr)],
     f: u8,
     onchain_config: &[u8],
     offchain_config_version: u64,
