@@ -104,7 +104,14 @@ pub fn execute(
         ExecuteMsg::BeginProposal => execute_begin_proposal(deps, env, info),
         ExecuteMsg::ClearProposal { id } => execute_clear_proposal(deps, env, info, id),
         ExecuteMsg::FinalizeProposal { id } => execute_finalize_proposal(deps, env, info, id),
-        ExecuteMsg::AcceptProposal { id } => execute_accept_proposal(deps, env, info, id),
+        ExecuteMsg::AcceptProposal { id, digest } => {
+            // ensure digest format is valid by converting it to [u8; 32]
+            let digest = digest
+                .0
+                .try_into()
+                .map_err(|_| ContractError::InvalidInput)?;
+            execute_accept_proposal(deps, env, info, id, digest)
+        }
         ExecuteMsg::ProposeConfig {
             id,
             signers,
@@ -321,9 +328,12 @@ pub fn execute_finalize_proposal(
     proposal.finalized = true;
     PROPOSALS.save(deps.storage, id.u128().into(), &proposal)?;
 
+    let digest = proposal.digest();
+
     let response = Response::new()
         .add_attribute("method", "finalize_proposal")
-        .add_attribute("proposal_id", id.to_string());
+        .add_attribute("proposal_id", id.to_string())
+        .add_attribute("digest", hex::encode(digest));
 
     Ok(response)
 }
@@ -333,6 +343,7 @@ pub fn execute_accept_proposal(
     env: Env,
     info: MessageInfo,
     id: ProposalId,
+    digest: [u8; 32],
 ) -> Result<Response, ContractError> {
     require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
 
@@ -344,6 +355,8 @@ pub fn execute_accept_proposal(
 
     // Only approve proposal if finalized
     require!(proposal.finalized, InvalidInput);
+    // Digest also has to match
+    require!(proposal.digest() == digest, InvalidInput);
 
     let (_total, mut response) = pay_oracles(&mut deps, &config, response)?;
 
@@ -1591,9 +1604,22 @@ pub(crate) mod tests {
 
         let msg = ExecuteMsg::FinalizeProposal { id };
         let execute_info = mock_info(owner.as_str(), &[]);
-        execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+        let response = execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
-        let msg = ExecuteMsg::AcceptProposal { id };
+        // Extract the proposal digest from the wasm execute event
+        let mut digest = [0u8; 32];
+        let proposal_digest = &response
+            .attributes
+            .iter()
+            .find(|attr| attr.key == "digest")
+            .unwrap()
+            .value;
+        hex::decode_to_slice(proposal_digest, &mut digest).unwrap();
+
+        let msg = ExecuteMsg::AcceptProposal {
+            id,
+            digest: Binary(digest.to_vec()),
+        };
         let execute_info = mock_info(owner.as_str(), &[]);
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
     }

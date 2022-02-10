@@ -97,6 +97,25 @@ pub struct Proposal {
     pub offchain_config: Binary,
 }
 
+impl Proposal {
+    pub fn digest(&self) -> [u8; 32] {
+        use blake2::{Blake2s, Digest};
+        let mut hasher = Blake2s::default();
+        hasher.update([(self.oracles.len() as u8)]);
+        for (signer, _) in &self.oracles {
+            hasher.update(&signer.0);
+        }
+        for (_, transmitter) in &self.oracles {
+            hasher.update(transmitter.as_bytes());
+        }
+        hasher.update(&[self.f]);
+        hasher.update(&self.offchain_config_version.to_be_bytes());
+        hasher.update((self.offchain_config.len() as u32).to_be_bytes());
+        hasher.update(&self.offchain_config.0);
+        let result = hasher.finalize();
+        result.into()
+    }
+}
 #[allow(clippy::too_many_arguments)]
 pub fn config_digest_from_data(
     chain_id: &str,
