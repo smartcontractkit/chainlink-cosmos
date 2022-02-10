@@ -131,6 +131,7 @@ pub enum QueryMsg {
     OwedPayment { transmitter: String },
     LinkAvailableForPayment,
     OracleObservationCount { transmitter: String },
+    Proposal { id: ProposalId },
     Version,
     Owner,
 }
