@@ -100,8 +100,8 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}, contra
 	}
 
 	reader := NewOCR2Reader(contractAddr, chainReader, r.lggr)
-	contract := NewContractCache(chain.Config(), reader, r.lggr, contractReady)
-	tracker := NewContractTracker(chainReader, contract)
+	contractCache := NewContractCache(chain.Config(), reader, r.lggr, contractReady)
+	tracker := NewContractTracker(chainReader, contractCache)
 	digester := NewOffchainConfigDigester(spec.ChainID, contractAddr)
 
 	if spec.IsBootstrap {
@@ -110,7 +110,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}, contra
 			digester:      digester,
 			tracker:       tracker,
 			lggr:          r.lggr,
-			contractCache: contract,
+			contractCache: contractCache,
 		}, nil
 	}
 
@@ -128,7 +128,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}, contra
 		tracker:       tracker,
 		transmitter:   transmitter,
 		lggr:          r.lggr,
-		contractCache: contract,
+		contractCache: contractCache,
 	}, nil
 }
 

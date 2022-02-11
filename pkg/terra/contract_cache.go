@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/atomic"
+
 	"github.com/pkg/errors"
 
 	"github.com/smartcontractkit/chainlink/core/utils"
@@ -21,7 +23,7 @@ type ContractCache struct {
 	reader *OCR2Reader
 	lggr   Logger
 
-	stop, done, contractReady chan struct{}
+	stop, done chan struct{}
 
 	configMu    sync.RWMutex
 	configTS    time.Time
@@ -35,6 +37,9 @@ type ContractCache struct {
 	round           uint8
 	latestAnswer    *big.Int
 	latestTimestamp time.Time
+
+	contractReady chan struct{}
+	configFound   *atomic.Bool
 }
 
 func NewContractCache(cfg Config, reader *OCR2Reader, lggr Logger, contractReady chan struct{}) *ContractCache {
@@ -44,6 +49,7 @@ func NewContractCache(cfg Config, reader *OCR2Reader, lggr Logger, contractReady
 		lggr:          lggr,
 		stop:          make(chan struct{}),
 		done:          make(chan struct{}),
+		configFound:   atomic.NewBool(false),
 		contractReady: contractReady,
 	}
 }
@@ -72,15 +78,31 @@ func (cc *ContractCache) poll() {
 			return
 		case <-tick:
 			ctx, _ := utils.ContextFromChan(cc.stop)
-			if err := cc.updateConfig(ctx); err != nil {
-				cc.lggr.Errorf("Failed to update config: %v", err)
-			}
-			if ctx.Err() != nil { // b/c client doesn't use ctx
-				return
-			}
-			if err := cc.updateTransmission(ctx); err != nil {
-				cc.lggr.Errorf("Failed to update transmission: %v", err)
-			}
+			var wg sync.WaitGroup
+			wg.Add(2)
+			go func() {
+				defer wg.Done()
+				if err := cc.updateConfig(ctx); err != nil {
+					cc.lggr.Errorf("Failed to update config: %v", err)
+				}
+				if ctx.Err() != nil { // b/c client doesn't use ctx
+					return
+				}
+				// We have successfully read state from the contract
+				// signal that we are ready to start libocr.
+				// Only signal on the first successful fetch.
+				if !cc.configFound.Load() {
+					close(cc.contractReady)
+					cc.configFound.Store(true)
+				}
+			}()
+			go func() {
+				defer wg.Done()
+				if err := cc.updateTransmission(ctx); err != nil {
+					cc.lggr.Errorf("Failed to update transmission: %v", err)
+				}
+			}()
+			wg.Wait()
 			tick = time.After(utils.WithJitter(cc.cfg.OCR2CachePollPeriod()))
 		}
 	}
@@ -120,6 +142,7 @@ func (cc *ContractCache) updateConfig(ctx context.Context) error {
 		return errors.Wrapf(err, "fetch latest config, block %d", changedInBlock)
 	}
 	now = time.Now()
+
 	cc.configMu.Lock()
 	{
 		cc.configTS = now
