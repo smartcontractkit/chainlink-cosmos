@@ -34,16 +34,21 @@ export const parseInstruction = async (instruction: string, inputVersion: string
 
   const isValidFunction = (abi: TerraABI, functionName: string): boolean => {
     // Check against ABI if method exists
-    const availableFunctions = [...(abi.query.oneOf || []), ...(abi.execute.oneOf || [])].reduce((agg, prop) => {
+    const availableFunctions = [
+      ...(abi.query.oneOf || abi.query.anyOf || []),
+      ...(abi.execute.oneOf || abi.query.anyOf || []),
+    ].reduce((agg, prop) => {
       if (prop?.required && prop.required.length > 0) return [...agg, ...prop.required]
       if (prop?.enum && prop.enum.length > 0) return [...agg, ...prop.enum]
       return [...agg]
     }, [])
+    logger.debug(`Available functions on this contract: ${availableFunctions}`)
     return availableFunctions.includes(functionName)
   }
 
   const isQueryFunction = (abi: TerraABI, functionName: string) => {
-    return abi.query.oneOf.find((queryAbi: any) => {
+    const functionList = abi.query.oneOf || abi.query.anyOf
+    return functionList.find((queryAbi: any) => {
       if (queryAbi.enum) return queryAbi.enum.includes(functionName)
       if (queryAbi.required) return queryAbi.required.includes(functionName)
       return false
