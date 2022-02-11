@@ -1,12 +1,12 @@
 package terrad
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os/exec"
-	"strings"
 	"time"
 
 	cosmostypes "github.com/cosmos/cosmos-sdk/types"
@@ -77,7 +77,9 @@ func New(ctx *pulumi.Context) (Terrad, error) {
 }
 
 type TxResponse struct {
-	Logs cosmostypes.ABCIMessageLogs
+	Code      int32
+	Codespace string
+	Logs      cosmostypes.ABCIMessageLogs
 }
 
 func (t *Terrad) Load() error {
@@ -251,45 +253,57 @@ func (t Terrad) TransferLINK() error {
 	return msg.Check(err)
 }
 
-type SetConfig struct {
-	SetConfig SetConfigDetails `json:"set_config"`
+const BeginProposal = "begin_proposal"
+
+type ProposeConfig struct {
+	ProposeConfig ProposeConfigDetails `json:"propose_config"`
 }
 
-type SetConfigDetails struct {
-	Signers               ByteArrayArray `json:"signers"`
-	Transmitters          []string       `json:"transmitters"`
-	F                     uint8          `json:"f"`
-	OnchainConfig         ByteArray      `json:"onchain_config"`
-	OffchainConfigVersion uint64         `json:"offchain_config_version"`
-	OffchainConfig        ByteArray      `json:"offchain_config"`
+type ProposeConfigDetails struct {
+	ID            string   `json:"id"`
+	Payees        []string `json:"payees"`
+	Signers       [][]byte `json:"signers"`
+	Transmitters  []string `json:"transmitters"`
+	F             uint8    `json:"f"`
+	OnchainConfig []byte   `json:"onchain_config"`
 }
 
-type ByteArray []byte
-
-func (b ByteArray) MarshalJSON() ([]byte, error) {
-	var result string
-	if b == nil {
-		result = "null"
-	} else {
-		result = strings.Join(strings.Fields(fmt.Sprintf("%d", b)), ",")
-	}
-	return []byte(result), nil
+type ProposeOffchainConfig struct {
+	ProposeOffchainConfig ProposeOffchainConfigDetails `json:"propose_offchain_config"`
 }
 
-type ByteArrayArray [][]byte
-
-func (b ByteArrayArray) MarshalJSON() ([]byte, error) {
-	var result string
-	if b == nil {
-		result = "null"
-	} else {
-		result = strings.Join(strings.Fields(fmt.Sprintf("%d", b)), ",")
-	}
-	return []byte(result), nil
+type ProposeOffchainConfigDetails struct {
+	ID                    string `json:"id"`
+	OffchainConfigVersion uint64 `json:"offchain_config_version"`
+	OffchainConfig        []byte `json:"offchain_config"`
 }
 
-func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) error {
-	msg := utils.LogStatus("Set config on OCR contract")
+type ClearProposal struct {
+	ClearProposal ClearProposalDetails `json:"clear_proposal"`
+}
+
+type ClearProposalDetails struct {
+	ID string `json:"id"`
+}
+
+type FinalizeProposal struct {
+	FinalizeProposal FinalizeProposalDetails `json:"finalize_proposal"`
+}
+
+type FinalizeProposalDetails struct {
+	ID string `json:"id"`
+}
+
+type AcceptProposal struct {
+	AcceptProposal AcceptProposalDetails `json:"accept_proposal"`
+}
+
+type AcceptProposalDetails struct {
+	ID     string `json:"id"`
+	Digest []byte `json:"digest"`
+}
+
+func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	S := []int{}
 	helperOracles := []confighelper.OracleIdentityExtra{}
 	for _, k := range keys {
@@ -319,6 +333,7 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) error {
 		})
 	}
 
+	status := utils.LogStatus("InitOCR: set config test args")
 	alphaPPB := uint64(1000000)
 	signers, transmitters, f, onchainConfig, offchainConfigVersion, offchainConfig, err := confighelper.ContractSetConfigArgsForTests(
 		2*time.Second,        // deltaProgress time.Duration,
@@ -344,6 +359,9 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) error {
 		1,                    // f int,
 		[]byte{},             // onchainConfig []byte (calculated by the contract)
 	)
+	if status.Check(err) != nil {
+		return err
+	}
 
 	// convert type for marshalling
 	signerArray := [][]byte{}
@@ -353,28 +371,162 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) error {
 		transmitterArray = append(transmitterArray, string(transmitters[i]))
 	}
 
-	tx := SetConfig{
-		SetConfig: SetConfigDetails{
-			Signers:               signerArray,
-			Transmitters:          transmitterArray,
-			F:                     f,
-			OnchainConfig:         onchainConfig,
+	status = utils.LogStatus("InitOCR: begin proposal")
+	resp, err := t.executeOCR2(BeginProposal)
+	if err == nil {
+		if resp.Code != 0 {
+			err = fmt.Errorf("tx response contains error: %s %d", resp.Codespace, resp.Code)
+		} else if len(resp.Logs) == 0 {
+			err = errors.New("begin proposal produced no logs")
+		}
+	}
+	if status.Check(err) != nil {
+		return err
+	}
+
+	var id string
+	for _, e := range resp.Logs[0].Events {
+		if e.Type == "wasm" {
+			for _, a := range e.Attributes {
+				if a.Key == "proposal_id" {
+					if a.Value == "" {
+						return errors.New("empty proposal id")
+					}
+					id = a.Value
+				}
+			}
+		}
+	}
+	if id == "" {
+		return errors.New("failed to find event with attribute: wasm.proposal-id")
+	}
+
+	defer func() {
+		if rerr == nil {
+			return // Success
+		}
+		// Clean up
+		status = utils.LogStatus("InitOCR: clear proposal: " + id)
+		resp, err = t.executeOCR2(ClearProposal{
+			ClearProposal: ClearProposalDetails{ID: id},
+		})
+		if err == nil {
+			if resp.Code != 0 {
+				err = fmt.Errorf("tx response contains error: %s %d", resp.Codespace, resp.Code)
+			}
+		}
+		if status.Check(err) != nil {
+			fmt.Println(err)
+			return
+		}
+	}()
+
+	payees := make([]string, 0)
+	for i := 0; i < len(transmitterArray); i++ {
+		payees = append(payees, t.addr)
+	}
+	status = utils.LogStatus("InitOCR: propose config " + id)
+	resp, err = t.executeOCR2(ProposeConfig{
+		ProposeConfig: ProposeConfigDetails{
+			ID:            id,
+			Payees:        payees,
+			Signers:       signerArray,
+			Transmitters:  transmitterArray,
+			F:             f,
+			OnchainConfig: onchainConfig,
+		},
+	})
+	if err == nil && resp.Code != 0 {
+		err = fmt.Errorf("tx response contains error: %s %d", resp.Codespace, resp.Code)
+	}
+	if status.Check(err) != nil {
+		return err
+	}
+
+	status = utils.LogStatus("InitOCR: propose offchain config")
+	resp, err = t.executeOCR2(ProposeOffchainConfig{
+		ProposeOffchainConfig: ProposeOffchainConfigDetails{
+			ID:                    id,
 			OffchainConfigVersion: offchainConfigVersion,
 			OffchainConfig:        offchainConfig,
 		},
+	})
+	if err == nil && resp.Code != 0 {
+		err = fmt.Errorf("tx response contains error: %s %d", resp.Codespace, resp.Code)
 	}
-	if err != nil {
-		return msg.Check(err)
-	}
-
-	txBytes, err := json.Marshal(tx)
-	if err != nil {
-		return msg.Check(err)
+	if status.Check(err) != nil {
+		return err
 	}
 
-	args := append([]string{"tx", "wasm", "execute", t.Deployed[OCR2], string(txBytes)}, t.args...)
-	_, err = exec.Command("terrad", args...).Output()
-	return msg.Check(err)
+	status = utils.LogStatus("InitOCR: finalize proposal")
+	resp, err = t.executeOCR2(FinalizeProposal{
+		FinalizeProposal: FinalizeProposalDetails{ID: id},
+	})
+	if err == nil && resp.Code != 0 {
+		err = fmt.Errorf("tx response contains error: %s %d", resp.Codespace, resp.Code)
+	}
+	if status.Check(err) != nil {
+		return err
+	}
+
+	var digest []byte
+	for _, e := range resp.Logs[0].Events {
+		if e.Type == "wasm" {
+			for _, a := range e.Attributes {
+				if a.Key == "digest" {
+					h, err := hex.DecodeString(a.Value)
+					if err != nil {
+						return fmt.Errorf("failed to parse digest: %v", err)
+					}
+					digest = h
+				}
+			}
+		}
+	}
+	switch len(digest) {
+	case 0:
+		return errors.New("failed to find event with attribute: wasm.digest")
+	case 32:
+		// expected
+	default:
+		return fmt.Errorf("wrong length for: wasm.digest: %d", len(digest))
+	}
+
+	status = utils.LogStatus("InitOCR: accept proposal")
+	resp, err = t.executeOCR2(AcceptProposal{
+		AcceptProposal: AcceptProposalDetails{
+			ID:     id,
+			Digest: digest,
+		},
+	})
+	if err == nil && resp.Code != 0 {
+		err = fmt.Errorf("tx response contains error: %s %d", resp.Codespace, resp.Code)
+	}
+	if status.Check(err) != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t Terrad) executeOCR2(msg interface{}) (resp TxResponse, err error) {
+	var b []byte
+	b, err = json.Marshal(msg)
+	if err != nil {
+		return
+	}
+	args := []string{"tx", "wasm", "execute", t.Deployed[OCR2], string(b)}
+	cmd := exec.Command("terrad", append(args, t.args...)...)
+	var stdErr bytes.Buffer
+	cmd.Stderr = &stdErr
+	var out []byte
+	out, err = cmd.Output()
+	if err != nil {
+		err = fmt.Errorf("%s: %s", err, stdErr.String())
+		return
+	}
+	err = json.Unmarshal(out, &resp)
+	return
 }
 
 func (t Terrad) OCR2Address() string {
