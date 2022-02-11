@@ -1,4 +1,4 @@
-import AddAccess from './add_access'
-import RemoveAccess from './remove_access'
+import AddAccess from './addAccess'
+import RemoveAccess from './removeAccess'
 
 export default [AddAccess, RemoveAccess]
