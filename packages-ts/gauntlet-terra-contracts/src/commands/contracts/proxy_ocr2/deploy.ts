@@ -1,10 +1,9 @@
 import { BN } from '@chainlink/gauntlet-core/dist/utils'
-import { bech32 } from 'bech32'
 import { AccAddress } from '@terra-money/terra.js'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
 type CommandInput = {
-  contractAddress: string
+  address: string
 }
 
 type ContractInput = {
@@ -13,19 +12,19 @@ type ContractInput = {
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   return {
-    contractAddress: flags.contractAddress,
+    address: flags.contractAddress,
   }
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
   return {
-    contract_address: input.contractAddress,
+    contract_address: input.address,
   }
 }
 
 const validateInput = (input: CommandInput): boolean => {
   // Validate ocr2 contract address is valid
-  if (!AccAddress.validate(input.contractAddress)) throw new Error(`Invalid ocr2 contract address`)
+  if (!AccAddress.validate(input.address)) throw new Error(`Invalid ocr2 contract address`)
 
   return true
 }

@@ -5,5 +5,15 @@ import OCR2 from './contracts/ocr2'
 import AccessController from './contracts/access_controller'
 import Flags from './contracts/flags'
 import Proxy_OCR2 from './contracts/proxy_ocr2'
+import DeviationFlaggingValidator from './contracts/deviation_flagging_validator'
 
-export default [Upload, DeployLink, TransferLink, ...OCR2, ...AccessController, ...Flags, ...Proxy_OCR2]
+export default [
+  Upload,
+  DeployLink,
+  TransferLink,
+  ...OCR2,
+  ...AccessController,
+  ...Flags,
+  ...DeviationFlaggingValidator,
+  ...Proxy_OCR2,
+]

@@ -1,5 +1,4 @@
 import { BN } from '@chainlink/gauntlet-core/dist/utils'
-import { bech32 } from 'bech32'
 import { AccAddress } from '@terra-money/terra.js'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
