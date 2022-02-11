@@ -11,6 +11,7 @@ export interface AbstractInstruction<Input, ContractInput> {
   makeInput: (flags: any, args: string[]) => Promise<Input>
   validateInput: (input: Input) => boolean
   makeContractInput: (input: Input) => Promise<ContractInput>
+  afterExecute?: (response: Result<TransactionResponse>) => any
 }
 
 export const instructionToCommand = (instruction: AbstractInstruction<any, any>) => {
@@ -33,7 +34,12 @@ export const instructionToCommand = (instruction: AbstractInstruction<any, any>)
       const input = await instruction.makeContractInput(commandInput)
       const abstractCommand = await makeAbstractCommand(id, this.flags, this.args, input)
       await abstractCommand.invokeMiddlewares(abstractCommand, abstractCommand.middlewares)
-      return abstractCommand.execute()
+      let response = await abstractCommand.execute()
+      if (instruction.afterExecute) {
+        const data = instruction.afterExecute(response)
+        response = { ...response, data: { ...data } }
+      }
+      return response
     }
   }
 }

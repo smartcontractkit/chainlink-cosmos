@@ -1,6 +1,6 @@
 import { Result, WriteCommand } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
-import { MsgStoreCode } from '@terra-money/terra.js'
+import { EventsByType, MsgStoreCode, TxLog } from '@terra-money/terra.js'
 import { SignMode } from '@terra-money/terra.proto/cosmos/tx/signing/v1beta1/signing'
 
 import { withProvider, withWallet, withCodeIds, withNetwork } from '../middlewares'
@@ -43,6 +43,11 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     }
   }
 
+  makeEventsFromLogs = (logs: TxLog.Data[]): EventsByType[] => {
+    if (!logs) return []
+    return logs.map((log) => TxLog.fromData(log).eventsByType)
+  }
+
   // TODO: need to add type of tx, address is parsed only for intantiation
   wrapResponse = (tx: BlockTxBroadcastResult): TransactionResponse => ({
     hash: tx.txhash,
@@ -51,6 +56,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
       success: tx.logs.length > 0 && !(tx as TxError)?.code,
     }),
     tx,
+    events: this.makeEventsFromLogs(tx.logs),
   })
 
   async query(address, input, params?): Promise<any> {

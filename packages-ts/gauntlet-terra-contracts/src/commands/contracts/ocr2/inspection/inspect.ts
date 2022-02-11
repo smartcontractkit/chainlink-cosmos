@@ -3,7 +3,7 @@ import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { CATEGORIES } from '../../../../lib/constants'
 import { getRDD } from '../../../../lib/rdd'
 import { InspectInstruction, InspectionInput, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
-import { getOffchainConfigInput, OffchainConfig } from '../setConfig'
+import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
 
 const MIN_LINK_AVAILABLE = '100'
 
