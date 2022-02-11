@@ -28,16 +28,8 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
 }
 
 const validateInput = (input: CommandInput): boolean => {
-  validateAddress(input.raisingAccessController)
-  validateAddress(input.loweringAccessController)
-
-  return true
-}
-
-const validateAddress = (address: string): boolean => {
-  if (!AccAddress.validate(address)) {
-    throw new Error(`Invalid address`)
-  }
+  if (!AccAddress.validate(input.raisingAccessController)) throw new Error(`Invalid raisingAccessController address`)
+  if (!AccAddress.validate(input.loweringAccessController)) throw new Error(`Invalid loweringAccessController address`)
 
   return true
 }
