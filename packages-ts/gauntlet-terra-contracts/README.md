@@ -68,26 +68,19 @@ The following contracts have the previous actions available:
 
 - Create a cw4 group
 
-This instantiates a group with 3 members, whose votes are weighted by 25, 25, and 50 respectively:  (passing admin address is optional)
+This instantiates a group with 3 members, each having equal voting power, for a total of 1+1+1=3 votes:  (passing admin address is optional)
 
 ```
-yarn gauntlet cw4_group:deploy --members='[terra1pl4k5rj2jv6phm2vvhkttju7px6va2ja2v3haw,terra1tsxn3zzp09kvwpx03gzwquhc6nn794vvznuhzr,terra1s66cck3sxacdc2jfpdd4t4pk4yzc60pa72ssdr]' --admin=terra1pl4k5rj2jv6phm2vvhkttju7px6va2ja2v3haw --weights='[25,25,50]' --network=local
+yarn gauntlet cw4_group:deploy --members='[terra1pl4k5rj2jv6phm2vvhkttju7px6va2ja2v3haw,terra1tsxn3zzp09kvwpx03gzwquhc6nn794vvznuhzr,terra1s66cck3sxacdc2jfpdd4t4pk4yzc60pa72ssdr]' --admin=terra1pl4k5rj2jv6phm2vvhkttju7px6va2ja2v3haw  --network=bombay-testnet
 ```
 - Create a cw3 flex multisig wallet
 
-This instantiates a multisig wallet, for the group above... with a max voting period of 28800s (8 hours) and an absolute threshold of 50 votes:
+This instantiates a multisig wallet, for the group above... with a max voting period of 28800s (8 hours) and an threshold of 100 percent of the vote:
 
 ```
-yarn gauntlet cw3_flex_multisig:deploy --network=local --group_addr=terra179sumv8jjahdp6w6w7sze4n0rc9jsf4u5wpd25 --max_voting_period='{ "time" : 28800}' --threshold='{ "absolute_count" : { "weight" : 50 }}'
+yarn gauntlet cw3_flex_multisig:deploy --network=bombay-testnet --group=terra1wx0ahe6gpeyyh0wtq3cyc26f2wyk08kjtndxhf --time=28800 --threshold=3
 ```
 
-You may also specify the threshold as a percentage of the total votes (the same, in this case) or even a quorum combined with a threshold.
+You may also specify the threshold as an absolute number of votes, or even a quorum combined with a threshold percentage.
 ( See https://docs.cosmwasm.com/cw-plus/0.9.0/cw3/cw3-flex-spec for details )
-
-After the group & multisig wallet have been created, the following operations are available (TODO):
-
-- `gauntlet multisig:propose` - propose a new transaction
-- `gauntlet multisig:vote` - cast a vote on a proposal
-- `gauntlet multisig:execute` - execute a proposal which has gained enough votes
-- `gauntlet multisig:close` - close a proposal, so no more votes are allowed
 

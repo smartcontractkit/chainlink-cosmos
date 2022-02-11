@@ -1,6 +1,6 @@
 import { CATEGORIES } from '../../../lib/constants'
 import { isValidAddress } from '../../../lib/utils'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/wrapper'
+import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
 type CommandInput = {
   owners: string[]
