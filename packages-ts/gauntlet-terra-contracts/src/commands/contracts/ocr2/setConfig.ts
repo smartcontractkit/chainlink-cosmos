@@ -3,6 +3,8 @@ import { AbstractInstruction, instructionToCommand } from '../../abstract/execut
 import { time, BN } from '@chainlink/gauntlet-core/dist/utils'
 import { serializeOffchainConfig } from '../../../lib/encoding'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
+import { CATEGORIES } from '../../../lib/constants'
+import { CONTRACT_LIST } from '../../../lib/contracts'
 
 type ContractInput = {
   signers: string[]
@@ -191,7 +193,7 @@ const validateInput = (input: CommandInput): boolean => {
 
 const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
-    category: 'OCR',
+    category: CATEGORIES.OCR,
     contract: 'ocr2',
     function: 'set_config',
   },

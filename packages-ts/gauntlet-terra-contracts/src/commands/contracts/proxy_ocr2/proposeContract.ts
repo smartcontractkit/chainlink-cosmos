@@ -1,5 +1,7 @@
 import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress } from '@terra-money/terra.js'
+import { CATEGORIES } from '../../../lib/constants'
+import { CONTRACT_LIST } from '../../../lib/contracts'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
 type CommandInput = {
@@ -31,7 +33,8 @@ const validateInput = (input: CommandInput): boolean => {
 
 const proposeContract: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
-    contract: 'proxy_ocr2',
+    category: CATEGORIES.PROXIES,
+    contract: CONTRACT_LIST.PROXY_OCR_2,
     function: 'propose_contract',
   },
   makeInput: makeCommandInput,

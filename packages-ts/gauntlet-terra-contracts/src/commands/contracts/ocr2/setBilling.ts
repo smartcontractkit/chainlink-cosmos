@@ -1,6 +1,8 @@
 import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { getRDD } from '../../../lib/rdd'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { CATEGORIES } from '../../../lib/constants'
+import { CONTRACT_LIST } from '../../../lib/contracts'
 
 type CommandInput = {
   recommendedGasPriceUluna: string
@@ -71,7 +73,7 @@ const validateInput = (input: CommandInput): boolean => {
 
 const setBillingInstruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
-    category: 'OCR',
+    category: CATEGORIES.OCR,
     contract: 'ocr2',
     function: 'set_billing',
   },

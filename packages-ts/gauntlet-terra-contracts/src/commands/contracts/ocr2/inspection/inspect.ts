@@ -1,4 +1,6 @@
 import { inspection } from '@chainlink/gauntlet-core/dist/utils'
+import { CONTRACT_LIST } from '../../../../lib/contracts'
+import { CATEGORIES } from '../../../../lib/constants'
 import { getRDD } from '../../../../lib/rdd'
 import { InspectInstruction, InspectionInput, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
 import { getOffchainConfigInput, OffchainConfig } from '../setConfig'
@@ -127,7 +129,8 @@ const inspect = (expected: Expected, onchainData: Expected): boolean => {
 
 const instruction: InspectInstruction<any, Expected> = {
   command: {
-    contract: 'ocr2',
+    category: CATEGORIES.OCR,
+    contract: CONTRACT_LIST.OCR_2,
     id: 'inspect',
   },
   instructions: [

@@ -1,13 +1,14 @@
-export const CATEGORIES = {
-  OWNERSHIP: 'Ownership',
-  PROXIES: 'Proxies',
-  TOOLING: 'Tooling',
-  V3: 'V3',
-  LINK: 'LINK',
-  FLAGS: 'Flags',
-  OCR: 'OCR',
-  ACCESS_CONTROLLER: 'Access Controller',
-  MULTISIG: 'Multisig',
+export const enum CATEGORIES {
+  OWNERSHIP = 'Ownership',
+  PROXIES = 'Proxies',
+  TOOLING = 'Tooling',
+  V3 = 'V3',
+  LINK = 'LINK',
+  FLAGS = 'Flags',
+  OCR = 'OCR',
+  ACCESS_CONTROLLER = 'Access Controller',
+  MULTISIG = 'Multisig',
+  DEVIATION_FLAGGING_VALIDATOR = 'Devaiation Flagging Validator',
 }
 
 export const DEFAULT_RELEASE_VERSION = 'v0.0.4'

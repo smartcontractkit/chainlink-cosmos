@@ -1,5 +1,7 @@
 import { getRDD } from '../../../lib/rdd'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { CATEGORIES } from '../../../lib/constants'
+import { CONTRACT_LIST } from '../../../lib/contracts'
 
 type CommandInput = {
   payees: string[]
@@ -37,7 +39,7 @@ const validateInput = (input: CommandInput): boolean => {
 
 const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
-    category: 'OCR',
+    category: CATEGORIES.OCR,
     contract: 'ocr2',
     function: 'set_payees',
   },
