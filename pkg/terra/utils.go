@@ -98,11 +98,11 @@ func ContractConfigToOCRConfig(in []byte) ([]byte, error) {
 		return nil, fmt.Errorf("invalid config length: expected 33 got %d", len(in))
 	}
 	version := in[0:1]
-	min, err := Parse128BitSignedInt(in[1 : byteWidth128+1])
+	min, err := parse128BitSignedInt(in[1 : byteWidth128+1])
 	if err != nil {
 		return nil, err
 	}
-	max, err := Parse128BitSignedInt(in[1+byteWidth128:])
+	max, err := parse128BitSignedInt(in[1+byteWidth128:])
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func ContractConfigToOCRConfig(in []byte) ([]byte, error) {
 	return bytes.Join([][]byte{version, minBytes, maxBytes}, []byte{}), nil
 }
 
-func Parse128BitSignedInt(s []byte) (*big.Int, error) {
+func parse128BitSignedInt(s []byte) (*big.Int, error) {
 	if len(s) != byteWidth128 {
 		return nil, fmt.Errorf("invalid int length: expected %d got %d", byteWidth128, len(s))
 	}
