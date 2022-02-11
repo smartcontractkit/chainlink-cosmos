@@ -255,7 +255,7 @@ func TestContractConfigToOCRConfig(t *testing.T) {
 func TestParse128Bit(t *testing.T) {
 	b, err := hex.DecodeString("80000000000000000000000000000000")
 	require.NoError(t, err)
-	i, err := Parse128BitSignedInt(b)
+	i, err := parse128BitSignedInt(b)
 	require.NoError(t, err)
 	fmt.Println(i)
 	require.True(t, bytes.Equal(b, i.Bytes()))
