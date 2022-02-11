@@ -64,7 +64,7 @@ export const getContractCode = async (contractId: CONTRACT_LIST, version): Promi
       default:
         url = `https://github.com/smartcontractkit/chainlink-terra/releases/download/${version}/${contractId}.wasm`
     }
-    console.log(`Fetching ${url}...`)
+    logger.loading(`Fetching ${url}...`)
     const response = await fetch(url)
     const body = await response.arrayBuffer()
     return Buffer.from(body).toString('base64')
