@@ -8,6 +8,7 @@ export enum CONTRACT_LIST {
   FLAGS = 'flags',
   DEVIATION_FLAGGING_VALIDATOR = 'deviation_flagging_validator',
   OCR_2 = 'ocr2',
+  PROXY_OCR_2 = 'proxy_ocr2',
   ACCESS_CONTROLLER = 'access_controller',
 }
 
@@ -60,6 +61,7 @@ const contractDirName = {
   [CONTRACT_LIST.FLAGS]: 'flags',
   [CONTRACT_LIST.DEVIATION_FLAGGING_VALIDATOR]: 'deviation-flagging-validator',
   [CONTRACT_LIST.OCR_2]: 'ocr2',
+  [CONTRACT_LIST.PROXY_OCR_2]: 'proxy-ocr2',
   [CONTRACT_LIST.ACCESS_CONTROLLER]: 'access-controller',
 }
 
