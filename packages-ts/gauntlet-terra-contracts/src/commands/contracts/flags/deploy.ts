@@ -1,5 +1,6 @@
 import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { bech32 } from 'bech32'
+import { AccAddress } from '@terra-money/terra.js'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/wrapper'
 
 type CommandInput = {
@@ -34,11 +35,8 @@ const validateInput = (input: CommandInput): boolean => {
 }
 
 const validateAddress = (address: string): boolean => {
-  const { prefix: decodedPrefix } = bech32.decode(address) // throws error if checksum is invalid which will fail validation
-
-  // verify address prefix
-  if (decodedPrefix !== 'terra') {
-    throw new Error(`Invalid address prefix (expecteed: 'terra')`)
+  if (!AccAddress.validate(address)) {
+    throw new Error(`Invalid address`)
   }
 
   return true
