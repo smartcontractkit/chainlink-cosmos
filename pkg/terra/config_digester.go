@@ -63,6 +63,7 @@ func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.C
 		return digest, err
 	}
 
+	cfg.OnchainConfig = []byte{} // onchain_config not used in calculating config digest
 	if err := binary.Write(buf, binary.BigEndian, uint32(len(cfg.OnchainConfig))); err != nil {
 		return digest, err
 	}
