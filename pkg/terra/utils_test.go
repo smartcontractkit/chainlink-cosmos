@@ -1,10 +1,8 @@
 package terra
 
 import (
-	"bytes"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -230,6 +228,14 @@ func TestContractConfigToOCRConfig(t *testing.T) {
 			"",
 			true,
 		},
+		{
+			"invalid version",
+			"020000000000000000000000000000000000000000000000000de0b6b3a763ffff", // too short
+			"",
+			"",
+			"",
+			true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -250,13 +256,4 @@ func TestContractConfigToOCRConfig(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestParse128Bit(t *testing.T) {
-	b, err := hex.DecodeString("80000000000000000000000000000000")
-	require.NoError(t, err)
-	i, err := parse128BitSignedInt(b)
-	require.NoError(t, err)
-	fmt.Println(i)
-	require.True(t, bytes.Equal(b, i.Bytes()))
 }

@@ -1,14 +1,16 @@
 package terra
 
 import (
-	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
 	"reflect"
+
 	"strconv"
+
+	ag_binary "github.com/gagliardetto/binary"
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 
@@ -86,7 +88,6 @@ func MustAccAddress(addr string) cosmosSDK.AccAddress {
 
 const (
 	byteWidth128 = 16
-	bitWidth128  = byteWidth128 * 8
 )
 
 // ContractConfigToOCRConfig converts the output onchain_config to the type
@@ -97,40 +98,22 @@ func ContractConfigToOCRConfig(in []byte) ([]byte, error) {
 	if len(in) != 33 {
 		return nil, fmt.Errorf("invalid config length: expected 33 got %d", len(in))
 	}
-	version := in[0:1]
-	min, err := parse128BitSignedInt(in[1 : byteWidth128+1])
+	if in[0] != 0x01 {
+		// https://github.com/smartcontractkit/libocr/blob/master/offchainreporting2/reportingplugin/median/median.go#L21
+		return nil, fmt.Errorf("invalid config version: expected 1")
+	}
+	minDecoder := ag_binary.NewBinDecoder(in[1 : byteWidth128+1])
+	min, err := minDecoder.ReadInt128(binary.BigEndian)
 	if err != nil {
 		return nil, err
 	}
-	max, err := parse128BitSignedInt(in[1+byteWidth128:])
+	maxDecoder := ag_binary.NewBinDecoder(in[byteWidth128+1:])
+	max, err := maxDecoder.ReadInt128(binary.BigEndian)
 	if err != nil {
 		return nil, err
 	}
-	minBytes, err := median.ToBytes(min)
-	if err != nil {
-		return nil, err
-	}
-	maxBytes, err := median.ToBytes(max)
-	if err != nil {
-		return nil, err
-	}
-	return bytes.Join([][]byte{version, minBytes, maxBytes}, []byte{}), nil
-}
-
-func parse128BitSignedInt(s []byte) (*big.Int, error) {
-	if len(s) != byteWidth128 {
-		return nil, fmt.Errorf("invalid int length: expected %d got %d", byteWidth128, len(s))
-	}
-	val := (&big.Int{}).SetBytes(s)
-	// 2**127 - 1
-	maxPositive := big.NewInt(0).Sub(big.NewInt(0).Lsh(big.NewInt(1), bitWidth128-1), big.NewInt(1))
-	negative := val.Cmp(maxPositive) > 0
-	if negative {
-		// Get the complement wrt to 2^128
-		maxUint := big.NewInt(1)
-		maxUint.Lsh(maxUint, bitWidth128)
-		val.Sub(maxUint, val)
-		val.Neg(val)
-	}
-	return val, nil
+	return median.OnchainConfig{
+		Min: min.BigInt(),
+		Max: max.BigInt(),
+	}.Encode()
 }
