@@ -1,4 +1,4 @@
-import { OffchainConfig } from '../commands/contracts/ocr2/setConfig'
+import { OffchainConfig } from '../commands/contracts/ocr2/proposeOffchainConfig'
 import { Proto, sharedSecretEncryptions } from '@chainlink/gauntlet-core/dist/crypto'
 import { join } from 'path'
 

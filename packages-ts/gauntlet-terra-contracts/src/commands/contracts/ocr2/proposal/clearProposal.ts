@@ -1,51 +1,50 @@
 import { getRDD } from '../../../lib/rdd'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
-import { CONTRACT_LIST } from '../../../lib/contracts'
+import { TransactionResponse } from '@chainlink/gauntlet-terra'
 
 type CommandInput = {
-  payees: string[]
-  transmitters: string[]
+  proposalId: string
 }
 
 type ContractInput = {
-  payees: string[][]
+  id: string
 }
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const rdd = getRDD(flags.rdd)
-  const contract = args[0]
-  const aggregator = rdd.contracts[contract]
-  const aggregatorOperators: string[] = aggregator.oracles.map((o) => o.operator)
-  const payees = aggregatorOperators.map((operator) => rdd.operators[operator].adminAddress)
-  const transmitters = aggregatorOperators.map((operator) => rdd.operators[operator].ocrNodeAddress[0])
   return {
-    payees,
-    transmitters,
+    proposalId: flags.proposalId,
   }
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
   return {
-    payees: input.payees.map((payee, i) => [payee, input.transmitters[i]]),
+    id: input.proposalId,
   }
 }
 
-// TODO: Add validation
 const validateInput = (input: CommandInput): boolean => {
+  if (!input.proposalId) throw new Error('A proposal ID is required. Provide it with --id flag')
   return true
 }
 
+const afterExecute = async (response: Result<TransactionResponse>) => {
+  console.log(response.data)
+  return
+}
+
+// yarn gauntlet ocr2:clear_proposal --network=bombay-testnet --id=7 terra14nrtuhrrhl2ldad7gln5uafgl8s2m25du98hlx
 const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
     category: CATEGORIES.OCR,
     contract: 'ocr2',
-    function: 'set_payees',
+    function: 'clear_proposal',
   },
   makeInput: makeCommandInput,
   validateInput: validateInput,
   makeContractInput: makeContractInput,
+  afterExecute,
 }
 
 export default instructionToCommand(instruction)
