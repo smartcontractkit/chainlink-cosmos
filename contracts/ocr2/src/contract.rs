@@ -410,11 +410,7 @@ pub fn execute_accept_proposal(
         PAYEES.save(deps.storage, &transmitter, &payee)?;
     }
 
-    // calculate onchain_config from stored config
-    let mut onchain_config = Vec::new();
-    onchain_config.push(1);
-    onchain_config.extend_from_slice(&config.min_answer.to_be_bytes());
-    onchain_config.extend_from_slice(&config.max_answer.to_be_bytes());
+    let onchain_config = Vec::new(); // TODO move onchain_calc higher
 
     let oracles: Vec<_> = proposal
         .oracles
@@ -456,6 +452,12 @@ pub fn execute_accept_proposal(
         .iter()
         .map(|(_, transmitter, _)| attr("transmitters", transmitter));
 
+    // calculate onchain_config from stored config
+    let mut onchain_calc: Vec<u8> = Vec::new();
+    onchain_calc.push(1);
+    onchain_calc.extend_from_slice(&config.min_answer.to_be_bytes());
+    onchain_calc.extend_from_slice(&config.max_answer.to_be_bytes());
+
     response = response.add_event(
         Event::new("propose_config")
             .add_attribute(
@@ -470,7 +472,7 @@ pub fn execute_accept_proposal(
             .add_attributes(signers)
             .add_attributes(transmitters)
             .add_attribute("f", proposal.f.to_string())
-            .add_attribute("onchain_config", Binary(onchain_config).to_base64())
+            .add_attribute("onchain_config", Binary(onchain_calc).to_base64())
             .add_attribute(
                 "offchain_config_version",
                 proposal.offchain_config_version.to_string(),
