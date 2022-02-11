@@ -8,7 +8,7 @@
 #export RPC=http://public-node.terra.dev:26657
 
 export CHAIN_ID="bombay-12"
-export RPC=https://terra-testnet-2.simply-vc.com.mt:443/345DKJ45F6G5/rpc/
+export RPC=https://terra-testnet-1.simply-vc.com.mt:443/345DKJ45F6G5/rpc/
 
 export NODE="--node $RPC"
 export TXFLAG="${NODE} --chain-id $CHAIN_ID --fees 100000uluna --gas auto --gas-adjustment 1.2 --broadcast-mode=block"

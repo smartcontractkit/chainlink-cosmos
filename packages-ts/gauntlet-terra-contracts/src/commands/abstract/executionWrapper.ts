@@ -27,7 +27,9 @@ export const instructionToCommand = (instruction: AbstractInstruction<any, any>)
 
     execute = async (): Promise<Result<TransactionResponse>> => {
       const commandInput = await instruction.makeInput(this.flags, this.args)
-      instruction.validateInput(commandInput)
+      if (!instruction.validateInput(commandInput)) {
+        throw new Error(`Invalid input params:  ${JSON.stringify(commandInput)}`)
+      }
       const input = await instruction.makeContractInput(commandInput)
       const abstractCommand = await makeAbstractCommand(id, this.flags, this.args, input)
       await abstractCommand.invokeMiddlewares(abstractCommand, abstractCommand.middlewares)

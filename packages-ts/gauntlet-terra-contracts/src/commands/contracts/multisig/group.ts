@@ -23,6 +23,9 @@ const makeCommandInput = async (flags: any, args: any[]): Promise<CommandInput> 
   }
 }
 const validateInput = (input: CommandInput): boolean => {
+  if (input.owners.length === 0) {
+    throw new Error(`You must specify at least one group member (wallet owner)`)
+  }
   const areValidOwners = input.owners.filter((owner) => !isValidAddress(owner)).length === 0
   if (!areValidOwners) throw new Error('Owners are not valid')
   if (input.admin && !isValidAddress(input.admin)) throw new Error('Admin is not valid')
