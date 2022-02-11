@@ -1,7 +1,6 @@
 {
-  "flags": 42564,
-  "ocr2": 42565,
-  "access_controller": 42568,
-  "deviation_flagging_validator": 42567,
-  "proxy_ocr2": 42574
+  "flags": 39112,
+  "ocr2": 39113,
+  "access_controller": 39116,
+  "deviation_flagging_validator": 39115
 }
