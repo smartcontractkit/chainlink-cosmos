@@ -117,23 +117,15 @@ func (cc *ContractCache) updateConfig(ctx context.Context) error {
 		return err
 	}
 	now := time.Now()
-	var same, firstTimeConfig bool
+	var same bool
 	cc.configMu.Lock()
 	{
-		if cc.configBlock == 0 && changedInBlock != 0 {
-			cc.lggr.Infof("detected first time configuration")
-			firstTimeConfig = true
-		}
 		same := cc.configBlock == changedInBlock && cc.config.ConfigDigest == configDigest
 		if same {
 			cc.configTS = now // refresh TTL
 		}
 	}
 	cc.configMu.Unlock()
-
-	if firstTimeConfig {
-		cc.contractReady <- struct{}{}
-	}
 	if same {
 		return nil
 	}
