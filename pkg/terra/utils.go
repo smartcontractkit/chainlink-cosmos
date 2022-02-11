@@ -100,7 +100,7 @@ func ContractConfigToOCRConfig(in []byte) ([]byte, error) {
 	}
 	if in[0] != 0x01 {
 		// https://github.com/smartcontractkit/libocr/blob/master/offchainreporting2/reportingplugin/median/median.go#L21
-		return nil, fmt.Errorf("invalid config version: expected 1")
+		return nil, fmt.Errorf("invalid config version: expected 1 got %d", in[0])
 	}
 	minDecoder := ag_binary.NewBinDecoder(in[1 : byteWidth128+1])
 	min, err := minDecoder.ReadInt128(binary.BigEndian)
