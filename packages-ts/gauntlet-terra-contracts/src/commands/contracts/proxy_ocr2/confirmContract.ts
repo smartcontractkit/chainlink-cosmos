@@ -8,7 +8,7 @@ type CommandInput = {
 }
 
 type ContractInput = {
-    address: string
+  address: string
 }
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
