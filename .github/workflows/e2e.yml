@@ -119,6 +119,7 @@ jobs:
           nix develop -c make build_js
       - name: Run Tests
         env:
+          SELECTED_NETWORKS: localterra
           CHAINLINK_IMAGE: ${{ inputs.cl_repo }}
           CHAINLINK_VERSION: ${{ inputs.cl_image }}
         run: |

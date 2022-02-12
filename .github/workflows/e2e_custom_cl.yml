@@ -112,6 +112,7 @@ jobs:
           nix develop -c make build_js
       - name: Run Tests
         env:
+          SELECTED_NETWORKS: localterra
           CHAINLINK_IMAGE: 795953128386.dkr.ecr.us-west-2.amazonaws.com/chainlink
           CHAINLINK_VERSION: custom.${{ github.sha }}
         run: |
