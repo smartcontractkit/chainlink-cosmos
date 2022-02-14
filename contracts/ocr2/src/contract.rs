@@ -454,7 +454,7 @@ pub fn execute_accept_proposal(
         .map(|(_, transmitter, _)| attr("transmitters", transmitter));
 
     response = response.add_event(
-        Event::new("propose_config")
+        Event::new("set_config")
             .add_attribute(
                 "previous_config_block_number",
                 previous_config_block_number.to_string(),
