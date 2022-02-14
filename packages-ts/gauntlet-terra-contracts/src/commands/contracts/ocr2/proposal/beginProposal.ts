@@ -1,6 +1,7 @@
 import { Result } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { TransactionResponse } from '@chainlink/gauntlet-terra'
+import { CATEGORIES } from '../../../../lib/constants'
 import { AbstractInstruction, instructionToCommand } from '../../../abstract/executionWrapper'
 
 type CommandInput = {}
@@ -42,6 +43,7 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
     contract: 'ocr2',
     function: 'begin_proposal',
+    category: CATEGORIES.OCR,
   },
   makeInput: makeCommandInput,
   validateInput: validateInput,

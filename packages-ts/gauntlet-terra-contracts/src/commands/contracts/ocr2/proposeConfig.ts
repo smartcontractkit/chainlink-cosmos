@@ -1,3 +1,4 @@
+import { CATEGORIES } from '../../../lib/constants'
 import { getRDD } from '../../../lib/rdd'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
@@ -70,6 +71,7 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
     contract: 'ocr2',
     function: 'propose_config',
+    category: CATEGORIES.OCR,
   },
   makeInput: makeCommandInput,
   validateInput: validateInput,
