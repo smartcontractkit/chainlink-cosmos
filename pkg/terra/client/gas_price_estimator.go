@@ -105,12 +105,12 @@ func (gpe *FCDGasPriceEstimator) request() (map[string]sdk.DecCoin, error) {
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		gpe.lggr.Errorf("error reading body from %s, err %v", req.URL.RequestURI(), err)
+		gpe.lggr.Errorf("error reading body from %s, err %v", fcdURL, err)
 		return nil, err
 	}
 	var prices pricesFCD
 	if err := json.Unmarshal(b, &prices); err != nil {
-		gpe.lggr.Errorf("error unmarshalling from %s, err %v", req.URL.RequestURI(), err)
+		gpe.lggr.Errorf("error unmarshalling from %s, err %v", fcdURL, err)
 		return nil, err
 	}
 	results := make(map[string]sdk.DecCoin)
