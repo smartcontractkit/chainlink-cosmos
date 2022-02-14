@@ -1,0 +1,32 @@
+{
+  "name": "@chainlink/gauntlet-terra-cw20-multisig",
+  "version": "0.0.1",
+  "description": "Gauntlet Terra Cw20 Multisig",
+  "keywords": [
+    "typescript",
+    "cli"
+  ],
+  "main": "./dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "!dist/**/*.test.js"
+  ],
+  "scripts": {
+    "preinstall": "node ../../scripts/require-yarn.js",
+    "gauntlet": "ts-node ./src/index.ts",
+    "lint": "tsc",
+    "test": "SKIP_PROMPTS=true jest --runInBand",
+    "test:coverage": "yarn test --collectCoverage",
+    "test:ci": "yarn test --ci",
+    "lint:format": "yarn prettier --check ./src",
+    "format": "yarn prettier --write ./src",
+    "clean": "rm -rf ./dist/ ./bin/",
+    "build": "yarn clean && tsc",
+    "bundle": "yarn build && pkg ."
+  },
+  "dependencies": {
+    "@chainlink/gauntlet-core": "0.0.7",
+    "@chainlink/gauntlet-terra": "*"
+  }
+}
