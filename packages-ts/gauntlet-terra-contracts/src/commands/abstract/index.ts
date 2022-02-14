@@ -185,19 +185,28 @@ export default class AbstractCommand extends TerraCommand {
   }
 
   // create and sign transaction, without executing
-  abstractPrepare = async () => {
+  makeRawTransaction = async () => {
     const operations = {
-      [TERRA_OPERATIONS.DEPLOY]: this.opts.prepareDeploy()
-      [TERRA_OPERATIONS.EXECUTE]: this.opts.prepareCall()
+      [TERRA_OPERATIONS.DEPLOY]: this.abstractPrepareDeploy,
+      [TERRA_OPERATIONS.EXECUTE]: this.abstractPrepareCall,
+      [TERRA_OPERATIONS.QUERY]: () => { throw Error("makeRawTransaction:  cannot make a tx from a query commmand") },
+      // TODO: [TERRA_OPERATIONS.UPLOAD]: this.abstractPrepareUpload,
     }
-    return await operations[this.opts.action](address, {
-      [this.opts.function]: this.params,
-    })
+
+    return await operations[this.opts.action](this.params, this.args[0])
 }
 
-    const address = this.args[0]
-    return operations[this.opts.action](this.params, address)
-  }
+abstractPrepareDeploy = async(params:any) => {
+  const codeId = this.codeIds[this.opts.contract.id]
+  this.require(!!codeId, `Code Id for contract ${this.opts.contract.id} not found`)
+  return await this.prepareDeploy(codeId, params)
+}
+
+abstractPrepareCall = async(params:any, address:string) => {
+  return await this.prepareCall(address, {
+    [this.opts.function]: params,
+  })
+}
 
   execute = async () => {
     const operations = {

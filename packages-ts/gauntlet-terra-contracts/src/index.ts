@@ -9,7 +9,7 @@ const commands = {
   custom: [...Terra],
   loadDefaultFlags: () => defaultFlags,
   abstract: {
-    findPolymorphic: () => findPolymorphic,
+    findPolymorphic: findPolymorphic,
     makeCommand: makeAbstractCommand,
   },
 }

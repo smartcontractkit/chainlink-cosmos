@@ -1,18 +1,21 @@
-import { TerraCommand } from '@chainlink/gauntlet-terra'
+import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { MultisigTerraCommand } from '../contracts/multisig'
+import { Result, Command } from '@chainlink/gauntlet-core'
 
-type COMMANDS = {
-  custom: any[]
+class EmptyCommand extends Command {
+    constructor() {
+        super({help : false}, [])
+    }
 }
 
-export default (commands: COMMANDS, slug: string) => {
+export default (commands: any[], slug: string) : Command => {
   const slugs: string[] = slug.split(':')
   if (slugs.length < 3) {
-    return null
+    throw Error(`Command ${slugs.join(':')} not found`)
   }
   const op: string = slugs.pop()!
-  const command: any = commands.custom[slugs.join()]
-  if (!!command) return undefined
+  const command: any = commands[slugs.join()]
+  if (!!command) throw Error(`Command ${slugs.join(':')} not found`)
 
   switch (op) {
     case 'multisig':
@@ -20,8 +23,13 @@ export default (commands: COMMANDS, slug: string) => {
     case 'vote':
     case 'execute':
     case 'approve': // vote yes, then execute if threshold is reached
-      return class Command extends MultisigTerraCommand {
+      class WrappedCommand extends MultisigTerraCommand {
         static id = slugs.join()
+
+        constructor(flags, args) {
+            super(flags, args)
+        }
+
         multisigOp = () => {
           return op
         }
@@ -29,7 +37,12 @@ export default (commands: COMMANDS, slug: string) => {
           return command
         }
       }
+
+      let cmd = new EmptyCommand()
+      let wc = Object.setPrototypeOf(WrappedCommand, EmptyCommand.prototype)
+      wc = Object.assign(wc, cmd)
+      return wc
     default:
-      return undefined
+        throw Error(`Command ${slugs.join(':')} not found`)
   }
 }

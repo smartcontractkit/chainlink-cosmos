@@ -1,4 +1,4 @@
-import { BlockTxBroadcastResult, EventsByType } from '@terra-money/terra.js'
+import { BlockTxBroadcastResult, EventsByType, Tx as RawTransaction } from '@terra-money/terra.js'
 
 export type TransactionResponse = {
   hash: string
@@ -7,3 +7,5 @@ export type TransactionResponse = {
   tx?: BlockTxBroadcastResult
   events?: EventsByType[]
 }
+
+export { RawTransaction }

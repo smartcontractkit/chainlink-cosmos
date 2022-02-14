@@ -9,9 +9,16 @@
 
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { Result } from '@chainlink/gauntlet-core'
-import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
+import { TerraCommand, RawTransaction, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST, Contract, getContract, TERRA_OPERATIONS } from '../../../lib/contracts'
+import AbstractCommand from '../../abstract'
+
+type ProposalContext = { 
+    rawTx: RawTransaction,
+    multisigSigner: string,
+    proposalState: any,
+}
 
 type StringGetter = () => string
 
@@ -37,26 +44,20 @@ abstract class MultisigTerraCommand  extends TerraCommand {
     }
 
     execute = async (): Promise<Result<TransactionResponse>> => {
-        const tx = 
-
-        switch ( this.command.opts.action) {
-            case(TERRA_OPERATIONS.deploy):
-            tx = this.command.prepare_deploy()
-        } else if () {
-            this.command.prepare_call()
-        }
-
-        const contract = getContract()
+        const tx = this.command.makeRawTransaction()
+        console.debug(tx)
 
         return {
-            responses: [
-                {
-                    tx: tx
-                    contract: contract
-                }
-            ]
-        } as Result<TransactionResponse>
+            responses: [],  
+          } as Result<TransactionResponse>
     }
+}
+
+export const wrapCommand = (command) => {
+    return class CustomCommand extends MultisigTerraCommand {
+      static id = `${command.id}:multisig`
+      static category = CATEGORIES.MULTISIG
+  }
 }
 
 export { MultisigTerraCommand }
