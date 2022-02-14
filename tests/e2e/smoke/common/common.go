@@ -25,7 +25,7 @@ const (
 	// NewRoundCheckPollInterval new round check interval
 	NewRoundCheckPollInterval = 1 * time.Second
 	// SourceChangeInterval EA value change interval
-	SourceChangeInterval = 5 * time.Second
+	SourceChangeInterval = 1250 * time.Millisecond
 	// ChaosAwaitingApply time to wait for chaos experiment to apply
 	ChaosAwaitingApply = 60 * time.Second
 	// ChaosGroupFaulty Group of faulty nodes, even if they fail OCR must work
@@ -219,14 +219,15 @@ func (m *OCRv2State) ValidateRoundsAfter(chaosStartTime time.Time, rounds int) {
 	m.RoundsFound = 0
 	m.LastRoundTime = chaosStartTime
 	Eventually(func(g Gomega) {
-		answer, timestamp, _, err := m.OCR2.GetLatestRoundData()
+		answer, timestamp, roundID, err := m.OCR2.GetLatestRoundData()
 		g.Expect(err).ShouldNot(HaveOccurred())
 		roundTime := time.Unix(int64(timestamp), 0)
 		g.Expect(roundTime.After(m.LastRoundTime)).Should(BeTrue())
 		m.RoundsFound++
 		m.LastRoundTime = roundTime
 		log.Debug().
-			Int("Rounds", m.RoundsFound).
+			Uint64("RoundID", roundID).
+			Int("RoundFound", m.RoundsFound).
 			Interface("Answer", answer).
 			Time("Time", roundTime).
 			Msg("OCR Round")

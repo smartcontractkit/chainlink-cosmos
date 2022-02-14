@@ -14,7 +14,7 @@ func (m *OCRv2State) LabelChaosGroups() {
 	m.LabelChaosGroup(1, 4, ChaosGroupOracles)
 	m.LabelChaosGroup(1, 3, ChaosGroupOraclesMinusOne)
 	m.LabelChaosGroup(0, 1, ChaosGroupFaulty)
-	m.LabelChaosGroup(3, 4, ChaosGroupOnline)
+	m.LabelChaosGroup(2, 4, ChaosGroupOnline)
 	m.LabelChaosGroup(0, 2, ChaosGroupYellow)
 	m.LabelChaosGroup(1, 2, ChaosGroupLeftHalf)
 	m.LabelChaosGroup(3, 4, ChaosGroupRightHalf)
