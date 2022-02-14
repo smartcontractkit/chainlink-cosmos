@@ -1,6 +1,8 @@
 package ocr2types
 
 import (
+	"math/big"
+
 	"github.com/smartcontractkit/terra.go/msg"
 )
 
@@ -103,15 +105,52 @@ type ExecuteTransferOwnershipMsgType struct {
 	To msg.AccAddress `json:"to"`
 }
 
-type ExecuteSetConfig struct {
-	SetConfig SetConfigDetails `json:"set_config"`
+var BeginProposal = "begin_proposal"
+
+type ProposeConfig struct {
+	ProposeConfig ProposeConfigDetails `json:"propose_config"`
 }
 
-type SetConfigDetails struct {
-	Signers               [][]byte `json:"signers"`
-	Transmitters          []string `json:"transmitters"`
-	F                     uint8    `json:"f"`
-	OnchainConfig         []byte   `json:"onchain_config"`
-	OffchainConfigVersion uint64   `json:"offchain_config_version"`
-	OffchainConfig        []byte   `json:"offchain_config"`
+type ProposeConfigDetails struct {
+	ID            string   `json:"id"`
+	Payees        []string `json:"payees"`
+	Signers       [][]byte `json:"signers"`
+	Transmitters  []string `json:"transmitters"`
+	F             uint8    `json:"f"`
+	OnchainConfig []byte   `json:"onchain_config"`
+}
+
+type ProposeOffchainConfig struct {
+	ProposeOffchainConfig ProposeOffchainConfigDetails `json:"propose_offchain_config"`
+}
+
+type ProposeOffchainConfigDetails struct {
+	ID                    string `json:"id"`
+	OffchainConfigVersion uint64 `json:"offchain_config_version"`
+	OffchainConfig        []byte `json:"offchain_config"`
+}
+
+type ClearProposal struct {
+	ClearProposal ClearProposalDetails `json:"clear_proposal"`
+}
+
+type ClearProposalDetails struct {
+	ID *big.Int `json:"id"`
+}
+
+type FinalizeProposal struct {
+	FinalizeProposal FinalizeProposalDetails `json:"finalize_proposal"`
+}
+
+type FinalizeProposalDetails struct {
+	ID string `json:"id"`
+}
+
+type AcceptProposal struct {
+	AcceptProposal AcceptProposalDetails `json:"accept_proposal"`
+}
+
+type AcceptProposalDetails struct {
+	ID     string `json:"id"`
+	Digest []byte `json:"digest"`
 }
