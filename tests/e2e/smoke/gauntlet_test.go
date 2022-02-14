@@ -91,7 +91,7 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 
 	AfterEach(func() {
 		By("Tearing down the environment", func() {
-			err = actions.TeardownSuite(e, nil, "logs")
+			err = actions.TeardownSuite(e, nil, "logs", nil)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 	})

@@ -1,12 +1,13 @@
 package smoke_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
 	tc "github.com/smartcontractkit/chainlink-terra/tests/e2e/smoke/common"
 	"github.com/smartcontractkit/integrations-framework/actions"
-	"time"
 )
 
 var _ = Describe("Terra OCRv2 @ocr", func() {
@@ -28,7 +29,7 @@ var _ = Describe("Terra OCRv2 @ocr", func() {
 
 	AfterEach(func() {
 		By("Tearing down the environment", func() {
-			err := actions.TeardownSuite(state.Env, nil, "logs")
+			err := actions.TeardownSuite(state.Env, nil, "logs", nil)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 	})

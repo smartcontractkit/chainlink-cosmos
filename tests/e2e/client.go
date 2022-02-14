@@ -272,6 +272,11 @@ func (t *TerraLCDClient) CalculateTxGas(gasUsedValue *big.Int) (*big.Float, erro
 	panic("implement me")
 }
 
+// GetDefaultWallet gets the default wallet
+func (t *TerraLCDClient) GetDefaultWallet() *ifclient.EthereumWallet {
+	panic("implement me")
+}
+
 // Instantiate deploys WASM code and instantiating a contract
 func (t *TerraLCDClient) Instantiate(path string, instMsg interface{}) (string, error) {
 	sender := t.DefaultWallet.AccAddress
