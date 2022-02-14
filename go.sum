@@ -1909,8 +1909,8 @@ github.com/onsi/ginkgo v1.16.2/go.mod h1:CObGmKUOKaSC0RjmoAK7tKyn4Azo5P2IWuoMnvw
 github.com/onsi/ginkgo v1.16.4/go.mod h1:dX+/inL/fNMqNlz0e9LfyB9TswhZpCVdJM/Z6Vvnwo0=
 github.com/onsi/ginkgo v1.16.5 h1:8xi0RTUf59SOSfEtZMvwTvXYMzG4gV23XVHOZiXNtnE=
 github.com/onsi/ginkgo v1.16.5/go.mod h1:+E8gABHa3K6zRBolWtd+ROzc/U5bkGt0FwiG042wbpU=
-github.com/onsi/ginkgo/v2 v2.0.0 h1:CcuG/HvWNkkaqCUpJifQY8z7qEMBJya6aLPx6ftGyjQ=
-github.com/onsi/ginkgo/v2 v2.0.0/go.mod h1:vw5CSIxN1JObi/U8gcbwft7ZxR2dgaR70JSE3/PpL4c=
+github.com/onsi/ginkgo/v2 v2.1.0 h1:Rj+Was8Gt/ICSZY/CihVKK2cGy3rDqBYKSxVnmOXZzI=
+github.com/onsi/ginkgo/v2 v2.1.0/go.mod h1:vw5CSIxN1JObi/U8gcbwft7ZxR2dgaR70JSE3/PpL4c=
 github.com/onsi/gomega v0.0.0-20151007035656-2152b45fa28a/go.mod h1:C1qb7wdrVGGVU+Z6iS04AVkA3Q65CEZX59MT0QO5uiA=
 github.com/onsi/gomega v0.0.0-20170829124025-dcabb60a477c/go.mod h1:C1qb7wdrVGGVU+Z6iS04AVkA3Q65CEZX59MT0QO5uiA=
 github.com/onsi/gomega v1.4.1/go.mod h1:C1qb7wdrVGGVU+Z6iS04AVkA3Q65CEZX59MT0QO5uiA=
@@ -2189,11 +2189,11 @@ github.com/sirupsen/logrus v1.8.1 h1:dJKuHgqk1NNQlqoA6BTlM1Wf9DOH3NBjQyu0h9+AZZE
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/smartcontractkit/chainlink v0.8.10-0.20200825114219-81dd2fc95bac/go.mod h1:j7qIYHGCN4QqMXdO8g8A9dmUT5vKFmkxPSbjAIfrfNU=
 github.com/smartcontractkit/chainlink v0.9.5-0.20201207211610-6c7fee37d5b7/go.mod h1:kmdLJbVZRCnBLiL6gG+U+1+0ofT3bB48DOF8tjQvcoI=
-github.com/smartcontractkit/chainlink v1.0.1-0.20220114200720-95a78cb9fc2b h1:n9RuQUtWWow5Z/l0PydBEi/GKIBXa+mUYB3EGDaHE94=
-github.com/smartcontractkit/chainlink v1.0.1-0.20220114200720-95a78cb9fc2b/go.mod h1:f4WOXzmo07DayD1vLXie1RPsH99hGvslb85MNQ+O8l4=
+github.com/smartcontractkit/chainlink v1.1.1-0.20220211182828-c69c1c32bc6f h1:p21grwYiFqqIz5GrOLndkGMd4TPwYiN7DRwvCnOvNTQ=
+github.com/smartcontractkit/chainlink v1.1.1-0.20220211182828-c69c1c32bc6f/go.mod h1:VddTFItCftKpTC7abtzaDDwT2FiJIpNpXAnBYT8yQkE=
 github.com/smartcontractkit/chainlink-relay v0.0.0-20220208185145-f90ff8f9d79a h1:A5dMoZ7vDtiytYw/38wtf1kEVWXds47q3NpQYpD8Huk=
 github.com/smartcontractkit/chainlink-relay v0.0.0-20220208185145-f90ff8f9d79a/go.mod h1:/6gP9XHTQEBeBnXtC9oF1VelYhPMtGDu+6LxLtFP01g=
-github.com/smartcontractkit/chainlink-solana v0.0.0-20220110150750-26cf3ee24c90 h1:ksLhwtSzUPqPUt9uQDzG90REB+c8ehGlVglY7/Fhrv8=
+github.com/smartcontractkit/chainlink-solana v0.2.10-0.20220208192802-307c6fba76f0 h1:A9Bw3yZu9bOwGt5krstlPrpUK+j4SRCEfWm+az225Yw=
 github.com/smartcontractkit/ed25519consensus v0.0.1 h1:Ta23Y6YJTACLCpKWSWAwgHCtkmWrGGfrUAV8Ns5r4z0=
 github.com/smartcontractkit/ed25519consensus v0.0.1/go.mod h1:8Wf0F4mu3B5DdEOFKMMLgSoZ8EyaA2Cmf4YMUsNHXzE=
 github.com/smartcontractkit/helmenv v1.0.36 h1:RSgEyvWstAuH5BCssPeSeDrxywvAFHP8sqw2Ft55VaQ=
@@ -2201,8 +2201,8 @@ github.com/smartcontractkit/helmenv v1.0.36/go.mod h1:pkScfFRZM9UhMAqeG+Bfxyy7Yj
 github.com/smartcontractkit/integrations-framework v1.0.47 h1:cqTmqIEPRLXpfLrvhlOHl1nNZ9wFQuM/uPeazrvnDYw=
 github.com/smartcontractkit/integrations-framework v1.0.47/go.mod h1:vxO+yFQqnDh2Y707zensXk6JxJuRWrclJ/GdS/nS7jE=
 github.com/smartcontractkit/libocr v0.0.0-20201203233047-5d9b24f0cbb5/go.mod h1:bfdSuLnBWCkafDvPGsQ1V6nrXhg046gh227MKi4zkpc=
-github.com/smartcontractkit/libocr v0.0.0-20220121130134-5d2b1d5f424b h1:9xEvwk6fHqL9Fp/u8bLd7kbEQKrDSzwuDsH1ptHjE9g=
-github.com/smartcontractkit/libocr v0.0.0-20220121130134-5d2b1d5f424b/go.mod h1:nq3crM3wVqnyMlM/4ZydTuJ/WyCapAsOt7P94oRgSPg=
+github.com/smartcontractkit/libocr v0.0.0-20220125200954-5b957c834276 h1:sE+0R3qyCnZRiDoEoWT8St+Pmb1ZdRDhyq7xZPrwoZ0=
+github.com/smartcontractkit/libocr v0.0.0-20220125200954-5b957c834276/go.mod h1:nq3crM3wVqnyMlM/4ZydTuJ/WyCapAsOt7P94oRgSPg=
 github.com/smartcontractkit/sqlx v1.3.5-0.20210805004948-4be295aacbeb h1:OMaBUb4X9IFPLbGbCHsMU+kw/BPCrewaVwWGIBc0I4A=
 github.com/smartcontractkit/sqlx v1.3.5-0.20210805004948-4be295aacbeb/go.mod h1:HNUu4cJekUdsJbwRBCiOybtkPJEfGRELQPe2tkoDEyk=
 github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16 h1:k+E0RKzVSG1QpxXakNUtcGUhq4ZMe0MAJ5Awg/l9oSc=
