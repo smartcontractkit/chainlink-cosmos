@@ -151,8 +151,6 @@ func (m *OCRv2State) DeployContracts() {
 	Expect(m.Err).ShouldNot(HaveOccurred())
 	m.Transmitters, m.Err = m.OCR2.SetOffChainConfig(m.OCConfig)
 	Expect(m.Err).ShouldNot(HaveOccurred())
-	m.Err = m.OCR2.SetPayees(m.Transmitters)
-	Expect(m.Err).ShouldNot(HaveOccurred())
 	m.Err = m.OCR2.SetValidatorConfig(uint64(2e18), m.Validator.Address())
 	Expect(m.Err).ShouldNot(HaveOccurred())
 	m.OCR2Proxy, m.Err = cd.DeployOCRv2Proxy(m.OCR2.Address())
