@@ -11,7 +11,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.26.1
 	github.com/satori/go.uuid v1.2.0
-	github.com/smartcontractkit/chainlink v1.1.1-0.20220211182828-c69c1c32bc6f
+	github.com/smartcontractkit/chainlink v1.1.1-0.20220214133705-d9ee81244df2
 	github.com/smartcontractkit/chainlink-relay v0.0.0-20220208185145-f90ff8f9d79a
 	github.com/smartcontractkit/helmenv v1.0.36
 	github.com/smartcontractkit/integrations-framework v1.0.47
