@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 
 	"strconv"
@@ -84,36 +83,4 @@ func MustAccAddress(addr string) cosmosSDK.AccAddress {
 		panic(err)
 	}
 	return accAddr
-}
-
-const (
-	byteWidth128 = 16
-)
-
-// ContractConfigToOCRConfig converts the output onchain_config to the type
-// expected by OCR
-func ContractConfigToOCRConfig(in []byte) ([]byte, error) {
-	// onchain =              <8bit version><128bit min><128bit max>
-	// libocr median plugin = <8bit version><192bit min><192bit max>
-	if len(in) != 33 {
-		return nil, fmt.Errorf("invalid config length: expected 33 got %d", len(in))
-	}
-	if in[0] != 0x01 {
-		// https://github.com/smartcontractkit/libocr/blob/master/offchainreporting2/reportingplugin/median/median.go#L21
-		return nil, fmt.Errorf("invalid config version: expected 1 got %d", in[0])
-	}
-	minDecoder := ag_binary.NewBinDecoder(in[1 : byteWidth128+1])
-	min, err := minDecoder.ReadInt128(binary.BigEndian)
-	if err != nil {
-		return nil, err
-	}
-	maxDecoder := ag_binary.NewBinDecoder(in[byteWidth128+1:])
-	max, err := maxDecoder.ReadInt128(binary.BigEndian)
-	if err != nil {
-		return nil, err
-	}
-	return median.OnchainConfig{
-		Min: min.BigInt(),
-		Max: max.BigInt(),
-	}.Encode()
 }

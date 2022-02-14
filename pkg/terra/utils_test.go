@@ -1,7 +1,6 @@
 package terra
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestHexToByteArray(t *testing.T) {
@@ -183,77 +181,6 @@ func TestRawMessageStringIntToInt(t *testing.T) {
 
 			assert.Equal(t, i.output, num)
 			assert.NoError(t, err)
-		})
-	}
-}
-
-func TestContractConfigToOCRConfig(t *testing.T) {
-	tests := []struct {
-		name        string
-		input128    string
-		expected192 string
-		expectedMin string
-		expectedMax string
-		expectedErr bool
-	}{
-		{
-			"positive min positive max",
-			"010000000000000000000000000000000000000000000000000de0b6b3a763ffff",
-			"01000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a763ffff",
-			"0",
-			"999999999999999999",
-			false,
-		},
-		{
-			"negative min positive max",
-			"018000000000000000000000000000000000000000000000000000000000000001",
-			"01ffffffffffffffff80000000000000000000000000000000000000000000000000000000000000000000000000000001",
-			"-170141183460469231731687303715884105728", // -2^127
-			"1",
-			false,
-		},
-		{
-			"negative min negative max",
-			"01fffffffffffffffffffffffffffffff7fffffffffffffffffffffffffffffff8",
-			"01fffffffffffffffffffffffffffffffffffffffffffffff7fffffffffffffffffffffffffffffffffffffffffffffff8",
-			"-9",
-			"-8",
-			false,
-		},
-		{
-			"invalid input",
-			"0100000000000000000000000000000000000000000000000de0b6b3a763ffff", // too short
-			"",
-			"",
-			"",
-			true,
-		},
-		{
-			"invalid version",
-			"020000000000000000000000000000000000000000000000000de0b6b3a763ffff", // too short
-			"",
-			"",
-			"",
-			true,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			input, err := hex.DecodeString(test.input128)
-			require.NoError(t, err)
-			result, err := ContractConfigToOCRConfig(input)
-			if test.expectedErr {
-				require.Error(t, err)
-			} else {
-				require.Equal(t, 49, len(result))
-				require.Equal(t, test.expected192, hex.EncodeToString(result))
-				min, err := median.ToBigInt(result[1:25])
-				require.NoError(t, err)
-				max, err := median.ToBigInt(result[25:])
-				require.NoError(t, err)
-				require.Equal(t, test.expectedMin, min.String())
-				require.Equal(t, test.expectedMax, max.String())
-			}
 		})
 	}
 }

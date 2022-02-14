@@ -106,17 +106,11 @@ func parseAttributes(attrs []cosmosSDK.Attribute) (output types.ContractConfig, 
 			output.F = uint8(i)
 		case "onchain_config":
 			// parse byte array encoded as base64
-			config33, err := base64.StdEncoding.DecodeString(value)
+			config, err := base64.StdEncoding.DecodeString(value)
 			if err != nil {
 				return types.ContractConfig{}, err
 			}
-			// convert byte array to encoding expected by lib OCR
-			config49, err := ContractConfigToOCRConfig(config33)
-			if err != nil {
-				return types.ContractConfig{}, err
-
-			}
-			output.OnchainConfig = config49
+			output.OnchainConfig = config
 		case "offchain_config_version":
 			i, err := strconv.ParseInt(value, 10, 64)
 			if err != nil {
