@@ -1,17 +1,12 @@
 package terra
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"reflect"
 
 	"strconv"
-
-	ag_binary "github.com/gagliardetto/binary"
-
-	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
