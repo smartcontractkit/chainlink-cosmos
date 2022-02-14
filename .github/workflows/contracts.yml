@@ -1,10 +1,10 @@
 # Based on https://github.com/actions-rs/example/blob/master/.github/workflows/quickstart.yml
 
 on:
-  pull_request:
   push:
     branches:
-      - main
+      - develop
+  pull_request:
 
 name: Contracts
 
