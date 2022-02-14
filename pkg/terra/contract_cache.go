@@ -38,13 +38,13 @@ type ContractCache struct {
 	latestAnswer    *big.Int
 	latestTimestamp time.Time
 
-	contractReady chan struct{}
+	contractReady chan<- struct{}
 	configFound   *atomic.Bool
 }
 
 // NewContractCache creates a polling based cache of onchain values.
 // It signals on contractReady when the config cache is warm.
-func NewContractCache(cfg Config, reader *OCR2Reader, lggr Logger, contractReady chan struct{}) *ContractCache {
+func NewContractCache(cfg Config, reader *OCR2Reader, lggr Logger, contractReady chan<- struct{}) *ContractCache {
 	return &ContractCache{
 		cfg:           cfg,
 		reader:        reader,

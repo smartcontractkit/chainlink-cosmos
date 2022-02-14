@@ -80,7 +80,7 @@ func (r *Relayer) Healthy() error {
 
 // NewOCR2Provider creates per-job OCR2 dependencies. It signals on contractReady
 // when config has been detected and a libocr.Oracle should be started.
-func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}, contractReady chan struct{}) (relaytypes.OCR2Provider, error) {
+func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}, contractReady chan<- struct{}) (relaytypes.OCR2Provider, error) {
 	spec, ok := s.(OCR2Spec)
 	if !ok {
 		return nil, errors.New("unsuccessful cast to 'terra.OCR2Spec'")
