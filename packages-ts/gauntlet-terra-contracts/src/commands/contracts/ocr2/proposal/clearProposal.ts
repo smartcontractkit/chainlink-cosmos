@@ -1,7 +1,7 @@
-import { getRDD } from '../../../lib/rdd'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
-import { CATEGORIES } from '../../../lib/constants'
+import { Result } from '@chainlink/gauntlet-core'
 import { TransactionResponse } from '@chainlink/gauntlet-terra'
+import { CATEGORIES } from '../../../../lib/constants'
+import { instructionToCommand, AbstractInstruction } from '../../../abstract/executionWrapper'
 
 type CommandInput = {
   proposalId: string
