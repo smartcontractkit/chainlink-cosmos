@@ -82,10 +82,7 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 				"upload",
 				g.Flag("version", "local"),
 			}, []string{
-				"Error deploying flags code",
-				"Error deploying deviation_flagging_validator code",
-				"Error deploying ocr2 code",
-				"Error deploying access_controller code",
+				"Error deploying",
 				terraCommandError,
 			}, 10)
 			Expect(err).ShouldNot(HaveOccurred(), "Failed to upload contracts")
@@ -94,7 +91,7 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 
 	AfterEach(func() {
 		By("Tearing down the environment", func() {
-			err = actions.TeardownSuite(e, nil, "logs")
+			err = actions.TeardownSuite(e, nil, "logs", nil)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 	})

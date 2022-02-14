@@ -742,6 +742,8 @@ github.com/ethereum/go-ethereum v1.9.25/go.mod h1:vMkFiYLHI4tgPw4k2j4MHKoovchFE8
 github.com/ethereum/go-ethereum v1.10.4/go.mod h1:nEE0TP5MtxGzOMd7egIrbPJMQBnhVU3ELNxhBglIzhg=
 github.com/ethereum/go-ethereum v1.10.11 h1:KKIcwpmur9iTaVbR2dxlHu+peHVhU+/KX//NWvT1n9U=
 github.com/ethereum/go-ethereum v1.10.11/go.mod h1:W3yfrFyL9C1pHcwY5hmRHVDaorTiQxhYBkKyu5mEDHw=
+github.com/ethereum/go-ethereum v1.10.15 h1:E9o0kMbD8HXhp7g6UwIwntY05WTDheCGziMhegcBsQw=
+github.com/ethereum/go-ethereum v1.10.15/go.mod h1:W3yfrFyL9C1pHcwY5hmRHVDaorTiQxhYBkKyu5mEDHw=
 github.com/evanphx/json-patch v4.9.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch v4.11.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch v4.12.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
@@ -2392,6 +2394,8 @@ github.com/smartcontractkit/integrations-framework v1.0.42/go.mod h1:TwDu8hGhQjt
 github.com/smartcontractkit/integrations-framework v1.0.44/go.mod h1:80yVYzfn5jz2ubPbDEuD7Kw0a55cS+o7tZlTHQu4VQc=
 github.com/smartcontractkit/integrations-framework v1.0.47 h1:cqTmqIEPRLXpfLrvhlOHl1nNZ9wFQuM/uPeazrvnDYw=
 github.com/smartcontractkit/integrations-framework v1.0.47/go.mod h1:vxO+yFQqnDh2Y707zensXk6JxJuRWrclJ/GdS/nS7jE=
+github.com/smartcontractkit/integrations-framework v1.0.48 h1:yeGBbu+AXlkR4kT4tKound3dItFMDMTczIirdX48lJ4=
+github.com/smartcontractkit/integrations-framework v1.0.48/go.mod h1:tWnoNol2k1yDW8ybOqK7QXFp6Xl2wnI6ASn398JPMJA=
 github.com/smartcontractkit/libocr v0.0.0-20201203233047-5d9b24f0cbb5/go.mod h1:bfdSuLnBWCkafDvPGsQ1V6nrXhg046gh227MKi4zkpc=
 github.com/smartcontractkit/libocr v0.0.0-20211117215336-6c9726817b2d/go.mod h1:nq3crM3wVqnyMlM/4ZydTuJ/WyCapAsOt7P94oRgSPg=
 github.com/smartcontractkit/libocr v0.0.0-20211202172717-e8b0536a572e/go.mod h1:nq3crM3wVqnyMlM/4ZydTuJ/WyCapAsOt7P94oRgSPg=

@@ -14,7 +14,7 @@ require (
 	github.com/smartcontractkit/chainlink v1.1.1-0.20220214133705-d9ee81244df2
 	github.com/smartcontractkit/chainlink-relay v0.0.0-20220208185145-f90ff8f9d79a
 	github.com/smartcontractkit/helmenv v1.0.36
-	github.com/smartcontractkit/integrations-framework v1.0.47
+	github.com/smartcontractkit/integrations-framework v1.0.48
 	github.com/smartcontractkit/libocr v0.0.0-20220125200954-5b957c834276
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	github.com/stretchr/testify v1.7.0
@@ -89,7 +89,7 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/dvsekhvalnov/jose2go v0.0.0-20200901110807-248326c1351b // indirect
-	github.com/ethereum/go-ethereum v1.10.11 // indirect
+	github.com/ethereum/go-ethereum v1.10.15 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f // indirect
 	github.com/fatih/camelcase v1.0.0 // indirect
