@@ -65,11 +65,7 @@ func (ct *ContractTransmitter) Transmit(
 		return err
 	}
 	m := terraSDK.NewMsgExecuteContract(ct.sender, ct.contract, msgBytes, cosmosSDK.Coins{})
-	d, err := m.Marshal()
-	if err != nil {
-		return err
-	}
-	_, err = ct.msgEnqueuer.Enqueue(ct.contract.String(), d)
+	_, err = ct.msgEnqueuer.Enqueue(ct.contract.String(), m)
 	return err
 }
 

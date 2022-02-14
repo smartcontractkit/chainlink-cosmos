@@ -14,7 +14,7 @@ type Chain interface {
 
 	ID() string
 	Config() Config
-	MsgEnqueuer() MsgEnqueuer
+	TxManager() TxManager
 	// Reader returns a new Reader. If nodeName is provided, the underlying client must use that node.
 	Reader(nodeName string) (client.Reader, error)
 }
