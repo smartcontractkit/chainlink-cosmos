@@ -87,6 +87,35 @@ pub struct Config {
     pub validator: Option<Validator>,
 } // TODO: group some of these into sub-structs
 
+impl Config {
+    // Calculate onchain_config for use in config_digest calculation
+    pub fn onchain_config(&self) -> Vec<u8> {
+        // capacity: u8 + i192 + i192
+        let mut onchain_config = Vec::with_capacity(1 + 24 + 24);
+        onchain_config.push(1); // version
+
+        // the ocr plugin expects i192 encoded values, so we need to sign extend to make the digest match
+        if self.min_answer.is_negative() {
+            onchain_config.extend_from_slice(&[0xFF; 8]);
+        } else {
+            // 0 or positive
+            onchain_config.extend_from_slice(&[0x00; 8]);
+        }
+        onchain_config.extend_from_slice(&self.min_answer.to_be_bytes());
+
+        // the ocr plugin expects i192 encoded values, so we need to sign extend to make the digest match
+        if self.max_answer.is_negative() {
+            onchain_config.extend_from_slice(&[0xFF; 8]);
+        } else {
+            // 0 or positive
+            onchain_config.extend_from_slice(&[0x00; 8]);
+        }
+        onchain_config.extend_from_slice(&self.max_answer.to_be_bytes());
+
+        onchain_config
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Proposal {
     pub owner: Addr,
