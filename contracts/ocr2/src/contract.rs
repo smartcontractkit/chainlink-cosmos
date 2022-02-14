@@ -545,6 +545,7 @@ pub fn execute_propose_config(
     require!(f != 0, InvalidInput);
     require!(signers_len <= MAX_ORACLES, TooManySigners);
     require!(transmitters.len() == signers.len(), InvalidInput);
+    require!(payees.len() == signers.len(), InvalidInput);
     require!(3 * (usize::from(f)) < signers_len, InvalidInput);
     require!(onchain_config.is_empty(), InvalidInput);
 
