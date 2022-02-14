@@ -3,6 +3,7 @@ import { JSONSchemaType } from 'ajv'
 import { existsSync, readFileSync } from 'fs'
 import path from 'path'
 import fetch from 'node-fetch'
+import { DEFAULT_RELEASE_VERSION, DEFAULT_CWPLUS_VERSION } from './constants'
 
 export enum CONTRACT_LIST {
   FLAGS = 'flags',
@@ -10,6 +11,9 @@ export enum CONTRACT_LIST {
   OCR_2 = 'ocr2',
   PROXY_OCR_2 = 'proxy_ocr2',
   ACCESS_CONTROLLER = 'access_controller',
+  CW20_BASE = 'cw20_base',
+  MULTISIG = 'cw3_flex_multisig',
+  CW4_GROUP = 'cw4_group',
 }
 
 export enum TERRA_OPERATIONS {
@@ -36,8 +40,9 @@ export const getContractCode = async (contractId: CONTRACT_LIST, version): Promi
   if (version === 'local') {
     // Possible paths depending on how/where gauntlet is being executed
     const possibleContractPaths = [
-      path.join(__dirname, '../..', './artifacts/bin'),
+      path.join(__dirname, '../../artifacts/bin'),
       path.join(process.cwd(), './artifacts/bin'),
+      path.join(process.cwd(), './tests/e2e/common_artifacts'),
       path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts/bin'),
     ]
 
@@ -49,11 +54,20 @@ export const getContractCode = async (contractId: CONTRACT_LIST, version): Promi
       })
     return codes[0]
   } else {
-    const response = await fetch(
-      `https://github.com/smartcontractkit/chainlink-terra/releases/download/${version}/${contractId}.wasm`,
-    )
-    const body = await response.text()
-    return body.toString(`base64`)
+    let url
+    switch (contractId) {
+      case CONTRACT_LIST.CW20_BASE:
+      case CONTRACT_LIST.CW4_GROUP:
+      case CONTRACT_LIST.MULTISIG:
+        url = `https://github.com/CosmWasm/cw-plus/releases/download/${version}/${contractId}.wasm`
+        break
+      default:
+        url = `https://github.com/smartcontractkit/chainlink-terra/releases/download/${version}/${contractId}.wasm`
+    }
+    console.log(`Fetching ${url}...`)
+    const response = await fetch(url)
+    const body = await response.arrayBuffer()
+    return Buffer.from(body).toString('base64')
   }
 }
 
@@ -63,14 +77,27 @@ const contractDirName = {
   [CONTRACT_LIST.OCR_2]: 'ocr2',
   [CONTRACT_LIST.PROXY_OCR_2]: 'proxy-ocr2',
   [CONTRACT_LIST.ACCESS_CONTROLLER]: 'access-controller',
+  [CONTRACT_LIST.CW20_BASE]: 'cw20_base',
+  [CONTRACT_LIST.CW4_GROUP]: 'cw4_group',
+  [CONTRACT_LIST.MULTISIG]: 'cw3_flex_multisig',
 }
 
+const defaultContractVersions = {
+  [CONTRACT_LIST.FLAGS]: DEFAULT_RELEASE_VERSION,
+  [CONTRACT_LIST.DEVIATION_FLAGGING_VALIDATOR]: DEFAULT_RELEASE_VERSION,
+  [CONTRACT_LIST.OCR_2]: DEFAULT_RELEASE_VERSION,
+  [CONTRACT_LIST.ACCESS_CONTROLLER]: DEFAULT_RELEASE_VERSION,
+  [CONTRACT_LIST.CW20_BASE]: DEFAULT_CWPLUS_VERSION,
+  [CONTRACT_LIST.CW4_GROUP]: DEFAULT_CWPLUS_VERSION,
+  [CONTRACT_LIST.MULTISIG]: DEFAULT_CWPLUS_VERSION,
+}
 export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
   // Possible paths depending on how/where gauntlet is being executed
   const possibleContractPaths = [
-    path.join(__dirname, '../../../..', './contracts'),
+    path.join(__dirname, './artifacts/contracts'),
     path.join(process.cwd(), './contracts'),
-    path.join(process.cwd(), '../..', './contracts'),
+    path.join(process.cwd(), '../../contracts'),
+    path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts/contracts'),
   ]
 
   const toDirName = (contractId: CONTRACT_LIST) => contractDirName[contractId]
@@ -78,7 +105,13 @@ export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
   const abi = possibleContractPaths
     .filter((path) => existsSync(`${path}/${toDirName(contractId)}/schema`))
     .map((contractPath) => {
-      const toPath = (type) => path.join(contractPath, `./${toDirName(contractId)}/schema/${type}`)
+      const toPath = (type) => {
+        if (contractId == CONTRACT_LIST.CW20_BASE && type == 'execute_msg') {
+          return path.join(contractPath, `./${toDirName(contractId)}/schema/cw20_${type}`)
+        } else {
+          return path.join(contractPath, `./${toDirName(contractId)}/schema/${type}`)
+        }
+      }
       return {
         execute: io.readJSON(toPath('execute_msg')),
         query: io.readJSON(toPath('query_msg')),
@@ -93,6 +126,7 @@ export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
 }
 
 export const getContract = async (id: CONTRACT_LIST, version): Promise<Contract> => {
+  version = version ? version : defaultContractVersions[id]
   // Preload contracts
   return {
     id,

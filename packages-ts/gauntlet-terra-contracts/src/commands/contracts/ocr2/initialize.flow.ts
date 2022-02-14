@@ -1,5 +1,5 @@
 import { FlowCommand } from '@chainlink/gauntlet-core'
-import { CONTRACT_LIST } from '../../../lib/contracts'
+import { CATEGORIES } from '../../../lib/constants'
 import { waitExecute, TransactionResponse } from '@chainlink/gauntlet-terra'
 
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
@@ -12,7 +12,7 @@ import Inspect from './inspection/inspect'
 
 export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse> {
   static id = 'ocr2:initialize:flow'
-  static category = CONTRACT_LIST.OCR_2
+  static category = CATEGORIES.OCR
   static examples = ['yarn gauntlet ocr2:initialize:flow --network=local --id=[ID] --rdd=[PATH_TO_RDD]']
 
   constructor(flags, args) {

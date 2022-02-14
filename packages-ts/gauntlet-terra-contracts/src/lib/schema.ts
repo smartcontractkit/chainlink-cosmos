@@ -1,5 +1,4 @@
 import Ajv from 'ajv'
-
 import JTD from 'ajv/dist/jtd'
 
 const ajv = new Ajv().addFormat('uint8', (value: any) => !isNaN(value))

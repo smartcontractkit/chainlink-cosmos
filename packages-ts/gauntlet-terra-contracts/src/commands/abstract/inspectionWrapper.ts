@@ -2,6 +2,8 @@ import AbstractCommand, { makeAbstractCommand } from '.'
 import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
+import { CATEGORIES } from '../../lib/constants'
+import { CONTRACT_LIST } from '../../lib/contracts'
 
 export type InspectionInput<CommandInput, Expected> = {
   commandInput?: CommandInput
@@ -21,7 +23,8 @@ export type InspectionInput<CommandInput, Expected> = {
  */
 export interface InspectInstruction<CommandInput, Expected> {
   command: {
-    contract: 'ocr2'
+    category: CATEGORIES
+    contract: CONTRACT_LIST
     id: 'inspect'
   }
   instructions: {

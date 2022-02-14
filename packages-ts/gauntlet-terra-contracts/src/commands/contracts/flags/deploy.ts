@@ -1,6 +1,8 @@
 import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress } from '@terra-money/terra.js'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { CATEGORIES } from '../../../lib/constants'
+import { CONTRACT_LIST } from '../../../lib/contracts'
 
 type CommandInput = {
   raisingAccessController: string
@@ -35,7 +37,8 @@ const validateInput = (input: CommandInput): boolean => {
 
 const deploy: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
-    contract: 'flags',
+    category: CATEGORIES.FLAGS,
+    contract: CONTRACT_LIST.FLAGS,
     function: 'deploy',
   },
   makeInput: makeCommandInput,
