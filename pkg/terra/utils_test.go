@@ -5,8 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
-
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"github.com/stretchr/testify/assert"
 )
