@@ -42,6 +42,8 @@ type ContractCache struct {
 	configFound   *atomic.Bool
 }
 
+// NewContractCache creates a polling based cache of onchain values.
+// It signals on contractReady when the config cache is warm.
 func NewContractCache(cfg Config, reader *OCR2Reader, lggr Logger, contractReady chan struct{}) *ContractCache {
 	return &ContractCache{
 		cfg:           cfg,
@@ -88,7 +90,7 @@ func (cc *ContractCache) poll() {
 				if ctx.Err() != nil { // b/c client doesn't use ctx
 					return
 				}
-				// We have successfully read state from the contract
+				// We have successfully read config from the contract, so
 				// signal that we are ready to start libocr.
 				// Only signal on the first successful fetch.
 				if !cc.configFound.Load() {
@@ -120,7 +122,7 @@ func (cc *ContractCache) updateConfig(ctx context.Context) error {
 	var same bool
 	cc.configMu.Lock()
 	{
-		same := cc.configBlock == changedInBlock && cc.config.ConfigDigest == configDigest
+		same = cc.configBlock == changedInBlock && cc.config.ConfigDigest == configDigest
 		if same {
 			cc.configTS = now // refresh TTL
 		}
