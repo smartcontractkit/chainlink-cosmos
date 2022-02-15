@@ -230,7 +230,7 @@ fn setup() -> Env {
         .find(|attr| attr.key == "proposal_id")
         .unwrap()
         .value;
-    let id = Uint128::new(u128::from_str_radix(id, 10).unwrap());
+    let id = Uint128::new(id.parse::<u128>().unwrap());
 
     let msg = ExecuteMsg::ProposeConfig {
         id,
@@ -518,7 +518,7 @@ fn transmit_happy_path() {
         .find(|attr| attr.key == "proposal_id")
         .unwrap()
         .value;
-    let id = Uint128::new(u128::from_str_radix(id, 10).unwrap());
+    let id = Uint128::new(id.parse::<u128>().unwrap());
 
     let msg = ExecuteMsg::ProposeConfig {
         id,
@@ -732,7 +732,7 @@ fn set_link_token() {
                 decimals: 18,
                 initial_balances: vec![Cw20Coin {
                     address: env.owner.to_string(),
-                    amount: Uint128::from(1_000_000_000 as u128),
+                    amount: Uint128::from(1_000_000_000_u128),
                 }],
                 mint: None,
                 marketing: None,
