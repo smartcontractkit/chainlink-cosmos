@@ -2,6 +2,7 @@ package monitoring
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -229,17 +230,10 @@ func (s *terraSource) fetchLatestConfig() (types.ContractConfig, error) {
 			return parseErr
 		},
 		"onchain_config": func(value string) error {
-			// parse byte array encoded as hex string
-			var config33 []byte
-			convertErr := pkgTerra.HexToByteArray(value, &config33)
-			//config33, convertErr := base64.StdEncoding.DecodeString(value)
-			if convertErr != nil {
-				return convertErr
-			}
-			// convert byte array to encoding expected by lib OCR
-			config49, convertErr := pkgTerra.ContractConfigToOCRConfig(config33)
-			output.OnchainConfig = config49
-			return convertErr
+			// parse byte array encoded as base64
+			config, err := base64.StdEncoding.DecodeString(value)
+			output.OnchainConfig = config
+			return err
 		},
 		"offchain_config_version": func(value string) error {
 			i, parseErr := strconv.ParseInt(value, 10, 64)
