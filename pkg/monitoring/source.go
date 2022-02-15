@@ -231,9 +231,9 @@ func (s *terraSource) fetchLatestConfig() (types.ContractConfig, error) {
 		},
 		"onchain_config": func(value string) error {
 			// parse byte array encoded as base64
-			config, err := base64.StdEncoding.DecodeString(value)
+			config, decodeErr := base64.StdEncoding.DecodeString(value)
 			output.OnchainConfig = config
-			return err
+			return decodeErr
 		},
 		"offchain_config_version": func(value string) error {
 			i, parseErr := strconv.ParseInt(value, 10, 64)
