@@ -1588,13 +1588,9 @@ pub(crate) mod tests {
         setup();
     }
 
-    #[test]
-    fn propose_config() {
-        let mut deps = setup();
-        let owner = "owner".to_string();
-
+    fn configure(deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>, owner: &str) {
         let msg = ExecuteMsg::BeginProposal;
-        let execute_info = mock_info(owner.as_str(), &[]);
+        let execute_info = mock_info(owner, &[]);
         let response = execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
         // Extract the proposal id from the wasm execute event
@@ -1621,15 +1617,15 @@ pub(crate) mod tests {
                 "transmitter3".to_string(),
             ],
             payees: vec![
-                "transmitter0".to_string(),
-                "transmitter1".to_string(),
-                "transmitter2".to_string(),
-                "transmitter3".to_string(),
+                "payee0".to_string(),
+                "payee1".to_string(),
+                "payee2".to_string(),
+                "payee3".to_string(),
             ],
             f: 1,
             onchain_config: Binary(vec![]),
         };
-        let execute_info = mock_info(owner.as_str(), &[]);
+        let execute_info = mock_info(owner, &[]);
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
         let msg = ExecuteMsg::ProposeOffchainConfig {
@@ -1638,11 +1634,11 @@ pub(crate) mod tests {
             offchain_config: Binary(vec![4, 5, 6]),
         };
 
-        let execute_info = mock_info(owner.as_str(), &[]);
+        let execute_info = mock_info(owner, &[]);
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
         let msg = ExecuteMsg::FinalizeProposal { id };
-        let execute_info = mock_info(owner.as_str(), &[]);
+        let execute_info = mock_info(owner, &[]);
         let response = execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
         // Extract the proposal digest from the wasm execute event
@@ -1659,8 +1655,16 @@ pub(crate) mod tests {
             id,
             digest: Binary(digest.to_vec()),
         };
-        let execute_info = mock_info(owner.as_str(), &[]);
+        let execute_info = mock_info(owner, &[]);
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+    }
+
+    #[test]
+    fn propose_config() {
+        let mut deps = setup();
+        let owner = "owner".to_string();
+
+        configure(&mut deps, &owner);
     }
 
     // 117 bytes
@@ -1685,28 +1689,9 @@ pub(crate) mod tests {
     #[test]
     fn payees() {
         let mut deps = setup();
-        // let owner = "owner".to_string();
+        let owner = "owner".to_string();
 
-        // let msg = ExecuteMsg::ProposePayees {
-        //     payees: vec![("transmitter0".to_string(), "payee0".to_string())],
-        // };
-        // let execute_info = mock_info(&owner, &[]);
-        // execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
-
-        // // setting the same payee again fails
-        // let msg = ExecuteMsg::ProposePayees {
-        //     payees: vec![("transmitter0".to_string(), "payee1".to_string())],
-        // };
-        // let execute_info = mock_info(&owner, &[]);
-        // let res = execute(deps.as_mut(), mock_env(), execute_info, msg);
-        // assert_eq!(res.unwrap_err(), ContractError::PayeeAlreadySet);
-
-        // // setting a different payee works
-        // let msg = ExecuteMsg::ProposePayees {
-        //     payees: vec![("transmitter1".to_string(), "payee1".to_string())],
-        // };
-        // let execute_info = mock_info(&owner, &[]);
-        // execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+        configure(&mut deps, &owner);
 
         // can't transfer to self
         let msg = ExecuteMsg::TransferPayeeship {
