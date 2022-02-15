@@ -60,12 +60,18 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-  
-      # TODO: Run cargo clippy
-      # https://github.com/smartcontractkit/chainlink-terra/issues/16
+
+      - name: Avoid using non-nix rust binaries
+        run: rm -rf ~/.cargo/bin
 
       - name: Run cargo fmt
         run: nix develop -c cargo fmt --all -- --check
 
+      - name: Run cargo check
+        run: nix develop -c cargo check
+
+      - name: Run cargo clippy
+        run: nix develop -c cargo clippy -- -D warnings
+  
       # TODO: Add schema checks
       # https://github.com/smartcontractkit/chainlink-terra/issues/17
