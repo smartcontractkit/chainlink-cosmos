@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"strconv"
 
@@ -29,42 +30,6 @@ func (t *OCRv2) SetValidatorConfig(gasLimit uint64, validatorAddr string) error 
 				Address:  validatorAddr,
 				GasLimit: gasLimit,
 			},
-		}}
-	executeMsgBytes, err := json.Marshal(executeMsg)
-	if err != nil {
-		return err
-	}
-	_, err = t.Client.SendTX(terraClient.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgExecuteContract(
-				sender,
-				t.Addr,
-				executeMsgBytes,
-				msg.NewCoins(),
-			),
-		},
-	}, true)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func payeesTuple(transmitters []string, receiver string) [][]string {
-	payees := make([][]string, 0)
-	for _, t := range transmitters {
-		payees = append(payees, []string{t, receiver})
-	}
-	return payees
-}
-
-// SetPayees sets payees for observations
-func (t *OCRv2) SetPayees(transmitters []string) error {
-	sender := t.Client.DefaultWallet.AccAddress
-	payees := payeesTuple(transmitters, sender.String())
-	executeMsg := ocr2types.ExecuteSetPayees{
-		SetPayees: ocr2types.ExecuteSetPayeesConfig{
-			Payees: payees,
 		}}
 	executeMsgBytes, err := json.Marshal(executeMsg)
 	if err != nil {
@@ -160,17 +125,41 @@ func (t *OCRv2) SetOffChainConfig(cfg contracts.OffChainAggregatorV2Config) ([]s
 		transmitterArray = append(transmitterArray, string(transmitters[i]))
 	}
 
-	tx := ocr2types.ExecuteSetConfig{
-		SetConfig: ocr2types.SetConfigDetails{
-			Signers:               signerArray,
-			Transmitters:          transmitterArray,
-			F:                     f,
-			OnchainConfig:         onChainCfg,
-			OffchainConfigVersion: version,
-			OffchainConfig:        offChainConfigBytes,
-		},
+	msgBytes, err := json.Marshal(ocr2types.BeginProposal)
+	if err != nil {
+		return nil, err
 	}
-	executeMsgBytes, err := json.Marshal(tx)
+	txResp, err := t.Client.SendTX(terraClient.CreateTxOptions{
+		Msgs: []msg.Msg{
+			msg.NewMsgExecuteContract(
+				sender,
+				t.Addr,
+				msgBytes,
+				msg.NewCoins(),
+			),
+		},
+	}, true)
+	if err != nil {
+		return nil, err
+	}
+	proposalID, err := t.Client.GetEventAttrValue(txResp, "proposal_id")
+	if err != nil {
+		return nil, err
+	}
+	payees := make([]string, 0)
+	for i := 0; i < len(transmitterArray); i++ {
+		payees = append(payees, sender.String())
+	}
+	proposeConfigBytes, err := json.Marshal(
+		ocr2types.ProposeConfig{
+			ProposeConfig: ocr2types.ProposeConfigDetails{
+				ID:            proposalID,
+				Payees:        payees,
+				Signers:       signerArray,
+				Transmitters:  transmitterArray,
+				F:             f,
+				OnchainConfig: onChainCfg,
+			}})
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +168,81 @@ func (t *OCRv2) SetOffChainConfig(cfg contracts.OffChainAggregatorV2Config) ([]s
 			msg.NewMsgExecuteContract(
 				sender,
 				t.Addr,
-				executeMsgBytes,
+				proposeConfigBytes,
+				msg.NewCoins(),
+			),
+		},
+	}, true)
+	if err != nil {
+		return nil, err
+	}
+	proposeOffchainCfgBytes, err := json.Marshal(
+		ocr2types.ProposeOffchainConfig{
+			ProposeOffchainConfig: ocr2types.ProposeOffchainConfigDetails{
+				ID:                    proposalID,
+				OffchainConfigVersion: version,
+				OffchainConfig:        offChainConfigBytes,
+			}})
+	if err != nil {
+		return nil, err
+	}
+	_, err = t.Client.SendTX(terraClient.CreateTxOptions{
+		Msgs: []msg.Msg{
+			msg.NewMsgExecuteContract(
+				sender,
+				t.Addr,
+				proposeOffchainCfgBytes,
+				msg.NewCoins(),
+			),
+		},
+	}, true)
+	if err != nil {
+		return nil, err
+	}
+	finalizeBytes, err := json.Marshal(
+		ocr2types.FinalizeProposal{
+			FinalizeProposal: ocr2types.FinalizeProposalDetails{
+				ID: proposalID,
+			}})
+	if err != nil {
+		return nil, err
+	}
+	respWithDigest, err := t.Client.SendTX(terraClient.CreateTxOptions{
+		Msgs: []msg.Msg{
+			msg.NewMsgExecuteContract(
+				sender,
+				t.Addr,
+				finalizeBytes,
+				msg.NewCoins(),
+			),
+		},
+	}, true)
+	if err != nil {
+		return nil, err
+	}
+	proposalDigest, err := t.Client.GetEventAttrValue(respWithDigest, "digest")
+	if err != nil {
+		return nil, err
+	}
+	digHex, err := hex.DecodeString(proposalDigest)
+	if err != nil {
+		return nil, err
+	}
+	acceptProposalBytes, err := json.Marshal(
+		ocr2types.AcceptProposal{
+			AcceptProposal: ocr2types.AcceptProposalDetails{
+				ID:     proposalID,
+				Digest: digHex,
+			}})
+	if err != nil {
+		return nil, err
+	}
+	_, err = t.Client.SendTX(terraClient.CreateTxOptions{
+		Msgs: []msg.Msg{
+			msg.NewMsgExecuteContract(
+				sender,
+				t.Addr,
+				acceptProposalBytes,
 				msg.NewCoins(),
 			),
 		},

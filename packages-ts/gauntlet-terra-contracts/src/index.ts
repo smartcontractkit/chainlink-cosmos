@@ -20,8 +20,12 @@ const commands = {
     const networkPath = networkPossiblePaths.filter((networkPath) =>
       existsSync(path.join(process.cwd(), networkPath)),
     )[0]
-    await executeCLI(commands, networkPath)
+    /* const result = */ await executeCLI(commands, networkPath)
+    // TODO: save report just as on Solana
+    // if (result) io.saveJSON(result, 'report')
   } catch (e) {
-    console.log('Terra Command execution error', e)
+    console.log(e)
+    console.log('Terra Command execution error', e.message)
+    process.exitCode = 1
   }
 })()

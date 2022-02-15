@@ -129,7 +129,7 @@ mod tests {
         };
         let raw = query(deps.as_ref(), mock_env(), msg).unwrap();
         let access: bool = from_binary(&raw).unwrap();
-        assert_eq!(access, true);
+        assert!(access);
 
         // user1 doesn't have access
         let msg = QueryMsg::HasAccess {
@@ -137,7 +137,7 @@ mod tests {
         };
         let raw = query(deps.as_ref(), mock_env(), msg).unwrap();
         let access: bool = from_binary(&raw).unwrap();
-        assert_eq!(access, false);
+        assert!(!access);
 
         // now remove access
         let msg = ExecuteMsg::RemoveAccess {
@@ -152,6 +152,6 @@ mod tests {
         };
         let raw = query(deps.as_ref(), mock_env(), msg).unwrap();
         let access: bool = from_binary(&raw).unwrap();
-        assert_eq!(access, false);
+        assert!(!access);
     }
 }

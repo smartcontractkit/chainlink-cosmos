@@ -139,7 +139,7 @@ fn setup() -> Env {
             owner.clone(),
             &access_controller::msg::InstantiateMsg {},
             &[],
-            "billing_access_controller",
+            "requester_access_controller",
             None,
         )
         .unwrap();
@@ -213,25 +213,87 @@ fn setup() -> Env {
         .map(|(i, _)| format!("transmitter{}", i))
         .collect::<Vec<_>>();
 
-    let msg = ExecuteMsg::SetConfig {
-        signers,
-        transmitters: transmitters.clone(),
-        f: 1,
-        onchain_config: Binary(vec![]),
-        offchain_config_version: 1,
-        offchain_config: Binary(vec![4, 5, 6]),
-    };
+    let msg = ExecuteMsg::BeginProposal;
     let response = router
         .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
         .unwrap();
+
+    // Extract the proposal id from the wasm execute event
+    let execute = response
+        .events
+        .iter()
+        .find(|event| event.ty == "wasm")
+        .unwrap();
+    let id = &execute
+        .attributes
+        .iter()
+        .find(|attr| attr.key == "proposal_id")
+        .unwrap()
+        .value;
+    let id = Uint128::new(id.parse::<u128>().unwrap());
+
+    let msg = ExecuteMsg::ProposeConfig {
+        id,
+        signers,
+        transmitters: transmitters.clone(),
+        payees: transmitters
+            .iter()
+            .enumerate()
+            .map(|(i, _)| format!("payee{}", i))
+            .collect(),
+        f: 1,
+        onchain_config: Binary(vec![]),
+    };
+
+    router
+        .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    let msg = ExecuteMsg::ProposeOffchainConfig {
+        id,
+        offchain_config_version: 1,
+        offchain_config: Binary(vec![4, 5, 6]),
+    };
+    router
+        .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    let msg = ExecuteMsg::FinalizeProposal { id };
+    let response = router
+        .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    // Extract the proposal digest from the wasm execute event
+    let mut digest = [0u8; 32];
+    let execute = response
+        .events
+        .iter()
+        .find(|event| event.ty == "wasm")
+        .unwrap();
+    let proposal_digest = &execute
+        .attributes
+        .iter()
+        .find(|attr| attr.key == "digest")
+        .unwrap()
+        .value;
+    hex::decode_to_slice(proposal_digest, &mut digest).unwrap();
+
+    let msg = ExecuteMsg::AcceptProposal {
+        id,
+        digest: Binary(digest.to_vec()),
+    };
+
+    let response = router
+        .execute_contract(owner.clone(), ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    // determine the config_digest using events returned from set_config
+    let mut config_digest = [0u8; 32];
     let set_config = response
         .events
         .iter()
         .find(|event| event.ty == "wasm-set_config")
         .unwrap();
-
-    // determine the config_digest using events returned from set_config
-    let mut config_digest = [0u8; 32];
     let digest = &set_config
         .attributes
         .iter()
@@ -352,21 +414,6 @@ fn transmit_happy_path() {
         .unwrap();
     assert_eq!(owed_payment, observation_payment + reimbursement);
 
-    // set_payees so we can withdraw
-    let msg = ExecuteMsg::SetPayees {
-        payees: env
-            .transmitters
-            .iter()
-            .enumerate()
-            .map(|(i, transmitter)| (transmitter.clone(), format!("payee{}", i)))
-            .collect(),
-    };
-    env.router
-        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
-        .unwrap();
-
-    // TODO: what happens if an oracle has no payees attached?
-    // https://github.com/smartcontractkit/chainlink-terra/issues/20
     let available: LinkAvailableForPaymentResponse = env
         .router
         .wrap()
@@ -451,18 +498,81 @@ fn transmit_happy_path() {
         .map(|sk| Binary(VerificationKeyBytes::from(sk).as_ref().to_vec()))
         .collect();
 
-    let msg = ExecuteMsg::SetConfig {
+    const MAX_MSG_SIZE: usize = 4 * 1024; // 4kb
+
+    let msg = ExecuteMsg::BeginProposal;
+    let response = env
+        .router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    // Extract the proposal id from the wasm execute event
+    let execute = response
+        .events
+        .iter()
+        .find(|event| event.ty == "wasm")
+        .unwrap();
+    let id = &execute
+        .attributes
+        .iter()
+        .find(|attr| attr.key == "proposal_id")
+        .unwrap()
+        .value;
+    let id = Uint128::new(id.parse::<u128>().unwrap());
+
+    let msg = ExecuteMsg::ProposeConfig {
+        id,
         signers,
         transmitters: env.transmitters.clone(),
+        payees: env
+            .transmitters
+            .iter()
+            .enumerate()
+            .map(|(i, _)| format!("payee{}", i))
+            .collect(),
         f: 5,
         onchain_config: Binary(vec![]),
+    };
+    assert!(to_binary(&msg).unwrap().len() <= MAX_MSG_SIZE);
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    let msg = ExecuteMsg::ProposeOffchainConfig {
+        id,
         offchain_config_version: 2,
         offchain_config: Binary(vec![1; 2165]),
     };
-
-    const MAX_MSG_SIZE: usize = 4 * 1024; // 4kb
     assert!(to_binary(&msg).unwrap().len() <= MAX_MSG_SIZE);
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
 
+    let msg = ExecuteMsg::FinalizeProposal { id };
+    let response = env
+        .router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    // Extract the proposal digest from the wasm execute event
+    let mut digest = [0u8; 32];
+    let execute = response
+        .events
+        .iter()
+        .find(|event| event.ty == "wasm")
+        .unwrap();
+    let proposal_digest = &execute
+        .attributes
+        .iter()
+        .find(|attr| attr.key == "digest")
+        .unwrap()
+        .value;
+    hex::decode_to_slice(proposal_digest, &mut digest).unwrap();
+
+    let msg = ExecuteMsg::AcceptProposal {
+        id,
+        digest: Binary(digest.to_vec()),
+    };
     env.router
         .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();
@@ -609,19 +719,6 @@ fn set_link_token() {
     // 1 round + gas reimbursement
     assert_eq!(owed_payment, observation_payment + reimbursement);
 
-    // set_payees so we can withdraw
-    let msg = ExecuteMsg::SetPayees {
-        payees: env
-            .transmitters
-            .iter()
-            .enumerate()
-            .map(|(i, transmitter)| (transmitter.clone(), format!("payee{}", i)))
-            .collect(),
-    };
-    env.router
-        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
-        .unwrap();
-
     // ^ ---- all duplicated from transmit_happy_path()
 
     let new_link_token = env
@@ -635,7 +732,7 @@ fn set_link_token() {
                 decimals: 18,
                 initial_balances: vec![Cw20Coin {
                     address: env.owner.to_string(),
-                    amount: Uint128::from(1_000_000_000 as u128),
+                    amount: Uint128::from(1_000_000_000_u128),
                 }],
                 mint: None,
                 marketing: None,

@@ -2,9 +2,9 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use access_controller::AccessControllerContract;
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Binary, Uint128};
 use cw20::Cw20Contract;
-use cw_storage_plus::{Item, Map, U32Key};
+use cw_storage_plus::{Item, Map, U128Key, U32Key};
 use owned::Auth;
 
 use crate::Decimal;
@@ -87,13 +87,69 @@ pub struct Config {
     pub validator: Option<Validator>,
 } // TODO: group some of these into sub-structs
 
+impl Config {
+    // Calculate onchain_config for use in config_digest calculation
+    pub fn onchain_config(&self) -> Vec<u8> {
+        // capacity: u8 + i192 + i192
+        let mut onchain_config = Vec::with_capacity(1 + 24 + 24);
+        onchain_config.push(1); // version
+
+        // the ocr plugin expects i192 encoded values, so we need to sign extend to make the digest match
+        if self.min_answer.is_negative() {
+            onchain_config.extend_from_slice(&[0xFF; 8]);
+        } else {
+            // 0 or positive
+            onchain_config.extend_from_slice(&[0x00; 8]);
+        }
+        onchain_config.extend_from_slice(&self.min_answer.to_be_bytes());
+
+        // the ocr plugin expects i192 encoded values, so we need to sign extend to make the digest match
+        if self.max_answer.is_negative() {
+            onchain_config.extend_from_slice(&[0xFF; 8]);
+        } else {
+            // 0 or positive
+            onchain_config.extend_from_slice(&[0x00; 8]);
+        }
+        onchain_config.extend_from_slice(&self.max_answer.to_be_bytes());
+
+        onchain_config
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Proposal {
+    pub owner: Addr,
+    pub finalized: bool,
+    pub oracles: Vec<(Binary, Addr, Addr)>, // (signer, transmitter, payee)
+    pub f: u8,
+    pub offchain_config_version: u64,
+    pub offchain_config: Binary,
+}
+
+impl Proposal {
+    pub fn digest(&self) -> [u8; 32] {
+        use blake2::{Blake2s, Digest};
+        let mut hasher = Blake2s::default();
+        hasher.update([(self.oracles.len() as u8)]);
+        for (signer, transmitter, payee) in &self.oracles {
+            hasher.update(&signer.0);
+            hasher.update(transmitter.as_bytes());
+            hasher.update(payee.as_bytes());
+        }
+        hasher.update(&[self.f]);
+        hasher.update(&self.offchain_config_version.to_be_bytes());
+        hasher.update((self.offchain_config.len() as u32).to_be_bytes());
+        hasher.update(&self.offchain_config.0);
+        let result = hasher.finalize();
+        result.into()
+    }
+}
 #[allow(clippy::too_many_arguments)]
 pub fn config_digest_from_data(
     chain_id: &str,
     contract_address: &Addr,
     config_count: u32,
-    signers: &[Vec<u8>],
-    transmitters: &[Addr],
+    oracles: &[(&Binary, &Addr)],
     f: u8,
     onchain_config: &[u8],
     offchain_config_version: u64,
@@ -104,11 +160,11 @@ pub fn config_digest_from_data(
     hasher.update(chain_id.as_bytes());
     hasher.update(contract_address.as_bytes());
     hasher.update(&config_count.to_be_bytes());
-    hasher.update([(signers.len() as u8)]);
-    for signer in signers {
-        hasher.update(signer);
+    hasher.update([(oracles.len() as u8)]);
+    for (signer, _) in oracles {
+        hasher.update(&signer.0);
     }
-    for transmitter in transmitters {
+    for (_, transmitter) in oracles {
         hasher.update(transmitter.as_bytes());
     }
     hasher.update(&[f]);
@@ -155,6 +211,10 @@ pub struct Round {
 pub const OWNER: Auth = Auth::new("owner");
 
 pub const CONFIG: Item<Config> = Item::new("config");
+
+pub type ProposalId = Uint128;
+pub const PROPOSALS: Map<U128Key, Proposal> = Map::new("proposals");
+pub const NEXT_PROPOSAL_ID: Item<ProposalId> = Item::new("next_proposal_id");
 
 // An addr currently can't be converted to pubkey: https://docs.cosmos.network/master/architecture/adr-028-public-key-addresses.html
 

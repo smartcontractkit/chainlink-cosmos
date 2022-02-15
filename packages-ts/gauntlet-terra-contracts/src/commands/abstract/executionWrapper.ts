@@ -4,18 +4,22 @@ import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 
 export interface AbstractInstruction<Input, ContractInput> {
   instruction: {
+    category: string
     contract: string
     function: string
   }
   makeInput: (flags: any, args: string[]) => Promise<Input>
   validateInput: (input: Input) => boolean
   makeContractInput: (input: Input) => Promise<ContractInput>
+  afterExecute?: (response: Result<TransactionResponse>) => any
 }
 
 export const instructionToCommand = (instruction: AbstractInstruction<any, any>) => {
   const id = `${instruction.instruction.contract}:${instruction.instruction.function}`
+  const category = `${instruction.instruction.category}`
   return class Command extends TerraCommand {
     static id = id
+    static category = category
     command: AbstractCommand
 
     constructor(flags, args) {
@@ -24,11 +28,18 @@ export const instructionToCommand = (instruction: AbstractInstruction<any, any>)
 
     execute = async (): Promise<Result<TransactionResponse>> => {
       const commandInput = await instruction.makeInput(this.flags, this.args)
-      instruction.validateInput(commandInput)
+      if (!instruction.validateInput(commandInput)) {
+        throw new Error(`Invalid input params:  ${JSON.stringify(commandInput)}`)
+      }
       const input = await instruction.makeContractInput(commandInput)
       const abstractCommand = await makeAbstractCommand(id, this.flags, this.args, input)
       await abstractCommand.invokeMiddlewares(abstractCommand, abstractCommand.middlewares)
-      return abstractCommand.execute()
+      let response = await abstractCommand.execute()
+      if (instruction.afterExecute) {
+        const data = instruction.afterExecute(response)
+        response = { ...response, data: { ...data } }
+      }
+      return response
     }
   }
 }

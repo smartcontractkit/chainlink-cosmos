@@ -1,4 +1,4 @@
-use crate::state::{bignum, Billing, Validator};
+use crate::state::{bignum, Billing, ProposalId, Validator};
 use cosmwasm_std::{Addr, Binary, Uint128};
 use cw20::Cw20ReceiveMsg;
 use schemars::JsonSchema;
@@ -28,11 +28,27 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    SetConfig {
+    BeginProposal,
+    ClearProposal {
+        id: ProposalId,
+    },
+    FinalizeProposal {
+        id: ProposalId,
+    },
+    AcceptProposal {
+        id: ProposalId,
+        digest: Binary,
+    },
+    ProposeConfig {
+        id: ProposalId,
         signers: Vec<Binary>,
         transmitters: Vec<String>,
+        payees: Vec<String>,
         f: u8,
         onchain_config: Binary,
+    },
+    ProposeOffchainConfig {
+        id: ProposalId,
         offchain_config_version: u64,
         offchain_config: Binary,
     },
@@ -83,9 +99,6 @@ pub enum ExecuteMsg {
     /// Handler for LINK token Receive message
     Receive(Cw20ReceiveMsg),
 
-    SetPayees {
-        payees: Vec<(String, String)>,
-    },
     TransferPayeeship {
         transmitter: String,
         proposed: String,
@@ -116,6 +129,7 @@ pub enum QueryMsg {
     OwedPayment { transmitter: String },
     LinkAvailableForPayment,
     OracleObservationCount { transmitter: String },
+    Proposal { id: ProposalId },
     Version,
     Owner,
 }

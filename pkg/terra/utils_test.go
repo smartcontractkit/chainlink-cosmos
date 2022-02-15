@@ -1,14 +1,12 @@
 package terra
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestHexToByteArray(t *testing.T) {
@@ -181,41 +179,6 @@ func TestRawMessageStringIntToInt(t *testing.T) {
 
 			assert.Equal(t, i.output, num)
 			assert.NoError(t, err)
-		})
-	}
-}
-
-func TestContractConfigToOCRConfig(t *testing.T) {
-	tests := []struct {
-		name        string
-		input       string
-		expected    string
-		expectedErr bool
-	}{
-		{
-			"valid input",
-			"010000000000000000000000000000000000000000000000000de0b6b3a763ffff",
-			"01000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a763ffff",
-			false,
-		},
-		{
-			"invalid input",
-			"0100000000000000000000000000000000000000000000000de0b6b3a763ffff", // too short
-			"",
-			true,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			input, err := hex.DecodeString(test.input)
-			require.NoError(t, err)
-			result, err := ContractConfigToOCRConfig(input)
-			if test.expectedErr {
-				require.Error(t, err)
-			} else {
-				require.Equal(t, 49, len(result))
-				require.Equal(t, test.expected, hex.EncodeToString(result))
-			}
 		})
 	}
 }

@@ -39,6 +39,11 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+    - name: Set up (force) Go 1.17
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.17.2
+      id: go
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL

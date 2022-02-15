@@ -14,8 +14,9 @@ use crate::msg::{
     TransmittersResponse,
 };
 use crate::state::{
-    config_digest_from_data, Billing, Config, Round, Transmission, Transmitter, Validator, CONFIG,
-    MAX_ORACLES, OWNER, PAYEES, PROPOSED_PAYEES, SIGNERS, TRANSMISSIONS, TRANSMITTERS,
+    config_digest_from_data, Billing, Config, Proposal, ProposalId, Round, Transmission,
+    Transmitter, Validator, CONFIG, MAX_ORACLES, NEXT_PROPOSAL_ID, OWNER, PAYEES, PROPOSALS,
+    PROPOSED_PAYEES, SIGNERS, TRANSMISSIONS, TRANSMITTERS,
 };
 use crate::{require, Decimal};
 
@@ -84,6 +85,7 @@ pub fn instantiate(
     };
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     CONFIG.save(deps.storage, &config)?;
+    NEXT_PROPOSAL_ID.save(deps.storage, &Uint128::new(0))?;
 
     Ok(Response::default().add_event(
         Event::new("set_link_token").add_attribute("new_link_token", config.link_token.0),
@@ -99,32 +101,61 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     let api = deps.api;
     match msg {
-        ExecuteMsg::SetConfig {
+        ExecuteMsg::BeginProposal => execute_begin_proposal(deps, env, info),
+        ExecuteMsg::ClearProposal { id } => execute_clear_proposal(deps, env, info, id),
+        ExecuteMsg::FinalizeProposal { id } => execute_finalize_proposal(deps, env, info, id),
+        ExecuteMsg::AcceptProposal { id, digest } => {
+            // ensure digest format is valid by converting it to [u8; 32]
+            let digest = digest
+                .0
+                .try_into()
+                .map_err(|_| ContractError::InvalidInput)?;
+            execute_accept_proposal(deps, env, info, id, digest)
+        }
+        ExecuteMsg::ProposeConfig {
+            id,
             signers,
             transmitters,
+            payees,
             f,
             onchain_config,
-            offchain_config_version,
-            offchain_config,
         } => {
             let api = &deps.api;
-            let signers = signers.into_iter().map(|s| s.0).collect::<Vec<Vec<u8>>>();
+            // Require all signers are 32 byte pubkeys
+            require!(signers.iter().all(|s| s.0.len() == 32), InvalidInput);
+            // Require all transmitters are valid addresses
             let transmitters = transmitters
                 .iter()
                 .map(|t| api.addr_validate(t))
                 .collect::<StdResult<Vec<Addr>>>()?;
-            execute_set_config(
+            let payees = payees
+                .iter()
+                .map(|t| api.addr_validate(t))
+                .collect::<StdResult<Vec<Addr>>>()?;
+            execute_propose_config(
                 deps,
                 env,
                 info,
+                id,
                 signers,
                 transmitters,
+                payees,
                 f,
                 onchain_config.0,
-                offchain_config_version,
-                offchain_config.0,
             )
         }
+        ExecuteMsg::ProposeOffchainConfig {
+            id,
+            offchain_config_version,
+            offchain_config,
+        } => execute_propose_offchain_config(
+            deps,
+            env,
+            info,
+            id,
+            offchain_config_version,
+            offchain_config,
+        ),
         ExecuteMsg::TransferOwnership { to } => {
             Ok(OWNER.execute_transfer_ownership(deps, info, api.addr_validate(&to)?)?)
         }
@@ -165,7 +196,6 @@ pub fn execute(
         ExecuteMsg::WithdrawFunds { recipient, amount } => {
             execute_withdraw_funds(deps, env, info, recipient, amount)
         }
-        ExecuteMsg::SetPayees { payees } => execute_set_payees(deps, env, info, payees),
         ExecuteMsg::TransferPayeeship {
             transmitter,
             proposed,
@@ -202,6 +232,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::OracleObservationCount { transmitter } => {
             to_binary(&query_oracle_observation_count(deps, transmitter)?)
         }
+        QueryMsg::Proposal { id } => to_binary(&query_proposal(deps, id)?),
         QueryMsg::Version => Ok(to_binary(CONTRACT_VERSION)?),
         QueryMsg::Owner => Ok(to_binary(&OWNER.query_owner(deps)?)?),
     }
@@ -229,33 +260,110 @@ pub fn execute_receive(
 // --- OCR2Abstract Configuration
 // ---
 
-#[allow(clippy::too_many_arguments)]
-pub fn execute_set_config(
+pub fn execute_begin_proposal(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    // TODO: explicitly handle overflow (but already caught by overflow-checks = true)
+    let id = NEXT_PROPOSAL_ID.update(deps.storage, |id| -> StdResult<ProposalId> {
+        Ok(id + Uint128::new(1))
+    })?;
+
+    // Add an empty proposal
+    PROPOSALS.save(
+        deps.storage,
+        id.u128().into(),
+        &Proposal {
+            owner: info.sender,
+            finalized: false,
+            oracles: Vec::new(),
+            f: 0,
+            offchain_config_version: 0,
+            offchain_config: Binary(Vec::new()),
+        },
+    )?;
+
+    let response = Response::new()
+        .add_attribute("method", "begin_proposal")
+        .add_attribute("proposal_id", id.to_string());
+
+    Ok(response)
+}
+
+pub fn execute_clear_proposal(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    id: ProposalId,
+) -> Result<Response, ContractError> {
+    let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
+    let proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
+
+    // Only contract owner or proposal owner allowed
+    require!(is_owner || proposal.owner == info.sender, Unauthorized);
+
+    // Clear out proposal
+    PROPOSALS.remove(deps.storage, id.u128().into());
+
+    Ok(Response::default())
+}
+
+pub fn execute_finalize_proposal(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    id: ProposalId,
+) -> Result<Response, ContractError> {
+    let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
+    let mut proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
+
+    // Only contract owner or proposal owner allowed
+    require!(is_owner || proposal.owner == info.sender, Unauthorized);
+
+    // Can't commit if already committed
+    require!(!proposal.finalized, InvalidInput);
+
+    // Validate proposal again, only one of the two methods might have been called!!
+
+    // offchain_config won't be empty if setOffchainConfig was called
+    require!(!proposal.offchain_config.is_empty(), InvalidInput);
+    // oracles won't be empty if setConfig was called
+    require!(!proposal.oracles.is_empty(), InvalidInput);
+
+    // Mark proposal as finalized
+    proposal.finalized = true;
+    PROPOSALS.save(deps.storage, id.u128().into(), &proposal)?;
+
+    let digest = proposal.digest();
+
+    let response = Response::new()
+        .add_attribute("method", "finalize_proposal")
+        .add_attribute("proposal_id", id.to_string())
+        .add_attribute("digest", hex::encode(digest));
+
+    Ok(response)
+}
+
+pub fn execute_accept_proposal(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    signers: Vec<Vec<u8>>,
-    transmitters: Vec<Addr>,
-    f: u8,
-    onchain_config: Vec<u8>,
-    offchain_config_version: u64,
-    offchain_config: Vec<u8>,
+    id: ProposalId,
+    digest: [u8; 32],
 ) -> Result<Response, ContractError> {
     require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
 
     let mut config = CONFIG.load(deps.storage)?;
 
-    let response = Response::new().add_attribute("method", "set_config");
+    let proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
 
-    let signers_len = signers.len();
+    let response = Response::new().add_attribute("method", "propose_config");
 
-    // validate new config
-    require!(f != 0, InvalidInput);
-    require!(signers_len <= MAX_ORACLES, TooManySigners);
-    require!(transmitters.len() == signers.len(), InvalidInput);
-    require!(3 * (usize::from(f)) < signers_len, InvalidInput);
-    require!(onchain_config.is_empty(), InvalidInput);
-    require!(!offchain_config.is_empty(), InvalidInput);
+    // Only approve proposal if finalized
+    require!(proposal.finalized, InvalidInput);
+    // Digest also has to match
+    require!(proposal.digest() == digest, InvalidInput);
 
     let (_total, mut response) = pay_oracles(&mut deps, &config, response)?;
 
@@ -274,9 +382,21 @@ pub fn execute_set_config(
     for key in keys {
         SIGNERS.remove(deps.storage, &key);
     }
+    // NOTE: we don't clear payees to reduce gas
+    // let keys: Vec<_> = PAYEES
+    //     .keys(deps.storage, None, None, Order::Ascending)
+    //     .collect();
+    // for key in keys {
+    //     PAYEES.remove(deps.storage, &key);
+    // }
 
     // Update oracle set
-    for transmitter in &transmitters {
+    for (signer, transmitter, payee) in &proposal.oracles {
+        SIGNERS.update(deps.storage, signer, |value| {
+            require!(value.is_none(), RepeatedAddress);
+            Ok(())
+        })?;
+
         TRANSMITTERS.update(deps.storage, transmitter, |value| {
             require!(value.is_none(), RepeatedAddress);
             Ok(Transmitter {
@@ -284,17 +404,22 @@ pub fn execute_set_config(
                 from_round_id: config.latest_aggregator_round_id,
             })
         })?;
+
+        PAYEES.save(deps.storage, transmitter, payee)?;
     }
-    for signer in &signers {
-        SIGNERS.update(deps.storage, signer, |value| {
-            require!(value.is_none(), RepeatedAddress);
-            Ok(())
-        })?;
-    }
+
+    // Calculate onchain_config for use in config_digest calculation
+    let onchain_config = config.onchain_config();
+
+    let oracles: Vec<_> = proposal
+        .oracles
+        .iter()
+        .map(|(signer, transmitter, _payee)| (signer, transmitter))
+        .collect();
 
     // Update config
     let (previous_config_block_number, config) = {
-        config.f = f;
+        config.f = proposal.f;
         let previous_config_block_number = config.latest_config_block_number;
         config.latest_config_block_number = env.block.height;
         config.config_count += 1;
@@ -302,14 +427,13 @@ pub fn execute_set_config(
             &env.block.chain_id,
             &env.contract.address,
             config.config_count,
-            &signers,
-            &transmitters,
-            f,
+            &oracles,
+            proposal.f,
             &onchain_config,
-            offchain_config_version,
-            &offchain_config,
+            proposal.offchain_config_version,
+            &proposal.offchain_config,
         );
-        config.n = signers_len as u8;
+        config.n = proposal.oracles.len() as u8;
 
         config.epoch = 0;
         config.round = 0;
@@ -317,19 +441,15 @@ pub fn execute_set_config(
         (previous_config_block_number, config)
     };
 
-    let signers = signers
+    let signers = proposal
+        .oracles
         .iter()
-        .map(|signer| attr("signers", hex::encode(signer)));
+        .map(|(signer, _, _)| attr("signers", hex::encode(&signer.0)));
 
-    let transmitters = transmitters
+    let transmitters = proposal
+        .oracles
         .iter()
-        .map(|transmitter| attr("transmitters", transmitter));
-
-    // calculate onchain_config from stored config
-    let mut onchain_calc: Vec<u8> = Vec::new();
-    onchain_calc.push(1);
-    onchain_calc.extend_from_slice(&config.min_answer.to_be_bytes());
-    onchain_calc.extend_from_slice(&config.max_answer.to_be_bytes());
+        .map(|(_, transmitter, _)| attr("transmitters", transmitter));
 
     response = response.add_event(
         Event::new("set_config")
@@ -344,16 +464,103 @@ pub fn execute_set_config(
             .add_attribute("config_count", config.config_count.to_string())
             .add_attributes(signers)
             .add_attributes(transmitters)
-            .add_attribute("f", f.to_string())
-            .add_attribute("onchain_config", Binary(onchain_calc).to_base64())
+            .add_attribute("f", proposal.f.to_string())
+            .add_attribute("onchain_config", Binary(onchain_config).to_base64())
             .add_attribute(
                 "offchain_config_version",
-                offchain_config_version.to_string(),
+                proposal.offchain_config_version.to_string(),
             )
-            .add_attribute("offchain_config", Binary(offchain_config).to_base64()),
+            .add_attribute("offchain_config", proposal.offchain_config.to_base64()),
     );
 
+    // Persist updated config
+    CONFIG.save(deps.storage, &config)?;
+
+    // Clear out proposal
+    PROPOSALS.remove(deps.storage, id.u128().into());
+
     Ok(response)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn execute_propose_config(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    id: ProposalId,
+    signers: Vec<Binary>,
+    transmitters: Vec<Addr>,
+    payees: Vec<Addr>,
+    f: u8,
+    onchain_config: Vec<u8>,
+) -> Result<Response, ContractError> {
+    let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
+    let mut proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
+
+    // Only contract owner or proposal owner allowed
+    require!(is_owner || proposal.owner == info.sender, Unauthorized);
+
+    let signers_len = signers.len();
+
+    // validate new config
+    require!(f != 0, InvalidInput);
+    require!(signers_len <= MAX_ORACLES, TooManySigners);
+    require!(transmitters.len() == signers.len(), InvalidInput);
+    require!(payees.len() == signers.len(), InvalidInput);
+    require!(3 * (usize::from(f)) < signers_len, InvalidInput);
+    require!(onchain_config.is_empty(), InvalidInput);
+
+    // store on proposal
+
+    // only modify if proposal isn't finalized yet
+    require!(!proposal.finalized, InvalidInput);
+
+    proposal.f = f;
+    proposal.oracles = signers
+        .into_iter()
+        .zip(transmitters.into_iter())
+        .zip(payees.into_iter())
+        .map(|((signers, transmitters), payees)| (signers, transmitters, payees))
+        .collect();
+
+    PROPOSALS.save(deps.storage, id.u128().into(), &proposal)?;
+
+    Ok(Response::default())
+}
+
+pub fn execute_propose_offchain_config(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    id: ProposalId,
+    offchain_config_version: u64,
+    offchain_config: Binary,
+) -> Result<Response, ContractError> {
+    let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
+    let mut proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
+
+    // Only contract owner or proposal owner allowed
+    require!(is_owner || proposal.owner == info.sender, Unauthorized);
+
+    // validate new config
+    require!(!offchain_config.is_empty(), InvalidInput);
+
+    // store on proposal
+
+    // only modify if proposal isn't finalized yet
+    require!(!proposal.finalized, InvalidInput);
+
+    proposal.offchain_config_version = offchain_config_version;
+    proposal.offchain_config = offchain_config;
+
+    PROPOSALS.save(deps.storage, id.u128().into(), &proposal)?;
+
+    Ok(Response::default())
+}
+
+pub fn query_proposal(deps: Deps, id: ProposalId) -> StdResult<Proposal> {
+    let proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
+    Ok(proposal)
 }
 
 pub fn query_latest_config_details(deps: Deps) -> StdResult<LatestConfigDetailsResponse> {
@@ -613,7 +820,10 @@ fn decode_report(raw_report: &[u8]) -> Result<Report, ContractError> {
     // (uint32, 32 bytes, u8 len, len times i128, u128)
 
     // assert report is long enough for at least timestamp + observers + observations len
-    require!(raw_report.len() >= 4 + 32 + 1, InvalidInput);
+    require!(
+        raw_report.len() >= mem::size_of::<u32>() + 32 + mem::size_of::<u8>(),
+        InvalidInput
+    );
 
     // observations_timestamp = uint32
     let (observations_timestamp, raw_report) = raw_report.split_at(4);
@@ -1244,44 +1454,6 @@ fn calculate_reimbursement(
 // --- Payee management
 // ---
 
-// Can't be used to change payee addresses, only to initially populate them.
-pub fn execute_set_payees(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    payees: Vec<(String, String)>, // (transmitter, payee)
-) -> Result<Response, ContractError> {
-    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
-
-    let mut events = Vec::with_capacity(payees.len());
-
-    let payees = payees
-        .iter()
-        .map(|(transmitter, payee)| -> StdResult<(Addr, Addr)> {
-            Ok((
-                deps.api.addr_validate(transmitter)?,
-                deps.api.addr_validate(payee)?,
-            ))
-        })
-        .collect::<StdResult<Vec<_>>>()?;
-
-    for (transmitter, payee) in payees {
-        // Set the payee unless it's already set
-        PAYEES.update(deps.storage, &transmitter, |value| {
-            if value.is_some() {
-                return Err(ContractError::PayeeAlreadySet);
-            }
-            events.push(
-                Event::new("payeeship_transferred")
-                    .add_attribute("transmitter", &transmitter)
-                    .add_attribute("current", &payee),
-            );
-            Ok(payee)
-        })?;
-    }
-    Ok(Response::default().add_events(events))
-}
-
 pub fn execute_transfer_payeeship(
     deps: DepsMut,
     _env: Env,
@@ -1380,17 +1552,27 @@ pub(crate) mod tests {
         setup();
     }
 
-    #[test]
-    fn set_config() {
-        let mut deps = setup();
-        let owner = "owner".to_string();
+    fn configure(deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>, owner: &str) {
+        let msg = ExecuteMsg::BeginProposal;
+        let execute_info = mock_info(owner, &[]);
+        let response = execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
 
-        let msg = ExecuteMsg::SetConfig {
+        // Extract the proposal id from the wasm execute event
+        let id = &response
+            .attributes
+            .iter()
+            .find(|attr| attr.key == "proposal_id")
+            .unwrap()
+            .value;
+        let id = Uint128::new(id.parse::<u128>().unwrap());
+
+        let msg = ExecuteMsg::ProposeConfig {
+            id,
             signers: vec![
-                Binary(vec![1; 64]),
-                Binary(vec![2; 64]),
-                Binary(vec![3; 64]),
-                Binary(vec![4; 64]),
+                Binary(vec![1; 32]),
+                Binary(vec![2; 32]),
+                Binary(vec![3; 32]),
+                Binary(vec![4; 32]),
             ],
             transmitters: vec![
                 "transmitter0".to_string(),
@@ -1398,14 +1580,55 @@ pub(crate) mod tests {
                 "transmitter2".to_string(),
                 "transmitter3".to_string(),
             ],
+            payees: vec![
+                "payee0".to_string(),
+                "payee1".to_string(),
+                "payee2".to_string(),
+                "payee3".to_string(),
+            ],
             f: 1,
             onchain_config: Binary(vec![]),
+        };
+        let execute_info = mock_info(owner, &[]);
+        execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+
+        let msg = ExecuteMsg::ProposeOffchainConfig {
+            id,
             offchain_config_version: 1,
             offchain_config: Binary(vec![4, 5, 6]),
         };
 
-        let execute_info = mock_info(owner.as_str(), &[]);
+        let execute_info = mock_info(owner, &[]);
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+
+        let msg = ExecuteMsg::FinalizeProposal { id };
+        let execute_info = mock_info(owner, &[]);
+        let response = execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+
+        // Extract the proposal digest from the wasm execute event
+        let mut digest = [0u8; 32];
+        let proposal_digest = &response
+            .attributes
+            .iter()
+            .find(|attr| attr.key == "digest")
+            .unwrap()
+            .value;
+        hex::decode_to_slice(proposal_digest, &mut digest).unwrap();
+
+        let msg = ExecuteMsg::AcceptProposal {
+            id,
+            digest: Binary(digest.to_vec()),
+        };
+        let execute_info = mock_info(owner, &[]);
+        execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+    }
+
+    #[test]
+    fn propose_config() {
+        let mut deps = setup();
+        let owner = "owner".to_string();
+
+        configure(&mut deps, &owner);
     }
 
     // 117 bytes
@@ -1424,7 +1647,7 @@ pub(crate) mod tests {
 
     #[test]
     fn decode_reports() {
-        decode_report(&REPORT).unwrap();
+        decode_report(REPORT).unwrap();
     }
 
     #[test]
@@ -1432,26 +1655,7 @@ pub(crate) mod tests {
         let mut deps = setup();
         let owner = "owner".to_string();
 
-        let msg = ExecuteMsg::SetPayees {
-            payees: vec![("transmitter0".to_string(), "payee0".to_string())],
-        };
-        let execute_info = mock_info(&owner, &[]);
-        execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
-
-        // setting the same payee again fails
-        let msg = ExecuteMsg::SetPayees {
-            payees: vec![("transmitter0".to_string(), "payee1".to_string())],
-        };
-        let execute_info = mock_info(&owner, &[]);
-        let res = execute(deps.as_mut(), mock_env(), execute_info, msg);
-        assert_eq!(res.unwrap_err(), ContractError::PayeeAlreadySet);
-
-        // setting a different payee works
-        let msg = ExecuteMsg::SetPayees {
-            payees: vec![("transmitter1".to_string(), "payee1".to_string())],
-        };
-        let execute_info = mock_info(&owner, &[]);
-        execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+        configure(&mut deps, &owner);
 
         // can't transfer to self
         let msg = ExecuteMsg::TransferPayeeship {

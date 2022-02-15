@@ -5,36 +5,47 @@ config:
   terra-env:CL-COUNT: 4 # not counting bootstrap, minimum 4
   terra-env:CL-PORT-START: 6688 # start port to expose lite client port
   terra-env:CL-P2P_PORT-START: 5050 # start port to expose lite client P2P ports
-  # terra-env:CL-NODE_VERSION: develop.242e63a8dc8c9b1b7d5424a81e4ff7eb1461b3c0 # development version can be found at https://gallery.ecr.aws/chainlink/chainlink
-  terra-env:CL-BUILD_LOCALLY: true # (overrides NODE_VERSION) BUILD_CONTEXT and BUILD_DOCKERFILE must be set if this is enabled
-  terra-env:CL-BUILD_CONTEXT: ../../chainlink
-  terra-env:CL-BUILD_DOCKERFILE: ../../chainlink/core/chainlink.Dockerfile
+  terra-env:CL-NODE_VERSION: develop.27b4494ba0b33178333908d72db6689ee9d8902d # development version can be found at https://gallery.ecr.aws/chainlink/chainlink
+  terra-env:CL-BUILD_LOCALLY: false # (overrides NODE_VERSION) BUILD_CONTEXT and BUILD_DOCKERFILE which must be set if this is enabled
+  # terra-env:CL-BUILD_CONTEXT: ../../chainlink
+  # terra-env:CL-BUILD_DOCKERFILE: ../../chainlink/core/chainlink.Dockerfile
   terra-env:CL-RELAY_NAME: terra
   terra-env:CL-NODE_TYPE: terra
-  terra-env:CL-FCD_URL: https://fcd.terra.dev:443
-  terra-env:CL-TENDERMINT_URL: http://127.0.0.1:26657
+  terra-env:CL-FCD_URL: http://host.docker.internal:3060/v1/txs/gas_prices
+  terra-env:CL-TENDERMINT_URL: http://host.docker.internal:26657
   terra-env:CL-RELAY_CHAINID: localterra
   terra-env:CL-ENV_VARS: # specify which chainlink env variables to include, and define below
     - CHAINLINK_DEV
-    - LOG_LEVEL
+    - EVM_ENABLED
+    - EVM_RPC_ENABLED
+    - TERRA_ENABLED
     - ETH_DISABLED
     - USE_LEGACY_ETH_ENV_VARS
     - FEATURE_OFFCHAIN_REPORTING2
     - P2P_NETWORKING_STACK
     - P2P_LISTEN_PORT
-    - EVM_ENABLED
-    - EVM_RPC_ENABLED
-    - TERRA_ENABLED
+    - CHAINLINK_TLS_PORT
+    - SECURE_COOKIES
+    # these next vars are used for debugging and should be excluded from production deployments
+    - AUTO_PPROF_ENABLED
+    - AUTO_PPROF_MEM_THRESHOLD
+    - AUTO_PPROF_GOROUTINE_THRESHOLD
+    - LOG_LEVEL
   terra-env:CL-CHAINLINK_DEV: true
   terra-env:CL-EVM_ENABLED: false
   terra-env:CL-EVM_RPC_ENABLED: false
   terra-env:CL-TERRA_ENABLED: true
-  terra-env:CL-LOG_LEVEL: "debug"
   terra-env:CL-ETH_DISABLED: true
   terra-env:CL-USE_LEGACY_ETH_ENV_VARS: false
   terra-env:CL-FEATURE_OFFCHAIN_REPORTING2: true
   terra-env:CL-P2P_NETWORKING_STACK: "V2"
   terra-env:CL-P2P_LISTEN_PORT: 0
+  terra-env:CL-CHAINLINK_TLS_PORT: 0
+  terra-env:CL-SECURE_COOKIES: false
+  terra-env:CL-AUTO_PPROF_ENABLED: true
+  terra-env:CL-AUTO_PPROF_MEM_THRESHOLD: 500mb
+  terra-env:CL-AUTO_PPROF_GOROUTINE_THRESHOLD: 500
+  terra-env:CL-LOG_LEVEL: "debug"
   # chainlink node configs (unique to each node - usually not needed, example shown)
   # terra-env:CL_X-ENV_VARS:
   #   - TEST_ENV
@@ -57,3 +68,4 @@ config:
   terra-env:PG-PORT: 6600 # OPTIONAL: defaults to 5432
   terra-env:PG-HEALTH-TIMEOUT: 120 # seconds, max wait for postgres to start, default 30
   terra-env:TERRA-DEPLOYER: localterra-deployer
+  terra-env:NETWORK_NAME: chainlink-terra-network

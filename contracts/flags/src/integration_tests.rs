@@ -127,7 +127,7 @@ fn raise_flag() {
             },
         )
         .unwrap();
-    assert_eq!(true, flag);
+    assert!(flag);
 
     // trying to raise the flag when it's already raised
     let msg = ExecuteMsg::RaiseFlag {
@@ -255,5 +255,5 @@ fn lower_flags() {
             },
         )
         .unwrap();
-    assert_eq!(false, flag);
+    assert!(!flag);
 }
