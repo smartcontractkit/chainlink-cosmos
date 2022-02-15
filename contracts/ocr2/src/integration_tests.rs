@@ -292,7 +292,7 @@ fn setup() -> Env {
     let set_config = response
         .events
         .iter()
-        .find(|event| event.ty == "wasm-propose_config")
+        .find(|event| event.ty == "wasm-set_config")
         .unwrap();
     let digest = &set_config
         .attributes
