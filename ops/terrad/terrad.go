@@ -372,14 +372,11 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	}
 
 	status = utils.LogStatus("InitOCR: begin proposal")
-	resp, err := t.executeOCR2(BeginProposal)
-	if err == nil {
-		if resp.Code != 0 {
-			err = fmt.Errorf("tx response contains error: %s %d", resp.Codespace, resp.Code)
-		} else if len(resp.Logs) == 0 {
-			err = errors.New("begin proposal produced no logs")
-		}
+	resp, err := t.ExecuteOCR2(BeginProposal)
+	if err == nil && len(resp.Logs) == 0 {
+		err = errors.New("begin proposal produced no logs")
 	}
+
 	if status.Check(err) != nil {
 		return err
 	}
@@ -401,20 +398,16 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		return errors.New("failed to find event with attribute: wasm.proposal-id")
 	}
 
+	// Be prepared to clear the proposal if incomplete.
 	defer func() {
 		if rerr == nil {
 			return // Success
 		}
-		// Clean up
+		// Failure: Try to clean up incomplete proposal.
 		status = utils.LogStatus("InitOCR: clear proposal: " + id)
-		resp, err = t.executeOCR2(ClearProposal{
+		resp, err = t.ExecuteOCR2(ClearProposal{
 			ClearProposal: ClearProposalDetails{ID: id},
 		})
-		if err == nil {
-			if resp.Code != 0 {
-				err = fmt.Errorf("tx response contains error: %s %d", resp.Codespace, resp.Code)
-			}
-		}
 		if status.Check(err) != nil {
 			fmt.Println(err)
 			return
@@ -426,7 +419,7 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		payees = append(payees, t.addr)
 	}
 	status = utils.LogStatus("InitOCR: propose config " + id)
-	resp, err = t.executeOCR2(ProposeConfig{
+	resp, err = t.ExecuteOCR2(ProposeConfig{
 		ProposeConfig: ProposeConfigDetails{
 			ID:            id,
 			Payees:        payees,
@@ -436,35 +429,26 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 			OnchainConfig: onchainConfig,
 		},
 	})
-	if err == nil && resp.Code != 0 {
-		err = fmt.Errorf("tx response contains error: %s %d", resp.Codespace, resp.Code)
-	}
 	if status.Check(err) != nil {
 		return err
 	}
 
 	status = utils.LogStatus("InitOCR: propose offchain config")
-	resp, err = t.executeOCR2(ProposeOffchainConfig{
+	resp, err = t.ExecuteOCR2(ProposeOffchainConfig{
 		ProposeOffchainConfig: ProposeOffchainConfigDetails{
 			ID:                    id,
 			OffchainConfigVersion: offchainConfigVersion,
 			OffchainConfig:        offchainConfig,
 		},
 	})
-	if err == nil && resp.Code != 0 {
-		err = fmt.Errorf("tx response contains error: %s %d", resp.Codespace, resp.Code)
-	}
 	if status.Check(err) != nil {
 		return err
 	}
 
 	status = utils.LogStatus("InitOCR: finalize proposal")
-	resp, err = t.executeOCR2(FinalizeProposal{
+	resp, err = t.ExecuteOCR2(FinalizeProposal{
 		FinalizeProposal: FinalizeProposalDetails{ID: id},
 	})
-	if err == nil && resp.Code != 0 {
-		err = fmt.Errorf("tx response contains error: %s %d", resp.Codespace, resp.Code)
-	}
 	if status.Check(err) != nil {
 		return err
 	}
@@ -493,15 +477,12 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	}
 
 	status = utils.LogStatus("InitOCR: accept proposal")
-	resp, err = t.executeOCR2(AcceptProposal{
+	resp, err = t.ExecuteOCR2(AcceptProposal{
 		AcceptProposal: AcceptProposalDetails{
 			ID:     id,
 			Digest: digest,
 		},
 	})
-	if err == nil && resp.Code != 0 {
-		err = fmt.Errorf("tx response contains error: %s %d", resp.Codespace, resp.Code)
-	}
 	if status.Check(err) != nil {
 		return err
 	}
@@ -509,13 +490,17 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	return nil
 }
 
-func (t Terrad) executeOCR2(msg interface{}) (resp TxResponse, err error) {
+func (t Terrad) ExecuteOCR2(msg interface{}) (resp TxResponse, err error) {
+	return t.Execute(t.OCR2Address(), msg)
+}
+
+func (t Terrad) Execute(addr string, msg interface{}) (resp TxResponse, err error) {
 	var b []byte
 	b, err = json.Marshal(msg)
 	if err != nil {
 		return
 	}
-	args := []string{"tx", "wasm", "execute", t.Deployed[OCR2], string(b)}
+	args := []string{"tx", "wasm", "execute", addr, string(b)}
 	cmd := exec.Command("terrad", append(args, t.args...)...)
 	var stdErr bytes.Buffer
 	cmd.Stderr = &stdErr
@@ -526,6 +511,9 @@ func (t Terrad) executeOCR2(msg interface{}) (resp TxResponse, err error) {
 		return
 	}
 	err = json.Unmarshal(out, &resp)
+	if err == nil && resp.Code != 0 {
+		err = fmt.Errorf("tx response contains error: %s %d", resp.Codespace, resp.Code)
+	}
 	return
 }
 
