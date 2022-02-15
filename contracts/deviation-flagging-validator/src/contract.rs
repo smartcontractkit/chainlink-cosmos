@@ -273,19 +273,19 @@ mod tests {
         let previous_answer = 100;
         let answer = 5;
         let check_valid = is_valid(flagging_threshold, previous_answer, answer).unwrap();
-        assert_eq!(false, check_valid);
+        assert!(!check_valid);
 
         // this input should return true
         let previous_answer = 3;
         let answer = 1;
         let check_valid = is_valid(flagging_threshold, previous_answer, answer).unwrap();
-        assert_eq!(true, check_valid);
+        assert!(check_valid);
 
         // should return true if previous_answer is 0
         let previous_answer = 0;
         let answer = 5;
         let check_valid = is_valid(flagging_threshold, previous_answer, answer).unwrap();
-        assert_eq!(true, check_valid);
+        assert!(check_valid);
     }
 
     #[test]

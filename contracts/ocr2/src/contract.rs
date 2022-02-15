@@ -405,7 +405,7 @@ pub fn execute_accept_proposal(
             })
         })?;
 
-        PAYEES.save(deps.storage, &transmitter, &payee)?;
+        PAYEES.save(deps.storage, transmitter, payee)?;
     }
 
     // Calculate onchain_config for use in config_digest calculation
@@ -482,6 +482,7 @@ pub fn execute_accept_proposal(
     Ok(response)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn execute_propose_config(
     deps: DepsMut,
     _env: Env,
@@ -819,7 +820,10 @@ fn decode_report(raw_report: &[u8]) -> Result<Report, ContractError> {
     // (uint32, 32 bytes, u8 len, len times i128, u128)
 
     // assert report is long enough for at least timestamp + observers + observations len
-    require!(raw_report.len() >= 4 + 32 + 1, InvalidInput);
+    require!(
+        raw_report.len() >= mem::size_of::<u32>() + 32 + mem::size_of::<u8>(),
+        InvalidInput
+    );
 
     // observations_timestamp = uint32
     let (observations_timestamp, raw_report) = raw_report.split_at(4);
@@ -1560,7 +1564,7 @@ pub(crate) mod tests {
             .find(|attr| attr.key == "proposal_id")
             .unwrap()
             .value;
-        let id = Uint128::new(u128::from_str_radix(id, 10).unwrap());
+        let id = Uint128::new(id.parse::<u128>().unwrap());
 
         let msg = ExecuteMsg::ProposeConfig {
             id,
@@ -1643,7 +1647,7 @@ pub(crate) mod tests {
 
     #[test]
     fn decode_reports() {
-        decode_report(&REPORT).unwrap();
+        decode_report(REPORT).unwrap();
     }
 
     #[test]
