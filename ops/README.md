@@ -76,3 +76,12 @@ Notes:
    ```
 * May require setting environment variable `export PULUMI_CONFIG_PASSPHRASE=` (no need to set it to anything unless you want to)
 * [Using Pulumi without pulumi.com](https://www.pulumi.com/docs/troubleshooting/faq/#can-i-use-pulumi-without-depending-on-pulumicom): tl;dr - `pulumi login --local`
+
+## Development
+
+In development it could be useful to work on a local copy of `github.com/smartcontractkit/chainlink-relay/ops`, to do so edit `go.mod`:
+
+```
+// Notice: pointing to local copy
+replace github.com/smartcontractkit/chainlink-relay/ops => ../../chainlink-relay/ops
+```
