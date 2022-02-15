@@ -37,7 +37,7 @@ export type Contract = {
 export type Contracts = Record<CONTRACT_LIST, Contract>
 
 export const getContractCode = async (contractId: CONTRACT_LIST, version): Promise<string> => {
-  if (version === 'local') {
+  if (!version || version === 'local') {
     // Possible paths depending on how/where gauntlet is being executed
     const possibleContractPaths = [
       path.join(__dirname, '../../artifacts/bin'),
