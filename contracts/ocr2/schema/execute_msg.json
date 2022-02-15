@@ -86,6 +86,7 @@
             "f",
             "id",
             "onchain_config",
+            "payees",
             "signers",
             "transmitters"
           ],
@@ -100,6 +101,12 @@
             },
             "onchain_config": {
               "$ref": "#/definitions/Binary"
+            },
+            "payees": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             },
             "signers": {
               "type": "array",
@@ -360,39 +367,6 @@
       "properties": {
         "receive": {
           "$ref": "#/definitions/Cw20ReceiveMsg"
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "set_payees"
-      ],
-      "properties": {
-        "set_payees": {
-          "type": "object",
-          "required": [
-            "payees"
-          ],
-          "properties": {
-            "payees": {
-              "type": "array",
-              "items": {
-                "type": "array",
-                "items": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "string"
-                  }
-                ],
-                "maxItems": 2,
-                "minItems": 2
-              }
-            }
-          }
         }
       },
       "additionalProperties": false

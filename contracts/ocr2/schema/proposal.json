@@ -37,10 +37,13 @@
           },
           {
             "$ref": "#/definitions/Addr"
+          },
+          {
+            "$ref": "#/definitions/Addr"
           }
         ],
-        "maxItems": 2,
-        "minItems": 2
+        "maxItems": 3,
+        "minItems": 3
       }
     },
     "owner": {
