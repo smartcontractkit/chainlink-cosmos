@@ -26,21 +26,21 @@ var _ = Describe("Solana chaos suite", func() {
 		By("Can work with faulty nodes offline", func() {
 			state.CanWorkWithFaultyNodesOffline()
 		})
-		By("Can't work with two parts network split, restored after", func() {
-			state.RestoredAfterNetworkSplit()
-		})
-		By("Can recover from yellow group loss connection to validator", func() {
-			state.CanWorkYellowGroupNoValidatorConnection()
-		})
-		By("Can recover after all nodes lost connection to validator", func() {
-			state.CanRecoverAllNodesValidatorConnectionLoss()
-		})
-		By("Can work after all nodes restarted", func() {
-			state.CanWorkAfterAllOraclesIPChange()
-		})
-		By("Can work when bootstrap migrated", func() {
-			state.CanMigrateBootstrap()
-		})
+		//By("Can't work with two parts network split, restored after", func() {
+		//	state.RestoredAfterNetworkSplit()
+		//})
+		//By("Can recover from yellow group loss connection to validator", func() {
+		//	state.CanWorkYellowGroupNoValidatorConnection()
+		//})
+		//By("Can recover after all nodes lost connection to validator", func() {
+		//	state.CanRecoverAllNodesValidatorConnectionLoss()
+		//})
+		//By("Can work after all nodes restarted", func() {
+		//	state.CanWorkAfterAllOraclesIPChange()
+		//})
+		//By("Can work when bootstrap migrated", func() {
+		//	state.CanMigrateBootstrap()
+		//})
 	})
 	AfterEach(func() {
 		By("Tearing down the environment", func() {

@@ -1,5 +1,6 @@
 name: chaos
 on:
+  push:
   schedule:
     - cron: '0 */3 * * *'
   workflow_dispatch:
@@ -116,7 +117,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           check_name: Chaos Test Results
       - name: Publish Artifacts
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v2.2.4
         with:
           name: test-logs
