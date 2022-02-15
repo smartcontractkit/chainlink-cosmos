@@ -6,7 +6,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.44.5
 	github.com/pkg/errors v0.9.1
 	github.com/pulumi/pulumi/sdk/v3 v3.17.0
-	github.com/smartcontractkit/chainlink-relay/ops v0.0.0-20220125194834-c07e135ab67e
+	github.com/smartcontractkit/chainlink-relay/ops v0.0.0-20220214171410-7680e9f35f09
 	github.com/smartcontractkit/integrations-framework v1.0.47
 	github.com/smartcontractkit/libocr v0.0.0-20220125200954-5b957c834276
 )
@@ -243,3 +243,6 @@ require (
 
 // Usage of this gogo/protobuf fork is required by Cosmos SDK: https://github.com/cosmos/cosmos-sdk/issues/10702
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+
+// Notice: uncomment while developing
+// replace github.com/smartcontractkit/chainlink-relay/ops => ../../chainlink-relay/ops
