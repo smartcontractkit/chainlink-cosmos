@@ -6,6 +6,8 @@ import (
 	"errors"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/smartcontractkit/chainlink/core/store/models"
@@ -33,6 +35,8 @@ type ChainCfg struct {
 	BlocksUntilTxTimeout  null.Int
 	ConfirmPollPeriod     *models.Duration
 	FallbackGasPriceULuna null.String
+	FallbackGasPrices     map[string]sdk.DecCoin
+	GasPriceDenom         null.String
 	FCDURL                null.String `db:"fcd_url"`
 	GasLimitMultiplier    null.Float
 	MaxMsgsPerBatch       null.Int

@@ -20,6 +20,11 @@ var defaultConfigSet = configSet{
 	BlocksUntilTxTimeout:  10,
 	ConfirmPollPeriod:     time.Second,
 	FallbackGasPriceULuna: sdk.MustNewDecFromStr("0.015"),
+	FallbackGasPrices: map[string]sdk.DecCoin{
+		"uluna": sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("0.015")),
+		"uusd":  sdk.NewDecCoinFromDec("uusd", sdk.MustNewDecFromStr("0.17")),
+	},
+	GasPriceDenom: "uluna",
 	// This is high since we simulate before signing the transaction.
 	// There's a chicken and egg problem: need to sign to simulate accurately
 	// but you need to specify a gas limit when signing.
@@ -45,6 +50,8 @@ type Config interface {
 	BlocksUntilTxTimeout() int64
 	ConfirmPollPeriod() time.Duration
 	FallbackGasPriceULuna() sdk.Dec
+	FallbackGasPrices() map[string]sdk.DecCoin
+	GasPriceDenom() string
 	FCDURL() url.URL
 	GasLimitMultiplier() float64
 	MaxMsgsPerBatch() int64
@@ -60,6 +67,8 @@ type configSet struct {
 	BlocksUntilTxTimeout  int64
 	ConfirmPollPeriod     time.Duration
 	FallbackGasPriceULuna sdk.Dec
+	FallbackGasPrices     map[string]sdk.DecCoin
+	GasPriceDenom         string
 	FCDURL                url.URL
 	GasLimitMultiplier    float64
 	MaxMsgsPerBatch       int64
@@ -134,6 +143,26 @@ func (c *config) FallbackGasPriceULuna() sdk.Dec {
 		c.lggr.Warnf(invalidFallbackMsg, "FallbackGasPriceULuna", str, c.defaults.FallbackGasPriceULuna, err)
 	}
 	return c.defaults.FallbackGasPriceULuna
+}
+
+func (c *config) FallbackGasPrices() map[string]sdk.DecCoin {
+	c.chainMu.RLock()
+	ch := c.chain.FallbackGasPrices
+	c.chainMu.RUnlock()
+	if ch != nil {
+		return ch
+	}
+	return c.defaults.FallbackGasPrices
+}
+
+func (c *config) GasPriceDenom() string {
+	c.chainMu.RLock()
+	ch := c.chain.GasPriceDenom
+	c.chainMu.RUnlock()
+	if ch.Valid {
+		return ch.String
+	}
+	return c.defaults.GasPriceDenom
 }
 
 func (c *config) FCDURL() url.URL {

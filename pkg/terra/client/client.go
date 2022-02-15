@@ -265,6 +265,8 @@ func (c *Client) BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse,
 }
 
 // CreateAndSign creates and signs a transaction
+// using txFee = gasLimit*gasLimitMultiplier*gasPrice
+// Note that the tax rate is currently set to zero https://agora.terra.money/t/proposal-to-reduce-the-terra-tax-rate-to-zero/3524
 func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error) {
 	txbuilder := tx.NewTxBuilder(encodingConfig.TxConfig)
 	err := txbuilder.SetMsgs(msgs...)

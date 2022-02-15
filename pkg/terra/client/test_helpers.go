@@ -75,7 +75,7 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string) {
 		privateKey, address := createKeyFromMnemonic(t, k.Mnemonic)
 		require.Equal(t, expAcctAddr, address)
 		// Give it 100 luna
-		_, err = exec.Command("terrad", "add-genesis-account", k.Address, "100000000uluna", "--home", testdir).Output()
+		_, err = exec.Command("terrad", "add-genesis-account", k.Address, "100000000uluna,100000000uusd", "--home", testdir).Output()
 		require.NoError(t, err)
 		accounts = append(accounts, Account{
 			Name:       account,

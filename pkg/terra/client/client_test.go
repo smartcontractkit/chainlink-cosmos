@@ -125,6 +125,7 @@ func TestTerraClient(t *testing.T) {
 	require.NoError(t, err)
 	gpe := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
 		"uluna": sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("0.01")),
+		"uusd":  sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("0.15")),
 	})
 	contract := DeployTestContract(t, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 
@@ -157,6 +158,11 @@ func TestTerraClient(t *testing.T) {
 		b, err = tc.Balance(accounts[1].Address, "uluna")
 		require.NoError(t, err)
 		assert.Equal(t, "100000001", b.Amount.String())
+
+		// Check uusd balance should be unchanged
+		b, err = tc.Balance(accounts[0].Address, "uusd")
+		require.NoError(t, err)
+		assert.Equal(t, "100000000", b.Amount.String())
 
 		// Invalid tx should error
 		_, err = tc.Tx("1234")
@@ -206,10 +212,11 @@ func TestTerraClient(t *testing.T) {
 		require.NoError(t, err)
 		time.Sleep(1 * time.Second)
 		// Do it again so there are multiple executions
+		// Let's also test using uusd as the gas price
 		rawMsg = wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":4}}`), sdk.Coins{})
 		an, sn, err = tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		_, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, gasPrices["uluna"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		_, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, gasPrices["uusd"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 		require.NoError(t, err)
 		time.Sleep(1 * time.Second)
 
@@ -278,8 +285,13 @@ func TestTerraClient(t *testing.T) {
 				sdkerrors.ErrInsufficientFee.ABCICode(),
 			},
 			{
-				"below-min",
+				"below-min-uluna",
 				msg.NewDecCoinFromDec("uluna", msg.NewDecWithPrec(1, 4)),
+				sdkerrors.ErrInsufficientFee.ABCICode(),
+			},
+			{
+				"below-min-uusd",
+				msg.NewDecCoinFromDec("uusd", msg.NewDecWithPrec(1, 4)),
 				sdkerrors.ErrInsufficientFee.ABCICode(),
 			},
 			{
@@ -290,6 +302,11 @@ func TestTerraClient(t *testing.T) {
 			{
 				"recommended",
 				gasPrices["uluna"],
+				0,
+			},
+			{
+				"recommended",
+				gasPrices["uusd"],
 				0,
 			},
 		} {
