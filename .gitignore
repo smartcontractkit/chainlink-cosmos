@@ -15,5 +15,6 @@ bin
 
 # test
 packages-ts/gauntlet-terra-contracts/codeIds/test*
+packages-ts/gauntlet-terra-contracts/networks/.env.test*
 tests/e2e/logs
 networks/.env.test*
