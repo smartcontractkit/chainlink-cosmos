@@ -260,8 +260,6 @@ pub fn execute_receive(
 // --- OCR2Abstract Configuration
 // ---
 
-// TODO: use for setPayees too?
-
 pub fn execute_begin_proposal(
     deps: DepsMut,
     _env: Env,
@@ -482,44 +480,6 @@ pub fn execute_accept_proposal(
     PROPOSALS.remove(deps.storage, id.u128().into());
 
     Ok(response)
-}
-
-// Can't be used to change payee addresses, only to initially populate them.
-pub fn execute_propose_payees(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    payees: Vec<(String, String)>, // (transmitter, payee)
-) -> Result<Response, ContractError> {
-    require!(OWNER.is_owner(deps.as_ref(), &info.sender)?, Unauthorized);
-
-    let mut events = Vec::with_capacity(payees.len());
-
-    let payees = payees
-        .iter()
-        .map(|(transmitter, payee)| -> StdResult<(Addr, Addr)> {
-            Ok((
-                deps.api.addr_validate(transmitter)?,
-                deps.api.addr_validate(payee)?,
-            ))
-        })
-        .collect::<StdResult<Vec<_>>>()?;
-
-    for (transmitter, payee) in payees {
-        // Set the payee unless it's already set
-        PAYEES.update(deps.storage, &transmitter, |value| {
-            if value.is_some() {
-                return Err(ContractError::PayeeAlreadySet);
-            }
-            events.push(
-                Event::new("payeeship_transferred")
-                    .add_attribute("transmitter", &transmitter)
-                    .add_attribute("current", &payee),
-            );
-            Ok(payee)
-        })?;
-    }
-    Ok(Response::default().add_events(events))
 }
 
 pub fn execute_propose_config(
