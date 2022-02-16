@@ -55,3 +55,13 @@ func main() {
 	entrypoint.Run()
 	log.Info("monitor stopped")
 }
+
+// adapt core/logger.Logger to monitoring logger.
+
+type logWrapper struct {
+	logger.Logger
+}
+
+func (l logWrapper) With(values ...interface{}) relayMonitoring.Logger {
+	return logWrapper{l.Logger.With(values...)}
+}
