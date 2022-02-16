@@ -42,7 +42,7 @@ export default class DeployOCR2Flow extends FlowCommand<TransactionResponse> {
     }
 
     const billingInput = {
-      recommendedGasPriceUluna: '1',
+      recommendedGasPriceMicro: '1',
       observationPaymentGjuels: 1,
       transmissionPaymentGjuels: 1,
     }

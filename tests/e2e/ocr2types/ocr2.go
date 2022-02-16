@@ -94,7 +94,7 @@ type ExecuteSetBillingConfigMsgType struct {
 	BaseGas             uint64 `json:"base_gas"`
 	TransmissionPayment uint64 `json:"transmission_payment_gjuels"`
 	ObservationPayment  uint64 `json:"observation_payment_gjuels"`
-	RecommendedGasPrice string `json:"recommended_gas_price_uluna"`
+	RecommendedGasPrice string `json:"recommended_gas_price_micro"`
 }
 
 type ExecuteTransferOwnershipMsg struct {

@@ -19,7 +19,7 @@ type Expected = {
   linkAvailable: string
   billing: {
     observationPaymentGjuels: string
-    recommendedGasPriceUluna: string
+    recommendedGasPriceMicro: string
     transmissionPaymentGjuels: string
   }
   offchainConfig: OffchainConfig
@@ -50,7 +50,7 @@ const makeInput = async (flags: any, args: string[]): Promise<InspectionInput<an
       offchainConfig,
       billing: {
         observationPaymentGjuels: info.billing.observationPaymentGjuels,
-        recommendedGasPriceUluna: info.billing.recommendedGasPriceUluna,
+        recommendedGasPriceMicro: info.billing.recommendedGasPriceMicro,
         transmissionPaymentGjuels: info.billing.transmissionPaymentGjuels,
       },
     },
@@ -84,7 +84,7 @@ const makeOnchainData = (instructionsData: any[]): Expected => {
     billing: {
       observationPaymentGjuels: billing.observation_payment_gjuels,
       transmissionPaymentGjuels: billing.transmission_payment_gjuels,
-      recommendedGasPriceUluna: billing.recommended_gas_price_uluna,
+      recommendedGasPriceMicro: billing.recommended_gas_price_micro,
     },
   }
 }
@@ -114,8 +114,8 @@ const inspect = (expected: Expected, onchainData: Expected): boolean => {
       'Observation Payment',
     ),
     inspection.makeInspection(
-      onchainData.billing.recommendedGasPriceUluna,
-      expected.billing.recommendedGasPriceUluna,
+      onchainData.billing.recommendedGasPriceMicro,
+      expected.billing.recommendedGasPriceMicro,
       'Recommended Gas Price',
     ),
     inspection.makeInspection(
