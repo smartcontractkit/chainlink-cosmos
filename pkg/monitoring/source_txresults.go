@@ -61,8 +61,7 @@ type fcdTxsResponse struct {
 type fcdTx struct {
 	ID uint64 `json:"id"`
 	// Error code if present
-	Code      int    `json:"code,omitempty"`
-	CodeSpace string `json:"codespace,omitempty"`
+	Code int `json:"code,omitempty"`
 }
 
 func (t *txResultsSource) Fetch(ctx context.Context) (interface{}, error) {
@@ -110,12 +109,18 @@ func (t *txResultsSource) Fetch(ctx context.Context) (interface{}, error) {
 	// Count failed and succeeded recent transactions
 	output := relayMonitoring.TxResults{}
 	for _, tx := range recentTxs {
-		// See https://github.com/terra-money/core/blob/main/x/wasm/types/errors.go
-		if tx.Code > 2 && tx.CodeSpace == "wasm" {
+		if isFailedTransaction(tx) {
 			output.NumFailed++
 		} else {
 			output.NumSucceeded++
 		}
 	}
 	return output, nil
+}
+
+// Helpers
+
+func isFailedTransaction(tx fcdTx) bool {
+	// See https://docs.cosmos.network/master/building-modules/errors.html
+	return tx.Code != 0
 }
