@@ -6,6 +6,8 @@ import ProposeConfig from './proposeConfig'
 import ProposeOffchainConfig from './proposeOffchainConfig'
 import Inspect from './inspection/inspect'
 import ProposalCommands from './proposal'
+import { makeTransferOwnershipCommand, makeAcceptOwnershipCommand } from '../ownership'
+import { CONTRACT_LIST } from '../../../lib/contracts'
 
 export default [
   SetupFlow,
@@ -16,4 +18,6 @@ export default [
   OCR2InitializeFlow,
   Inspect,
   ...ProposalCommands,
+  makeTransferOwnershipCommand(CONTRACT_LIST.OCR_2),
+  makeAcceptOwnershipCommand(CONTRACT_LIST.OCR_2),
 ]
