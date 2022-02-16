@@ -74,7 +74,7 @@ pub fn instantiate(
         latest_aggregator_round_id: 0,
 
         billing: Billing {
-            recommended_gas_price_uluna: Decimal::zero(),
+            recommended_gas_price_micro: Decimal::zero(),
             observation_payment_gjuels: 0,
             transmission_payment_gjuels: 0,
             gas_base: None,
@@ -810,7 +810,7 @@ struct Report {
     pub observations: Vec<i128>,
     pub observers: [u8; MAX_ORACLES], // observer index
     pub observations_timestamp: u32,
-    pub juels_per_luna: u128,
+    pub juels_per_fee_coin: u128,
 }
 
 // NOTE: unwraps in this method can be factored out once split_array is stable
@@ -844,7 +844,7 @@ fn decode_report(raw_report: &[u8]) -> Result<Report, ContractError> {
 
     const OBSERVATION_SIZE: usize = mem::size_of::<i128>();
 
-    // assert the remainder of the report is long enough for N observations + juels_per_luna
+    // assert the remainder of the report is long enough for N observations + juels_per_fee_coin
     require!(
         raw_report.len() == OBSERVATION_SIZE * len + mem::size_of::<u128>(),
         InvalidInput
@@ -857,7 +857,7 @@ fn decode_report(raw_report: &[u8]) -> Result<Report, ContractError> {
         .collect::<Vec<_>>();
 
     // juels per luna = u128
-    let juels_per_luna = u128::from_be_bytes(
+    let juels_per_fee_coin = u128::from_be_bytes(
         raw_report
             .try_into()
             .map_err(|_| ContractError::InvalidInput)?,
@@ -867,7 +867,7 @@ fn decode_report(raw_report: &[u8]) -> Result<Report, ContractError> {
         observations,
         observers,
         observations_timestamp,
-        juels_per_luna,
+        juels_per_fee_coin,
     })
 }
 
@@ -910,7 +910,7 @@ fn report(
         .map(|observation| attr("observations", observation.to_string()));
 
     let reimbursement =
-        calculate_reimbursement(&config.billing, report.juels_per_luna, signature_count);
+        calculate_reimbursement(&config.billing, report.juels_per_fee_coin, signature_count);
 
     // emit new transmission
     response = response.add_event(
@@ -927,7 +927,7 @@ fn report(
                     report.observations_timestamp.to_string(),
                 ),
                 attr("observers", hex::encode(report.observers)),
-                attr("juels_per_luna", report.juels_per_luna.to_string()),
+                attr("juels_per_fee_coin", report.juels_per_fee_coin.to_string()),
                 attr("config_digest", hex::encode(config_digest)),
                 attr("epoch", config.epoch.to_string()),
                 attr("round", config.round.to_string()),
@@ -1151,8 +1151,8 @@ pub fn execute_set_billing(
     Ok(Response::default().add_event(
         Event::new("set_billing")
             .add_attribute(
-                "recommended_gas_price_uluna",
-                config.billing.recommended_gas_price_uluna.to_string(),
+                "recommended_gas_price_micro",
+                config.billing.recommended_gas_price_micro.to_string(),
             )
             .add_attribute(
                 "observation_payment_gjuels",
@@ -1426,7 +1426,7 @@ pub fn query_oracle_observation_count(deps: Deps, transmitter: String) -> StdRes
 // Returns amount in juels
 fn calculate_reimbursement(
     config: &Billing,
-    juels_per_luna: u128,
+    juels_per_fee_coin: u128,
     signature_count: usize,
 ) -> Uint128 {
     let signature_count = signature_count as u64;
@@ -1440,11 +1440,11 @@ fn calculate_reimbursement(
     // gas allocated seems to be about 1.4 of gas used
     let gas = Uint128::new(gas as u128) * gas_adjustment;
     // scale uLUNA to LUNA
-    let recommended_gas_price = config.recommended_gas_price_uluna * micro;
+    let recommended_gas_price = config.recommended_gas_price_micro * micro;
     // gas cost in LUNA
     let gas_cost = recommended_gas_price * gas;
     // total in juels
-    let total = gas_cost * Decimal(Uint128::new(juels_per_luna));
+    let total = gas_cost * Decimal(Uint128::new(juels_per_fee_coin));
     // NOTE: no stability tax is charged on transactions in LUNA
 
     total.0

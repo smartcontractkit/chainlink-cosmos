@@ -5,14 +5,14 @@ import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'
 
 type CommandInput = {
-  recommendedGasPriceUluna: string
+  recommendedGasPriceMicro: string
   observationPaymentGjuels: number
   transmissionPaymentGjuels: number
 }
 
 type ContractInput = {
   config: {
-    recommended_gas_price_uluna: string
+    recommended_gas_price_micro: string
     observation_payment_gjuels: number
     transmission_payment_gjuels: number
   }
@@ -26,7 +26,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   return {
     observationPaymentGjuels: billingInfo.observationPaymentGjuels,
     transmissionPaymentGjuels: billingInfo.transmissionPaymentGjuels,
-    recommendedGasPriceUluna: billingInfo.recommendedGasPriceUluna,
+    recommendedGasPriceMicro: billingInfo.recommendedGasPriceMicro,
   }
 }
 
@@ -35,7 +35,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
     config: {
       observation_payment_gjuels: new BN(input.observationPaymentGjuels).toNumber(),
       transmission_payment_gjuels: new BN(input.transmissionPaymentGjuels).toNumber(),
-      recommended_gas_price_uluna: input.recommendedGasPriceUluna,
+      recommended_gas_price_micro: input.recommendedGasPriceMicro,
     },
   }
 }
@@ -44,13 +44,13 @@ const validateInput = (input: CommandInput): boolean => {
   let observationPayment: BN
   let transmissionPayment: BN
 
-  const gasPrice: number = Number(input.recommendedGasPriceUluna) // parse as float64
+  const gasPrice: number = Number(input.recommendedGasPriceMicro) // parse as float64
   if (!isFinite(gasPrice)) {
-    throw new Error(`recommendedGasPriceUluna=${input.recommendedGasPriceUluna} is not a valid floating point number.`)
+    throw new Error(`recommendedGasPriceMicro=${input.recommendedGasPriceMicro} is not a valid floating point number.`)
   }
 
   if (gasPrice < 0.0) {
-    throw new Error(`recommendedGasPriceUluna=${input.recommendedGasPriceUluna} cannot be negative`)
+    throw new Error(`recommendedGasPriceMicro=${input.recommendedGasPriceMicro} cannot be negative`)
   }
 
   try {
