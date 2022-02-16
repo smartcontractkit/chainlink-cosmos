@@ -1,5 +1,5 @@
 import { Result } from '@chainlink/gauntlet-core'
-import { MsgExecuteContract } from '@terra-money/terra.js'
+import { AccAddress, MsgExecuteContract } from '@terra-money/terra.js'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TransactionResponse, TerraCommand } from '@chainlink/gauntlet-terra'
 import { Contract, CONTRACT_LIST, getContract, TerraABI, TERRA_OPERATIONS } from '../../lib/contracts'
@@ -131,9 +131,9 @@ export default class AbstractCommand extends TerraCommand {
     this.contracts = [this.opts.contract.id]
   }
 
-  makeRawTransaction = async (): Promise<MsgExecuteContract> => {
+  makeRawTransaction = async (signer: AccAddress): Promise<MsgExecuteContract> => {
     const address = this.args[0]
-    return new MsgExecuteContract(this.wallet.key.accAddress, address, this.params)
+    return new MsgExecuteContract(signer, address, this.params)
   }
 
   abstractDeploy: AbstractExecute = async (params: any) => {

@@ -1,7 +1,7 @@
 import AbstractCommand, { makeAbstractCommand } from '.'
 import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
-import { MsgExecuteContract } from '@terra-money/terra.js'
+import { AccAddress, MsgExecuteContract } from '@terra-money/terra.js'
 
 export interface AbstractInstruction<Input, ContractInput> {
   instruction: {
@@ -38,9 +38,9 @@ export const instructionToCommand = (instruction: AbstractInstruction<any, any>)
       return abstractCommand
     }
 
-    makeRawTransaction = async (): Promise<MsgExecuteContract> => {
+    makeRawTransaction = async (signer: AccAddress): Promise<MsgExecuteContract> => {
       const command = await this.buildCommand()
-      return command.makeRawTransaction()
+      return command.makeRawTransaction(signer)
     }
 
     execute = async (): Promise<Result<TransactionResponse>> => {
