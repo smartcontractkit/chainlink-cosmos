@@ -8,55 +8,59 @@
 //  abort a proposal early (before it expires), disallowing any further voting on it.
 
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { Result } from '@chainlink/gauntlet-core'
+import { Result, ICommand } from '@chainlink/gauntlet-core'
 import { TerraCommand, RawTransaction, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST, Contract, getContract, TERRA_OPERATIONS } from '../../../lib/contracts'
 import AbstractCommand from '../../abstract'
 
-type ProposalContext = { 
-    rawTx: RawTransaction,
-    multisigSigner: string,
-    proposalState: any,
+type ProposalContext = {
+  rawTx: RawTransaction
+  multisigSigner: string
+  proposalState: any
 }
 
 type StringGetter = () => string
+export type ICommandConstructor = (flags: any, args: string[]) => void
 
-abstract class MultisigTerraCommand  extends TerraCommand {
-    static category = CATEGORIES.MULTISIG
+abstract class MultisigTerraCommand extends TerraCommand {
+  static category = CATEGORIES.MULTISIG
 
-    commandType:any
-    multisigOp:StringGetter
+  commandType: typeof TerraCommand
+  multisigOp: StringGetter
 
-    command:AbstractCommand
-    multisigAddress:string
-    multisigContract: Promise<Contract>
+  command: TerraCommand
+  multisigAddress: string
+  multisigContract: Promise<Contract>
 
-    constructor(flags, args) {
-        super(flags, args)
-        
-        logger.info(`Running ${this.commandType()} in multisig mode`)
-        this.command = new this.commandType()(flags, args)
-        this.command.invokeMiddlewares(this.command, this.command.middlewares)
-        this.require(!!process.env.MULTISIG_ADDRESS, 'Please set MULTISIG_ADDRESS env var')
-        this.multisigContract = getContract(CONTRACT_LIST.MULTISIG, flags.version)
-        this.multisigAddress = process.env.MULTISIG_ADDRESS!
-    }
+  constructor(flags, args) {
+    super(flags, args)
+  }
 
-    execute = async (): Promise<Result<TransactionResponse>> => {
-        const tx = this.command.makeRawTransaction()
-        console.debug(tx)
+  postConstructor(flags, args) {
+    //  Called after child constructor
+    logger.debug(`Running ${this.commandType} in multisig mode`)
 
-        return {
-            responses: [],  
-          } as Result<TransactionResponse>
-    }
+    this.command.invokeMiddlewares(this.command, this.command.middlewares)
+    this.require(!!process.env.MULTISIG_WALLET, 'Please set MULTISIG_WALLET env var')
+    this.multisigContract = getContract(CONTRACT_LIST.MULTISIG, flags.version)
+    this.multisigAddress = process.env.MULTISIG_WALLET!
+  }
+
+  execute = async (): Promise<Result<TransactionResponse>> => {
+    const tx = this.command.makeRawTransaction()
+    console.debug(tx)
+
+    return {
+      responses: [],
+    } as Result<TransactionResponse>
+  }
 }
 
 export const wrapCommand = (command) => {
-    return class CustomCommand extends MultisigTerraCommand {
-      static id = `${command.id}:multisig`
-      static category = CATEGORIES.MULTISIG
+  return class CustomCommand extends MultisigTerraCommand {
+    static id = `${command.id}:multisig`
+    static category = CATEGORIES.MULTISIG
   }
 }
 

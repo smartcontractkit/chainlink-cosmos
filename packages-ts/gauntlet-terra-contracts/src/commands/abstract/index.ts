@@ -1,6 +1,6 @@
 import { Result } from '@chainlink/gauntlet-core'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { TransactionResponse, TerraCommand } from '@chainlink/gauntlet-terra'
+import { TransactionResponse, TerraCommand, RawTransaction } from '@chainlink/gauntlet-terra'
 import { Contract, CONTRACT_LIST, getContract, TerraABI, TERRA_OPERATIONS } from '../../lib/contracts'
 import { DEFAULT_RELEASE_VERSION } from '../../lib/constants'
 import schema from '../../lib/schema'
@@ -185,28 +185,30 @@ export default class AbstractCommand extends TerraCommand {
   }
 
   // create and sign transaction, without executing
-  makeRawTransaction = async () => {
+  makeRawTransaction = async (): Promise<RawTransaction> => {
     const operations = {
       [TERRA_OPERATIONS.DEPLOY]: this.abstractPrepareDeploy,
       [TERRA_OPERATIONS.EXECUTE]: this.abstractPrepareCall,
-      [TERRA_OPERATIONS.QUERY]: () => { throw Error("makeRawTransaction:  cannot make a tx from a query commmand") },
+      [TERRA_OPERATIONS.QUERY]: () => {
+        throw Error('makeRawTransaction:  cannot make a tx from a query commmand')
+      },
       // TODO: [TERRA_OPERATIONS.UPLOAD]: this.abstractPrepareUpload,
     }
 
     return await operations[this.opts.action](this.params, this.args[0])
-}
+  }
 
-abstractPrepareDeploy = async(params:any) => {
-  const codeId = this.codeIds[this.opts.contract.id]
-  this.require(!!codeId, `Code Id for contract ${this.opts.contract.id} not found`)
-  return await this.prepareDeploy(codeId, params)
-}
+  abstractPrepareDeploy = async (params: any) => {
+    const codeId = this.codeIds[this.opts.contract.id]
+    this.require(!!codeId, `Code Id for contract ${this.opts.contract.id} not found`)
+    return await this.prepareDeploy(codeId, params)
+  }
 
-abstractPrepareCall = async(params:any, address:string) => {
-  return await this.prepareCall(address, {
-    [this.opts.function]: params,
-  })
-}
+  abstractPrepareCall = async (params: any, address: string) => {
+    return await this.prepareCall(address, {
+      [this.opts.function]: params,
+    })
+  }
 
   execute = async () => {
     const operations = {

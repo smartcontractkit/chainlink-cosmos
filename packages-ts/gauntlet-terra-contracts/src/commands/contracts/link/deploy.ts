@@ -1,4 +1,4 @@
-import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
+import { TerraCommand, TransactionResponse, RawTransaction } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { CATEGORIES, CW20_BASE_CODE_IDs } from '../../../lib/constants'
@@ -19,9 +19,8 @@ export default class DeployLink extends TerraCommand {
     super(flags, args)
   }
 
-  execute = async () => {
-    await prompt(`Begin deploying LINK Token?`)
-    const deploy = await this.deploy(CW20_BASE_CODE_IDs[this.flags.network], {
+  genParams = () => {
+    return {
       name: 'ChainLink Token',
       symbol: 'LINK',
       decimals: 18,
@@ -36,7 +35,18 @@ export default class DeployLink extends TerraCommand {
       mint: {
         minter: this.wallet.key.accAddress,
       },
-    })
+    }
+  }
+
+  makeRawTransaction = async (): Promise<RawTransaction> => {
+    const codeId = CW20_BASE_CODE_IDs[this.flags.network]
+    this.require(!!codeId, `Code Id for link token contract not found`)
+    return await this.prepareDeploy(CW20_BASE_CODE_IDs[this.flags.network], this.genParams())
+  }
+
+  execute = async () => {
+    await prompt(`Begin deploying LINK Token?`)
+    const deploy = await this.deploy(CW20_BASE_CODE_IDs[this.flags.network], this.genParams())
     const result = await this.provider.wasm.contractQuery(deploy.address!, { token_info: {} })
     logger.success(`LINK token successfully deployed at ${deploy.address} (txhash: ${deploy.hash})`)
     logger.debug(result)

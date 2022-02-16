@@ -1,4 +1,5 @@
 import { Result, WriteCommand } from '@chainlink/gauntlet-core'
+import { RawTransaction } from '../types'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { EventsByType, MsgStoreCode, TxLog } from '@terra-money/terra.js'
 import { SignMode } from '@terra-money/terra.proto/cosmos/tx/signing/v1beta1/signing'
@@ -27,6 +28,10 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   constructor(flags, args) {
     super(flags, args)
     this.use(withNetwork, withProvider, withWallet, withCodeIds)
+  }
+
+  makeRawTransaction = async (): Promise<RawTransaction> => {
+    throw Error('makeRawTransaction: not implemented!')
   }
 
   parseResponseValue(receipt: any, eventType: string, attributeType: string) {
