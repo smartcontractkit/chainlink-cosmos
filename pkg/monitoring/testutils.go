@@ -2,6 +2,7 @@ package monitoring
 
 import (
 	"fmt"
+	"math/big"
 	"math/rand"
 	"time"
 
@@ -35,7 +36,7 @@ func generateFeedConfig() TerraFeedConfig {
 		HeartbeatSec:   1,
 		ContractType:   "ocr2",
 		ContractStatus: "status",
-		Multiply:       1000,
+		Multiply:       big.NewInt(1000),
 
 		ContractAddressBech32: "terra106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2",
 		ContractAddress:       address,
