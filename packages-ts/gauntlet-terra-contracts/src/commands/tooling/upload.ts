@@ -60,7 +60,7 @@ export default class UploadContractCode extends TerraCommand {
             contract: null,
           })
         } catch (e) {
-          const message = e.response.data.message || e.message
+          const message = e.response?.data?.message || e.message
           logger.error(`Error deploying ${contractName} on attempt ${retry + 1} with the error: ${message}`)
           if (maxRetry === retry + 1) {
             throw new Error(message)
