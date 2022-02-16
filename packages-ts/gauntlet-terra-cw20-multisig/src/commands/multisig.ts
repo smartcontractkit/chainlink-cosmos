@@ -40,6 +40,8 @@ enum Action {
 type State = {
   threshold: number
   nextAction: Action
+  owners: AccAddress[]
+  approvers: string[]
   // https://github.com/CosmWasm/cw-plus/blob/82138f9484e538913f7faf78bc292fb14407aae8/packages/cw3/src/query.rs#L75
   currentStatus?: 'pending' | 'open' | 'rejected' | 'passed' | 'executed'
   data?: WasmMsg[]
@@ -49,6 +51,7 @@ export const wrapCommand = (command) => {
   return class Multisig extends TerraCommand {
     command: TerraCommand
     multisig: AccAddress
+    multisigGroup: AccAddress
 
     static id = `${command.id}:multisig`
 
@@ -58,7 +61,9 @@ export const wrapCommand = (command) => {
       this.command = new command(flags, args)
 
       if (!AccAddress.validate(process.env.MULTISIG_ADDRESS)) throw new Error(`Invalid Multisig wallet address`)
+      if (!AccAddress.validate(process.env.MULTISIG_GROUP)) throw new Error(`Invalid Multisig group address`)
       this.multisig = process.env.MULTISIG_ADDRESS as AccAddress
+      this.multisigGroup = process.env.MULTISIG_GROUP as AccAddress
     }
 
     makeRawTransaction = async (signer: AccAddress, state?: State) => {
@@ -135,6 +140,10 @@ export const wrapCommand = (command) => {
     }
 
     fetchState = async (proposalId?: number): Promise<State> => {
+      const groupState = await this.query(this.multisigGroup, {
+        list_members: {},
+      })
+      const owners = groupState.members.map((m) => m.addr)
       const thresholdState = await this.query(this.multisig, {
         threshold: {},
       })
@@ -143,17 +152,20 @@ export const wrapCommand = (command) => {
         return {
           threshold,
           nextAction: Action.CREATE,
+          owners,
+          approvers: [],
         }
       }
-
       const proposalState = await this.query(this.multisig, {
         proposal: {
           proposal_id: proposalId,
         },
       })
-
-      // TODO: Fetch owners and add them to state
-
+      const votes = await this.query(this.multisig, {
+        list_votes: {
+          proposal_id: proposalId,
+        },
+      })
       const status = proposalState.status
       const toNextAction = {
         passed: Action.EXECUTE,
@@ -165,24 +177,23 @@ export const wrapCommand = (command) => {
       return {
         threshold,
         nextAction: toNextAction[status],
+        owners,
         currentStatus: status,
         data: proposalState.msgs,
+        approvers: votes.votes.filter((v) => v.vote === Vote.YES).map((v) => v.voter),
       }
     }
 
     printPostInstructions = async (proposalId: number) => {
       const state = await this.fetchState(proposalId)
-      // TODO: Calculate approvals left
-      const approvalsLeft = state.threshold - 1
+      const approvalsLeft = state.threshold - state.approvers.length
       const messages = {
         [Action.APPROVE]: `The proposal needs ${approvalsLeft} more approvals. Run the same command with the flag --proposal=${proposalId}`,
         [Action.EXECUTE]: `The proposal reached the threshold and can be executed. Run the same command with the flag --proposal=${proposalId}`,
         [Action.NONE]: `The proposal has been executed. No more actions needed`,
       }
       logger.line()
-      logger.info(`Next Actions:
-          ${messages[state.nextAction]}
-      `)
+      logger.info(`${messages[state.nextAction]}`)
       logger.line()
     }
 
@@ -196,11 +207,15 @@ export const wrapCommand = (command) => {
       }
       const rawTx = await this.makeRawTransaction(this.wallet.key.accAddress, state)
 
-      console.info(`
-        Proposal State:
-          - Threshold: ${state.threshold}
-          - Next Action: ${state.nextAction.toUpperCase()}
-          - Owners: TODO
+      logger.info(`Proposal State:
+        - Total Owners: ${state.owners.length}
+        - Owners List: ${state.owners}
+
+        - Threshold: ${state.threshold}
+        - Total Approvers: ${state.approvers.length}
+        - Approvers List: ${state.approvers}
+
+        - Next Action: ${state.nextAction.toUpperCase()}
       `)
 
       const actionMessage = {
