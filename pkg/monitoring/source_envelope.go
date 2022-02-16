@@ -121,7 +121,7 @@ func (e *envelopeSource) Fetch(ctx context.Context) (interface{}, error) {
 			envelopeErr = multierr.Combine(fmt.Errorf("failed to parse link balance from '%s'", balanceRes.Balance))
 			return
 		}
-		envelope.LinkBalance = uint64(balance.Int64())
+		envelope.LinkBalance = big.NewInt(balance.Int64())
 	}()
 	wg.Wait()
 	return envelope, envelopeErr

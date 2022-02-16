@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strconv"
+	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
@@ -12,14 +12,14 @@ import (
 
 // TerraFeedConfig holds data extracted from the RDD
 type TerraFeedConfig struct {
-	Name           string `json:"name,omitempty"`
-	Path           string `json:"path,omitempty"`
-	Symbol         string `json:"symbol,omitempty"`
-	HeartbeatSec   int64  `json:"heartbeat,omitempty"`
-	ContractType   string `json:"contract_type,omitempty"`
-	ContractStatus string `json:"status,omitempty"`
-	MultiplyRaw    string `json:"multiply,omitempty"`
-	Multiply       uint64 `json:"-"`
+	Name           string   `json:"name,omitempty"`
+	Path           string   `json:"path,omitempty"`
+	Symbol         string   `json:"symbol,omitempty"`
+	HeartbeatSec   int64    `json:"heartbeat,omitempty"`
+	ContractType   string   `json:"contract_type,omitempty"`
+	ContractStatus string   `json:"status,omitempty"`
+	MultiplyRaw    string   `json:"multiply,omitempty"`
+	Multiply       *big.Int `json:"-"`
 
 	ContractAddressBech32 string         `json:"contract_address_bech32,omitempty"`
 	ContractAddress       sdk.AccAddress `json:"-"`
@@ -73,7 +73,7 @@ func (t TerraFeedConfig) GetContractAddressBytes() []byte {
 }
 
 // GetMultiply returns the feed's multiplication factor for updates.
-func (t TerraFeedConfig) GetMultiply() uint64 {
+func (t TerraFeedConfig) GetMultiply() *big.Int {
 	return t.Multiply
 }
 
@@ -108,7 +108,10 @@ func TerraFeedParser(buf io.ReadCloser) ([]relayMonitoring.FeedConfig, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse contract address '%s' from JSON at index i=%d: %w", rawFeed.ContractAddressBech32, i, err)
 		}
-		multiply, _ := strconv.ParseUint(rawFeed.MultiplyRaw, 10, 64)
+		multiply, ok := new(big.Int).SetString(rawFeed.MultiplyRaw, 10)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse multiply '%s' into a big.Int", rawFeed.MultiplyRaw)
+		}
 		// NOTE: multiply is not required so if a parse error occurs, we'll use 0.
 		feeds[i] = relayMonitoring.FeedConfig(TerraFeedConfig{
 			rawFeed.Name,
