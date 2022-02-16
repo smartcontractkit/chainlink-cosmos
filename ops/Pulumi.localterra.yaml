@@ -5,7 +5,7 @@ config:
   terra-env:CL-COUNT: 4 # not counting bootstrap, minimum 4
   terra-env:CL-PORT-START: 6688 # start port to expose lite client port
   terra-env:CL-P2P_PORT-START: 5050 # start port to expose lite client P2P ports
-  terra-env:CL-NODE_VERSION: develop.27b4494ba0b33178333908d72db6689ee9d8902d # development version can be found at https://gallery.ecr.aws/chainlink/chainlink
+  terra-env:CL-NODE_VERSION: develop.1a6f382f8e03f662ad4721bda102605c0ac6840f # development version can be found at https://gallery.ecr.aws/chainlink/chainlink
   terra-env:CL-BUILD_LOCALLY: false # (overrides NODE_VERSION) BUILD_CONTEXT and BUILD_DOCKERFILE which must be set if this is enabled
   # terra-env:CL-BUILD_CONTEXT: ../../chainlink
   # terra-env:CL-BUILD_DOCKERFILE: ../../chainlink/core/chainlink.Dockerfile

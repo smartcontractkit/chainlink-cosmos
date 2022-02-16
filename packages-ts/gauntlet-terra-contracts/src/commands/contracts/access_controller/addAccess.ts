@@ -1,8 +1,6 @@
-import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress } from '@terra-money/terra.js'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
-import { CONTRACT_LIST } from '../../../lib/contracts'
 
 type CommandInput = {
   address: string

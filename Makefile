@@ -14,9 +14,34 @@ install:
 build_js:
 	yarn install --frozen-lockfile
 
-build_contracts:
+build_contracts: contracts_compile contracts_install
+
+contracts_compile: artifacts_clean
 	./scripts/build-contracts.sh
-	cp -r artifacts packages-ts/gauntlet-terra-contracts/artifacts/bin
+
+contracts_install: artifacts_curl_deps artifacts_cp_gauntlet artifacts_cp_terrad
+
+artifacts_curl_deps: artifacts_curl_cw20
+
+artifacts_curl_cw20:
+	curl -Lo artifacts/cw20_base.wasm https://github.com/CosmWasm/cw-plus/releases/download/v0.8.0/cw20_base.wasm
+
+artifacts_cp_gauntlet:
+	cp -r artifacts/. packages-ts/gauntlet-terra-contracts/artifacts/bin
+
+artifacts_cp_terrad:
+	cp -r artifacts/. ops/terrad/artifacts
+
+artifacts_clean: artifacts_clean_root artifacts_clean_gauntlet artifacts_clean_terrad
+
+artifacts_clean_root:
+	rm -rf artifacts/*
+
+artifacts_clean_gauntlet:
+	rm -rf packages-ts/gauntlet-terra-contracts/artifacts/bin/*
+
+artifacts_clean_terrad:
+	rm -rf ops/terrad/artifacts/*
 
 build: build_js build_contracts
 
