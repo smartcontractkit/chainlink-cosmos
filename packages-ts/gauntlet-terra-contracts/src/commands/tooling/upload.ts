@@ -16,6 +16,7 @@ export default class UploadContractCode extends TerraCommand {
 
   static flags = {
     version: { description: 'The version to retrieve artifacts from (Defaults to v0.0.4)' },
+    maxRetry: { description: 'The number of times to retry failed uploads (Defaults to 5)' },
   }
 
   constructor(flags, args: string[]) {
@@ -42,20 +43,31 @@ export default class UploadContractCode extends TerraCommand {
 
     const contractReceipts = {}
     const responses: any[] = []
+    const parsedRetryCount = parseInt(this.flags.maxRetry)
+    const maxRetry = parsedRetryCount ? parsedRetryCount : 5
     for (let contractName of askedContracts) {
+      await prompt(`Uploading contract ${contractName}, do you wish to continue?`)
       const contract = await getContract(contractName, this.flags.version)
       console.log('CONTRACT Bytecode exists:', !!contract.bytecode)
-      try {
-        const res = await this.upload(contract.bytecode, contractName)
+      for (let retry = 0; retry < maxRetry; retry++) {
+        try {
+          const res = await this.upload(contract.bytecode, contractName)
 
-        logger.success(`Contract ${contractName} code uploaded succesfully`)
-        contractReceipts[contractName] = res.tx
-        responses.push({
-          tx: res,
-          contract: null,
-        })
-      } catch (e) {
-        logger.error(`Error deploying ${contractName} code: ${e.message}`)
+          logger.success(`Contract ${contractName} code uploaded succesfully`)
+          contractReceipts[contractName] = res.tx
+          responses.push({
+            tx: res,
+            contract: null,
+          })
+        } catch (e) {
+          const message = e.response?.data?.message || e.message
+          logger.error(`Error deploying ${contractName} on attempt ${retry + 1} with the error: ${message}`)
+          if (maxRetry === retry + 1) {
+            throw new Error(message)
+          }
+          continue
+        }
+        break
       }
     }
 

@@ -81,10 +81,10 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			_, err = g.ExecCommandWithRetries([]string{
 				"upload",
 				g.Flag("version", "local"),
+				g.Flag("maxRetry", "10"),
 			}, []string{
-				"Error deploying",
 				terraCommandError,
-			}, 10)
+			}, 5)
 			Expect(err).ShouldNot(HaveOccurred(), "Failed to upload contracts")
 		})
 	})

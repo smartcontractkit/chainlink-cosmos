@@ -425,7 +425,7 @@
       "type": "object",
       "required": [
         "observation_payment_gjuels",
-        "recommended_gas_price_uluna",
+        "recommended_gas_price_micro",
         "transmission_payment_gjuels"
       ],
       "properties": {
@@ -459,8 +459,8 @@
           "format": "uint64",
           "minimum": 0.0
         },
-        "recommended_gas_price_uluna": {
-          "description": "Should match https://fcd.terra.dev/v1/txs/gas_prices",
+        "recommended_gas_price_micro": {
+          "description": "Should match <https://fcd.terra.dev/v1/txs/gas_prices>. For example if reports contain juels_per_luna, then recommended_gas_price is in uLUNA.",
           "allOf": [
             {
               "$ref": "#/definitions/Decimal"

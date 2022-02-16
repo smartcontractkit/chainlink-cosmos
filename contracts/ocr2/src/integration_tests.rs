@@ -332,7 +332,7 @@ fn transmit_happy_path() {
 
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
-            recommended_gas_price_uluna: recommended_gas_price,
+            recommended_gas_price_micro: recommended_gas_price,
             observation_payment_gjuels: 5,
             transmission_payment_gjuels: 0,
             ..Default::default()
@@ -634,7 +634,7 @@ fn set_link_token() {
 
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
-            recommended_gas_price_uluna: recommended_gas_price,
+            recommended_gas_price_micro: recommended_gas_price,
             observation_payment_gjuels: 5,
             transmission_payment_gjuels: 0,
             ..Default::default()

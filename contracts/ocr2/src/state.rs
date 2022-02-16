@@ -39,8 +39,9 @@ pub struct Validator {
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, JsonSchema)]
 pub struct Billing {
-    /// Should match https://fcd.terra.dev/v1/txs/gas_prices
-    pub recommended_gas_price_uluna: Decimal,
+    /// Should match <https://fcd.terra.dev/v1/txs/gas_prices>.
+    /// For example if reports contain juels_per_luna, then recommended_gas_price is in uLUNA.
+    pub recommended_gas_price_micro: Decimal,
     pub observation_payment_gjuels: u64,
     pub transmission_payment_gjuels: u64,
     pub gas_base: Option<u64>,

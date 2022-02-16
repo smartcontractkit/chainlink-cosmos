@@ -120,7 +120,7 @@ fn init_works() {
     // set billing
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
-            recommended_gas_price_uluna: Decimal::from_str("10").unwrap(),
+            recommended_gas_price_micro: Decimal::from_str("10").unwrap(),
             observation_payment_gjuels: 5,
             transmission_payment_gjuels: 0,
             ..Default::default()

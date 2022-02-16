@@ -43,9 +43,11 @@ docker-compose rm
 ```
 
 ## Contracts
-Unzip the artifacts from https://github.com/smartcontractkit/chainlink-terra/releases and place them under `ops/terrad/artifacts`
 
-Additionally, you'll need the cw20_base from: https://github.com/hackbg/chainlink-terra-cosmwasm-contracts/tree/develop/artifacts
+Run this from root to build the project contracts, download deps (cw20) and install (copy) artifacts:
+```bash
+make build_contracts
+```
 
 ## Pulumi
 Infrastructure management tool.
