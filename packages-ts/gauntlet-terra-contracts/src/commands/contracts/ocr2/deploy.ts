@@ -23,10 +23,11 @@ type ContractInput = {
   min_answer: string
 }
 
-const makeCommandInput = async (flags: any): Promise<CommandInput> => {
+const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
   const rdd = getRDD(flags.rdd)
-  const aggregator = rdd.contracts[flags.id]
+  const contract = args[0]
+  const aggregator = rdd.contracts[contract]
   return {
     maxAnswer: aggregator.maxSubmissionValue,
     minAnswer: aggregator.minSubmissionValue,
