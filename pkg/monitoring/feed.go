@@ -23,6 +23,8 @@ type TerraFeedConfig struct {
 
 	ContractAddressBech32 string         `json:"contract_address_bech32,omitempty"`
 	ContractAddress       sdk.AccAddress `json:"-"`
+	ProxyAddressBech32    string         `json:"proxy_address_bech32,omitempty"`
+	ProxyAddress          sdk.AccAddress `json:"-"`
 }
 
 var _ relayMonitoring.FeedConfig = TerraFeedConfig{}
@@ -108,6 +110,10 @@ func TerraFeedParser(buf io.ReadCloser) ([]relayMonitoring.FeedConfig, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse contract address '%s' from JSON at index i=%d: %w", rawFeed.ContractAddressBech32, i, err)
 		}
+		proxyAddress, err := sdk.AccAddressFromBech32(rawFeed.ProxyAddressBech32)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse proxy contract address '%s' from JSON at index i=%d: %w", rawFeed.ProxyAddressBech32, i, err)
+		}
 		multiply, ok := new(big.Int).SetString(rawFeed.MultiplyRaw, 10)
 		if !ok {
 			return nil, fmt.Errorf("failed to parse multiply '%s' into a big.Int", rawFeed.MultiplyRaw)
@@ -124,6 +130,8 @@ func TerraFeedParser(buf io.ReadCloser) ([]relayMonitoring.FeedConfig, error) {
 			multiply,
 			rawFeed.ContractAddressBech32,
 			contractAddress,
+			rawFeed.ProxyAddressBech32,
+			proxyAddress,
 		})
 	}
 	return feeds, nil
