@@ -66,6 +66,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
 
   signAndSend = async (messages: MsgExecuteContract[]): Promise<TransactionResponse> => {
     try {
+      logger.loading('Signing transaction...')
       const tx = await this.wallet.createAndSignTx({
         msgs: messages,
         ...(this.wallet.key instanceof LedgerKey && {
@@ -73,6 +74,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
         }),
       })
 
+      logger.loading('Sending transaction...')
       const res = await this.provider.tx.broadcast(tx)
 
       logger.debug(res)

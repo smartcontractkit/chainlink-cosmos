@@ -223,26 +223,51 @@ export const wrapCommand = (command) => {
         [Action.APPROVE]: 'APPROVING',
         [Action.EXECUTE]: 'EXECUTING',
       }
-      await prompt(`Continue ${actionMessage[state.nextAction]} proposal?`)
-      const tx = await this.signAndSend([rawTx])
 
-      if (state.nextAction === Action.CREATE) {
-        const proposalFromEvent = tx.events[0].wasm.proposal_id[0]
-        logger.success(`New proposal created with ID: ${proposalFromEvent}`)
-        proposalId = Number(proposalFromEvent)
+      if (this.flags.execute) {
+        await prompt(`Continue ${actionMessage[state.nextAction]} proposal?`)
+        const tx = await this.signAndSend([rawTx])
+
+        if (state.nextAction === Action.CREATE) {
+          const proposalFromEvent = tx.events[0].wasm.proposal_id[0]
+          logger.success(`New proposal created with ID: ${proposalFromEvent}`)
+          proposalId = Number(proposalFromEvent)
+        }
+
+        await this.printPostInstructions(proposalId)
+
+        return {
+          responses: [
+            {
+              tx,
+              contract: this.multisig,
+            },
+          ],
+          data: {
+            proposalId,
+          },
+        } as Result<TransactionResponse>
       }
 
-      await this.printPostInstructions(proposalId)
+      // TODO: Test raw message
+      const msgData = Buffer.from(JSON.stringify(rawTx.execute_msg)).toString('base64')
+      logger.line()
+      logger.success(`Message generated succesfully for ${actionMessage[state.nextAction]} proposal`)
+      logger.log()
+      logger.log(msgData)
+      logger.log()
+      logger.line()
 
       return {
         responses: [
           {
-            tx,
+            tx: {},
             contract: this.multisig,
           },
         ],
         data: {
           proposalId,
+          message: msgData,
         },
       } as Result<TransactionResponse>
     }
