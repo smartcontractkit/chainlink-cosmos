@@ -53,6 +53,21 @@ func main() {
 		return
 	}
 
+	proxySourceFactory := monitoring.NewProxySourceFactory(
+		client,
+		log.With("component", "source-proxy"),
+	)
+	if entrypoint.Config.Feature.TestOnlyFakeReaders {
+		proxySourceFactory = monitoring.NewFakeProxySourceFactory(log.With("component", "fake-proxy-source"))
+	}
+	entrypoint.SourceFactories = append(entrypoint.SourceFactories, balancesSourceFactory)
+
+	prometheusExporterFactory := monitoring.NewPrometheusExporterFactory(
+		log.With("component", "terra-prometheus-exporter"),
+		monitoring.DefaultMetrics,
+	)
+	entrypoint.ExporterFactories = append(entrypoint.ExporterFactories, prometheusExporterFactory)
+
 	entrypoint.Run()
 	log.Info("monitor stopped")
 }
