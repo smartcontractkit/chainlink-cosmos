@@ -1,12 +1,13 @@
 package terrad
 
 import (
-	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	cosmostypes "github.com/cosmos/cosmos-sdk/types"
@@ -14,6 +15,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 	opsChainlink "github.com/smartcontractkit/chainlink-relay/ops/chainlink"
 	"github.com/smartcontractkit/chainlink-relay/ops/utils"
+	relayUtils "github.com/smartcontractkit/chainlink-relay/ops/utils"
 	"github.com/smartcontractkit/libocr/offchainreporting2/confighelper"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
@@ -27,92 +29,85 @@ const (
 	// deployed contract addresses
 	LINK
 	OCR2
+	RequesterAccessController
+	BillingAccessController
 )
-
-type Terrad struct {
-	url      string
-	chainID  string
-	keyID    string
-	addr     string
-	args     []string
-	Uploaded map[int]string
-	Deployed map[int]string
-}
 
 type key struct {
 	Name    string
 	Address string
 }
 
-func New(ctx *pulumi.Context) (Terrad, error) {
-	// check if terrad is installed
-	_, err := exec.LookPath("terrad")
+type Deployer struct {
+	gauntlet relayUtils.Gauntlet
+	network  string
+	Account  map[int]string
+}
+
+func New(ctx *pulumi.Context) (Deployer, error) {
+	// check if yarn is installed
+	yarn, err := exec.LookPath("yarn")
 	if err != nil {
-		return Terrad{}, errors.New("'terrad' is not installed")
+		return Deployer{}, errors.New("'yarn' is not installed")
+	}
+	fmt.Printf("yarn is available at %s\n", yarn)
+
+	// Change path to root directory
+	cwd, _ := os.Getwd()
+	os.Chdir(filepath.Join(cwd, "../gauntlet"))
+
+	fmt.Println("Installing dependencies")
+	if _, err = exec.Command(yarn).Output(); err != nil {
+		return Deployer{}, errors.New("error install dependencies")
 	}
 
-	// check the deployer key exists in terrad
-	msg := utils.LogStatus("'terrad' is configured correctly")
-	keyID := config.Require(ctx, "TERRA-DEPLOYER")
-	out, err := exec.Command("terrad", "keys", "show", keyID, "--output", "json").Output()
-	if msg.Check(err) != nil {
-		return Terrad{}, fmt.Errorf("'%s' key not found in terrad - please set", keyID)
+	// Generate Gauntlet Binary
+	fmt.Println("Generating Gauntlet binary...")
+	_, err = exec.Command(yarn, "bundle").Output()
+	if err != nil {
+		return Deployer{}, errors.New("error generating gauntlet binary")
 	}
-	var deployerAddr key
-	if err := json.Unmarshal(out, &deployerAddr); err != nil {
-		return Terrad{}, err
-	}
-	fmt.Printf("Deployer address: %s\n", deployerAddr.Address)
 
-	chainID := config.Require(ctx, "CL-RELAY_CHAINID")
-	return Terrad{
-		url:      config.Require(ctx, "CL-TENDERMINT_URL"),
-		chainID:  chainID,
-		keyID:    keyID,
-		addr:     deployerAddr.Address,
-		args:     []string{"--from", keyID, "--chain-id", chainID, "--gas=auto", "--gas-adjustment=1.25", "--fees=100000uluna", "--broadcast-mode=block", "-y", "-o=json"},
-		Uploaded: map[int]string{},
-		Deployed: map[int]string{},
-	}, err
+	// TODO: Should come from pulumi context
+	os.Setenv("SKIP_PROMPTS", "true")
+
+	version := "linux"
+	if config.Get(ctx, "VERSION") == "MACOS" {
+		version = "macos"
+	}
+
+	// Check gauntlet works
+	os.Chdir(cwd) // move back into ops folder
+	gauntletBin := filepath.Join(cwd, "../gauntlet/bin/gauntlet-") + version
+	gauntlet, err := relayUtils.NewGauntlet(gauntletBin)
+
+	if err != nil {
+		return Deployer{}, err
+	}
+
+	return Deployer{
+		gauntlet: gauntlet,
+		network:  "local",
+		Account:  make(map[int]string),
+	}, nil
 }
 
 type TxResponse struct {
-	Code      int32
-	Codespace string
-	Logs      cosmostypes.ABCIMessageLogs
+	Logs cosmostypes.ABCIMessageLogs
 }
 
-func (t *Terrad) Load() error {
+func (t *Deployer) Load() error {
 	msg := utils.LogStatus("Uploading contract artifacts")
-	for _, contract := range []string{"ocr2", "cw20_base"} {
-		args := append([]string{"tx", "wasm", "store", fmt.Sprintf("./terrad/artifacts/%s.wasm", contract)}, t.args...)
-		out, err := exec.Command("terrad", args...).Output()
-		if err != nil {
-			return msg.Check(err)
-		}
+	err := t.gauntlet.ExecCommand(
+		"upload",
+	)
 
-		var res TxResponse
-		if err := json.Unmarshal(out, &res); err != nil {
-			return msg.Check(err)
-		}
-		for _, event := range res.Logs[0].Events {
-			if event.Type == "store_code" {
-				for _, attr := range event.Attributes {
-					if attr.Key == "code_id" {
-						var key int
-						switch contract {
-						case "ocr2":
-							key = OCR2_ID
-						case "cw20_base":
-							key = CW20_ID
-						default:
-							return errors.New("unknown contract type does not have assigned key")
-						}
-						t.Uploaded[key] = attr.Value
-					}
-				}
-			}
-		}
+	if err != nil {
+		return errors.New("Billing AC initialization failed")
+	}
+	_, err = t.gauntlet.ReadCommandReport()
+	if err != nil {
+		return err
 	}
 	return msg.Check(nil)
 }
@@ -131,43 +126,25 @@ type LINKinit struct {
 	Marketing       interface{} `json:"marketing"`
 }
 
-func (t *Terrad) DeployLINK() error {
+func (t *Deployer) DeployLINK() error {
+	fmt.Println("Deploying LINK Token...")
+	err := t.gauntlet.ExecCommand(
+		"token:deploy",
+		t.gauntlet.Flag("network", t.network),
+	)
+	if err != nil {
+		return errors.New("LINK contract deployment failed")
+	}
+
+	report, err := t.gauntlet.ReadCommandReport()
+	if err != nil {
+		return errors.New("report not available")
+	}
+
+	linkAddress := report.Responses[0].Contract
+	t.Account[LINK] = linkAddress
+
 	msg := utils.LogStatus("Deployed LINK token")
-	initBal := balance{Address: t.addr, Amount: "1000000000000000000000000000"}
-	initMsg := LINKinit{
-		Name:            "ChainLink Token",
-		Symbol:          "LINK",
-		Decimals:        18,
-		InitialBalances: []balance{initBal},
-		Mint:            nil,
-		Marketing:       nil,
-	}
-
-	msgBytes, err := json.Marshal(initMsg)
-	if err != nil {
-		return msg.Check(err)
-	}
-
-	args := append([]string{"tx", "wasm", "instantiate", t.Uploaded[CW20_ID], string(msgBytes)}, t.args...)
-	out, err := exec.Command("terrad", args...).Output()
-	if err != nil {
-		return msg.Check(err)
-	}
-
-	var res TxResponse
-	if err := json.Unmarshal(out, &res); err != nil {
-		return msg.Check(err)
-	}
-	for _, event := range res.Logs[0].Events {
-		if event.Type == "instantiate_contract" {
-			for _, attr := range event.Attributes {
-				if attr.Key == "contract_address" {
-					t.Deployed[LINK] = attr.Value
-					fmt.Printf(" - %s", attr.Value)
-				}
-			}
-		}
-	}
 
 	return msg.Check(nil)
 }
@@ -182,44 +159,69 @@ type OCRinit struct {
 	Description               string `json:"description"`
 }
 
-func (t *Terrad) DeployOCR() error {
+func (t *Deployer) DeployOCR() error {
 	msg := utils.LogStatus("Deployed OCR contract")
-	initMsg := OCRinit{
-		LinkToken:                 t.Deployed[LINK],
-		MinAnswer:                 "0",
-		MaxAnswer:                 "999999999999999999",
-		Decimals:                  8,
-		BillingAccessController:   "terra1dcegyrekltswvyy0xy69ydgxn9x8x32zdtapd8", // placeholder
-		RequesterAccessController: "terra1dcegyrekltswvyy0xy69ydgxn9x8x32zdtapd8", // placeholder
-		Description:               "LINK/USD - OCR2",
-	}
 
-	msgBytes, err := json.Marshal(initMsg)
+	fmt.Println("Deploying OCR Feed:")
+	fmt.Println("Step 1: Init Requester Access Controller")
+	err := t.gauntlet.ExecCommand(
+		"access_controller:deploy",
+		t.gauntlet.Flag("network", t.network),
+	)
 	if err != nil {
-		return msg.Check(err)
+		return errors.New("Request AC initialization failed")
 	}
-
-	args := append([]string{"tx", "wasm", "instantiate", t.Uploaded[OCR2_ID], string(msgBytes)}, t.args...)
-	out, err := exec.Command("terrad", args...).Output()
+	report, err := t.gauntlet.ReadCommandReport()
 	if err != nil {
-		return msg.Check(err)
+		return err
+	}
+	t.Account[RequesterAccessController] = report.Responses[0].Contract
+
+	fmt.Println("Step 2: Init Billing Access Controller")
+	err = t.gauntlet.ExecCommand(
+		"access_controller:deploy",
+		t.gauntlet.Flag("network", t.network),
+	)
+	if err != nil {
+		return errors.New("Billing AC initialization failed")
+	}
+	report, err = t.gauntlet.ReadCommandReport()
+	if err != nil {
+		return err
+	}
+	t.Account[BillingAccessController] = report.Responses[0].Contract
+
+	fmt.Println("Step 6: Init OCR 2 Feed")
+	input := map[string]interface{}{
+		"minAnswer": "0",
+		"maxAnswer": "10000000000",
 	}
 
-	var res TxResponse
-	if err := json.Unmarshal(out, &res); err != nil {
-		return msg.Check(err)
-	}
-	for _, event := range res.Logs[0].Events {
-		if event.Type == "instantiate_contract" {
-			for _, attr := range event.Attributes {
-				if attr.Key == "contract_address" {
-					t.Deployed[OCR2] = attr.Value
-					fmt.Printf(" - %s", attr.Value)
-				}
-			}
-		}
+	jsonInput, err := json.Marshal(input)
+	if err != nil {
+		return err
 	}
 
+	// TODO: command doesn't throw an error in go if it fails
+	err = t.gauntlet.ExecCommand(
+		"ocr2:initialize",
+		t.gauntlet.Flag("network", t.network),
+		t.gauntlet.Flag("requesterAccessController", t.Account[RequesterAccessController]),
+		t.gauntlet.Flag("billingAccessController", t.Account[BillingAccessController]),
+		t.gauntlet.Flag("link", t.Account[LINK]),
+		t.gauntlet.Flag("input", string(jsonInput)),
+	)
+	if err != nil {
+		return errors.New("feed initialization failed")
+	}
+
+	report, err = t.gauntlet.ReadCommandReport()
+	if err != nil {
+		return err
+	}
+
+	t.Account[OCR2] = report.Data["state"]
+	fmt.Printf(" - %s", report.Data["state"])
 	return msg.Check(nil)
 }
 
@@ -233,23 +235,19 @@ type SendDetails struct {
 	Msg      string `json:"msg"`
 }
 
-func (t Terrad) TransferLINK() error {
+func (t Deployer) TransferLINK() error {
 	msg := utils.LogStatus("Sending LINK to OCR contract")
-	tx := Send{
-		Send: SendDetails{
-			Contract: t.Deployed[OCR2],
-			Amount:   "100000000000000000000",
-			Msg:      "",
-		},
-	}
-
-	txBytes, err := json.Marshal(tx)
+	err := t.gauntlet.ExecCommand(
+		"token:transfer",
+		t.gauntlet.Flag("network", t.network),
+		t.gauntlet.Flag("to", t.Account[OCR2]),
+		t.gauntlet.Flag("amount", "10000"),
+		t.Account[LINK],
+	)
 	if err != nil {
-		return msg.Check(err)
+		return errors.New("LINK transfer failed")
 	}
 
-	args := append([]string{"tx", "wasm", "execute", t.Deployed[LINK], string(txBytes)}, t.args...)
-	_, err = exec.Command("terrad", args...).Output()
 	return msg.Check(err)
 }
 
@@ -303,7 +301,7 @@ type AcceptProposalDetails struct {
 	Digest []byte `json:"digest"`
 }
 
-func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
+func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	S := []int{}
 	helperOracles := []confighelper.OracleIdentityExtra{}
 	for _, k := range keys {
@@ -372,8 +370,16 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	}
 
 	status = utils.LogStatus("InitOCR: begin proposal")
-	resp, err := t.ExecuteOCR2(BeginProposal)
-	if err == nil && len(resp.Logs) == 0 {
+	err = t.gauntlet.ExecCommand(
+		"ocr2:begin_proposal",
+		t.gauntlet.Flag("network", t.network),
+	)
+
+	report, err := t.gauntlet.ReadCommandReport()
+	if err != nil {
+		return err
+	}
+	if err == nil && len(report.Data) == 0 {
 		err = errors.New("begin proposal produced no logs")
 	}
 
@@ -381,22 +387,9 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		return err
 	}
 
-	var id string
-	for _, e := range resp.Logs[0].Events {
-		if e.Type == "wasm" {
-			for _, a := range e.Attributes {
-				if a.Key == "proposal_id" {
-					if a.Value == "" {
-						return errors.New("empty proposal id")
-					}
-					id = a.Value
-				}
-			}
-		}
-	}
-	if id == "" {
-		return errors.New("failed to find event with attribute: wasm.proposal-id")
-	}
+	fmt.Printf(" - %s", report.Data)
+
+	var id string = report.Data["proposal_id"]
 
 	// Be prepared to clear the proposal if incomplete.
 	defer func() {
@@ -405,68 +398,84 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		}
 		// Failure: Try to clean up incomplete proposal.
 		status = utils.LogStatus("InitOCR: clear proposal: " + id)
-		resp, err = t.ExecuteOCR2(ClearProposal{
-			ClearProposal: ClearProposalDetails{ID: id},
-		})
+		err = t.gauntlet.ExecCommand(
+			"ocr2:clear_proposal",
+			t.gauntlet.Flag("network", t.network),
+			t.gauntlet.Flag("proposalId", id),
+		)
 		if status.Check(err) != nil {
 			fmt.Println(err)
 			return
 		}
 	}()
 
-	payees := make([]string, 0)
-	for i := 0; i < len(transmitterArray); i++ {
-		payees = append(payees, t.addr)
+	input := map[string]interface{}{
+		"signers":       signerArray,
+		"transmitters":  transmitterArray,
+		"onchainConfig": onchainConfig,
 	}
+	jsonInput, err := json.Marshal(input)
+	if err != nil {
+		return err
+	}
+
 	status = utils.LogStatus("InitOCR: propose config " + id)
-	resp, err = t.ExecuteOCR2(ProposeConfig{
-		ProposeConfig: ProposeConfigDetails{
-			ID:            id,
-			Payees:        payees,
-			Signers:       signerArray,
-			Transmitters:  transmitterArray,
-			F:             f,
-			OnchainConfig: onchainConfig,
-		},
-	})
+	err = t.gauntlet.ExecCommand(
+		"ocr2:propose_config",
+		t.gauntlet.Flag("network", t.network),
+		t.gauntlet.Flag("proposalId", id),
+		t.gauntlet.Flag("f", string(f)),
+		t.gauntlet.Flag("input", string(jsonInput)),
+	)
 	if status.Check(err) != nil {
 		return err
 	}
 
+	input = map[string]interface{}{
+		"offchainConfig":        offchainConfig,
+		"offchainConfigVersion": offchainConfigVersion,
+	}
+	jsonInput, err = json.Marshal(input)
+	if err != nil {
+		return err
+	}
 	status = utils.LogStatus("InitOCR: propose offchain config")
-	resp, err = t.ExecuteOCR2(ProposeOffchainConfig{
-		ProposeOffchainConfig: ProposeOffchainConfigDetails{
-			ID:                    id,
-			OffchainConfigVersion: offchainConfigVersion,
-			OffchainConfig:        offchainConfig,
-		},
-	})
+	err = t.gauntlet.ExecCommand(
+		"ocr2:propose_config",
+		t.gauntlet.Flag("network", t.network),
+		t.gauntlet.Flag("proposalId", id),
+		t.gauntlet.Flag("input", string(jsonInput)),
+	)
 	if status.Check(err) != nil {
 		return err
 	}
 
 	status = utils.LogStatus("InitOCR: finalize proposal")
-	resp, err = t.ExecuteOCR2(FinalizeProposal{
-		FinalizeProposal: FinalizeProposalDetails{ID: id},
-	})
+	err = t.gauntlet.ExecCommand(
+		"ocr2:finalize_proposal",
+		t.gauntlet.Flag("network", t.network),
+		t.gauntlet.Flag("proposalId", id),
+	)
+	if status.Check(err) != nil {
+		fmt.Println(err)
+		return
+	}
+
+	report, err = t.gauntlet.ReadCommandReport()
+	if err != nil {
+		return err
+	}
+	if err == nil && len(report.Data) == 0 {
+		err = errors.New("begin proposal produced no logs")
+	}
+
 	if status.Check(err) != nil {
 		return err
 	}
 
-	var digest []byte
-	for _, e := range resp.Logs[0].Events {
-		if e.Type == "wasm" {
-			for _, a := range e.Attributes {
-				if a.Key == "digest" {
-					h, err := hex.DecodeString(a.Value)
-					if err != nil {
-						return fmt.Errorf("failed to parse digest: %v", err)
-					}
-					digest = h
-				}
-			}
-		}
-	}
+	fmt.Println(report.Data)
+	var digest string = report.Data["digest"]
+
 	switch len(digest) {
 	case 0:
 		return errors.New("failed to find event with attribute: wasm.digest")
@@ -476,62 +485,43 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		return fmt.Errorf("wrong length for: wasm.digest: %d", len(digest))
 	}
 
-	status = utils.LogStatus("InitOCR: accept proposal")
-	resp, err = t.ExecuteOCR2(AcceptProposal{
-		AcceptProposal: AcceptProposalDetails{
-			ID:     id,
-			Digest: digest,
-		},
-	})
-	if status.Check(err) != nil {
+	input = map[string]interface{}{
+		"digest": digest,
+	}
+	jsonInput, err = json.Marshal(input)
+	if err != nil {
 		return err
+	}
+	status = utils.LogStatus("InitOCR: accept proposal")
+	err = t.gauntlet.ExecCommand(
+		"ocr2:accept_proposal",
+		t.gauntlet.Flag("network", t.network),
+		t.gauntlet.Flag("proposalId", id),
+		t.gauntlet.Flag("input", string(jsonInput)),
+	)
+	if status.Check(err) != nil {
+		fmt.Println(err)
+		return
 	}
 
 	return nil
 }
 
-func (t Terrad) ExecuteOCR2(msg interface{}) (resp TxResponse, err error) {
-	return t.Execute(t.OCR2Address(), msg)
+func (t Deployer) OCR2Address() string {
+	return t.Account[OCR2]
 }
 
-func (t Terrad) Execute(addr string, msg interface{}) (resp TxResponse, err error) {
-	var b []byte
-	b, err = json.Marshal(msg)
-	if err != nil {
-		return
-	}
-	args := []string{"tx", "wasm", "execute", addr, string(b)}
-	cmd := exec.Command("terrad", append(args, t.args...)...)
-	var stdErr bytes.Buffer
-	cmd.Stderr = &stdErr
-	var out []byte
-	out, err = cmd.Output()
-	if err != nil {
-		err = fmt.Errorf("%s: %s", err, stdErr.String())
-		return
-	}
-	err = json.Unmarshal(out, &resp)
-	if err == nil && resp.Code != 0 {
-		err = fmt.Errorf("tx response contains error: %s %d", resp.Codespace, resp.Code)
-	}
-	return
+func (t Deployer) Addresses() map[int]string {
+	return t.Account
 }
 
-func (t Terrad) OCR2Address() string {
-	return t.Deployed[OCR2]
-}
-
-func (t Terrad) Addresses() map[int]string {
-	return t.Deployed
-}
-
-func (t Terrad) Fund(addresses []string) error {
-	for _, a := range addresses {
-		msg := utils.LogStatus(fmt.Sprintf("Funded %s", a))
-		args := append([]string{"tx", "bank", "send", t.keyID, a, "1000000000uluna"}, t.args...)
-		if _, err := exec.Command("terrad", args...).Output(); msg.Check(err) != nil {
-			return err
-		}
-	}
+func (t Deployer) Fund(addresses []string) error {
+	// for _, a := range addresses {
+	// 	msg := utils.LogStatus(fmt.Sprintf("Funded %s", a))
+	// 	args := append([]string{"tx", "bank", "send", t.keyID, a, "1000000000uluna"}, t.args...)
+	// 	if _, err := exec.Command("terrad", args...).Output(); msg.Check(err) != nil {
+	// 		return err
+	// 	}
+	// }
 	return nil
 }
