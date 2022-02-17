@@ -1100,13 +1100,15 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
+ "cosmwasm-storage",
  "cw-multi-test",
  "cw-storage-plus",
  "cw2",
  "ocr2",
- "query-proxy",
+ "owned",
  "schemars",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -1127,22 +1129,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "query-proxy"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw-multi-test",
- "cw-storage-plus",
- "cw2",
- "owned",
- "schemars",
- "serde",
- "thiserror",
 ]
 
 [[package]]

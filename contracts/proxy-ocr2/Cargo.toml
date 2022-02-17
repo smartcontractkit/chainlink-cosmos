@@ -14,10 +14,13 @@ library = []
 
 [dependencies]
 ocr2 = { path = "../ocr2", default-features = false }
-query-proxy = { path = "../../crates/query-proxy", default-features = false }
+owned = { version = "0.1", path = "../../crates/owned" }
 cosmwasm-std = { version = "0.16.2" }
+cosmwasm-storage = { version = "0.16.0" }
+cw-storage-plus = "0.9.0"
 cw2 = "0.9.0"
 
+thiserror = { version = "1.0.24" }
 schemars = "0.8.3"
 serde = { version = "1.0.127", default-features = false, features = ["derive"] }
 

@@ -1,13 +1,44 @@
 mod integration_tests;
 
 use cosmwasm_std::{
-    entry_point, to_binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response, StdResult,
+    entry_point, to_binary, Addr, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
+    StdError, StdResult,
 };
+
+use cw_storage_plus::{Item, Map, U16Key};
+
+use thiserror::Error;
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub use query_proxy::{ContractError, Phase, CURRENT_PHASE, OWNER, PHASES, PROPOSED_CONTRACT};
+use owned::Auth;
+
+#[derive(Error, Debug)]
+pub enum ContractError {
+    #[error("{0}")]
+    Std(#[from] StdError),
+
+    #[error("{0}")]
+    Owned(#[from] owned::Error),
+
+    #[error("Unauthorized")]
+    Unauthorized,
+
+    #[error("Invalid")]
+    Invalid,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Phase {
+    pub id: u16,
+    pub contract_address: Addr,
+}
+
+pub const OWNER: Auth = Auth::new("owner");
+pub const CURRENT_PHASE: Item<Phase> = Item::new("current_phase");
+pub const PROPOSED_CONTRACT: Item<Addr> = Item::new("proposed_contract");
+pub const PHASES: Map<U16Key, Addr> = Map::new("phases");
 
 pub mod state {
     use super::*;
@@ -25,7 +56,30 @@ pub mod state {
 
 pub mod msg {
     use super::*;
-    pub use query_proxy::{ExecuteMsg, InstantiateMsg};
+
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+    pub struct InstantiateMsg {
+        pub contract_address: String,
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum ExecuteMsg {
+        ProposeContract {
+            address: String,
+        },
+        ConfirmContract {
+            address: String,
+        },
+        /// Initiate contract ownership transfer to another address.
+        /// Can be used only by owner
+        TransferOwnership {
+            /// Address to transfer ownership to
+            to: String,
+        },
+        /// Finish contract ownership transfer. Can be used only by pending owner
+        AcceptOwnership,
+    }
 
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
     #[serde(rename_all = "snake_case")]
