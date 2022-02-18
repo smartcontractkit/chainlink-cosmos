@@ -37,7 +37,7 @@ export const parseInstruction = async (instruction: string, inputVersion: string
     // Check against ABI if method exists
     const availableFunctions = [
       ...(abi.query.oneOf || abi.query.anyOf || []),
-      ...(abi.execute.oneOf || abi.query.anyOf || []),
+      ...(abi.execute.oneOf || abi.execute.anyOf || []),
     ].reduce((agg, prop) => {
       if (prop?.required && prop.required.length > 0) return [...agg, ...prop.required]
       if (prop?.enum && prop.enum.length > 0) return [...agg, ...prop.enum]
@@ -171,7 +171,7 @@ export default class AbstractCommand extends TerraCommand {
   abstractQuery: AbstractExecute = async (params: any, address: string) => {
     logger.loading(`Calling ${this.opts.function} from contract ${this.opts.contract.id} at ${address}`)
     const result = await this.query(address, params)
-    logger.debug(`Query finished with result: ${JSON.stringify(result)}`)
+    logger.info(`Query finished with result: ${JSON.stringify(result)}`)
     return {
       data: result,
       responses: [
