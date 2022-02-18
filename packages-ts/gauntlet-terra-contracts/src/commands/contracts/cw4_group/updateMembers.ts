@@ -1,35 +1,39 @@
 import { CATEGORIES } from '../../../lib/constants'
-import { Member } from '../../../lib/multisig'
 import { isValidAddress } from '../../../lib/utils'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
+type CW4_GROUP_Member = {
+    addr: string
+    weight: number
+  }
+
 type CommandInput = {
-  add?: string[]
-  remove?: string[]
+  add: string[]
+  remove: string[]
 }
 
 type ContractInput = {
-  add: Member[]
+  add: CW4_GROUP_Member[]
   remove: string[]
 }
 
 const makeCommandInput = async (flags: any, args: any[]): Promise<CommandInput> => {
   return {
-    add: flags.add?.split(','),
-    remove: flags.remove?.split(','),
+    add: flags.add?.split(',') || [],
+    remove: flags.remove?.split(',') || [],
   } as CommandInput
 }
 
 const validateInput = (input: CommandInput): boolean => {
-  if (input.add && !input.add?.every((addr) => isValidAddress(addr))) {
+  if (!input.add.every((addr) => isValidAddress(addr))) {
     throw new Error("One of provided 'add' addresses is not valid!")
   }
 
-  if (input.remove && !input.remove?.every((addr) => isValidAddress(addr))) {
+  if (!input.remove.every((addr) => isValidAddress(addr))) {
     throw new Error("One of provided 'remove' addresses of not valid!")
   }
 
-  if (!input.add && !input.remove) {
+  if (input.add.length === 0 && input.remove.length === 0) {
     throw new Error("You must specify 'add' or 'remove' addresses!")
   }
 
@@ -37,22 +41,25 @@ const validateInput = (input: CommandInput): boolean => {
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
-  const membersToAdd = input.add?.map((addr: string) => {
+  const membersToAdd = input.add.map((addr: string) => {
     return {
       addr,
       weight: 1,
-    } as Member
+    } as CW4_GROUP_Member
   })
 
   return {
-    add: membersToAdd || [],
-    remove: input.remove || [],
+    add: membersToAdd,
+    remove: input.remove,
   } as ContractInput
 }
 
-// yarn gauntlet cw4_group:update_members --add=<ADDRESS1_TO_ADD>,<ADDRESS2_TO_ADD> --remove=<ADDRESS3_TO_REMOVE> <CONTRACT_ADDRESS>
-// either --remove and --add can be omitted
 const createUpdateMembersInstruction: AbstractInstruction<CommandInput, ContractInput> = {
+  examples: [
+    "yarn gauntlet cw4_group:update_members --add=<ADDRESS1_TO_ADD>,<ADDRESS2_TO_ADD> --remove=<ADDRESS3_TO_REMOVE> <CONTRACT_ADDRESS>",
+    "yarn gauntlet cw4_group:update_members --add=<ADDRESS1_TO_ADD> <CONTRACT_ADDRESS>",
+    "yarn gauntlet cw4_group:update_members --remove=<ADDRESS1_TO_REMOVE> <CONTRACT_ADDRESS>"
+  ],
   instruction: {
     category: CATEGORIES.MULTISIG,
     contract: 'cw4_group',

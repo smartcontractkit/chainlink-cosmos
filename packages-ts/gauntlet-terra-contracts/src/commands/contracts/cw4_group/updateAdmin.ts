@@ -30,8 +30,10 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   } as ContractInput
 }
 
-// yarn gauntlet cw4_group:update_admin --admin=<NEW_ADMIN_ADDRESS> <CONTRACT_ADDRESS>
 const createUpdateAdminInstruction: AbstractInstruction<CommandInput, ContractInput> = {
+  examples: [
+    "yarn gauntlet cw4_group:update_admin --admin=<NEW_ADMIN_ADDRESS> <CONTRACT_ADDRESS>"
+  ],
   instruction: {
     category: CATEGORIES.MULTISIG,
     contract: 'cw4_group',

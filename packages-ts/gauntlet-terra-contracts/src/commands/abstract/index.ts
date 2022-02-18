@@ -165,7 +165,7 @@ export default class AbstractCommand extends TerraCommand {
   abstractQuery: AbstractExecute = async (params: any, address: string) => {
     logger.loading(`Calling ${this.opts.function} from contract ${this.opts.contract.id} at ${address}`)
     const result = await this.query(address, params)
-    logger.debug(`Query finished with result: ${JSON.stringify(result)}`)
+    logger.info(`Query finished with result: ${JSON.stringify(result)}`)
     return {
       data: result,
       responses: [
