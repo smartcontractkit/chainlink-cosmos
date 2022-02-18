@@ -36,7 +36,7 @@ export const parseInstruction = async (instruction: string, inputVersion: string
     // Check against ABI if method exists
     const availableFunctions = [
       ...(abi.query.oneOf || abi.query.anyOf || []),
-      ...(abi.execute.oneOf || abi.query.anyOf || []),
+      ...(abi.execute.oneOf || abi.execute.anyOf || []),
     ].reduce((agg, prop) => {
       if (prop?.required && prop.required.length > 0) return [...agg, ...prop.required]
       if (prop?.enum && prop.enum.length > 0) return [...agg, ...prop.enum]
