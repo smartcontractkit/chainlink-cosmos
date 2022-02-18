@@ -183,7 +183,7 @@ func (e *envelopeSource) fetchLatestTransmission() (
 			aggregatorRoundID = uint32(raw)
 			return pasrseErr
 		},
-		"juels_per_luna": func(value string) error {
+		"juels_per_fee_coin": func(value string) error {
 			var success bool
 			juelsPerFeeCoin, success = new(big.Int).SetString(value, 10)
 			if !success {
