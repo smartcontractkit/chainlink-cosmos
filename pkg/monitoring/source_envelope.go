@@ -270,6 +270,10 @@ func extractDataFromTxResponse(eventType string, res *cosmosTx.GetTxsEventRespon
 		len(res.TxResponses[0].Logs[0].Events) == 0 {
 		return fmt.Errorf("no events found of event type '%s'", eventType)
 	}
+	extracted := map[string]bool{}
+	for key := range extractors {
+		extracted[key] = false
+	}
 	for _, event := range res.TxResponses[0].Logs[0].Events {
 		if event.Type != eventType {
 			continue
@@ -283,6 +287,12 @@ func extractDataFromTxResponse(eventType string, res *cosmosTx.GetTxsEventRespon
 			if err := extractor(value); err != nil {
 				return fmt.Errorf("failed to extract '%s' from raw value '%s': %w", key, value, err)
 			}
+			extracted[key] = true
+		}
+	}
+	for key, wasExtracted := range extracted {
+		if !wasExtracted {
+			return fmt.Errorf("failed to extract key '%s' TxEventResponse", key)
 		}
 	}
 	return nil
