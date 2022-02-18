@@ -60,19 +60,19 @@ export const wrapCommand = (command) => {
 
       this.command = new command(flags, args)
 
-      if (!AccAddress.validate(process.env.MULTISIG_ADDRESS)) throw new Error(`Invalid Multisig wallet address`)
-      if (!AccAddress.validate(process.env.MULTISIG_GROUP)) throw new Error(`Invalid Multisig group address`)
-      this.multisig = process.env.MULTISIG_ADDRESS as AccAddress
-      this.multisigGroup = process.env.MULTISIG_GROUP as AccAddress
+      if (!AccAddress.validate(process.env.CW3_FLEX_MULTISIG)) throw new Error(`Invalid Multisig wallet address`)
+      if (!AccAddress.validate(process.env.CW4_GROUP)) throw new Error(`Invalid Multisig group address`)
+      this.multisig = process.env.CW3_FLEX_MULTISIG as AccAddress
+      this.multisigGroup = process.env.CW4_GROUP as AccAddress
     }
 
     makeRawTransaction = async (signer: AccAddress, state?: State) => {
       const message = await this.command.makeRawTransaction(this.multisig)
 
       const operations = {
-        [Action.CREATE]: this.executePropose,
-        [Action.APPROVE]: this.executeApproval,
-        [Action.EXECUTE]: this.executeExecution,
+        [Action.CREATE]: this.makeProposeTransaction,
+        [Action.APPROVE]: this.makeAcceptTransaction,
+        [Action.EXECUTE]: this.makeExecuteTransaction,
         [Action.NONE]: () => {
           throw new Error('No action needed')
         },
@@ -104,7 +104,7 @@ export const wrapCommand = (command) => {
       }
     }
 
-    executePropose: ProposalAction = async (signer, _, message) => {
+    makeProposeTransaction: ProposalAction = async (signer, _, message) => {
       logger.info('Generating data for creating new proposal')
       const proposeInput = {
         propose: {
@@ -118,7 +118,7 @@ export const wrapCommand = (command) => {
       return new MsgExecuteContract(signer, this.multisig, proposeInput)
     }
 
-    executeApproval: ProposalAction = async (signer, proposalId) => {
+    makeAcceptTransaction: ProposalAction = async (signer, proposalId) => {
       logger.info(`Generating data for approving proposal ${proposalId}`)
       const approvalInput = {
         vote: {
@@ -129,7 +129,7 @@ export const wrapCommand = (command) => {
       return new MsgExecuteContract(signer, this.multisig, approvalInput)
     }
 
-    executeExecution: ProposalAction = async (signer, proposalId) => {
+    makeExecuteTransaction: ProposalAction = async (signer, proposalId) => {
       logger.info(`Generating data for executing proposal ${proposalId}`)
       const executeInput = {
         execute: {

@@ -1,5 +1,5 @@
 import { executeCLI } from '@chainlink/gauntlet-core'
-import { multisigWrapCommand } from '@chainlink/gauntlet-terra-cw20-multisig'
+import { multisigWrapCommand } from '@chainlink/gauntlet-terra-cw-plus'
 import { existsSync } from 'fs'
 import path from 'path'
 import { io } from '@chainlink/gauntlet-core/dist/utils'

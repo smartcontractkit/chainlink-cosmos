@@ -1,1 +1,0 @@
-# Gauntlet Terra CW20 Multisig

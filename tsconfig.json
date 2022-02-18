@@ -7,7 +7,7 @@
       "path": "./packages-ts/gauntlet-terra"
     },
     {
-      "path": "./packages-ts/gauntlet-terra-cw20-multisig"
+      "path": "./packages-ts/gauntlet-terra-cw-plus"
     },
     {
       "path": "./packages-ts/gauntlet-terra-contracts"

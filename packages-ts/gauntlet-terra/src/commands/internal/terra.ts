@@ -76,12 +76,10 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
 
       logger.loading('Sending transaction...')
       const res = await this.provider.tx.broadcast(tx)
-
-      logger.debug(res)
       return this.wrapResponse(res)
     } catch (e) {
-      const details = e.response.data
-      throw new Error(details.message)
+      const message = e?.response?.data?.message || e.message
+      throw new Error(message)
     }
   }
 
@@ -96,8 +94,6 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     })
 
     const res = await this.provider.tx.broadcast(tx)
-
-    logger.debug(res)
     return this.wrapResponse(res)
   }
 
