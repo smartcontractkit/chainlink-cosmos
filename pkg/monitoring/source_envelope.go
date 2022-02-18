@@ -140,7 +140,7 @@ func (e *envelopeSource) fetchLatestTransmission() (
 	err error,
 ) {
 	query := []string{
-		fmt.Sprintf("wasm-new_transmission.contract_address='%s'", e.terraFeedConfig.ContractAddressBech32),
+		fmt.Sprintf(`wasm-new_transmission.contract_address='%s'`, e.terraFeedConfig.ContractAddressBech32),
 	}
 	res, err := e.client.TxsEvents(query, &cosmosQuery.PageRequest{Limit: 1})
 	if err != nil {
@@ -203,7 +203,7 @@ func (e *envelopeSource) fetchLatestTransmission() (
 
 func (e *envelopeSource) fetchLatestConfig() (types.ContractConfig, error) {
 	query := []string{
-		fmt.Sprintf("wasm-set_config.contract_address='%s'", e.terraFeedConfig.ContractAddressBech32),
+		fmt.Sprintf(`wasm-set_config.contract_address='%s'`, e.terraFeedConfig.ContractAddressBech32),
 	}
 	res, err := e.client.TxsEvents(query, &cosmosQuery.PageRequest{Limit: 1})
 	if err != nil {
