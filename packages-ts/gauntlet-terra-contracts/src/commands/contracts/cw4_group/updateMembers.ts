@@ -3,9 +3,9 @@ import { isValidAddress } from '../../../lib/utils'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
 type CW4_GROUP_Member = {
-    addr: string
-    weight: number
-  }
+  addr: string
+  weight: number
+}
 
 type CommandInput = {
   add: string[]
@@ -56,9 +56,9 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
 
 const createUpdateMembersInstruction: AbstractInstruction<CommandInput, ContractInput> = {
   examples: [
-    "yarn gauntlet cw4_group:update_members --add=<ADDRESS1_TO_ADD>,<ADDRESS2_TO_ADD> --remove=<ADDRESS3_TO_REMOVE> <CONTRACT_ADDRESS>",
-    "yarn gauntlet cw4_group:update_members --add=<ADDRESS1_TO_ADD> <CONTRACT_ADDRESS>",
-    "yarn gauntlet cw4_group:update_members --remove=<ADDRESS1_TO_REMOVE> <CONTRACT_ADDRESS>"
+    'yarn gauntlet cw4_group:update_members --add=<ADDRESS1_TO_ADD>,<ADDRESS2_TO_ADD> --remove=<ADDRESS3_TO_REMOVE> <CONTRACT_ADDRESS>',
+    'yarn gauntlet cw4_group:update_members --add=<ADDRESS1_TO_ADD> <CONTRACT_ADDRESS>',
+    'yarn gauntlet cw4_group:update_members --remove=<ADDRESS1_TO_REMOVE> <CONTRACT_ADDRESS>',
   ],
   instruction: {
     category: CATEGORIES.MULTISIG,

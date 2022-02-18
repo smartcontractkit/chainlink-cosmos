@@ -44,9 +44,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
 }
 
 const createGroupInstruction: AbstractInstruction<CommandInput, ContractInput> = {
-  examples: [
-    "yarn gauntlet cw4_group:deploy --network=bombay-testnet <OWNERS_LIST>"
-  ],
+  examples: ['yarn gauntlet cw4_group:deploy --network=bombay-testnet <OWNERS_LIST>'],
   instruction: {
     category: CATEGORIES.MULTISIG,
     contract: 'cw4_group',
