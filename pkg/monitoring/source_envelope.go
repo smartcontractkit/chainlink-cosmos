@@ -149,7 +149,9 @@ func (e *envelopeSource) fetchLatestTransmission() (
 	}
 	err = extractDataFromTxResponse("wasm-new_transmission", res, map[string]func(string) error{
 		"config_digest": func(value string) error {
-			return pkgTerra.HexToConfigDigest(value, &configDigest)
+			//return pkgTerra.HexToConfigDigest(value, &configDigest)
+			copy(configDigest[:], []byte(value))
+			return nil
 		},
 		"epoch": func(value string) error {
 			rawEpoch, parseErr := strconv.ParseUint(value, 10, 32)
@@ -213,7 +215,9 @@ func (e *envelopeSource) fetchLatestConfig() (types.ContractConfig, error) {
 	err = extractDataFromTxResponse("wasm-set_config", res, map[string]func(string) error{
 		"latest_config_digest": func(value string) error {
 			// parse byte array encoded as hex string
-			return pkgTerra.HexToConfigDigest(value, &output.ConfigDigest)
+			//return pkgTerra.HexToConfigDigest(value, &output.ConfigDigest)
+			copy(output.ConfigDigest[:], []byte(value))
+			return nil
 		},
 		"config_count": func(value string) error {
 			i, parseErr := strconv.ParseInt(value, 10, 64)
