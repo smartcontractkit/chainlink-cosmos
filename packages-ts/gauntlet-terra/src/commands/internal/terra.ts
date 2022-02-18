@@ -1,6 +1,6 @@
 import { Result, WriteCommand } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
-import { EventsByType, MsgStoreCode, TxLog } from '@terra-money/terra.js'
+import { EventsByType, MsgStoreCode, AccAddress, TxLog } from '@terra-money/terra.js'
 import { SignMode } from '@terra-money/terra.proto/cosmos/tx/signing/v1beta1/signing'
 
 import { withProvider, withWallet, withCodeIds, withNetwork } from '../middlewares'
@@ -23,6 +23,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   contracts: string[]
   public codeIds: CodeIds
   abstract execute: () => Promise<Result<TransactionResponse>>
+  abstract makeRawTransaction: (signer: AccAddress) => Promise<MsgExecuteContract>
 
   constructor(flags, args) {
     super(flags, args)
@@ -63,6 +64,25 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     return await this.provider.wasm.contractQuery(address, input, params)
   }
 
+  signAndSend = async (messages: MsgExecuteContract[]): Promise<TransactionResponse> => {
+    try {
+      logger.loading('Signing transaction...')
+      const tx = await this.wallet.createAndSignTx({
+        msgs: messages,
+        ...(this.wallet.key instanceof LedgerKey && {
+          signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
+        }),
+      })
+
+      logger.loading('Sending transaction...')
+      const res = await this.provider.tx.broadcast(tx)
+      return this.wrapResponse(res)
+    } catch (e) {
+      const message = e?.response?.data?.message || e.message
+      throw new Error(message)
+    }
+  }
+
   async call(address, input) {
     const msg = new MsgExecuteContract(this.wallet.key.accAddress, address, input)
 
@@ -74,8 +94,6 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     })
 
     const res = await this.provider.tx.broadcast(tx)
-
-    logger.debug(res)
     return this.wrapResponse(res)
   }
 

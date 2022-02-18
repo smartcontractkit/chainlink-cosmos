@@ -17,6 +17,10 @@ export default class TransferLink extends TerraCommand {
     super(flags, args)
   }
 
+  makeRawTransaction = async () => {
+    throw new Error('Transfer LINK command: makeRawTransaction method not implemented')
+  }
+
   execute = async () => {
     const decimals = this.flags.decimals || 18
     const link = this.flags.link || process.env.LINK
