@@ -12,7 +12,8 @@ import (
 func main() {
 	ctx := context.Background()
 
-	log := logger.NewLogger().With("project", "terra")
+	coreLog := logger.NewLogger().With("project", "terra")
+	log := logWrapper{coreLog}
 
 	terraConfig, err := monitoring.ParseTerraConfig()
 	if err != nil {
@@ -24,7 +25,7 @@ func main() {
 		terraConfig.ChainID,
 		terraConfig.TendermintURL,
 		terraConfig.ReadTimeout,
-		log,
+		coreLog,
 	)
 	if err != nil {
 		log.Fatalw("failed to create a terra client", "error", err)
@@ -41,7 +42,7 @@ func main() {
 
 	entrypoint, err := relayMonitoring.NewEntrypoint(
 		ctx,
-		logWrapper{log},
+		log,
 		terraConfig,
 		envelopeSourceFactory,
 		txResultsFactory,
