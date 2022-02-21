@@ -10,25 +10,33 @@ import (
 	"sync"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	cosmosQuery "github.com/cosmos/cosmos-sdk/types/query"
 	cosmosTx "github.com/cosmos/cosmos-sdk/types/tx"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 	pkgTerra "github.com/smartcontractkit/chainlink-terra/pkg/terra"
-	pkgClient "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
-	"github.com/smartcontractkit/chainlink/core/logger"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"go.uber.org/multierr"
 )
 
+// ChainReader is a subset of the pkg/terra/client.Reader interface
+// that is used by this envelope source.
+type ChainReader interface {
+	TxsEvents(events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error)
+	ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
+}
+
 // NewEnvelopeSourceFactory build a new object that reads observations and
 // configurations from the Terra chain.
-func NewEnvelopeSourceFactory(client pkgClient.Reader, log logger.Logger) relayMonitoring.SourceFactory {
+func NewEnvelopeSourceFactory(client ChainReader, log relayMonitoring.Logger) relayMonitoring.SourceFactory {
 	return &envelopeSourceFactory{client, log}
 }
 
 type envelopeSourceFactory struct {
-	client pkgClient.Reader
-	log    logger.Logger
+	client ChainReader
+	log    relayMonitoring.Logger
 }
 
 func (e *envelopeSourceFactory) NewSource(
@@ -52,8 +60,8 @@ func (e *envelopeSourceFactory) NewSource(
 }
 
 type envelopeSource struct {
-	client          pkgClient.Reader
-	log             logger.Logger
+	client          ChainReader
+	log             relayMonitoring.Logger
 	terraConfig     TerraConfig
 	terraFeedConfig TerraFeedConfig
 }
@@ -82,6 +90,7 @@ func (e *envelopeSource) Fetch(ctx context.Context) (interface{}, error) {
 		envelope.Round = round
 		envelope.LatestAnswer = latestAnswer
 		envelope.LatestTimestamp = latestTimestamp
+		// Note: block number is read from the transmission transaction, not set_config!
 		envelope.BlockNumber = blockNumber
 		envelope.Transmitter = transmitter
 		envelope.JuelsPerFeeCoin = juelsPerFeeCoin
