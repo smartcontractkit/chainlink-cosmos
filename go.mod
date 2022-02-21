@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/cosmos/cosmos-sdk v0.44.5
-	github.com/onsi/ginkgo/v2 v2.0.0
-	github.com/onsi/gomega v1.17.0
+	github.com/onsi/ginkgo/v2 v2.1.2
+	github.com/onsi/gomega v1.18.1
 	github.com/pelletier/go-toml v1.9.4
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.26.1
@@ -13,7 +13,7 @@ require (
 	github.com/smartcontractkit/chainlink v1.1.1-0.20220215214847-93630cf8c733
 	github.com/smartcontractkit/chainlink-relay v0.0.0-20220216143252-cf2fe41e5b92
 	github.com/smartcontractkit/helmenv v1.0.36
-	github.com/smartcontractkit/integrations-framework v1.0.48
+	github.com/smartcontractkit/integrations-framework v1.0.49
 	github.com/smartcontractkit/libocr v0.0.0-20220125200954-5b957c834276
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	github.com/stretchr/testify v1.7.0
@@ -244,7 +244,7 @@ require (
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.12.0 // indirect
+	github.com/prometheus/client_golang v1.12.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect

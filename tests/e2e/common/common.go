@@ -179,9 +179,9 @@ func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle,
 		},
 	}
 	for nIdx, n := range nodes {
-		var IsBootstrapPeer bool
+		jobType := "offchainreporting2"
 		if nIdx == 0 {
-			IsBootstrapPeer = true
+			jobType = "bootstrap"
 		}
 		sourceValueBridge := client.BridgeTypeAttributes{
 			Name:        "variable",
@@ -224,12 +224,12 @@ func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle,
 		}
 		jobSpec := &client.OCR2TaskJobSpec{
 			Name:                  fmt.Sprintf("terra-OCRv2-%d-%s", nIdx, uuid.NewV4().String()),
+			JobType:               jobType,
 			ContractID:            ocr2Addr,
 			Relay:                 ChainName,
 			RelayConfig:           relayConfig,
 			P2PPeerID:             nkb[nIdx].PeerID,
 			P2PBootstrapPeers:     bootstrapPeers,
-			IsBootstrapPeer:       IsBootstrapPeer,
 			OCRKeyBundleID:        nkb[nIdx].OCR2Key.Data.ID,
 			TransmitterID:         nkb[nIdx].TXKey.Data.ID,
 			ObservationSource:     observationSource,
