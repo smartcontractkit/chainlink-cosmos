@@ -69,6 +69,8 @@ export default class UploadContractCode extends TerraCommand {
           if (maxRetry === retry + 1) {
             throw new Error(message)
           }
+          // sleep one second before trying again since it can flake if not given some time
+          await new Promise( resolve => setTimeout(resolve, 1000) );
           continue
         }
         break

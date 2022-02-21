@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -240,18 +239,4 @@ func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle,
 		}
 	}
 	return nil
-}
-
-// GetDefaultGauntletConfig gets  the default config gauntlet will need to start making commands
-// 	against the environment
-func GetDefaultGauntletConfig(nodeUrl *url.URL) map[string]string {
-	networkConfig := map[string]string{
-		"NETWORK":           "localterra",
-		"NODE_URL":          nodeUrl.String(),
-		"CHAIN_ID":          "localterra",
-		"DEFAULT_GAS_PRICE": "1",
-		"MNEMONIC":          "satisfy adjust timber high purchase tuition stool faith fine install that you unaware feed domain license impose boss human eager hat rent enjoy dawn",
-	}
-
-	return networkConfig
 }
