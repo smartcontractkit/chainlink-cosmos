@@ -9,7 +9,6 @@ import (
 	"time"
 
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	"github.com/smartcontractkit/chainlink/core/logger"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,7 +27,7 @@ func TestTxResultsSource(t *testing.T) {
 		chainConfig.FCDURL = srv.URL
 		feedConfig := generateFeedConfig()
 
-		factory := NewTxResultsSourceFactory(logger.NullLogger)
+		factory := NewTxResultsSourceFactory(newNullLogger())
 		source, err := factory.NewSource(chainConfig, feedConfig)
 		require.NoError(t, err)
 
