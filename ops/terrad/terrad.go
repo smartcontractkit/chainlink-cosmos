@@ -12,7 +12,6 @@ import (
 
 	cosmostypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
-	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 	opsChainlink "github.com/smartcontractkit/chainlink-relay/ops/chainlink"
 	"github.com/smartcontractkit/chainlink-relay/ops/utils"
 	relayUtils "github.com/smartcontractkit/chainlink-relay/ops/utils"
@@ -54,7 +53,7 @@ func New(ctx *pulumi.Context) (Deployer, error) {
 
 	// Change path to root directory
 	cwd, _ := os.Getwd()
-	os.Chdir(filepath.Join(cwd, "../gauntlet"))
+	os.Chdir(filepath.Join(cwd, "../"))
 
 	fmt.Println("Installing dependencies")
 	if _, err = exec.Command(yarn).Output(); err != nil {
@@ -71,14 +70,14 @@ func New(ctx *pulumi.Context) (Deployer, error) {
 	// TODO: Should come from pulumi context
 	os.Setenv("SKIP_PROMPTS", "true")
 
-	version := "linux"
-	if config.Get(ctx, "VERSION") == "MACOS" {
-		version = "macos"
-	}
+	// version := "linux"
+	// if config.Get(ctx, "VERSION") == "MACOS" {
+	// 	version = "macos"
+	// }
 
 	// Check gauntlet works
 	os.Chdir(cwd) // move back into ops folder
-	gauntletBin := filepath.Join(cwd, "../gauntlet/bin/gauntlet-") + version
+	gauntletBin := filepath.Join(cwd, "../")
 	gauntlet, err := relayUtils.NewGauntlet(gauntletBin)
 
 	if err != nil {
@@ -100,14 +99,13 @@ func (t *Deployer) Load() error {
 	msg := utils.LogStatus("Uploading contract artifacts")
 	err := t.gauntlet.ExecCommand(
 		"upload",
+		t.gauntlet.Flag("network", "bombay-testnet"),
+		"link",
+		"ocr2",
 	)
 
 	if err != nil {
 		return errors.New("Billing AC initialization failed")
-	}
-	_, err = t.gauntlet.ReadCommandReport()
-	if err != nil {
-		return err
 	}
 	return msg.Check(nil)
 }
@@ -130,14 +128,16 @@ func (t *Deployer) DeployLINK() error {
 	fmt.Println("Deploying LINK Token...")
 	err := t.gauntlet.ExecCommand(
 		"token:deploy",
-		t.gauntlet.Flag("network", t.network),
+		t.gauntlet.Flag("network", "bombay-testnet"),
 	)
 	if err != nil {
 		return errors.New("LINK contract deployment failed")
 	}
 
 	report, err := t.gauntlet.ReadCommandReport()
+	fmt.Println(report)
 	if err != nil {
+		fmt.Println(err)
 		return errors.New("report not available")
 	}
 
@@ -166,7 +166,7 @@ func (t *Deployer) DeployOCR() error {
 	fmt.Println("Step 1: Init Requester Access Controller")
 	err := t.gauntlet.ExecCommand(
 		"access_controller:deploy",
-		t.gauntlet.Flag("network", t.network),
+		t.gauntlet.Flag("network", "bombay-testnet"),
 	)
 	if err != nil {
 		return errors.New("Request AC initialization failed")
@@ -180,7 +180,7 @@ func (t *Deployer) DeployOCR() error {
 	fmt.Println("Step 2: Init Billing Access Controller")
 	err = t.gauntlet.ExecCommand(
 		"access_controller:deploy",
-		t.gauntlet.Flag("network", t.network),
+		t.gauntlet.Flag("network", "bombay-testnet"),
 	)
 	if err != nil {
 		return errors.New("Billing AC initialization failed")
@@ -193,8 +193,13 @@ func (t *Deployer) DeployOCR() error {
 
 	fmt.Println("Step 6: Init OCR 2 Feed")
 	input := map[string]interface{}{
-		"minAnswer": "0",
-		"maxAnswer": "10000000000",
+		"minAnswer":                 "0",
+		"maxAnswer":                 "10000000000",
+		"decimals":                  2,
+		"description":               "Hello",
+		"requesterAccessController": t.Account[RequesterAccessController],
+		"billingAccessController":   t.Account[BillingAccessController],
+		"linkToken":                 t.Account[LINK],
 	}
 
 	jsonInput, err := json.Marshal(input)
@@ -204,11 +209,8 @@ func (t *Deployer) DeployOCR() error {
 
 	// TODO: command doesn't throw an error in go if it fails
 	err = t.gauntlet.ExecCommand(
-		"ocr2:initialize",
-		t.gauntlet.Flag("network", t.network),
-		t.gauntlet.Flag("requesterAccessController", t.Account[RequesterAccessController]),
-		t.gauntlet.Flag("billingAccessController", t.Account[BillingAccessController]),
-		t.gauntlet.Flag("link", t.Account[LINK]),
+		"ocr2:deploy",
+		t.gauntlet.Flag("network", "bombay-testnet"),
 		t.gauntlet.Flag("input", string(jsonInput)),
 	)
 	if err != nil {
@@ -220,7 +222,7 @@ func (t *Deployer) DeployOCR() error {
 		return err
 	}
 
-	t.Account[OCR2] = report.Data["state"]
+	t.Account[OCR2] = report.Responses[0].Contract
 	fmt.Printf(" - %s", report.Data["state"])
 	return msg.Check(nil)
 }
@@ -237,11 +239,13 @@ type SendDetails struct {
 
 func (t Deployer) TransferLINK() error {
 	msg := utils.LogStatus("Sending LINK to OCR contract")
+
 	err := t.gauntlet.ExecCommand(
 		"token:transfer",
-		t.gauntlet.Flag("network", t.network),
+		t.gauntlet.Flag("network", "bombay-testnet"),
 		t.gauntlet.Flag("to", t.Account[OCR2]),
-		t.gauntlet.Flag("amount", "10000"),
+		t.gauntlet.Flag("amount", "1000000000"),
+		t.gauntlet.Flag("link", t.Account[LINK]),
 		t.Account[LINK],
 	)
 	if err != nil {
@@ -260,7 +264,7 @@ type ProposeConfig struct {
 type ProposeConfigDetails struct {
 	ID            string   `json:"id"`
 	Payees        []string `json:"payees"`
-	Signers       [][]byte `json:"signers"`
+	Signers       []string `json:"signers"`
 	Transmitters  []string `json:"transmitters"`
 	F             uint8    `json:"f"`
 	OnchainConfig []byte   `json:"onchain_config"`
@@ -303,9 +307,13 @@ type AcceptProposalDetails struct {
 
 func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	S := []int{}
+	signersArray := []string{}
+	transmitterArray := []string{}
 	helperOracles := []confighelper.OracleIdentityExtra{}
 	for _, k := range keys {
 		S = append(S, 1)
+		signersArray = append(signersArray, k.OCR2OnchainPublicKey)
+		transmitterArray = append(transmitterArray, k.OCR2Transmitter)
 		offchainPKByte, err := hex.DecodeString(k.OCR2OffchainPublicKey)
 		if err != nil {
 			return err
@@ -333,7 +341,7 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 
 	status := utils.LogStatus("InitOCR: set config test args")
 	alphaPPB := uint64(1000000)
-	signers, transmitters, f, onchainConfig, offchainConfigVersion, offchainConfig, err := confighelper.ContractSetConfigArgsForTests(
+	_, _, f, onchainConfig, offchainConfigVersion, offchainConfig, err := confighelper.ContractSetConfigArgsForTests(
 		2*time.Second,        // deltaProgress time.Duration,
 		5*time.Second,        // deltaResend time.Duration,
 		1*time.Second,        // deltaRound time.Duration,
@@ -361,18 +369,11 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		return err
 	}
 
-	// convert type for marshalling
-	signerArray := [][]byte{}
-	transmitterArray := []string{}
-	for i := 0; i < len(signers); i++ {
-		signerArray = append(signerArray, signers[i])
-		transmitterArray = append(transmitterArray, string(transmitters[i]))
-	}
-
 	status = utils.LogStatus("InitOCR: begin proposal")
 	err = t.gauntlet.ExecCommand(
 		"ocr2:begin_proposal",
-		t.gauntlet.Flag("network", t.network),
+		t.gauntlet.Flag("network", "bombay-testnet"),
+		t.Account[OCR2],
 	)
 
 	report, err := t.gauntlet.ReadCommandReport()
@@ -387,9 +388,9 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		return err
 	}
 
-	fmt.Printf(" - %s", report.Data)
+	fmt.Printf(" - %s", report.Data["proposalId"])
 
-	var id string = report.Data["proposal_id"]
+	var id string = report.Data["proposalId"]
 
 	// Be prepared to clear the proposal if incomplete.
 	defer func() {
@@ -400,8 +401,9 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		status = utils.LogStatus("InitOCR: clear proposal: " + id)
 		err = t.gauntlet.ExecCommand(
 			"ocr2:clear_proposal",
-			t.gauntlet.Flag("network", t.network),
+			t.gauntlet.Flag("network", "bombay-testnet"),
 			t.gauntlet.Flag("proposalId", id),
+			t.Account[OCR2],
 		)
 		if status.Check(err) != nil {
 			fmt.Println(err)
@@ -409,12 +411,14 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		}
 	}()
 
-	input := map[string]interface{}{
-		"signers":       signerArray,
-		"transmitters":  transmitterArray,
-		"onchainConfig": onchainConfig,
-	}
-	jsonInput, err := json.Marshal(input)
+	jsonInput, err := json.Marshal(ProposeConfigDetails{
+		ID:            id,
+		Payees:        transmitterArray,
+		Transmitters:  transmitterArray,
+		F:             f,
+		OnchainConfig: onchainConfig,
+		Signers:       signersArray,
+	})
 	if err != nil {
 		return err
 	}
@@ -422,29 +426,31 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	status = utils.LogStatus("InitOCR: propose config " + id)
 	err = t.gauntlet.ExecCommand(
 		"ocr2:propose_config",
-		t.gauntlet.Flag("network", t.network),
-		t.gauntlet.Flag("proposalId", id),
-		t.gauntlet.Flag("f", string(f)),
+		t.gauntlet.Flag("network", "bombay-testnet"),
 		t.gauntlet.Flag("input", string(jsonInput)),
+		t.Account[OCR2],
 	)
 	if status.Check(err) != nil {
 		return err
 	}
 
-	input = map[string]interface{}{
-		"offchainConfig":        offchainConfig,
-		"offchainConfigVersion": offchainConfigVersion,
-	}
-	jsonInput, err = json.Marshal(input)
+	jsonInput, err = json.Marshal(ProposeOffchainConfig{
+		ProposeOffchainConfig: ProposeOffchainConfigDetails{
+			ID:                    id,
+			OffchainConfigVersion: offchainConfigVersion,
+			OffchainConfig:        offchainConfig,
+		},
+	})
 	if err != nil {
 		return err
 	}
 	status = utils.LogStatus("InitOCR: propose offchain config")
 	err = t.gauntlet.ExecCommand(
-		"ocr2:propose_config",
-		t.gauntlet.Flag("network", t.network),
+		"ocr2:propose_offchain_config",
+		t.gauntlet.Flag("network", "bombay-testnet"),
 		t.gauntlet.Flag("proposalId", id),
 		t.gauntlet.Flag("input", string(jsonInput)),
+		t.Account[OCR2],
 	)
 	if status.Check(err) != nil {
 		return err
@@ -453,8 +459,9 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	status = utils.LogStatus("InitOCR: finalize proposal")
 	err = t.gauntlet.ExecCommand(
 		"ocr2:finalize_proposal",
-		t.gauntlet.Flag("network", t.network),
+		t.gauntlet.Flag("network", "bombay-testnet"),
 		t.gauntlet.Flag("proposalId", id),
+		t.Account[OCR2],
 	)
 	if status.Check(err) != nil {
 		fmt.Println(err)
@@ -485,7 +492,7 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		return fmt.Errorf("wrong length for: wasm.digest: %d", len(digest))
 	}
 
-	input = map[string]interface{}{
+	input := map[string]interface{}{
 		"digest": digest,
 	}
 	jsonInput, err = json.Marshal(input)
