@@ -190,6 +190,21 @@ func (m *OCRv2State) LoadContracts() error {
 	return nil
 }
 
+func (m *OCRv2State) UpdateChainlinkVersion(image string, version string) {
+	chart, err := m.Env.Charts.Get("chainlink")
+	Expect(err).ShouldNot(HaveOccurred())
+	chart.Values["chainlink"] = map[string]interface{}{
+		"image": map[string]interface{}{
+			"image":   image,
+			"version": version,
+		},
+	}
+	err = chart.Upgrade()
+	Expect(err).ShouldNot(HaveOccurred())
+	err = m.Env.ConnectAll()
+	Expect(err).ShouldNot(HaveOccurred())
+}
+
 // DumpContracts dumps contracts to a file
 func (m *OCRv2State) DumpContracts() error {
 	s := &ContractsAddresses{OCR: m.OCR2.Address()}
