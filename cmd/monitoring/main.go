@@ -60,11 +60,11 @@ func main() {
 	if entrypoint.Config.Feature.TestOnlyFakeReaders {
 		proxySourceFactory = monitoring.NewFakeProxySourceFactory(log.With("component", "fake-proxy-source"))
 	}
-	entrypoint.SourceFactories = append(entrypoint.SourceFactories, balancesSourceFactory)
+	entrypoint.SourceFactories = append(entrypoint.SourceFactories, proxySourceFactory)
 
 	prometheusExporterFactory := monitoring.NewPrometheusExporterFactory(
 		log.With("component", "terra-prometheus-exporter"),
-		monitoring.DefaultMetrics,
+		monitoring.NewMetrics(log.With("component", "terra-metrics")),
 	)
 	entrypoint.ExporterFactories = append(entrypoint.ExporterFactories, prometheusExporterFactory)
 
