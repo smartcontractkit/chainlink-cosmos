@@ -9,16 +9,15 @@ import (
 	"sync"
 
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	"github.com/smartcontractkit/chainlink/core/logger"
 )
 
 // NewTxResultsSourceFactory builds sources of TxResults objects expected by the relay monitoring.
-func NewTxResultsSourceFactory(log logger.Logger) relayMonitoring.SourceFactory {
+func NewTxResultsSourceFactory(log relayMonitoring.Logger) relayMonitoring.SourceFactory {
 	return &txResultsSourceFactory{log, &http.Client{}}
 }
 
 type txResultsSourceFactory struct {
-	log        logger.Logger
+	log        relayMonitoring.Logger
 	httpClient *http.Client
 }
 
@@ -45,7 +44,7 @@ func (t *txResultsSourceFactory) NewSource(
 }
 
 type txResultsSource struct {
-	log             logger.Logger
+	log             relayMonitoring.Logger
 	terraConfig     TerraConfig
 	terraFeedConfig TerraFeedConfig
 	httpClient      *http.Client
