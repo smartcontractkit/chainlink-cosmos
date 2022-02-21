@@ -69,6 +69,7 @@ func generateProxyData() ProxyData {
 
 // Sources
 
+// NewFakeProxySourceFactory makes a source that generates random proxy data.
 func NewFakeProxySourceFactory(log relayMonitoring.Logger) relayMonitoring.SourceFactory {
 	return &fakeProxySourceFactory{log}
 }

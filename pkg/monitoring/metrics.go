@@ -6,6 +6,7 @@ import (
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 )
 
+// Metrics is an interface for prometheus metrics. Makes testing easier.
 type Metrics interface {
 	SetProxyAnswersRaw(answer float64, proxyContractAddress, feedID, chainID, contractStatus, contractType, feedName, feedPath, networkID, networkName string)
 	SetProxyAnswers(answer float64, proxyContractAddress, feedID, chainID, contractStatus, contractType, feedName, feedPath, networkID, networkName string)
@@ -29,6 +30,7 @@ var (
 	)
 )
 
+// NewMetrics does wisott
 func NewMetrics(log relayMonitoring.Logger) Metrics {
 	return &defaultMetrics{log}
 }
