@@ -7,23 +7,21 @@ import (
 	"math/big"
 
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	pkgClient "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
-	"github.com/smartcontractkit/chainlink/core/logger"
 )
 
-type Proxy struct {
+type ProxyData struct {
 	Answer *big.Int
 }
 
 // NewEnvelopeSourceFactory build a new object that reads observations and
 // configurations from the Terra chain.
-func NewProxySourceFactory(client pkgClient.Reader, log logger.Logger) relayMonitoring.SourceFactory {
+func NewProxySourceFactory(client ChainReader, log relayMonitoring.Logger) relayMonitoring.SourceFactory {
 	return &proxySourceFactory{client, log}
 }
 
 type proxySourceFactory struct {
-	client pkgClient.Reader
-	log    logger.Logger
+	client ChainReader
+	log    relayMonitoring.Logger
 }
 
 func (p *proxySourceFactory) NewSource(
@@ -47,8 +45,8 @@ func (p *proxySourceFactory) NewSource(
 }
 
 type proxySource struct {
-	client          pkgClient.Reader
-	log             logger.Logger
+	client          ChainReader
+	log             relayMonitoring.Logger
 	terraConfig     TerraConfig
 	terraFeedConfig TerraFeedConfig
 }
@@ -70,9 +68,9 @@ func (p *proxySource) Fetch(ctx context.Context) (interface{}, error) {
 	if err := json.Unmarshal(res, &latestRoundData); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal round data from the response '%s': %w", string(res), err)
 	}
-	answer, success := new(big.Int).SetString(latestRoundData.Answer)
+	answer, success := new(big.Int).SetString(latestRoundData.Answer, 10)
 	if !success {
 		return nil, fmt.Errorf("failed to parse proxy answer '%s' into a big.Int", latestRoundData.Answer)
 	}
-	return Proxy{answer}, nil
+	return ProxyData{answer}, nil
 }
