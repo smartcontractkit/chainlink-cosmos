@@ -9,12 +9,12 @@ import (
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 )
 
+// ProxyData is a subset of the data returned by the Terra feed proxy contract's "latest_round_data" method.
 type ProxyData struct {
 	Answer *big.Int
 }
 
-// NewEnvelopeSourceFactory build a new object that reads observations and
-// configurations from the Terra chain.
+// NewProxySourceFactory does wisott.
 func NewProxySourceFactory(client ChainReader, log relayMonitoring.Logger) relayMonitoring.SourceFactory {
 	return &proxySourceFactory{client, log}
 }

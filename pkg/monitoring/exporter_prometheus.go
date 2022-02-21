@@ -8,6 +8,7 @@ import (
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 )
 
+// NewPrometheusExporterFactory builds an implementation of the Exporter for prometheus.
 func NewPrometheusExporterFactory(
 	log relayMonitoring.Logger,
 	metrics Metrics,
