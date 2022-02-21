@@ -262,12 +262,12 @@ type ProposeConfig struct {
 }
 
 type ProposeConfigDetails struct {
-	ID            string   `json:"id"`
+	ID            string   `json:"proposalId"`
 	Payees        []string `json:"payees"`
 	Signers       []string `json:"signers"`
 	Transmitters  []string `json:"transmitters"`
 	F             uint8    `json:"f"`
-	OnchainConfig []byte   `json:"onchain_config"`
+	OnchainConfig []byte   `json:"onchainConfig"`
 }
 
 type ProposeOffchainConfig struct {
@@ -275,9 +275,36 @@ type ProposeOffchainConfig struct {
 }
 
 type ProposeOffchainConfigDetails struct {
-	ID                    string `json:"id"`
-	OffchainConfigVersion uint64 `json:"offchain_config_version"`
-	OffchainConfig        []byte `json:"offchain_config"`
+	ID                    string                 `json:"proposalId"`
+	OffchainConfigVersion uint64                 `json:"offchainConfigVersion"`
+	OffchainConfig        map[string]interface{} `json:"offchainConfig"`
+}
+
+type ReportingPluginConfig struct {
+	AlphaReportInfinite bool   `json:alphaReportInfinite`
+	alphaReportPpb      uint64 `json:alphaReportPpb`
+	alphaAcceptInfinite bool   `json:alphaAcceptInfinite`
+	alphaAcceptPpb      uint64 `json:alphaAcceptPpb`
+	deltaCNanoseconds   uint64 `json:deltaCNanoseconds`
+}
+
+type OffchainConfigDetails struct {
+	DeltaProgressNanoseconds                           uint64                `json:deltaProgressNanoseconds`
+	DeltaResendNanoseconds                             uint64                `json:deltaProgressNanoseconds`
+	DeltaRoundNanoseconds                              uint64                `json:deltaProgressNanoseconds`
+	DeltaGraceNanoseconds                              uint64                `json:deltaProgressNanoseconds`
+	DeltaStageNanoseconds                              uint64                `json:deltaProgressNanoseconds`
+	RMax                                               uint64                `json:rMax`
+	S                                                  uint64                `json:s`
+	OffchainPublicKeys                                 []string              `json:offchainPublicKeys`
+	PeerIDs                                            []string              `json:peerIds`
+	ReportingPluginConfig                              ReportingPluginConfig `json:reportingPluginConfig`
+	MaxDurationQueryNanoseconds                        uint64                `json:maxDurationQueryNanoseconds`
+	MaxDurationObservationNanoseconds                  uint64                `json:maxDurationObservationNanoseconds`
+	MaxDurationReportNanoseconds                       uint64                `json:maxDurationReportNanoseconds`
+	MaxDurationShouldAcceptFinalizedReportNanoseconds  uint64                `json:maxDurationShouldAcceptFinalizedReportNanoseconds`
+	MaxDurationShouldTransmitAcceptedReportNanoseconds uint64                `json:maxDurationShouldTransmitAcceptedReportNanoseconds`
+	ConfigPublicKeys                                   []string              `json:configPublicKeys`
 }
 
 type ClearProposal struct {
@@ -285,7 +312,7 @@ type ClearProposal struct {
 }
 
 type ClearProposalDetails struct {
-	ID string `json:"id"`
+	ID string `json:"proposalId"`
 }
 
 type FinalizeProposal struct {
@@ -293,7 +320,7 @@ type FinalizeProposal struct {
 }
 
 type FinalizeProposalDetails struct {
-	ID string `json:"id"`
+	ID string `json:"proposalId"`
 }
 
 type AcceptProposal struct {
@@ -301,7 +328,7 @@ type AcceptProposal struct {
 }
 
 type AcceptProposalDetails struct {
-	ID     string `json:"id"`
+	ID     string `json:"proposalId"`
 	Digest []byte `json:"digest"`
 }
 
@@ -310,11 +337,17 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	signersArray := []string{}
 	transmitterArray := []string{}
 	helperOracles := []confighelper.OracleIdentityExtra{}
+	offChainPublicKeys := []string{}
+	configPublicKeys := []string{}
+	peerIDs := []string{}
 	for _, k := range keys {
 		S = append(S, 1)
 		signersArray = append(signersArray, k.OCR2OnchainPublicKey)
 		transmitterArray = append(transmitterArray, k.OCR2Transmitter)
 		offchainPKByte, err := hex.DecodeString(k.OCR2OffchainPublicKey)
+		offChainPublicKeys = append(offChainPublicKeys, k.OCR2OffchainPublicKey)
+		configPublicKeys = append(configPublicKeys, k.OCR2ConfigPublicKey)
+		peerIDs = append(peerIDs, k.P2PID)
 		if err != nil {
 			return err
 		}
@@ -341,7 +374,7 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 
 	status := utils.LogStatus("InitOCR: set config test args")
 	alphaPPB := uint64(1000000)
-	_, _, f, onchainConfig, offchainConfigVersion, offchainConfig, err := confighelper.ContractSetConfigArgsForTests(
+	_, _, f, onchainConfig, offchainConfigVersion, _, err := confighelper.ContractSetConfigArgsForTests(
 		2*time.Second,        // deltaProgress time.Duration,
 		5*time.Second,        // deltaResend time.Duration,
 		1*time.Second,        // deltaRound time.Duration,
@@ -434,13 +467,63 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		return err
 	}
 
-	jsonInput, err = json.Marshal(ProposeOffchainConfig{
-		ProposeOffchainConfig: ProposeOffchainConfigDetails{
+	// offchainConfig := OffchainConfigDetails{
+	// 	DeltaProgressNanoseconds: 2 * time.Second,        // pacemaker (timeout rotating leaders, can't be too short)
+	// 	DeltaResendNanoseconds:   5 * time.Second,        // resending epoch (help nodes rejoin system)
+	// 	DeltaRoundNanoseconds:    1 * time.Second,        // round time (polling data source)
+	// 	DeltaGraceNanoseconds:    400 * time.Millisecond, // timeout for waiting observations beyond minimum
+	// 	DeltaStageNanoseconds:    5 * time.Second,        // transmission schedule (just for calling transmit)
+	// 	RMax:                     3,                      // max rounds prior to rotating leader (longer could be more reliable with good leader)
+	// 	S:                        S,
+	// 	OffchainPublicKeys:       offChainPublicKeys,
+	// 	:                  peerIDs,
+	// 	"reportingPluginConfig": map[string]interface{}{
+	// 		"alphaReportInfinite": false,
+	// 		"alphaReportPpb":      uint64(0), // always send report
+	// 		"alphaAcceptInfinite": false,
+	// 		"alphaAcceptPpb":      uint64(0),       // accept all reports (if deviation matches number)
+	// 		"deltaCNanoseconds":   0 * time.Second, // heartbeat
+	// 	},
+	// 	"maxDurationQueryNanoseconds":                        0 * time.Millisecond,
+	// 	"maxDurationObservationNanoseconds":                  300 * time.Millisecond,
+	// 	"maxDurationReportNanoseconds":                       300 * time.Millisecond,
+	// 	"maxDurationShouldAcceptFinalizedReportNanoseconds":  1 * time.Second,
+	// 	"maxDurationShouldTransmitAcceptedReportNanoseconds": 1 * time.Second,
+	// 	"configPublicKeys":                                   configPublicKeys,
+	// }
+
+	offchainConfig := map[string]interface{}{
+		"deltaProgressNanoseconds": 2 * time.Second,        // pacemaker (timeout rotating leaders, can't be too short)
+		"deltaResendNanoseconds":   5 * time.Second,        // resending epoch (help nodes rejoin system)
+		"deltaRoundNanoseconds":    1 * time.Second,        // round time (polling data source)
+		"deltaGraceNanoseconds":    400 * time.Millisecond, // timeout for waiting observations beyond minimum
+		"deltaStageNanoseconds":    5 * time.Second,        // transmission schedule (just for calling transmit)
+		"rMax":                     3,                      // max rounds prior to rotating leader (longer could be more reliable with good leader)
+		"s":                        S,
+		"offchainPublicKeys":       offChainPublicKeys,
+		"peerIds":                  peerIDs,
+		"reportingPluginConfig": map[string]interface{}{
+			"alphaReportInfinite": false,
+			"alphaReportPpb":      uint64(0), // always send report
+			"alphaAcceptInfinite": false,
+			"alphaAcceptPpb":      uint64(0),       // accept all reports (if deviation matches number)
+			"deltaCNanoseconds":   0 * time.Second, // heartbeat
+		},
+		"maxDurationQueryNanoseconds":                        0 * time.Millisecond,
+		"maxDurationObservationNanoseconds":                  300 * time.Millisecond,
+		"maxDurationReportNanoseconds":                       300 * time.Millisecond,
+		"maxDurationShouldAcceptFinalizedReportNanoseconds":  1 * time.Second,
+		"maxDurationShouldTransmitAcceptedReportNanoseconds": 1 * time.Second,
+		"configPublicKeys":                                   configPublicKeys,
+	}
+
+	jsonInput, err = json.Marshal(
+		ProposeOffchainConfigDetails{
 			ID:                    id,
 			OffchainConfigVersion: offchainConfigVersion,
 			OffchainConfig:        offchainConfig,
 		},
-	})
+	)
 	if err != nil {
 		return err
 	}
@@ -448,7 +531,6 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	err = t.gauntlet.ExecCommand(
 		"ocr2:propose_offchain_config",
 		t.gauntlet.Flag("network", "bombay-testnet"),
-		t.gauntlet.Flag("proposalId", id),
 		t.gauntlet.Flag("input", string(jsonInput)),
 		t.Account[OCR2],
 	)

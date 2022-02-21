@@ -110,6 +110,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
 
 const validateInput = (input: CommandInput): boolean => {
   const { offchainConfig } = input
+  console.log(offchainConfig)
 
   const _isNegative = (v: number): boolean => new BN(v).lt(new BN(0))
   const nonNegativeValues = [
