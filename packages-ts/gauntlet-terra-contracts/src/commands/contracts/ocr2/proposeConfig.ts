@@ -55,7 +55,6 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
 }
 
 const validateInput = (input: CommandInput): boolean => {
-  console.log(input.signers)
   if (3 * input.f >= input.signers.length)
     throw new Error(`Signers length needs to be higher than 3 * f (${3 * input.f}). Currently ${input.signers.length}`)
 

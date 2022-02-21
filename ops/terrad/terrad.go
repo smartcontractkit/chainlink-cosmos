@@ -67,13 +67,7 @@ func New(ctx *pulumi.Context) (Deployer, error) {
 		return Deployer{}, errors.New("error generating gauntlet binary")
 	}
 
-	// TODO: Should come from pulumi context
 	os.Setenv("SKIP_PROMPTS", "true")
-
-	// version := "linux"
-	// if config.Get(ctx, "VERSION") == "MACOS" {
-	// 	version = "macos"
-	// }
 
 	// Check gauntlet works
 	os.Chdir(cwd) // move back into ops folder
@@ -86,7 +80,7 @@ func New(ctx *pulumi.Context) (Deployer, error) {
 
 	return Deployer{
 		gauntlet: gauntlet,
-		network:  "local",
+		network:  "bombay-testnet",
 		Account:  make(map[int]string),
 	}, nil
 }
@@ -99,7 +93,7 @@ func (t *Deployer) Load() error {
 	msg := utils.LogStatus("Uploading contract artifacts")
 	err := t.gauntlet.ExecCommand(
 		"upload",
-		t.gauntlet.Flag("network", "bombay-testnet"),
+		t.gauntlet.Flag("network", t.network),
 		"link",
 		"ocr2",
 	)
@@ -115,20 +109,11 @@ type balance struct {
 	Amount  string `json:"amount"`
 }
 
-type LINKinit struct {
-	Name            string      `json:"name"`
-	Symbol          string      `json:"symbol"`
-	Decimals        int         `json:"decimals"`
-	InitialBalances []balance   `json:"initial_balances"`
-	Mint            interface{} `json:"mint"`
-	Marketing       interface{} `json:"marketing"`
-}
-
 func (t *Deployer) DeployLINK() error {
 	fmt.Println("Deploying LINK Token...")
 	err := t.gauntlet.ExecCommand(
 		"token:deploy",
-		t.gauntlet.Flag("network", "bombay-testnet"),
+		t.gauntlet.Flag("network", t.network),
 	)
 	if err != nil {
 		return errors.New("LINK contract deployment failed")
@@ -150,11 +135,11 @@ func (t *Deployer) DeployLINK() error {
 }
 
 type OCRinit struct {
-	LinkToken                 string `json:"link_token"`
-	MinAnswer                 string `json:"min_answer"`
-	MaxAnswer                 string `json:"max_answer"`
-	BillingAccessController   string `json:"billing_access_controller"`
-	RequesterAccessController string `json:"requester_access_controller"`
+	LinkToken                 string `json:"linkToken"`
+	MinAnswer                 string `json:"minAnswer"`
+	MaxAnswer                 string `json:"maxAnswer"`
+	BillingAccessController   string `json:"billingAccessController"`
+	RequesterAccessController string `json:"requesterAccessController"`
 	Decimals                  int    `json:"decimals"`
 	Description               string `json:"description"`
 }
@@ -166,7 +151,7 @@ func (t *Deployer) DeployOCR() error {
 	fmt.Println("Step 1: Init Requester Access Controller")
 	err := t.gauntlet.ExecCommand(
 		"access_controller:deploy",
-		t.gauntlet.Flag("network", "bombay-testnet"),
+		t.gauntlet.Flag("network", t.network),
 	)
 	if err != nil {
 		return errors.New("Request AC initialization failed")
@@ -180,7 +165,7 @@ func (t *Deployer) DeployOCR() error {
 	fmt.Println("Step 2: Init Billing Access Controller")
 	err = t.gauntlet.ExecCommand(
 		"access_controller:deploy",
-		t.gauntlet.Flag("network", "bombay-testnet"),
+		t.gauntlet.Flag("network", t.network),
 	)
 	if err != nil {
 		return errors.New("Billing AC initialization failed")
@@ -192,14 +177,14 @@ func (t *Deployer) DeployOCR() error {
 	t.Account[BillingAccessController] = report.Responses[0].Contract
 
 	fmt.Println("Step 6: Init OCR 2 Feed")
-	input := map[string]interface{}{
-		"minAnswer":                 "0",
-		"maxAnswer":                 "10000000000",
-		"decimals":                  2,
-		"description":               "Hello",
-		"requesterAccessController": t.Account[RequesterAccessController],
-		"billingAccessController":   t.Account[BillingAccessController],
-		"linkToken":                 t.Account[LINK],
+	input := OCRinit{
+		MinAnswer:                 "0",
+		MaxAnswer:                 "10000000000",
+		Decimals:                  2,
+		Description:               "Hello",
+		RequesterAccessController: t.Account[RequesterAccessController],
+		BillingAccessController:   t.Account[BillingAccessController],
+		LinkToken:                 t.Account[LINK],
 	}
 
 	jsonInput, err := json.Marshal(input)
@@ -207,7 +192,6 @@ func (t *Deployer) DeployOCR() error {
 		return err
 	}
 
-	// TODO: command doesn't throw an error in go if it fails
 	err = t.gauntlet.ExecCommand(
 		"ocr2:deploy",
 		t.gauntlet.Flag("network", "bombay-testnet"),
@@ -225,16 +209,6 @@ func (t *Deployer) DeployOCR() error {
 	t.Account[OCR2] = report.Responses[0].Contract
 	fmt.Printf(" - %s", report.Data["state"])
 	return msg.Check(nil)
-}
-
-type Send struct {
-	Send SendDetails `json:"send"`
-}
-
-type SendDetails struct {
-	Contract string `json:"contract"`
-	Amount   string `json:"amount"`
-	Msg      string `json:"msg"`
 }
 
 func (t Deployer) TransferLINK() error {
@@ -257,10 +231,6 @@ func (t Deployer) TransferLINK() error {
 
 const BeginProposal = "begin_proposal"
 
-type ProposeConfig struct {
-	ProposeConfig ProposeConfigDetails `json:"propose_config"`
-}
-
 type ProposeConfigDetails struct {
 	ID            string   `json:"proposalId"`
 	Payees        []string `json:"payees"`
@@ -270,41 +240,37 @@ type ProposeConfigDetails struct {
 	OnchainConfig []byte   `json:"onchainConfig"`
 }
 
-type ProposeOffchainConfig struct {
-	ProposeOffchainConfig ProposeOffchainConfigDetails `json:"propose_offchain_config"`
-}
-
 type ProposeOffchainConfigDetails struct {
-	ID                    string                 `json:"proposalId"`
-	OffchainConfigVersion uint64                 `json:"offchainConfigVersion"`
-	OffchainConfig        map[string]interface{} `json:"offchainConfig"`
+	ID                    string                `json:"proposalId"`
+	OffchainConfigVersion uint64                `json:"offchainConfigVersion"`
+	OffchainConfig        OffchainConfigDetails `json:"offchainConfig"`
 }
 
 type ReportingPluginConfig struct {
-	AlphaReportInfinite bool   `json:alphaReportInfinite`
-	alphaReportPpb      uint64 `json:alphaReportPpb`
-	alphaAcceptInfinite bool   `json:alphaAcceptInfinite`
-	alphaAcceptPpb      uint64 `json:alphaAcceptPpb`
-	deltaCNanoseconds   uint64 `json:deltaCNanoseconds`
+	AlphaReportInfinite bool          `json:"alphaReportInfinite"`
+	AlphaReportPpb      uint64        `json:"alphaReportPpb"`
+	AlphaAcceptInfinite bool          `json:"alphaAcceptInfinite"`
+	AlphaAcceptPpb      uint64        `json:"alphaAcceptPpb"`
+	DeltaCNanoseconds   time.Duration `json:"deltaCNanoseconds"`
 }
 
 type OffchainConfigDetails struct {
-	DeltaProgressNanoseconds                           uint64                `json:deltaProgressNanoseconds`
-	DeltaResendNanoseconds                             uint64                `json:deltaProgressNanoseconds`
-	DeltaRoundNanoseconds                              uint64                `json:deltaProgressNanoseconds`
-	DeltaGraceNanoseconds                              uint64                `json:deltaProgressNanoseconds`
-	DeltaStageNanoseconds                              uint64                `json:deltaProgressNanoseconds`
-	RMax                                               uint64                `json:rMax`
-	S                                                  uint64                `json:s`
-	OffchainPublicKeys                                 []string              `json:offchainPublicKeys`
-	PeerIDs                                            []string              `json:peerIds`
-	ReportingPluginConfig                              ReportingPluginConfig `json:reportingPluginConfig`
-	MaxDurationQueryNanoseconds                        uint64                `json:maxDurationQueryNanoseconds`
-	MaxDurationObservationNanoseconds                  uint64                `json:maxDurationObservationNanoseconds`
-	MaxDurationReportNanoseconds                       uint64                `json:maxDurationReportNanoseconds`
-	MaxDurationShouldAcceptFinalizedReportNanoseconds  uint64                `json:maxDurationShouldAcceptFinalizedReportNanoseconds`
-	MaxDurationShouldTransmitAcceptedReportNanoseconds uint64                `json:maxDurationShouldTransmitAcceptedReportNanoseconds`
-	ConfigPublicKeys                                   []string              `json:configPublicKeys`
+	DeltaProgressNanoseconds                           time.Duration         `json:"deltaProgressNanoseconds"`
+	DeltaResendNanoseconds                             time.Duration         `json:"deltaResendNanoseconds"`
+	DeltaRoundNanoseconds                              time.Duration         `json:"deltaRoundNanoseconds"`
+	DeltaGraceNanoseconds                              time.Duration         `json:"deltaGraceNanoseconds"`
+	DeltaStageNanoseconds                              time.Duration         `json:"deltaStageNanoseconds"`
+	RMax                                               uint64                `json:"rMax"`
+	S                                                  []int                 `json:"s"`
+	OffchainPublicKeys                                 []string              `json:"offchainPublicKeys"`
+	PeerIDs                                            []string              `json:"peerIds"`
+	ReportingPluginConfig                              ReportingPluginConfig `json:"reportingPluginConfig"`
+	MaxDurationQueryNanoseconds                        time.Duration         `json:"maxDurationQueryNanoseconds"`
+	MaxDurationObservationNanoseconds                  time.Duration         `json:"maxDurationObservationNanoseconds"`
+	MaxDurationReportNanoseconds                       time.Duration         `json:"maxDurationReportNanoseconds"`
+	MaxDurationShouldAcceptFinalizedReportNanoseconds  time.Duration         `json:"maxDurationShouldAcceptFinalizedReportNanoseconds"`
+	MaxDurationShouldTransmitAcceptedReportNanoseconds time.Duration         `json:"maxDurationShouldTransmitAcceptedReportNanoseconds"`
+	ConfigPublicKeys                                   []string              `json:"configPublicKeys"`
 }
 
 type ClearProposal struct {
@@ -405,7 +371,7 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	status = utils.LogStatus("InitOCR: begin proposal")
 	err = t.gauntlet.ExecCommand(
 		"ocr2:begin_proposal",
-		t.gauntlet.Flag("network", "bombay-testnet"),
+		t.gauntlet.Flag("network", t.network),
 		t.Account[OCR2],
 	)
 
@@ -434,7 +400,7 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		status = utils.LogStatus("InitOCR: clear proposal: " + id)
 		err = t.gauntlet.ExecCommand(
 			"ocr2:clear_proposal",
-			t.gauntlet.Flag("network", "bombay-testnet"),
+			t.gauntlet.Flag("network", t.network),
 			t.gauntlet.Flag("proposalId", id),
 			t.Account[OCR2],
 		)
@@ -459,7 +425,7 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	status = utils.LogStatus("InitOCR: propose config " + id)
 	err = t.gauntlet.ExecCommand(
 		"ocr2:propose_config",
-		t.gauntlet.Flag("network", "bombay-testnet"),
+		t.gauntlet.Flag("network", t.network),
 		t.gauntlet.Flag("input", string(jsonInput)),
 		t.Account[OCR2],
 	)
@@ -467,16 +433,41 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		return err
 	}
 
-	// offchainConfig := OffchainConfigDetails{
-	// 	DeltaProgressNanoseconds: 2 * time.Second,        // pacemaker (timeout rotating leaders, can't be too short)
-	// 	DeltaResendNanoseconds:   5 * time.Second,        // resending epoch (help nodes rejoin system)
-	// 	DeltaRoundNanoseconds:    1 * time.Second,        // round time (polling data source)
-	// 	DeltaGraceNanoseconds:    400 * time.Millisecond, // timeout for waiting observations beyond minimum
-	// 	DeltaStageNanoseconds:    5 * time.Second,        // transmission schedule (just for calling transmit)
-	// 	RMax:                     3,                      // max rounds prior to rotating leader (longer could be more reliable with good leader)
-	// 	S:                        S,
-	// 	OffchainPublicKeys:       offChainPublicKeys,
-	// 	:                  peerIDs,
+	offchainConfig := OffchainConfigDetails{
+		DeltaProgressNanoseconds: 2 * time.Second,        // pacemaker (timeout rotating leaders, can't be too short)
+		DeltaResendNanoseconds:   5 * time.Second,        // resending epoch (help nodes rejoin system)
+		DeltaRoundNanoseconds:    1 * time.Second,        // round time (polling data source)
+		DeltaGraceNanoseconds:    400 * time.Millisecond, // timeout for waiting observations beyond minimum
+		DeltaStageNanoseconds:    5 * time.Second,        // transmission schedule (just for calling transmit)
+		RMax:                     3,                      // max rounds prior to rotating leader (longer could be more reliable with good leader)
+		S:                        S,
+		OffchainPublicKeys:       offChainPublicKeys,
+		PeerIDs:                  peerIDs,
+		ReportingPluginConfig: ReportingPluginConfig{
+			AlphaReportInfinite: false,
+			AlphaReportPpb:      uint64(0), // always send report
+			AlphaAcceptInfinite: false,
+			AlphaAcceptPpb:      uint64(0),       // accept all reports (if deviation matches number)
+			DeltaCNanoseconds:   0 * time.Second, // heartbeat
+		},
+		MaxDurationQueryNanoseconds:                        0 * time.Millisecond,
+		MaxDurationObservationNanoseconds:                  300 * time.Millisecond,
+		MaxDurationReportNanoseconds:                       300 * time.Millisecond,
+		MaxDurationShouldAcceptFinalizedReportNanoseconds:  1 * time.Second,
+		MaxDurationShouldTransmitAcceptedReportNanoseconds: 1 * time.Second,
+		ConfigPublicKeys:                                   configPublicKeys,
+	}
+
+	// offchainConfig := map[string]interface{}{
+	// 	"deltaProgressNanoseconds": 2 * time.Second,        // pacemaker (timeout rotating leaders, can't be too short)
+	// 	"deltaResendNanoseconds":   5 * time.Second,        // resending epoch (help nodes rejoin system)
+	// 	"deltaRoundNanoseconds":    1 * time.Second,        // round time (polling data source)
+	// 	"deltaGraceNanoseconds":    400 * time.Millisecond, // timeout for waiting observations beyond minimum
+	// 	"deltaStageNanoseconds":    5 * time.Second,        // transmission schedule (just for calling transmit)
+	// 	"rMax":                     3,                      // max rounds prior to rotating leader (longer could be more reliable with good leader)
+	// 	"s":                        S,
+	// 	"offchainPublicKeys":       offChainPublicKeys,
+	// 	"peerIds":                  peerIDs,
 	// 	"reportingPluginConfig": map[string]interface{}{
 	// 		"alphaReportInfinite": false,
 	// 		"alphaReportPpb":      uint64(0), // always send report
@@ -492,31 +483,6 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	// 	"configPublicKeys":                                   configPublicKeys,
 	// }
 
-	offchainConfig := map[string]interface{}{
-		"deltaProgressNanoseconds": 2 * time.Second,        // pacemaker (timeout rotating leaders, can't be too short)
-		"deltaResendNanoseconds":   5 * time.Second,        // resending epoch (help nodes rejoin system)
-		"deltaRoundNanoseconds":    1 * time.Second,        // round time (polling data source)
-		"deltaGraceNanoseconds":    400 * time.Millisecond, // timeout for waiting observations beyond minimum
-		"deltaStageNanoseconds":    5 * time.Second,        // transmission schedule (just for calling transmit)
-		"rMax":                     3,                      // max rounds prior to rotating leader (longer could be more reliable with good leader)
-		"s":                        S,
-		"offchainPublicKeys":       offChainPublicKeys,
-		"peerIds":                  peerIDs,
-		"reportingPluginConfig": map[string]interface{}{
-			"alphaReportInfinite": false,
-			"alphaReportPpb":      uint64(0), // always send report
-			"alphaAcceptInfinite": false,
-			"alphaAcceptPpb":      uint64(0),       // accept all reports (if deviation matches number)
-			"deltaCNanoseconds":   0 * time.Second, // heartbeat
-		},
-		"maxDurationQueryNanoseconds":                        0 * time.Millisecond,
-		"maxDurationObservationNanoseconds":                  300 * time.Millisecond,
-		"maxDurationReportNanoseconds":                       300 * time.Millisecond,
-		"maxDurationShouldAcceptFinalizedReportNanoseconds":  1 * time.Second,
-		"maxDurationShouldTransmitAcceptedReportNanoseconds": 1 * time.Second,
-		"configPublicKeys":                                   configPublicKeys,
-	}
-
 	jsonInput, err = json.Marshal(
 		ProposeOffchainConfigDetails{
 			ID:                    id,
@@ -530,7 +496,7 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	status = utils.LogStatus("InitOCR: propose offchain config")
 	err = t.gauntlet.ExecCommand(
 		"ocr2:propose_offchain_config",
-		t.gauntlet.Flag("network", "bombay-testnet"),
+		t.gauntlet.Flag("network", t.network),
 		t.gauntlet.Flag("input", string(jsonInput)),
 		t.Account[OCR2],
 	)
@@ -541,7 +507,7 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	status = utils.LogStatus("InitOCR: finalize proposal")
 	err = t.gauntlet.ExecCommand(
 		"ocr2:finalize_proposal",
-		t.gauntlet.Flag("network", "bombay-testnet"),
+		t.gauntlet.Flag("network", t.network),
 		t.gauntlet.Flag("proposalId", id),
 		t.Account[OCR2],
 	)
