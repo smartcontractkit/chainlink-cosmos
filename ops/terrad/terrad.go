@@ -295,7 +295,7 @@ type AcceptProposal struct {
 
 type AcceptProposalDetails struct {
 	ID     string `json:"proposalId"`
-	Digest []byte `json:"digest"`
+	Digest string `json:"digest"`
 }
 
 func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
@@ -458,31 +458,6 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		ConfigPublicKeys:                                   configPublicKeys,
 	}
 
-	// offchainConfig := map[string]interface{}{
-	// 	"deltaProgressNanoseconds": 2 * time.Second,        // pacemaker (timeout rotating leaders, can't be too short)
-	// 	"deltaResendNanoseconds":   5 * time.Second,        // resending epoch (help nodes rejoin system)
-	// 	"deltaRoundNanoseconds":    1 * time.Second,        // round time (polling data source)
-	// 	"deltaGraceNanoseconds":    400 * time.Millisecond, // timeout for waiting observations beyond minimum
-	// 	"deltaStageNanoseconds":    5 * time.Second,        // transmission schedule (just for calling transmit)
-	// 	"rMax":                     3,                      // max rounds prior to rotating leader (longer could be more reliable with good leader)
-	// 	"s":                        S,
-	// 	"offchainPublicKeys":       offChainPublicKeys,
-	// 	"peerIds":                  peerIDs,
-	// 	"reportingPluginConfig": map[string]interface{}{
-	// 		"alphaReportInfinite": false,
-	// 		"alphaReportPpb":      uint64(0), // always send report
-	// 		"alphaAcceptInfinite": false,
-	// 		"alphaAcceptPpb":      uint64(0),       // accept all reports (if deviation matches number)
-	// 		"deltaCNanoseconds":   0 * time.Second, // heartbeat
-	// 	},
-	// 	"maxDurationQueryNanoseconds":                        0 * time.Millisecond,
-	// 	"maxDurationObservationNanoseconds":                  300 * time.Millisecond,
-	// 	"maxDurationReportNanoseconds":                       300 * time.Millisecond,
-	// 	"maxDurationShouldAcceptFinalizedReportNanoseconds":  1 * time.Second,
-	// 	"maxDurationShouldTransmitAcceptedReportNanoseconds": 1 * time.Second,
-	// 	"configPublicKeys":                                   configPublicKeys,
-	// }
-
 	jsonInput, err = json.Marshal(
 		ProposeOffchainConfigDetails{
 			ID:                    id,
@@ -540,8 +515,9 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		return fmt.Errorf("wrong length for: wasm.digest: %d", len(digest))
 	}
 
-	input := map[string]interface{}{
-		"digest": digest,
+	input := AcceptProposalDetails{
+		ID:     id,
+		Digest: digest,
 	}
 	jsonInput, err = json.Marshal(input)
 	if err != nil {
@@ -551,8 +527,8 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	err = t.gauntlet.ExecCommand(
 		"ocr2:accept_proposal",
 		t.gauntlet.Flag("network", t.network),
-		t.gauntlet.Flag("proposalId", id),
 		t.gauntlet.Flag("input", string(jsonInput)),
+		t.Account[OCR2],
 	)
 	if status.Check(err) != nil {
 		fmt.Println(err)
