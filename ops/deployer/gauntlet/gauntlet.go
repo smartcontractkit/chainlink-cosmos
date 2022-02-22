@@ -1,4 +1,4 @@
-package terrad
+package deployer
 
 import (
 	"encoding/hex"
@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"time"
 
-	cosmostypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	opsChainlink "github.com/smartcontractkit/chainlink-relay/ops/chainlink"
 	"github.com/smartcontractkit/chainlink-relay/ops/utils"
@@ -32,22 +31,17 @@ const (
 	BillingAccessController
 )
 
-type key struct {
-	Name    string
-	Address string
-}
-
-type Deployer struct {
+type GauntlerDeployer struct {
 	gauntlet relayUtils.Gauntlet
 	network  string
 	Account  map[int]string
 }
 
-func New(ctx *pulumi.Context) (Deployer, error) {
+func New(ctx *pulumi.Context) (GauntlerDeployer, error) {
 	// check if yarn is installed
 	yarn, err := exec.LookPath("yarn")
 	if err != nil {
-		return Deployer{}, errors.New("'yarn' is not installed")
+		return GauntlerDeployer{}, errors.New("'yarn' is not installed")
 	}
 	fmt.Printf("yarn is available at %s\n", yarn)
 
@@ -57,14 +51,14 @@ func New(ctx *pulumi.Context) (Deployer, error) {
 
 	fmt.Println("Installing dependencies")
 	if _, err = exec.Command(yarn).Output(); err != nil {
-		return Deployer{}, errors.New("error install dependencies")
+		return GauntlerDeployer{}, errors.New("error install dependencies")
 	}
 
 	// Generate Gauntlet Binary
 	fmt.Println("Generating Gauntlet binary...")
 	_, err = exec.Command(yarn, "bundle").Output()
 	if err != nil {
-		return Deployer{}, errors.New("error generating gauntlet binary")
+		return GauntlerDeployer{}, errors.New("error generating gauntlet binary")
 	}
 
 	os.Setenv("SKIP_PROMPTS", "true")
@@ -75,21 +69,17 @@ func New(ctx *pulumi.Context) (Deployer, error) {
 	gauntlet, err := relayUtils.NewGauntlet(gauntletBin)
 
 	if err != nil {
-		return Deployer{}, err
+		return GauntlerDeployer{}, err
 	}
 
-	return Deployer{
+	return GauntlerDeployer{
 		gauntlet: gauntlet,
 		network:  "bombay-testnet",
 		Account:  make(map[int]string),
 	}, nil
 }
 
-type TxResponse struct {
-	Logs cosmostypes.ABCIMessageLogs
-}
-
-func (t *Deployer) Load() error {
+func (t *GauntlerDeployer) Load() error {
 	msg := utils.LogStatus("Uploading contract artifacts")
 	err := t.gauntlet.ExecCommand(
 		"upload",
@@ -104,12 +94,7 @@ func (t *Deployer) Load() error {
 	return msg.Check(nil)
 }
 
-type balance struct {
-	Address string `json:"address"`
-	Amount  string `json:"amount"`
-}
-
-func (t *Deployer) DeployLINK() error {
+func (t *GauntlerDeployer) DeployLINK() error {
 	fmt.Println("Deploying LINK Token...")
 	err := t.gauntlet.ExecCommand(
 		"token:deploy",
@@ -144,7 +129,7 @@ type OCRinit struct {
 	Description               string `json:"description"`
 }
 
-func (t *Deployer) DeployOCR() error {
+func (t *GauntlerDeployer) DeployOCR() error {
 	msg := utils.LogStatus("Deployed OCR contract")
 
 	fmt.Println("Deploying OCR Feed:")
@@ -211,7 +196,7 @@ func (t *Deployer) DeployOCR() error {
 	return msg.Check(nil)
 }
 
-func (t Deployer) TransferLINK() error {
+func (t GauntlerDeployer) TransferLINK() error {
 	msg := utils.LogStatus("Sending LINK to OCR contract")
 
 	err := t.gauntlet.ExecCommand(
@@ -272,23 +257,6 @@ type OffchainConfigDetails struct {
 	MaxDurationShouldTransmitAcceptedReportNanoseconds time.Duration         `json:"maxDurationShouldTransmitAcceptedReportNanoseconds"`
 	ConfigPublicKeys                                   []string              `json:"configPublicKeys"`
 }
-
-type ClearProposal struct {
-	ClearProposal ClearProposalDetails `json:"clear_proposal"`
-}
-
-type ClearProposalDetails struct {
-	ID string `json:"proposalId"`
-}
-
-type FinalizeProposal struct {
-	FinalizeProposal FinalizeProposalDetails `json:"finalize_proposal"`
-}
-
-type FinalizeProposalDetails struct {
-	ID string `json:"proposalId"`
-}
-
 type AcceptProposal struct {
 	AcceptProposal AcceptProposalDetails `json:"accept_proposal"`
 }
@@ -298,7 +266,7 @@ type AcceptProposalDetails struct {
 	Digest string `json:"digest"`
 }
 
-func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
+func (t GauntlerDeployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	S := []int{}
 	signersArray := []string{}
 	transmitterArray := []string{}
@@ -509,7 +477,7 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	switch len(digest) {
 	case 0:
 		return errors.New("failed to find event with attribute: wasm.digest")
-	case 32:
+	case 64:
 		// expected
 	default:
 		return fmt.Errorf("wrong length for: wasm.digest: %d", len(digest))
@@ -538,15 +506,15 @@ func (t Deployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	return nil
 }
 
-func (t Deployer) OCR2Address() string {
+func (t GauntlerDeployer) OCR2Address() string {
 	return t.Account[OCR2]
 }
 
-func (t Deployer) Addresses() map[int]string {
+func (t GauntlerDeployer) Addresses() map[int]string {
 	return t.Account
 }
 
-func (t Deployer) Fund(addresses []string) error {
+func (t GauntlerDeployer) Fund(addresses []string) error {
 	// for _, a := range addresses {
 	// 	msg := utils.LogStatus(fmt.Sprintf("Funded %s", a))
 	// 	args := append([]string{"tx", "bank", "send", t.keyID, a, "1000000000uluna"}, t.args...)
