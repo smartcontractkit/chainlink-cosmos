@@ -227,16 +227,7 @@ export const wrapCommand = (command) => {
       if (this.flags.execute) {
         await prompt(`Continue ${actionMessage[state.nextAction]} proposal?`)
         const tx = await this.signAndSend([rawTx])
-
-        if (state.nextAction === Action.CREATE) {
-          const proposalFromEvent = tx.events[0].wasm.proposal_id[0]
-          logger.success(`New proposal created with ID: ${proposalFromEvent}`)
-          proposalId = Number(proposalFromEvent)
-        }
-
-        await this.printPostInstructions(proposalId)
-
-        return {
+        let response: Result<TransactionResponse> = {
           responses: [
             {
               tx,
@@ -246,7 +237,23 @@ export const wrapCommand = (command) => {
           data: {
             proposalId,
           },
-        } as Result<TransactionResponse>
+        }
+
+        if (state.nextAction === Action.CREATE) {
+          const proposalFromEvent = tx.events[0].wasm.proposal_id[0]
+          logger.success(`New proposal created with ID: ${proposalFromEvent}`)
+          proposalId = Number(proposalFromEvent)
+        }
+
+        if (state.nextAction === Action.EXECUTE && this.command.afterExecute) {
+          const data = this.command.afterExecute(response)
+          response = { ...response, data: { ...data } }
+        }
+
+        logger.success(`TX finished at ${tx.hash}`)
+        await this.printPostInstructions(proposalId)
+
+        return response
       }
 
       // TODO: Test raw message
