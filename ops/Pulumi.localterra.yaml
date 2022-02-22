@@ -19,6 +19,7 @@ config:
     - EVM_ENABLED
     - EVM_RPC_ENABLED
     - TERRA_ENABLED
+    - ETH_DISABLED
     - USE_LEGACY_ETH_ENV_VARS
     - FEATURE_OFFCHAIN_REPORTING2
     - P2P_NETWORKING_STACK
@@ -34,6 +35,7 @@ config:
   terra-env:CL-EVM_ENABLED: false
   terra-env:CL-EVM_RPC_ENABLED: false
   terra-env:CL-TERRA_ENABLED: true
+  terra-env:CL-ETH_DISABLED: true
   terra-env:CL-USE_LEGACY_ETH_ENV_VARS: false
   terra-env:CL-FEATURE_OFFCHAIN_REPORTING2: true
   terra-env:CL-P2P_NETWORKING_STACK: "V2"
