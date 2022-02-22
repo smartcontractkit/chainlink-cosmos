@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 	opsChainlink "github.com/smartcontractkit/chainlink-relay/ops/chainlink"
 	"github.com/smartcontractkit/chainlink-relay/ops/utils"
 	relayUtils "github.com/smartcontractkit/chainlink-relay/ops/utils"
@@ -35,9 +36,18 @@ type GauntlerDeployer struct {
 	gauntlet relayUtils.Gauntlet
 	network  string
 	Account  map[int]string
+	chainID  string
+	keyID    string
+	args     []string
 }
 
 func New(ctx *pulumi.Context) (GauntlerDeployer, error) {
+	// check if terrad is installed (needed to fund)
+	_, err := exec.LookPath("terrad")
+	if err != nil {
+		return GauntlerDeployer{}, errors.New("'terrad' is not installed")
+	}
+
 	// check if yarn is installed
 	yarn, err := exec.LookPath("yarn")
 	if err != nil {
@@ -72,10 +82,16 @@ func New(ctx *pulumi.Context) (GauntlerDeployer, error) {
 		return GauntlerDeployer{}, err
 	}
 
+	keyID := config.Require(ctx, "TERRA-DEPLOYER")
+	chainID := config.Require(ctx, "CL-RELAY_CHAINID")
+
 	return GauntlerDeployer{
 		gauntlet: gauntlet,
-		network:  "bombay-testnet",
+		network:  "local",
 		Account:  make(map[int]string),
+		chainID:  chainID,
+		keyID:    keyID,
+		args:     []string{"--from", keyID, "--chain-id", chainID, "--gas=auto", "--gas-adjustment=1.25", "--fees=100000uluna", "--broadcast-mode=block", "-y", "-o=json"},
 	}, nil
 }
 
@@ -507,12 +523,12 @@ func (t GauntlerDeployer) Addresses() map[int]string {
 }
 
 func (t GauntlerDeployer) Fund(addresses []string) error {
-	// for _, a := range addresses {
-	// 	msg := utils.LogStatus(fmt.Sprintf("Funded %s", a))
-	// 	args := append([]string{"tx", "bank", "send", t.keyID, a, "1000000000uluna"}, t.args...)
-	// 	if _, err := exec.Command("terrad", args...).Output(); msg.Check(err) != nil {
-	// 		return err
-	// 	}
-	// }
+	for _, a := range addresses {
+		msg := utils.LogStatus(fmt.Sprintf("Funded %s", a))
+		args := append([]string{"tx", "bank", "send", t.keyID, a, "1000000000uluna"}, t.args...)
+		if _, err := exec.Command("terrad", args...).Output(); msg.Check(err) != nil {
+			return err
+		}
+	}
 	return nil
 }
