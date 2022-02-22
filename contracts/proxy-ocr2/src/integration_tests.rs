@@ -37,6 +37,10 @@ mod mock {
     pub const LATEST_ROUND: Item<u32> = Item::new("latest_round");
     pub const ROUNDS: Map<U32Key, ocr2::state::Round> = Map::new("rounds");
 
+    pub const DECIMALS: u8 = 8;
+    pub const VERSION: &str = "0.0.0";
+    pub const NAME: &str = "mock test";
+
     pub fn contract() -> Box<dyn Contract<Empty>> {
         pub fn execute(
             deps: DepsMut,
@@ -74,6 +78,9 @@ mod mock {
                     let round = ROUNDS.load(deps.storage, latest_round.into())?;
                     to_binary(&round)
                 }
+                QueryMsg::Decimals => to_binary(&DECIMALS),
+                QueryMsg::Version => to_binary(&VERSION),
+                QueryMsg::Description => to_binary(&NAME.to_string()),
                 _ => unimplemented!(),
             }
         }
@@ -177,6 +184,30 @@ fn it_works() {
         .unwrap();
 
     assert_eq!(parse_round_id(latest_round.round_id), (1, 2));
+
+    // query decimals
+    let decimal: u8 = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Decimals)
+        .unwrap();
+    assert_eq!(decimal, mock::DECIMALS);
+
+    // query version
+    let version: String = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Version)
+        .unwrap();
+    assert_eq!(version, mock::VERSION.to_string());
+
+    // query description
+    let desc: String = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Description)
+        .unwrap();
+    assert_eq!(desc, mock::NAME.to_string());
 
     // query by round id, it should match latest round
     let round: Round = env
