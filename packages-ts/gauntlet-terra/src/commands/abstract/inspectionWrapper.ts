@@ -30,14 +30,15 @@ export interface InspectInstruction<CommandInput, ContractExpectedInfo> {
     contract: string
     function: string
   }[]
-  makeInput: (flags: any, args: string[]) => Promise<CommandInput>
-  makeInspectionData: (query: Query) => (input: CommandInput) => Promise<ContractExpectedInfo>
+  getContract: (id: ContractList, version:string) => Promise<Contract>
+  makeInput: (flags: any, args: string[]) => Promise<InspectionInput<CommandInput, ContractExpectedInfo>>
+  makeInspectionData: (query: Query) => (input: InspectionInput<CommandInput, ContractExpectedInfo>) => Promise<ContractExpectedInfo>
   makeOnchainData: (query: Query) => (instructionsData: any[]) => ContractExpectedInfo
   inspect: (expected: ContractExpectedInfo, data: ContractExpectedInfo) => boolean
 }
 
-export const instructionToInspectCommand = <CommandInput, Expected>(
-  inspectInstruction: InspectInstruction<CommandInput, Expected>,
+export const instructionToInspectCommand = <CommandInput, ContractExpectedInfo, ContractList extends string>(
+  abstract: AbstractTools<ContractList>, inspectInstruction: InspectInstruction<CommandInput, ContractExpectedInfo, any>,
 ) => {
   const id = `${inspectInstruction.command.contract}:${inspectInstruction.command.id}`
   return class Command extends TerraCommand {

@@ -1,11 +1,11 @@
 import { io, logger } from '@chainlink/gauntlet-core/dist/utils'
-import { JSONSchemaType } from 'ajv'
 import { existsSync, readFileSync } from 'fs'
 import path from 'path'
 import fetch from 'node-fetch'
 import { DEFAULT_RELEASE_VERSION, DEFAULT_CWPLUS_VERSION } from './constants'
+import { ContractId, CONTRACT_LIST, Contract, Contracts }
 
-export enum CONTRACT_LIST {
+CONTRACT_LIST = {
   FLAGS = 'flags',
   DEVIATION_FLAGGING_VALIDATOR = 'deviation_flagging_validator',
   OCR_2 = 'ocr2',
@@ -14,29 +14,9 @@ export enum CONTRACT_LIST {
   CW20_BASE = 'cw20_base',
   MULTISIG = 'cw3_flex_multisig',
   CW4_GROUP = 'cw4_group',
-}
+} as ContractList
 
-export enum TERRA_OPERATIONS {
-  DEPLOY = 'instantiate',
-  EXECUTE = 'execute',
-  QUERY = 'query',
-}
-
-export type TerraABI = {
-  [TERRA_OPERATIONS.DEPLOY]: JSONSchemaType<any>
-  [TERRA_OPERATIONS.EXECUTE]: JSONSchemaType<any>
-  [TERRA_OPERATIONS.QUERY]: JSONSchemaType<any>
-}
-
-export type Contract = {
-  id: CONTRACT_LIST
-  abi: TerraABI
-  bytecode: string
-}
-
-export type Contracts = Record<CONTRACT_LIST, Contract>
-
-export const getContractCode = async (contractId: CONTRACT_LIST, version): Promise<string> => {
+export const getContractCode = async (contractId: ContractId, version): Promise<string> => {
   if (version === 'local') {
     // Possible paths depending on how/where gauntlet is being executed
     const possibleContractPaths = [
@@ -91,7 +71,7 @@ const defaultContractVersions = {
   [CONTRACT_LIST.CW4_GROUP]: DEFAULT_CWPLUS_VERSION,
   [CONTRACT_LIST.MULTISIG]: DEFAULT_CWPLUS_VERSION,
 }
-export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
+export const getContractABI = (contractId: ContractId): TerraABI => {
   // Possible paths depending on how/where gauntlet is being executed
   const possibleContractPaths = [
     path.join(__dirname, './artifacts/contracts'),

@@ -4,7 +4,8 @@ import { existsSync } from 'fs'
 import path from 'path'
 import { io } from '@chainlink/gauntlet-core/dist/utils'
 import Terra from './commands'
-import { makeAbstractCommand } from './commands/abstract'
+import { abstract } from './commands'
+import { CONTRACT_LIST } from './lib/contracts'
 import { defaultFlags } from './lib/args'
 
 const commands = {

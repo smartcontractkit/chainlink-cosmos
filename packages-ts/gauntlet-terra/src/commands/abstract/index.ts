@@ -1,10 +1,9 @@
 import { Result } from '@chainlink/gauntlet-core'
 import { AccAddress, MsgExecuteContract } from '@terra-money/terra.js'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { TransactionResponse, TerraCommand } from '@chainlink/gauntlet-terra'
-import { Contract, CONTRACT_LIST, getContract, TerraABI, TERRA_OPERATIONS } from '../../lib/contracts'
-import { DEFAULT_RELEASE_VERSION } from '../../lib/constants'
-import schema from '../../lib/schema'
+import { TERRA_OPERATIONS } from '../../lib/schema'
+import { TransactionResponse, TerraCommand } from '../..'
+import { Contract, CONTRACT_LIST, GetContract } from '../../lib/contracts'
 
 export interface AbstractOpts {
   contract: Contract
@@ -28,11 +27,6 @@ export const makeAbstractCommand = async (
 }
 
 export const parseInstruction = async (instruction: string, inputVersion: string): Promise<AbstractOpts> => {
-  const isValidContract = (contractName: string): boolean => {
-    // Validate that we have this contract available
-    return Object.values(CONTRACT_LIST).includes(contractName as CONTRACT_LIST)
-  }
-
   const isValidFunction = (abi: TerraABI, functionName: string): boolean => {
     // Check against ABI if method exists
     const availableFunctions = [
@@ -47,20 +41,12 @@ export const parseInstruction = async (instruction: string, inputVersion: string
     return availableFunctions.includes(functionName)
   }
 
-  const isQueryFunction = (abi: TerraABI, functionName: string) => {
-    const functionList = abi.query.oneOf || abi.query.anyOf
-    return functionList.find((queryAbi: any) => {
-      if (queryAbi.enum) return queryAbi.enum.includes(functionName)
-      if (queryAbi.required) return queryAbi.required.includes(functionName)
-      return false
-    })
-  }
+
 
   const command = instruction.split(':')
   if (!command.length || command.length > 2) throw new Error(`Abstract: Contract ${command[0]} not found`)
 
-  const version = inputVersion ? inputVersion : DEFAULT_RELEASE_VERSION
-  const contractByteCode = await getContract(command[0] as CONTRACT_LIST, version)
+  const contractByteCode = await getContract(command[0] as ContractId, inputVersion)
   const contract = isValidContract(command[0]) && contractByteCode
   if (!contract) throw new Error(`Abstract: Contract ${command[0]} not found`)
 
