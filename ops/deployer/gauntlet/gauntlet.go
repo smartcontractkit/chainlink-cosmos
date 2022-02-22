@@ -1,4 +1,4 @@
-package deployer
+package gauntlet
 
 import (
 	"encoding/hex"
@@ -86,10 +86,11 @@ func (t *GauntlerDeployer) Load() error {
 		t.gauntlet.Flag("network", t.network),
 		"link",
 		"ocr2",
+		"access_controller",
 	)
 
 	if err != nil {
-		return errors.New("Billing AC initialization failed")
+		return errors.New("Uploading contracts failed")
 	}
 	return msg.Check(nil)
 }
@@ -179,7 +180,7 @@ func (t *GauntlerDeployer) DeployOCR() error {
 
 	err = t.gauntlet.ExecCommand(
 		"ocr2:deploy",
-		t.gauntlet.Flag("network", "bombay-testnet"),
+		t.gauntlet.Flag("network", t.network),
 		t.gauntlet.Flag("input", string(jsonInput)),
 	)
 	if err != nil {
@@ -201,7 +202,7 @@ func (t GauntlerDeployer) TransferLINK() error {
 
 	err := t.gauntlet.ExecCommand(
 		"token:transfer",
-		t.gauntlet.Flag("network", "bombay-testnet"),
+		t.gauntlet.Flag("network", t.network),
 		t.gauntlet.Flag("to", t.Account[OCR2]),
 		t.gauntlet.Flag("amount", "1000000000"),
 		t.gauntlet.Flag("link", t.Account[LINK]),
@@ -464,7 +465,7 @@ func (t GauntlerDeployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		return err
 	}
 	if err == nil && len(report.Data) == 0 {
-		err = errors.New("begin proposal produced no logs")
+		err = errors.New("finalize proposal produced no logs")
 	}
 
 	if status.Check(err) != nil {
@@ -473,15 +474,6 @@ func (t GauntlerDeployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 
 	fmt.Println(report.Data)
 	var digest string = report.Data["digest"]
-
-	switch len(digest) {
-	case 0:
-		return errors.New("failed to find event with attribute: wasm.digest")
-	case 64:
-		// expected
-	default:
-		return fmt.Errorf("wrong length for: wasm.digest: %d", len(digest))
-	}
 
 	input := AcceptProposalDetails{
 		ID:     id,
