@@ -16,7 +16,7 @@ var (
 	// TestsDir path to e2e tests dir
 	TestsDir = filepath.Join(ProjectRoot, "tests", "e2e")
 	// CodeIds path to the codeIds directory
-	CodeIds = filepath.Join(ProjectRoot, "packages-ts/gauntlet-terra-contracts/codeIds")
+	CodeIds = filepath.Join(ProjectRoot, "packages-ts", "gauntlet-terra-contracts", "codeIds")
 	// Reports path to the gauntlet reports directory
 	Reports = filepath.Join(ProjectRoot, "tests", "e2e", "smoke", "reports")
 	// Rdd path to the gauntlet rdd directory
