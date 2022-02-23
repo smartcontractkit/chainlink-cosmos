@@ -20,6 +20,7 @@ type RddConfig struct {
 	Validators map[string]interface{} `json:"validators"`
 }
 
+// WriteRdd writes the rdd data to a file
 func WriteRdd(rdd *RddConfig, file string) error {
 	f, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {

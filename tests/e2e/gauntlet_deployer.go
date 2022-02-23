@@ -16,9 +16,11 @@ import (
 )
 
 const TERRA_COMMAND_ERROR = "Terra Command execution error"
+const RETRY_COUNT = 5
 
 type GauntletDeployer struct {
 	Cli                        *gauntlet.Gauntlet
+	Version                    string
 	LinkToken                  string
 	BillingAccessController    string
 	RequesterAccessController  string
@@ -50,12 +52,15 @@ func GetDefaultGauntletConfig(nodeUrl *url.URL) map[string]string {
 	return networkConfig
 }
 
+// UpdateReportName updates the report name to be used by gauntlet on completion
 func UpdateReportName(reportName string, g *gauntlet.Gauntlet) {
 	g.NetworkConfig["REPORT_NAME"] = filepath.Join(utils.Reports, reportName)
 	err := g.WriteNetworkConfigMap(utils.Networks)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to write the updated .env file")
 }
 
+// GetInspectionResultsFromOutput parses the inpsectiond data from the output
+//  TODO we should really update the inspection command to just output json in the future
 func GetInspectionResultsFromOutput(output string) (map[string]InspectionResult, error) {
 	lines := strings.Split(output, "\n")
 	passRegex, err := regexp.Compile("✅  (.+) matches: (.+)$")
@@ -90,6 +95,7 @@ func GetInspectionResultsFromOutput(output string) (map[string]InspectionResult,
 	return results, nil
 }
 
+// LoadReportJson loads a gauntlet report into a generic map
 func LoadReportJson(file string) (map[string]interface{}, error) {
 	jsonFile, err := os.Open(filepath.Join(utils.Reports, file))
 	if err != nil {
@@ -108,233 +114,254 @@ func LoadReportJson(file string) (map[string]interface{}, error) {
 	return data, err
 }
 
+// GetTxAddressFromReport gets the address from the typical place in the json report data
 func GetTxAddressFromReport(report map[string]interface{}) string {
 	return report["responses"].([]interface{})[0].(map[string]interface{})["tx"].(map[string]interface{})["address"].(string)
 }
 
+// DeployToken attempts to deploy the link token, currently does not work very often and I
+//  have never found a good reason why - Tate
 func (gd *GauntletDeployer) DeployToken() {
 	// TODO figure out why this never passes??? for a future pr
 	codeIds := gd.Cli.Flag("codeIDs", filepath.Join(utils.CodeIds, fmt.Sprintf("%s%s", gd.Cli.Network, ".json")))
 	artifacts := gd.Cli.Flag("artifacts", filepath.Join(utils.ProjectRoot, "packages-ts/gauntlet-terra-contracts/artifacts/bin"))
 	_, err := gd.Cli.ExecCommandWithRetries([]string{
 		"token:deploy",
-		gd.Cli.Flag("version", "local"),
+		gd.Cli.Flag("version", gd.Version),
 		codeIds,
 		artifacts,
 	}, []string{
 		TERRA_COMMAND_ERROR,
-	}, 2)
+	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy link token")
 	// TODO parse link token and set into state when this is working
 	//s.LinkToken = something
 }
 
+// Upload uploads the terra contracts
 func (gd *GauntletDeployer) Upload() {
 	UpdateReportName("upload", gd.Cli)
 	_, err := gd.Cli.ExecCommandWithRetries([]string{
 		"upload",
-		gd.Cli.Flag("version", "local"),
+		gd.Cli.Flag("version", gd.Version),
 		gd.Cli.Flag("maxRetry", "10"),
 	}, []string{
 		TERRA_COMMAND_ERROR,
-	}, 5)
+	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to upload contracts")
 }
 
+// deployAccessController deploys an access controller
 func (gd *GauntletDeployer) deployAccessController(name string) string {
 	codeIds := gd.Cli.Flag("codeIDs", filepath.Join(utils.CodeIds, fmt.Sprintf("%s%s", gd.Cli.Network, ".json")))
 	UpdateReportName(name, gd.Cli)
 	_, err := gd.Cli.ExecCommandWithRetries([]string{
 		"access_controller:deploy",
-		gd.Cli.Flag("version", "local"),
+		gd.Cli.Flag("version", gd.Version),
 		codeIds,
 	}, []string{
 		TERRA_COMMAND_ERROR,
-	}, 2)
+	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy the billing access controller")
 	report, err := LoadReportJson(name + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
 	return GetTxAddressFromReport(report)
 }
 
-func (gd *GauntletDeployer) DeployBillingAccessController() {
-	gd.BillingAccessController = gd.deployAccessController("billing_ac_deploy")
-	gd.Cli.NetworkConfig["BILLING_ACCESS_CONTROLLER"] = gd.BillingAccessController
+// DeployBillingAccessController deploys a biller
+func (gd *GauntletDeployer) DeployBillingAccessController() string {
+	billingAccessController := gd.deployAccessController("billing_ac_deploy")
+	gd.Cli.NetworkConfig["BILLING_ACCESS_CONTROLLER"] = billingAccessController
+	return billingAccessController
 }
 
-func (gd *GauntletDeployer) DeployRequesterAccessController() {
-	gd.RequesterAccessController = gd.deployAccessController("requester_ac_deploy")
-	gd.Cli.NetworkConfig["REQUESTER_ACCESS_CONTROLLER"] = gd.RequesterAccessController
+// DeployRequesterAccessController deploys a requester
+func (gd *GauntletDeployer) DeployRequesterAccessController() string {
+	requesterAccessController := gd.deployAccessController("requester_ac_deploy")
+	gd.Cli.NetworkConfig["REQUESTER_ACCESS_CONTROLLER"] = requesterAccessController
+	return requesterAccessController
 }
 
-func (gd *GauntletDeployer) DeployFlags() {
+// DeployFlags deploys the flags for the lowering and raising access controllers
+func (gd *GauntletDeployer) DeployFlags(billingAccessController, requesterAccessController string) string {
 	reportName := "flags_deploy"
 	UpdateReportName(reportName, gd.Cli)
 	_, err := gd.Cli.ExecCommandWithRetries([]string{
 		"flags:deploy",
-		gd.Cli.Flag("loweringAccessController", gd.BillingAccessController),
-		gd.Cli.Flag("raisingAccessController", gd.RequesterAccessController),
-		gd.Cli.Flag("version", "local"),
+		gd.Cli.Flag("loweringAccessController", billingAccessController),
+		gd.Cli.Flag("raisingAccessController", requesterAccessController),
+		gd.Cli.Flag("version", gd.Version),
 	}, []string{
 		TERRA_COMMAND_ERROR,
-	}, 2)
+	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy the flag")
 	flagsReport, err := LoadReportJson(reportName + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
-	gd.Flags = GetTxAddressFromReport(flagsReport)
+	flags := GetTxAddressFromReport(flagsReport)
+	return flags
 }
 
-func (gd *GauntletDeployer) DeployDeviationFlaggingValidator() {
+// DeployDeviationFlaggingValidator deploys the deviation flagging validator with the threshold provided
+func (gd *GauntletDeployer) DeployDeviationFlaggingValidator(flags string, flaggingThreshold int) string {
 	reportName := "dfv_deploy"
 	UpdateReportName(reportName, gd.Cli)
 	_, err := gd.Cli.ExecCommandWithRetries([]string{
 		"deviation_flagging_validator:deploy",
-		gd.Cli.Flag("flaggingThreshold", fmt.Sprintf("%v", uint32(80000))),
-		gd.Cli.Flag("flags", gd.Flags),
-		gd.Cli.Flag("version", "local"),
+		gd.Cli.Flag("flaggingThreshold", fmt.Sprintf("%v", uint32(flaggingThreshold))),
+		gd.Cli.Flag("flags", flags),
+		gd.Cli.Flag("version", gd.Version),
 	}, []string{
 		TERRA_COMMAND_ERROR,
-	}, 2)
+	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy the deviation flagging validator")
 	dfvReport, err := LoadReportJson(reportName + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
-	gd.DeviationFlaggingValidator = GetTxAddressFromReport(dfvReport)
+	return GetTxAddressFromReport(dfvReport)
 }
 
-func (gd *GauntletDeployer) DeployOcr() {
-	gd.RddPath = filepath.Join("tests", "e2e", "smoke", "rdd", fmt.Sprintf("directory-terra-%s.json", gd.Cli.Network))
+// DeployOcr deploys ocr, it creates an rdd file in the process and updates it with the ocr address on completion
+func (gd *GauntletDeployer) DeployOcr() (string, string) {
+	rddPath := filepath.Join("tests", "e2e", "smoke", "rdd", fmt.Sprintf("directory-terra-%s.json", gd.Cli.Network))
 	tmpId := "terra1test0000000000000000000000000000000000"
 	ocrRddContract := NewRddContract(tmpId)
-	err := WriteRdd(ocrRddContract, gd.RddPath)
+	err := WriteRdd(ocrRddContract, rddPath)
 	Expect(err).ShouldNot(HaveOccurred(), "Did not write the rdd json correctly")
 	reportName := "ocr_deploy"
 	UpdateReportName(reportName, gd.Cli)
 	_, err = gd.Cli.ExecCommandWithRetries([]string{
 		"ocr2:deploy",
-		gd.Cli.Flag("rdd", gd.RddPath),
-		gd.Cli.Flag("version", "local"),
+		gd.Cli.Flag("rdd", rddPath),
+		gd.Cli.Flag("version", gd.Version),
 		tmpId,
 	}, []string{
 		TERRA_COMMAND_ERROR,
-	}, 2)
+	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy ocr2")
 	ocrReport, err := LoadReportJson(reportName + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
-	gd.OCR = GetTxAddressFromReport(ocrReport)
+	ocr := GetTxAddressFromReport(ocrReport)
 
 	// add the new contract to the rdd
-	ocrRddContract.Contracts[gd.OCR] = ocrRddContract.Contracts[tmpId]
-	err = WriteRdd(ocrRddContract, gd.RddPath)
+	ocrRddContract.Contracts[ocr] = ocrRddContract.Contracts[tmpId]
+	err = WriteRdd(ocrRddContract, rddPath)
 	Expect(err).ShouldNot(HaveOccurred(), "Did not write the rdd json correctly")
+	return ocr, rddPath
 }
 
-func (gd *GauntletDeployer) SetBilling() {
+// SetBiling sets the billing info that exists in the rdd file for the ocr address you pass in
+func (gd *GauntletDeployer) SetBilling(ocr, rddPath string) {
 	UpdateReportName("set_billing", gd.Cli)
 	_, err := gd.Cli.ExecCommandWithRetries([]string{
 		"ocr2:set_billing",
-		gd.Cli.Flag("version", "local"),
-		gd.Cli.Flag("rdd", gd.RddPath),
-		gd.OCR,
+		gd.Cli.Flag("version", gd.Version),
+		gd.Cli.Flag("rdd", rddPath),
+		ocr,
 	}, []string{
 		TERRA_COMMAND_ERROR,
-	}, 2)
+	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to set billing")
 }
 
-func (gd *GauntletDeployer) BeginProposal() {
+// BeginProposal begins the proposal
+func (gd *GauntletDeployer) BeginProposal(ocr, rddPath string) string {
 	reportName := "begin_proposal"
 	UpdateReportName(reportName, gd.Cli)
 	_, err := gd.Cli.ExecCommandWithRetries([]string{
 		"ocr2:begin_proposal",
-		gd.Cli.Flag("version", "local"),
-		gd.Cli.Flag("rdd", gd.RddPath),
-		gd.OCR,
+		gd.Cli.Flag("version", gd.Version),
+		gd.Cli.Flag("rdd", rddPath),
+		ocr,
 	}, []string{
 		TERRA_COMMAND_ERROR,
-	}, 2)
+	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to begin proposal")
 	beginProposalReport, err := LoadReportJson(reportName + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
-	gd.ProposalId = beginProposalReport["data"].(map[string]interface{})["proposalId"].(string)
+	return beginProposalReport["data"].(map[string]interface{})["proposalId"].(string)
 }
 
-func (gd *GauntletDeployer) ProposeConfig() {
+// ProposeConfig proposes the config
+func (gd *GauntletDeployer) ProposeConfig(ocr, proposalId, rddPath string) {
 	reportName := "propose_config"
 	UpdateReportName(reportName, gd.Cli)
 	_, err := gd.Cli.ExecCommandWithRetries([]string{
 		"ocr2:propose_config",
-		gd.Cli.Flag("version", "local"),
-		gd.Cli.Flag("rdd", gd.RddPath),
+		gd.Cli.Flag("version", gd.Version),
+		gd.Cli.Flag("rdd", rddPath),
 		gd.Cli.Flag("f", "1"),
-		gd.Cli.Flag("proposalId", gd.ProposalId),
+		gd.Cli.Flag("proposalId", proposalId),
 		gd.OCR,
 	}, []string{
 		TERRA_COMMAND_ERROR,
-	}, 2)
+	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to propose config")
 }
 
-func (gd *GauntletDeployer) ProposeOffchainConfig() {
+// ProposeOffchainConfig proposes the offchain config
+func (gd *GauntletDeployer) ProposeOffchainConfig(ocr, proposalId, rddPath string) {
 	reportName := "propose_offchain_config"
 	gd.Cli.NetworkConfig["SECRET"] = gd.Cli.NetworkConfig["MNEMONIC"]
 	UpdateReportName(reportName, gd.Cli)
 	_, err := gd.Cli.ExecCommandWithRetries([]string{
 		"ocr2:propose_offchain_config",
-		gd.Cli.Flag("version", "local"),
-		gd.Cli.Flag("rdd", gd.RddPath),
-		gd.Cli.Flag("proposalId", gd.ProposalId),
+		gd.Cli.Flag("version", gd.Version),
+		gd.Cli.Flag("rdd", rddPath),
+		gd.Cli.Flag("proposalId", proposalId),
 		gd.Cli.Flag("offchainConfigVersion", "2"),
-		gd.OCR,
+		ocr,
 	}, []string{
 		TERRA_COMMAND_ERROR,
-	}, 2)
+	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to propose offchain config")
 }
 
-func (gd *GauntletDeployer) FinalizeProposal() {
+// FinalizeProposal finalizes the proposal
+func (gd *GauntletDeployer) FinalizeProposal(ocr, proposalId, rddPath string) string {
 	reportName := "finalize_proposal"
 	UpdateReportName(reportName, gd.Cli)
 	_, err := gd.Cli.ExecCommandWithRetries([]string{
 		"ocr2:finalize_proposal",
-		gd.Cli.Flag("version", "local"),
-		gd.Cli.Flag("rdd", gd.RddPath),
-		gd.Cli.Flag("proposalId", gd.ProposalId),
-		gd.OCR,
+		gd.Cli.Flag("version", gd.Version),
+		gd.Cli.Flag("rdd", rddPath),
+		gd.Cli.Flag("proposalId", proposalId),
+		ocr,
 	}, []string{
 		TERRA_COMMAND_ERROR,
-	}, 2)
+	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to finalize proposal")
 	finalizeProposalReport, err := LoadReportJson(reportName + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
-	gd.ProposalDigest = finalizeProposalReport["data"].(map[string]interface{})["digest"].(string)
+	return finalizeProposalReport["data"].(map[string]interface{})["digest"].(string)
 }
 
-func (gd *GauntletDeployer) AcceptProposal() {
+// AcceptProposal accepts the proposal
+func (gd *GauntletDeployer) AcceptProposal(ocr, proposalId, proposalDigest, rddPath string) {
 	reportName := "accept_proposal"
 	UpdateReportName(reportName, gd.Cli)
 	_, err := gd.Cli.ExecCommandWithRetries([]string{
 		"ocr2:accept_proposal",
-		gd.Cli.Flag("version", "local"),
-		gd.Cli.Flag("rdd", gd.RddPath),
-		gd.Cli.Flag("proposalId", gd.ProposalId),
-		gd.Cli.Flag("digest", gd.ProposalDigest),
-		gd.OCR,
+		gd.Cli.Flag("version", gd.Version),
+		gd.Cli.Flag("rdd", rddPath),
+		gd.Cli.Flag("proposalId", proposalId),
+		gd.Cli.Flag("digest", proposalDigest),
+		ocr,
 	}, []string{
 		TERRA_COMMAND_ERROR,
-	}, 2)
+	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to accept proposal")
 }
 
-func (gd *GauntletDeployer) OcrInspect() map[string]InspectionResult {
+// OcrInspect gets the inspections results data
+func (gd *GauntletDeployer) OcrInspect(ocr, rddPath string) map[string]InspectionResult {
 	UpdateReportName("inspect", gd.Cli)
 	output, err := gd.Cli.ExecCommandWithRetries([]string{
 		"ocr2:inspect",
-		gd.Cli.Flag("version", "local"),
-		gd.Cli.Flag("rdd", gd.RddPath),
-		gd.OCR,
+		gd.Cli.Flag("version", gd.Version),
+		gd.Cli.Flag("rdd", rddPath),
+		ocr,
 	}, []string{
 		TERRA_COMMAND_ERROR,
-	}, 2)
+	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to inspect")
 
 	results, err := GetInspectionResultsFromOutput(output)
