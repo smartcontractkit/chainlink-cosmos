@@ -187,24 +187,24 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
     match msg {
         QueryMsg::Decimals => {
             let contract_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
-            Ok(to_binary(&deps.querier.query_wasm_smart(
-                contract_address,
-                &ocr2::msg::QueryMsg::Decimals,
-            )?)?)
+            let decimals: u8 = deps
+                .querier
+                .query_wasm_smart(&contract_address, &ocr2::msg::QueryMsg::Decimals)?;
+            Ok(to_binary(&decimals)?)
         }
         QueryMsg::Version => {
             let contract_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
-            Ok(to_binary(&deps.querier.query_wasm_smart(
-                contract_address,
-                &ocr2::msg::QueryMsg::Version,
-            )?)?)
+            let version: String = deps
+                .querier
+                .query_wasm_smart(contract_address, &ocr2::msg::QueryMsg::Version)?;
+            Ok(to_binary(&version)?)
         }
         QueryMsg::Description => {
             let contract_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
-            Ok(to_binary(&deps.querier.query_wasm_smart(
-                contract_address,
-                &ocr2::msg::QueryMsg::Description,
-            )?)?)
+            let description: String = deps
+                .querier
+                .query_wasm_smart(contract_address, &ocr2::msg::QueryMsg::Description)?;
+            Ok(to_binary(&description)?)
         }
         QueryMsg::RoundData { round_id } => {
             let (phase_id, round_id) = parse_round_id(round_id);
