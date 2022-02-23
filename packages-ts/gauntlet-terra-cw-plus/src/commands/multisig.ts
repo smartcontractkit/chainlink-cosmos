@@ -3,6 +3,8 @@ import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { AccAddress, MsgExecuteContract } from '@terra-money/terra.js'
 import { isDeepEqual } from '../lib/utils'
+import { Vote, WasmMsg, Action, State } from '../lib/types'
+import { fetchProposalState } from './inspect'
 
 type ProposalAction = (
   signer: AccAddress,
@@ -10,48 +12,10 @@ type ProposalAction = (
   message: MsgExecuteContract,
 ) => Promise<MsgExecuteContract>
 
-enum Vote {
-  YES = 'yes',
-  NO = 'no',
-  ABS = 'abstain',
-  VETO = 'veto',
-}
-
-type WasmMsg = {
-  wasm: {
-    execute: {
-      contract_addr: string
-      funds: {
-        denom: string
-        amount: string
-      }[]
-      msg: string
-    }
-  }
-}
-
-enum Action {
-  CREATE = 'create',
-  APPROVE = 'approve',
-  EXECUTE = 'execute',
-  NONE = 'none',
-}
-
-type State = {
-  threshold: number
-  nextAction: Action
-  owners: AccAddress[]
-  approvers: string[]
-  // https://github.com/CosmWasm/cw-plus/blob/82138f9484e538913f7faf78bc292fb14407aae8/packages/cw3/src/query.rs#L75
-  currentStatus?: 'pending' | 'open' | 'rejected' | 'passed' | 'executed'
-  data?: WasmMsg[]
-}
-
 export const wrapCommand = (command) => {
   return class Multisig extends TerraCommand {
     command: TerraCommand
     multisig: AccAddress
-    multisigGroup: AccAddress
 
     static id = `${command.id}:multisig`
 
@@ -63,7 +27,6 @@ export const wrapCommand = (command) => {
       if (!AccAddress.validate(process.env.CW3_FLEX_MULTISIG)) throw new Error(`Invalid Multisig wallet address`)
       if (!AccAddress.validate(process.env.CW4_GROUP)) throw new Error(`Invalid Multisig group address`)
       this.multisig = process.env.CW3_FLEX_MULTISIG as AccAddress
-      this.multisigGroup = process.env.CW4_GROUP as AccAddress
     }
 
     makeRawTransaction = async (signer: AccAddress, state?: State) => {
@@ -112,7 +75,7 @@ export const wrapCommand = (command) => {
           msgs: [this.toWasmMsg(message)],
           title: command.id,
           // TODO: Set expiration time
-          // latest: { never: {} }
+          // latest: { at_height: 7970238 },
         },
       }
       return new MsgExecuteContract(signer, this.multisig, proposeInput)
@@ -140,60 +103,22 @@ export const wrapCommand = (command) => {
     }
 
     fetchState = async (proposalId?: number): Promise<State> => {
-      const groupState = await this.query(this.multisigGroup, {
-        list_members: {},
-      })
-      const owners = groupState.members.map((m) => m.addr)
-      const thresholdState = await this.query(this.multisig, {
-        threshold: {},
-      })
-      const threshold = thresholdState.absolute_count.total_weight
-      if (!proposalId) {
-        return {
-          threshold,
-          nextAction: Action.CREATE,
-          owners,
-          approvers: [],
-        }
-      }
-      const proposalState = await this.query(this.multisig, {
-        proposal: {
-          proposal_id: proposalId,
-        },
-      })
-      const votes = await this.query(this.multisig, {
-        list_votes: {
-          proposal_id: proposalId,
-        },
-      })
-      const status = proposalState.status
-      const toNextAction = {
-        passed: Action.EXECUTE,
-        open: Action.APPROVE,
-        pending: Action.APPROVE,
-        rejected: Action.NONE,
-        executed: Action.NONE,
-      }
-      return {
-        threshold,
-        nextAction: toNextAction[status],
-        owners,
-        currentStatus: status,
-        data: proposalState.msgs,
-        approvers: votes.votes.filter((v) => v.vote === Vote.YES).map((v) => v.voter),
-      }
+      const query = this.provider.wasm.contractQuery.bind(this.provider.wasm)
+      return fetchProposalState(query)(this.multisig, proposalId)
     }
 
     printPostInstructions = async (proposalId: number) => {
       const state = await this.fetchState(proposalId)
       const approvalsLeft = state.threshold - state.approvers.length
       const messages = {
-        [Action.APPROVE]: `The proposal needs ${approvalsLeft} more approvals. Run the same command with the flag --proposal=${proposalId}`,
-        [Action.EXECUTE]: `The proposal reached the threshold and can be executed. Run the same command with the flag --proposal=${proposalId}`,
-        [Action.NONE]: `The proposal has been executed. No more actions needed`,
+        passed: `The proposal reached the threshold and can be executed. Run the same command with the flag --proposal=${proposalId}`,
+        open: `The proposal needs ${approvalsLeft} more approvals. Run the same command with the flag --proposal=${proposalId}`,
+        pending: `The proposal needs ${approvalsLeft} more approvals. Run the same command with the flag --proposal=${proposalId}`,
+        rejected: `The proposal has been rejected. No actions available`,
+        executed: `The proposal has been executed. No more actions needed`,
       }
       logger.line()
-      logger.info(`${messages[state.nextAction]}`)
+      logger.info(`${messages[state.currentStatus]}`)
       logger.line()
     }
 
@@ -216,6 +141,7 @@ export const wrapCommand = (command) => {
         - Approvers List: ${state.approvers}
 
         - Next Action: ${state.nextAction.toUpperCase()}
+        ${state.expiresAt && `- Approvals expires at ${state.expiresAt}`}
       `)
 
       const actionMessage = {
