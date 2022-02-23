@@ -505,6 +505,9 @@ pub fn execute_propose_config(
     // validate new config
     require!(f != 0, InvalidInput);
     require!(signers_len <= MAX_ORACLES, TooManySigners);
+    // See corresponding comment https://github.com/smartcontractkit/chainlink-terra/blob/5c229358eea2633922de615be509eb47c5bcb998/pkg/terra/config_digester.go#L30
+    // If this requirement of len(transmitters) == len(signers) is removed, we'll need
+    // to update the config digester to include a length prefix on transmitters.
     require!(transmitters.len() == signers.len(), InvalidInput);
     require!(payees.len() == signers.len(), InvalidInput);
     require!(3 * (usize::from(f)) < signers_len, InvalidInput);
