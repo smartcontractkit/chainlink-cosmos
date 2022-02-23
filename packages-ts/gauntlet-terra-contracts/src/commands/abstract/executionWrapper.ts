@@ -30,6 +30,8 @@ export const instructionToCommand = (instruction: AbstractInstruction<any, any>)
       super(flags, args)
     }
 
+    afterExecute = instruction.afterExecute
+
     buildCommand = async (): Promise<TerraCommand> => {
       const commandInput = await instruction.makeInput(this.flags, this.args)
       if (!instruction.validateInput(commandInput)) {
@@ -49,8 +51,8 @@ export const instructionToCommand = (instruction: AbstractInstruction<any, any>)
     execute = async (): Promise<Result<TransactionResponse>> => {
       const command = await this.buildCommand()
       let response = await command.execute()
-      if (instruction.afterExecute) {
-        const data = instruction.afterExecute(response)
+      if (this.afterExecute) {
+        const data = this.afterExecute(response)
         response = { ...response, data: { ...data } }
       }
       return response

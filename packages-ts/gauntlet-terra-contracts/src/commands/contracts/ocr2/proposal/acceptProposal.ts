@@ -1,4 +1,5 @@
 import { Result } from '@chainlink/gauntlet-core'
+import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { TransactionResponse } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
 import { AbstractInstruction, instructionToCommand } from '../../../abstract/executionWrapper'
@@ -33,9 +34,22 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const afterExecute = async (response: Result<TransactionResponse>) => {
-  console.log(response.data)
-  return
+const afterExecute = (response: Result<TransactionResponse>) => {
+  const events = response.responses[0].tx.events
+  if (!events) {
+    logger.error('Could not retrieve events from tx')
+    return
+  }
+
+  const digest = events[0]['wasm-set_config'].latest_config_digest[0]
+  logger.success(`Proposal accepted`)
+  logger.line()
+  logger.info('Important: To inspect the aggregator, save the following DIGEST:')
+  logger.info(digest)
+  logger.line()
+  return {
+    digest,
+  }
 }
 
 // yarn gauntlet ocr2:accept_proposal --network=bombay-testnet --id=4 --digest=71e6969c14c3e0cd47d75da229dbd2f76fd0f3c17e05635f78ac755a99897a2f terra14nrtuhrrhl2ldad7gln5uafgl8s2m25du98hlx

@@ -4,11 +4,9 @@ import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { CATEGORIES } from '../../lib/constants'
 import { CONTRACT_LIST } from '../../lib/contracts'
+import { APIParams } from '@terra-money/terra.js/dist/client/lcd/APIRequester'
 
-export type InspectionInput<CommandInput, Expected> = {
-  commandInput?: CommandInput
-  expected: Expected
-}
+export type Query = (contractAddress: string, query: any, params?: APIParams) => Promise<any>
 
 /**
  * Inspection commands need to match this interface
@@ -17,11 +15,12 @@ export type InspectionInput<CommandInput, Expected> = {
  *   id: Name of the command the user will execute
  * }
  * instructions: instruction[] Set of abstract query commands the inspection command will run
- * makeInput: Receives flags and args. Should return the input the underneath commands, and the expected result we want
+ * makeInput: Receives flags and args. Should return the input the underneath commands
+ * makeInspectionInput: Transforms input into a comparable format
  * makeOnchainData: Parses every instruction command result to match the same interface the Inspection command expects
  * inspect: Compares both expected and onchain data.
  */
-export interface InspectInstruction<CommandInput, Expected> {
+export interface InspectInstruction<CommandInput, ContractExpectedInfo> {
   command: {
     category: CATEGORIES
     contract: CONTRACT_LIST
@@ -31,9 +30,10 @@ export interface InspectInstruction<CommandInput, Expected> {
     contract: string
     function: string
   }[]
-  makeInput: (flags: any, args: string[]) => Promise<InspectionInput<CommandInput, Expected>>
-  makeOnchainData: (instructionsData: any[]) => Expected
-  inspect: (expected: Expected, data: Expected) => boolean
+  makeInput: (flags: any, args: string[]) => Promise<CommandInput>
+  makeInspectionData: (query: Query) => (input: CommandInput) => Promise<ContractExpectedInfo>
+  makeOnchainData: (query: Query) => (instructionsData: any[]) => ContractExpectedInfo
+  inspect: (expected: ContractExpectedInfo, data: ContractExpectedInfo) => boolean
 }
 
 export const instructionToInspectCommand = <CommandInput, Expected>(
@@ -55,12 +55,7 @@ export const instructionToInspectCommand = <CommandInput, Expected>(
       const input = await inspectInstruction.makeInput(this.flags, this.args)
       const commands = await Promise.all(
         inspectInstruction.instructions.map((instruction) =>
-          makeAbstractCommand(
-            `${instruction.contract}:${instruction.function}`,
-            this.flags,
-            this.args,
-            input.commandInput,
-          ),
+          makeAbstractCommand(`${instruction.contract}:${instruction.function}`, this.flags, this.args, input),
         ),
       )
 
@@ -73,8 +68,10 @@ export const instructionToInspectCommand = <CommandInput, Expected>(
         }),
       )
 
-      const onchainData = inspectInstruction.makeOnchainData(data)
-      const inspection = inspectInstruction.inspect(input.expected, onchainData)
+      const query: Query = this.provider.wasm.contractQuery.bind(this.provider.wasm)
+      const onchainData = inspectInstruction.makeOnchainData(query)(data)
+      const inspectData = await inspectInstruction.makeInspectionData(query)(input)
+      const inspection = inspectInstruction.inspect(inspectData, onchainData)
       return {
         data: inspection,
         responses: [

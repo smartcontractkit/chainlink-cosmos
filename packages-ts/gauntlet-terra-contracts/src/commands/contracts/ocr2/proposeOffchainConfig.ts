@@ -104,7 +104,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   return {
     id: input.proposalId,
     offchain_config_version: 2,
-    offchain_config: offchainConfig,
+    offchain_config: offchainConfig.toString('base64'),
   }
 }
 
