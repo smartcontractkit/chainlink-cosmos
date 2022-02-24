@@ -1,3 +1,5 @@
+import { BN } from '@chainlink/gauntlet-core/dist/utils'
+
 export const enum CATEGORIES {
   OWNERSHIP = 'Ownership',
   PROXIES = 'Proxies',
@@ -33,3 +35,6 @@ export const CW3_FLEX_MULTISIG_CODE_IDs = {
   local: -1,
   'testnet-bombay': 36059,
 }
+
+export const TOKEN_DECIMALS = 18
+export const TOKEN_UNIT = new BN(10).pow(new BN(TOKEN_DECIMALS))

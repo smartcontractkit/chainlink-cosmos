@@ -32,7 +32,9 @@ export interface InspectInstruction<CommandInput, ContractExpectedInfo> {
   }[]
   makeInput: (flags: any, args: string[]) => Promise<CommandInput>
   makeInspectionData: (query: Query) => (input: CommandInput) => Promise<ContractExpectedInfo>
-  makeOnchainData: (query: Query) => (instructionsData: any[]) => ContractExpectedInfo
+  makeOnchainData: (
+    query: Query,
+  ) => (instructionsData: any[], input: CommandInput, contractAddress: string) => Promise<ContractExpectedInfo>
   inspect: (expected: ContractExpectedInfo, data: ContractExpectedInfo) => boolean
 }
 
@@ -69,7 +71,7 @@ export const instructionToInspectCommand = <CommandInput, Expected>(
       )
 
       const query: Query = this.provider.wasm.contractQuery.bind(this.provider.wasm)
-      const onchainData = inspectInstruction.makeOnchainData(query)(data)
+      const onchainData = await inspectInstruction.makeOnchainData(query)(data, input, this.args[0])
       const inspectData = await inspectInstruction.makeInspectionData(query)(input)
       const inspection = inspectInstruction.inspect(inspectData, onchainData)
       return {

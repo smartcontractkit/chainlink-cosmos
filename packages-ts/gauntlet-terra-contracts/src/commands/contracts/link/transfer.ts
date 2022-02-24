@@ -1,7 +1,7 @@
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 import { BN, logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { CATEGORIES } from '../../../lib/constants'
+import { CATEGORIES, TOKEN_DECIMALS } from '../../../lib/constants'
 
 export default class TransferLink extends TerraCommand {
   static description = 'Transfer LINK'
@@ -22,7 +22,7 @@ export default class TransferLink extends TerraCommand {
   }
 
   execute = async () => {
-    const decimals = this.flags.decimals || 18
+    const decimals = this.flags.decimals || TOKEN_DECIMALS
     const link = this.flags.link || process.env.LINK
     const amount = new BN(this.flags.amount).mul(new BN(10).pow(new BN(decimals)))
 
