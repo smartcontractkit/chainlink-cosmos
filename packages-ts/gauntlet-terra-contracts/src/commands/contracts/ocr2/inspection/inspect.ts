@@ -1,10 +1,8 @@
-import { inspection, logger } from '@chainlink/gauntlet-core/dist/utils'
+import { BN, inspection, logger } from '@chainlink/gauntlet-core/dist/utils'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
-import { CATEGORIES } from '../../../../lib/constants'
+import { CATEGORIES, TOKEN_UNIT } from '../../../../lib/constants'
 import { getRDD } from '../../../../lib/rdd'
-import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
-
-const MIN_LINK_AVAILABLE = '100'
+import { InspectInstruction, instructionToInspectCommand, Query } from '../../../abstract/inspectionWrapper'
 
 type ContractExpectedInfo = {
   digest: string
@@ -14,12 +12,13 @@ type ContractExpectedInfo = {
   billingAccessController: string
   requesterAccessController: string
   link: string
-  linkAvailable: string
   billing: {
     observationPaymentGjuels: string
     recommendedGasPriceMicro: string
     transmissionPaymentGjuels: string
   }
+  totalOwed?: string
+  linkAvailable?: string
 }
 
 const makeInput = async (flags: any, args: string[]): Promise<ContractExpectedInfo> => {
@@ -41,7 +40,6 @@ const makeInput = async (flags: any, args: string[]): Promise<ContractExpectedIn
     billingAccessController,
     requesterAccessController,
     link,
-    linkAvailable: MIN_LINK_AVAILABLE,
     billing: {
       observationPaymentGjuels: info.billing.observationPaymentGjuels,
       recommendedGasPriceMicro: info.billing.recommendedGasPriceMicro,
@@ -52,7 +50,11 @@ const makeInput = async (flags: any, args: string[]): Promise<ContractExpectedIn
 
 const makeInspectionData = () => async (input: ContractExpectedInfo): Promise<ContractExpectedInfo> => input
 
-const makeOnchainData = () => (instructionsData: any[]): ContractExpectedInfo => {
+const makeOnchainData = (query: Query) => async (
+  instructionsData: any[],
+  input: ContractExpectedInfo,
+  aggregator: string,
+): Promise<ContractExpectedInfo> => {
   const latestConfigDetails = instructionsData[0]
   const description = instructionsData[1]
   const transmitters = instructionsData[2]
@@ -62,6 +64,17 @@ const makeOnchainData = () => (instructionsData: any[]): ContractExpectedInfo =>
   const requesterAC = instructionsData[6]
   const link = instructionsData[7]
   const linkAvailable = instructionsData[8]
+
+  const owedPerTransmitter: string[] = await Promise.all(
+    transmitters.addresses.map((t) => {
+      return query(aggregator, {
+        owed_payment: {
+          transmitter: t,
+        },
+      })
+    }),
+  )
+  console.log(owedPerTransmitter)
 
   return {
     description,
@@ -77,6 +90,7 @@ const makeOnchainData = () => (instructionsData: any[]): ContractExpectedInfo =>
       transmissionPaymentGjuels: billing.transmission_payment_gjuels,
       recommendedGasPriceMicro: billing.recommended_gas_price_micro,
     },
+    totalOwed: owedPerTransmitter.reduce((agg: BN, v) => agg.add(new BN(v)), new BN(0)).toString(),
   }
 }
 
@@ -116,6 +130,14 @@ const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedIn
   logger.line()
   logger.info('Inspection results:')
   logger.info(`LINK Available: ${onchainData.linkAvailable}`)
+  logger.info(`Total LINK Owed: ${onchainData.totalOwed}`)
+
+  const owedDiff = new BN(onchainData.linkAvailable).sub(new BN(onchainData.totalOwed)).div(new BN(TOKEN_UNIT))
+  if (owedDiff.lt(new BN(0))) {
+    logger.warn(`Total LINK Owed is higher than balance. Amount to fund: ${owedDiff.mul(new BN(-1)).toString()}`)
+  } else {
+    logger.success(`LINK Balance can cover debt. LINK after payment: ${owedDiff.toString()}`)
+  }
   return inspection.inspect(inspections)
 }
 
