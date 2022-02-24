@@ -101,19 +101,14 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			gd.ProposalDigest = gd.FinalizeProposal(gd.OCR, gd.ProposalId, gd.RddPath)
 
 			// ocr2:accept_proposal
-			gd.AcceptProposal(gd.OCR, gd.ProposalId, gd.ProposalDigest, gd.RddPath)
+			digest := gd.AcceptProposal(gd.OCR, gd.ProposalId, gd.ProposalDigest, gd.RddPath)
 
 			// ocr2:inspect
-			results := gd.OcrInspect(gd.OCR, gd.RddPath)
-			Expect(len(results)).Should(Equal(12), "Did not find the expected number of results in the output")
-			for k, v := range results {
-				// skipping min/max answer because they do not get populated
-				// skipping link available because we didn't transfer any link in this test
-				if k == "Min Answer" || k == "Max Answer" || k == "LINK Available" {
-					Expect(v.Pass).Should(Equal(false), fmt.Sprintf("%s is expected to fail", v.Key))
-				} else {
-					Expect(v.Pass).Should(Equal(true), fmt.Sprintf("%s expected %s but actually %s", v.Key, v.Expected, v.Actual))
-				}
+			results := gd.OcrInspect(gd.OCR, digest, gd.RddPath)
+			Expect(len(results)).Should(Equal(10), "Did not find the expected number of results in the output")
+			for _, v := range results {
+				Expect(v.Pass).Should(Equal(true), fmt.Sprintf("%s expected %s but actually %s", v.Key, v.Expected, v.Actual))
+
 			}
 		})
 	})
