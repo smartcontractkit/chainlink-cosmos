@@ -169,4 +169,4 @@ const instruction: InspectInstruction<any, ContractExpectedInfo> = {
   inspect,
 }
 
-export default instructionToInspectCommand<any, ContractExpectedInfo>(instruction)
+export default instructionToInspectCommand<any, ContractExpectedInfo, CONTRACT_LIST>(instruction)

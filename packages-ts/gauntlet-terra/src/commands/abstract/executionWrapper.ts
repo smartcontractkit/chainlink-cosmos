@@ -1,33 +1,42 @@
-import AbstractCommand, { makeAbstractCommand } from '.'
+import schema from '../../lib/schema'
+import AbstractTools, { AbstractCommand, } from '.'
 import { Result } from '@chainlink/gauntlet-core'
-import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
+import { TerraCommand, TransactionResponse } from '../..'
 import { AccAddress, MsgExecuteContract } from '@terra-money/terra.js'
+import { Contract, ContractGetter } from '../../lib/contracts'
 
-export interface AbstractInstruction<Input, ContractInput> {
+export interface AbstractInstruction<Input, ContractInput, ContractList> {
   examples?: string[]
   instruction: {
     category: string
     contract: string
     function: string
   }
+  getContract: (id: ContractList, version:string) => Promise<Contract>
   makeInput: (flags: any, args: string[]) => Promise<Input>
   validateInput: (input: Input) => boolean
   makeContractInput: (input: Input) => Promise<ContractInput>
   afterExecute?: (response: Result<TransactionResponse>) => any
 }
 
-export const instructionToCommand = (instruction: AbstractInstruction<any, any>) => {
+export const instructionToCommand = <ContractList extends string>(
+  abstract: AbstractTools<ContractList>,
+  instruction: AbstractInstruction<any, any, ContractList>
+) => {
   const id = `${instruction.instruction.contract}:${instruction.instruction.function}`
   const category = `${instruction.instruction.category}`
   const examples = instruction.examples || []
+  
   return class Command extends TerraCommand {
     static id = id
     static category = category
     static examples = examples
-    command: AbstractCommand
+    static abstract = abstract
+    command: AbstractCommand<ContractList>
 
     constructor(flags, args) {
       super(flags, args)
+      Command.abstract = abstract
     }
 
     afterExecute = instruction.afterExecute
@@ -38,7 +47,7 @@ export const instructionToCommand = (instruction: AbstractInstruction<any, any>)
         throw new Error(`Invalid input params:  ${JSON.stringify(commandInput)}`)
       }
       const input = await instruction.makeContractInput(commandInput)
-      const abstractCommand = await makeAbstractCommand(id, this.flags, this.args, input)
+      const abstractCommand = await abstract.makeAbstractCommand(id, this.flags, this.args, input)
       await abstractCommand.invokeMiddlewares(abstractCommand, abstractCommand.middlewares)
       return abstractCommand
     }

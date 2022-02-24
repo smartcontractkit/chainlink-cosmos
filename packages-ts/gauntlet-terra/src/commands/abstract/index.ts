@@ -1,11 +1,14 @@
 import { Result } from '@chainlink/gauntlet-core'
 import { AccAddress, MsgExecuteContract } from '@terra-money/terra.js'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { TERRA_OPERATIONS } from '../../lib/schema'
+import { TERRA_OPERATIONS, isQueryFunction, isValidFunction } from '../../lib/schema'
+import schema from '../../lib/schema'
 import { TransactionResponse, TerraCommand } from '../..'
-import { Contract, CONTRACT_LIST, GetContract } from '../../lib/contracts'
+import { ContractGetter, Contract } from '../../lib/contracts'
+import { InspectInstruction, instructionToInspectCommand } from './inspectionWrapper'
+import { AbstractInstruction, instructionToCommand } from './executionWrapper'
 
-export interface AbstractOpts {
+interface AbstractOpts<ContractList> {
   contract: Contract
   function: string
   action: TERRA_OPERATIONS.DEPLOY | TERRA_OPERATIONS.EXECUTE | TERRA_OPERATIONS.QUERY | 'help'
@@ -15,93 +18,99 @@ export interface AbstractParams {
   [param: string]: any
 }
 
-export const makeAbstractCommand = async (
-  instruction: string,
-  flags: any,
-  args: string[],
-  input?: any,
-): Promise<TerraCommand> => {
-  const commandOpts = await parseInstruction(instruction, flags.version)
-  const params = parseParams(commandOpts, input || flags)
-  return new AbstractCommand(flags, args, commandOpts, params)
-}
-
-export const parseInstruction = async (instruction: string, inputVersion: string): Promise<AbstractOpts> => {
-  const isValidFunction = (abi: TerraABI, functionName: string): boolean => {
-    // Check against ABI if method exists
-    const availableFunctions = [
-      ...(abi.query.oneOf || abi.query.anyOf || []),
-      ...(abi.execute.oneOf || abi.execute.anyOf || []),
-    ].reduce((agg, prop) => {
-      if (prop?.required && prop.required.length > 0) return [...agg, ...prop.required]
-      if (prop?.enum && prop.enum.length > 0) return [...agg, ...prop.enum]
-      return [...agg]
-    }, [])
-    logger.debug(`Available functions on this contract: ${availableFunctions}`)
-    return availableFunctions.includes(functionName)
-  }
-
-
-
-  const command = instruction.split(':')
-  if (!command.length || command.length > 2) throw new Error(`Abstract: Contract ${command[0]} not found`)
-
-  const contractByteCode = await getContract(command[0] as ContractId, inputVersion)
-  const contract = isValidContract(command[0]) && contractByteCode
-  if (!contract) throw new Error(`Abstract: Contract ${command[0]} not found`)
-
-  if (command[1] === 'help') {
-    return {
-      contract,
-      function: 'help',
-      action: 'help',
-    }
-  }
-
-  if (command[1] === 'deploy') {
-    return {
-      contract,
-      function: TERRA_OPERATIONS.DEPLOY,
-      action: TERRA_OPERATIONS.DEPLOY,
-    }
-  }
-
-  const functionName = isValidFunction(contract.abi, command[1]) && command[1]
-  if (!functionName) throw new Error(`Abstract: Function ${command[1]} for contract ${contract.id} not found`)
-
-  return {
-    contract,
-    function: functionName,
-    action: isQueryFunction(contract.abi, functionName) ? TERRA_OPERATIONS.QUERY : TERRA_OPERATIONS.EXECUTE,
-  }
-}
-
-export const parseParams = (commandOpts: AbstractOpts, params: any): AbstractParams => {
-  if (commandOpts.action === 'help') return params
-  const abiSchema = commandOpts.contract.abi[commandOpts.action]
-  const validate = schema.compile(abiSchema)
-  const schemas = [...(abiSchema.oneOf || []), ...(abiSchema.anyOf || [])]
-  // isEnum means the function doesn't receive any parameter
-  const isEnumData = schemas.some((subSchema) => !!subSchema.enum && subSchema.enum.includes(commandOpts.function))
-  const data = isEnumData
-    ? commandOpts.function
-    : commandOpts.action === TERRA_OPERATIONS.DEPLOY
-    ? params
-    : {
-        [commandOpts.function]: params,
-      }
-
-  if (!validate(data)) {
-    logger.log(validate.errors)
-    throw new Error(`Error validating parameters for function ${commandOpts.function}`)
-  }
-
-  return data
-}
-
 type AbstractExecute = (params: any, address?: string) => Promise<Result<TransactionResponse>>
-export default class AbstractCommand extends TerraCommand {
-  opts: AbstractOpts
+
+// Caller should only instantiate this once, to initialize
+// ContractList and getContract()
+export default class AbstractTools<ContractList extends string> {
+  contractList: ContractList
+  getContract : ContractGetter<ContractList>
+  instructionToInspectCommand: <CommandInput, Expected>(instruction: InspectInstruction<CommandInput, Expected, ContractList>) => TerraCommand
+  instructionToCommand: <CommandInput, Expected>(instruction: AbstractInstruction<CommandInput, Expected, ContractList>) => TerraCommand
+
+  constructor(getContract : ContractGetter<ContractList>, contractList : ContractList) {
+      this.getContract = getContract
+      this.contractList = contractList
+      //this.instructionToInspectCommand = makeInstructionToInspectCommand<CommandInput, Expected>(contractList)
+      //this.instructionToCommand = makeInstructionToCommand<CommandInput, Expected>(contractList)
+  }
+
+  async makeAbstractCommand(
+    instruction: string,
+    flags: any,
+    args: string[],
+    input?: any,
+  ): Promise<TerraCommand> {
+    const commandOpts = await this.parseInstruction(instruction, flags.version)
+    const params = this.parseParams(commandOpts, input || flags)
+    return new AbstractCommand<ContractList>(flags, args, commandOpts, params)
+  }
+
+  async parseInstruction(instruction: string, inputVersion: string): Promise<AbstractOpts<ContractList>> {
+    const command = instruction.split(':')
+    if (!command.length || command.length > 2) throw new Error(`Abstract: Contract ${command[0]} not found`)
+
+    const contractByteCode = await this.getContract(this.contractList[command[0]], inputVersion)
+    const contract = this.isValidContract(this.contractList[command[0]]) && contractByteCode
+    if (!contract) throw new Error(`Abstract: Contract ${command[0]} not found`)
+
+    if (command[1] === 'help') {
+      return {
+        contract,
+        function: 'help',
+        action: 'help',
+      }
+    }
+
+    if (command[1] === 'deploy') {
+      return {
+        contract,
+        function: TERRA_OPERATIONS.DEPLOY,
+        action: TERRA_OPERATIONS.DEPLOY,
+      }
+    }
+
+    const functionName = isValidFunction(contract.abi, command[1]) && command[1]
+    if (!functionName) throw new Error(`Abstract: Function ${command[1]} for contract ${contract.id} not found`)
+
+    return {
+      contract,
+      function: functionName,
+      action: isQueryFunction(contract.abi, functionName) ? TERRA_OPERATIONS.QUERY : TERRA_OPERATIONS.EXECUTE,
+    }
+  }
+
+  isValidContract(contractId: ContractList): boolean {
+    // Validate that we have this contract available
+    return this.contractList.includes(contractId)
+  }
+
+  parseParams(commandOpts: AbstractOpts<ContractList>, params: any): AbstractParams {
+    if (commandOpts.action === 'help') return params
+    const abiSchema = commandOpts.contract.abi[commandOpts.action]
+    const validate = schema.compile(abiSchema)
+    const schemas = [...(abiSchema.oneOf || []), ...(abiSchema.anyOf || [])]
+    // isEnum means the function doesn't receive any parameter
+    const isEnumData = schemas.some((subSchema) => !!subSchema.enum && subSchema.enum.includes(commandOpts.function))
+    const data = isEnumData
+      ? commandOpts.function
+      : commandOpts.action === TERRA_OPERATIONS.DEPLOY
+      ? params
+      : {
+          [commandOpts.function]: params,
+        }
+
+    if (!validate(data)) {
+      logger.log(validate.errors)
+      throw new Error(`Error validating parameters for function ${commandOpts.function}`)
+    }
+
+    return data
+  }
+}
+
+export class AbstractCommand<ContractList> extends TerraCommand {
+  opts: AbstractOpts<ContractList>
   params: AbstractParams
 
   constructor(flags, args, opts, params) {

@@ -1,6 +1,7 @@
 import Ajv from 'ajv'
 import JTD from 'ajv/dist/jtd'
 import { JSONSchemaType } from 'ajv'
+import { logger } from '@chainlink/gauntlet-core/dist/utils'
 
 const ajv = new Ajv().addFormat('uint8', (value: any) => !isNaN(value))
 
@@ -24,6 +25,20 @@ export type TerraABI = {
   [TERRA_OPERATIONS.DEPLOY]: JSONSchemaType<any>
   [TERRA_OPERATIONS.EXECUTE]: JSONSchemaType<any>
   [TERRA_OPERATIONS.QUERY]: JSONSchemaType<any>
+}
+
+export const isValidFunction = (abi: TerraABI, functionName: string): boolean => {
+  // Check against ABI if method exists
+  const availableFunctions = [
+    ...(abi.query.oneOf || abi.query.anyOf || []),
+    ...(abi.execute.oneOf || abi.execute.anyOf || []),
+  ].reduce((agg, prop) => {
+    if (prop?.required && prop.required.length > 0) return [...agg, ...prop.required]
+    if (prop?.enum && prop.enum.length > 0) return [...agg, ...prop.enum]
+    return [...agg]
+  }, [])
+  logger.debug(`Available functions on this contract: ${availableFunctions}`)
+  return availableFunctions.includes(functionName)
 }
 
 export const isQueryFunction = (abi: TerraABI, functionName: string) => {
