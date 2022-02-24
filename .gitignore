@@ -10,6 +10,7 @@ node_modules
 dist
 .env
 flow-report.json
+report.json
 .envrc
 bin
 

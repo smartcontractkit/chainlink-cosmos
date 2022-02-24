@@ -4,7 +4,7 @@ import { AbstractInstruction, instructionToCommand } from '../../abstract/execut
 
 type CommandInput = {
   owners: string[]
-  admin?: string
+  admin: string
 }
 
 type ContractInput = {
@@ -12,7 +12,7 @@ type ContractInput = {
     addr: string
     weight: number
   }[]
-  admin?: string
+  admin: string
 }
 
 const makeCommandInput = async (flags: any, args: any[]): Promise<CommandInput> => {
@@ -28,7 +28,7 @@ const validateInput = (input: CommandInput): boolean => {
   }
   const areValidOwners = input.owners.filter((owner) => !isValidAddress(owner)).length === 0
   if (!areValidOwners) throw new Error('Owners are not valid')
-  if (input.admin && !isValidAddress(input.admin)) throw new Error('Admin is not valid')
+  if (!isValidAddress(input.admin)) throw new Error('Admin is not valid')
   return true
 }
 
@@ -44,7 +44,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
 }
 
 const createGroupInstruction: AbstractInstruction<CommandInput, ContractInput> = {
-  examples: ['yarn gauntlet cw4_group:deploy --network=bombay-testnet <OWNERS_LIST>'],
+  examples: ['yarn gauntlet cw4_group:deploy --network=bombay-testnet --admin=<ADMIN_ADDRESS> <OWNERS_LIST>'],
   instruction: {
     category: CATEGORIES.MULTISIG,
     contract: 'cw4_group',

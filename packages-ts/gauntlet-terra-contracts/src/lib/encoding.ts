@@ -2,7 +2,7 @@ import { OffchainConfig } from '../commands/contracts/ocr2/proposeOffchainConfig
 import { Proto, sharedSecretEncryptions } from '@chainlink/gauntlet-core/dist/crypto'
 import { join } from 'path'
 
-export const serializeOffchainConfig = async (input: OffchainConfig): Promise<string> => {
+export const serializeOffchainConfig = async (input: OffchainConfig): Promise<Buffer> => {
   const { configPublicKeys, f, ...validInput } = input
   const proto = new Proto.Protobuf({ descriptor })
   const reportingPluginConfigProto = proto.encode(
@@ -16,7 +16,7 @@ export const serializeOffchainConfig = async (input: OffchainConfig): Promise<st
     reportingPluginConfig: reportingPluginConfigProto,
     sharedSecretEncryptions,
   }
-  return Buffer.from(proto.encode('offchainreporting2_config.OffchainConfigProto', offchainConfig)).toString('base64')
+  return Buffer.from(proto.encode('offchainreporting2_config.OffchainConfigProto', offchainConfig))
 }
 
 export const deserializeConfig = (buffer: Buffer): any => {
