@@ -49,11 +49,12 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     let feed = deps.api.addr_validate(&msg.feed)?;
-    let decimals = msg.decimals;
 
     cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    // TODO: query ChainlinkQueryMsg::Decimals here instead of passing them in
+    let decimals = deps
+        .querier
+        .query_wasm_smart(&feed, &ChainlinkQueryMsg::Decimals)?;
 
     CONFIG.save(deps.storage, &Config { feed, decimals })?;
 
@@ -75,7 +76,8 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, ContractError> {
     match msg {
-        QueryMsg::Price {} => Ok(to_binary(&query_price(deps)?)?),
+        QueryMsg::Decimals {} => Ok(to_binary(&query_decimals(deps)?)?),
+        QueryMsg::Round {} => Ok(to_binary(&query_round(deps)?)?),
     }
 }
 
@@ -98,7 +100,12 @@ fn execute_run(deps: DepsMut, _env: Env, _info: MessageInfo) -> Result<Response,
     ]))
 }
 
-fn query_price(deps: Deps) -> Result<Round, ContractError> {
-    let price = PRICE.load(deps.storage)?;
-    Ok(price)
+fn query_round(deps: Deps) -> Result<Round, ContractError> {
+    let round = PRICE.load(deps.storage)?;
+    Ok(round)
+}
+
+fn query_decimals(deps: Deps) -> Result<u8, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    Ok(config.decimals)
 }
