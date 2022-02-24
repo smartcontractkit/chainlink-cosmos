@@ -25,7 +25,6 @@ export default class DeployLink extends TerraCommand {
 
   execute = async () => {
     await prompt(`Begin deploying LINK Token?`)
-
     const deploy = await this.deploy(CW20_BASE_CODE_IDs[this.flags.network], {
       name: 'ChainLink Token',
       symbol: 'LINK',
