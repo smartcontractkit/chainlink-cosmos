@@ -2394,8 +2394,8 @@ github.com/smartcontractkit/integrations-framework v1.0.21/go.mod h1:mceWG89OYgD
 github.com/smartcontractkit/integrations-framework v1.0.24/go.mod h1:yFgbE88F6+om0jo5mFskgKEQBnxqfYg6H1OL2dCIekk=
 github.com/smartcontractkit/integrations-framework v1.0.42/go.mod h1:TwDu8hGhQjt9o8XYFXPKKnUN5OqsgelHTgpW0PcL6/I=
 github.com/smartcontractkit/integrations-framework v1.0.44/go.mod h1:80yVYzfn5jz2ubPbDEuD7Kw0a55cS+o7tZlTHQu4VQc=
-github.com/smartcontractkit/integrations-framework v1.0.49 h1:jdQHtfrlcGSrI2xpgY9Ua6VW6VctjMX6aaQK+2FZR3c=
-github.com/smartcontractkit/integrations-framework v1.0.49/go.mod h1:IZyYezzgpwa1Ir3iZMjAnJfwg+pJB5kyExBiwZqQe9c=
+github.com/smartcontractkit/integrations-framework v1.0.50 h1:r9f0pRWGOT4CcPUx6XAf+LRON8SDbda3zbf2kR1O8WQ=
+github.com/smartcontractkit/integrations-framework v1.0.50/go.mod h1:IZyYezzgpwa1Ir3iZMjAnJfwg+pJB5kyExBiwZqQe9c=
 github.com/smartcontractkit/libocr v0.0.0-20201203233047-5d9b24f0cbb5/go.mod h1:bfdSuLnBWCkafDvPGsQ1V6nrXhg046gh227MKi4zkpc=
 github.com/smartcontractkit/libocr v0.0.0-20211117215336-6c9726817b2d/go.mod h1:nq3crM3wVqnyMlM/4ZydTuJ/WyCapAsOt7P94oRgSPg=
 github.com/smartcontractkit/libocr v0.0.0-20211202172717-e8b0536a572e/go.mod h1:nq3crM3wVqnyMlM/4ZydTuJ/WyCapAsOt7P94oRgSPg=
