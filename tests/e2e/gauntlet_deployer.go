@@ -39,7 +39,7 @@ type InspectionResult struct {
 	Actual   string
 }
 
-// GetDefaultGauntletConfig gets  the default config gauntlet will need to start making commands
+// GetDefaultGauntletConfig gets the default config gauntlet will need to start making commands
 // 	against the environment
 func GetDefaultGauntletConfig(nodeUrl *url.URL) map[string]string {
 	networkConfig := map[string]string{
@@ -119,12 +119,12 @@ func GetTxAddressFromReport(report map[string]interface{}) string {
 	return report["responses"].([]interface{})[0].(map[string]interface{})["tx"].(map[string]interface{})["address"].(string)
 }
 
-// DeployToken attempts to deploy the link token, currently does not work very often and I
-//  have never found a good reason why - Tate
-func (gd *GauntletDeployer) DeployToken() {
-	// TODO figure out why this never passes??? for a future pr
+// DeployToken deploys the link token
+func (gd *GauntletDeployer) DeployToken() string {
 	codeIds := gd.Cli.Flag("codeIDs", filepath.Join(utils.CodeIds, fmt.Sprintf("%s%s", gd.Cli.Network, ".json")))
-	artifacts := gd.Cli.Flag("artifacts", filepath.Join(utils.ProjectRoot, "packages-ts/gauntlet-terra-contracts/artifacts/bin"))
+	artifacts := gd.Cli.Flag("artifacts", filepath.Join(utils.GauntletTerraContracts, "artifacts", "bin"))
+	reportName := "deploy_token"
+	UpdateReportName(reportName, gd.Cli)
 	_, err := gd.Cli.ExecCommandWithRetries([]string{
 		"token:deploy",
 		gd.Cli.Flag("version", gd.Version),
@@ -134,8 +134,9 @@ func (gd *GauntletDeployer) DeployToken() {
 		TERRA_COMMAND_ERROR,
 	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy link token")
-	// TODO parse link token and set into state when this is working
-	//s.LinkToken = something
+	report, err := LoadReportJson(reportName + ".json")
+	Expect(err).ShouldNot(HaveOccurred())
+	return GetTxAddressFromReport(report)
 }
 
 // Upload uploads the terra contracts
@@ -221,7 +222,7 @@ func (gd *GauntletDeployer) DeployDeviationFlaggingValidator(flags string, flagg
 
 // DeployOcr deploys ocr, it creates an rdd file in the process and updates it with the ocr address on completion
 func (gd *GauntletDeployer) DeployOcr() (string, string) {
-	rddPath := filepath.Join("tests", "e2e", "smoke", "rdd", fmt.Sprintf("directory-terra-%s.json", gd.Cli.Network))
+	rddPath := filepath.Join(utils.Rdd, fmt.Sprintf("directory-terra-%s.json", gd.Cli.Network))
 	tmpId := "terra1test0000000000000000000000000000000000"
 	ocrRddContract := NewRddContract(tmpId)
 	err := WriteRdd(ocrRddContract, rddPath)
@@ -288,7 +289,6 @@ func (gd *GauntletDeployer) ProposeConfig(ocr, proposalId, rddPath string) {
 		"ocr2:propose_config",
 		gd.Cli.Flag("version", gd.Version),
 		gd.Cli.Flag("rdd", rddPath),
-		gd.Cli.Flag("f", "1"),
 		gd.Cli.Flag("proposalId", proposalId),
 		gd.OCR,
 	}, []string{
@@ -307,7 +307,6 @@ func (gd *GauntletDeployer) ProposeOffchainConfig(ocr, proposalId, rddPath strin
 		gd.Cli.Flag("version", gd.Version),
 		gd.Cli.Flag("rdd", rddPath),
 		gd.Cli.Flag("proposalId", proposalId),
-		gd.Cli.Flag("offchainConfigVersion", "2"),
 		ocr,
 	}, []string{
 		TERRA_COMMAND_ERROR,

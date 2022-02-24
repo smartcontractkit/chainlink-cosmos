@@ -38,15 +38,6 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 
 			state.OCConfig, state.NodeKeysBundle, state.Err = common.DefaultOffChainConfigParamsFromNodes(state.Nodes)
 			Expect(state.Err).ShouldNot(HaveOccurred())
-
-			cd := e2e.NewTerraContractDeployer(state.Nets.Default)
-
-			linkToken, err := cd.DeployLinkTokenContract()
-			Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy link token")
-			gd.LinkToken = linkToken.Address()
-
-			err = common.FundOracles(state.Nets.Default, state.NodeKeysBundle, big.NewFloat(5e12))
-			Expect(err).ShouldNot(HaveOccurred())
 		})
 		By("Setup Gauntlet", func() {
 			cwd, err := os.Getwd()
@@ -71,12 +62,18 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			// upload artifacts
 			gd.Upload()
 
+			// token:deploy
+			gd.LinkToken = gd.DeployToken()
+			gd.Cli.NetworkConfig["LINK"] = gd.LinkToken
+			err := common.FundOracles(state.Nets.Default, state.NodeKeysBundle, big.NewFloat(5e12))
+			Expect(err).ShouldNot(HaveOccurred())
+
 			// deploy access controllers
 			gd.BillingAccessController = gd.DeployBillingAccessController()
 			gd.RequesterAccessController = gd.DeployRequesterAccessController()
 
 			// write the updated values for link and access controllers to the .env file
-			err := gd.Cli.WriteNetworkConfigMap(utils.Networks)
+			err = gd.Cli.WriteNetworkConfigMap(utils.Networks)
 			Expect(err).ShouldNot(HaveOccurred(), "Failed to write the updated .env file")
 
 			// flags:deploy
@@ -108,7 +105,6 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 
 			// ocr2:inspect
 			results := gd.OcrInspect(gd.OCR, gd.RddPath)
-
 			Expect(len(results)).Should(Equal(12), "Did not find the expected number of results in the output")
 			for k, v := range results {
 				// skipping min/max answer because they do not get populated

@@ -11,16 +11,18 @@ var (
 	ProjectRoot = filepath.Join(filepath.Dir(b), "/../../..")
 	// ContractsDir contracts dir with wasm artifacts
 	ContractsDir = filepath.Join(ProjectRoot, "artifacts")
-	// CommonContractsDir is common artifacts dir, for example cw20_base.wasm
-	CommonContractsDir = filepath.Join(TestsDir, "common_artifacts")
 	// TestsDir path to e2e tests dir
 	TestsDir = filepath.Join(ProjectRoot, "tests", "e2e")
-	// CodeIds path to the codeIds directory
-	CodeIds = filepath.Join(ProjectRoot, "packages-ts", "gauntlet-terra-contracts", "codeIds")
+	// CommonContractsDir is common artifacts dir, for example cw20_base.wasm
+	CommonContractsDir = filepath.Join(TestsDir, "common_artifacts")
 	// Reports path to the gauntlet reports directory
-	Reports = filepath.Join(ProjectRoot, "tests", "e2e", "smoke", "reports")
+	Reports = filepath.Join(TestsDir, "smoke", "reports")
 	// Rdd path to the gauntlet rdd directory
-	Rdd = filepath.Join(ProjectRoot, "tests", "e2e", "smoke", "rdd")
+	Rdd = filepath.Join(TestsDir, "smoke", "rdd")
+	// GauntletTerraContracts path to the gauntlet-terra-contracts dir
+	GauntletTerraContracts = filepath.Join(ProjectRoot, "packages-ts", "gauntlet-terra-contracts")
 	// Networks path to the networks directory
-	Networks = filepath.Join(ProjectRoot, "packages-ts", "gauntlet-terra-contracts", "networks")
+	Networks = filepath.Join(GauntletTerraContracts, "networks")
+	// CodeIds path to the codeIds directory
+	CodeIds = filepath.Join(GauntletTerraContracts, "codeIds")
 )
