@@ -4,6 +4,7 @@ import { existsSync } from 'fs'
 import path from 'path'
 import { io } from '@chainlink/gauntlet-core/dist/utils'
 import Terra from './commands'
+import { AbstractTools } from '@chainlink/gauntlet-terra'
 import { abstract } from './commands'
 import { CONTRACT_LIST } from './lib/contracts'
 import { defaultFlags } from './lib/args'
@@ -13,7 +14,7 @@ const commands = {
   loadDefaultFlags: () => defaultFlags,
   abstract: {
     findPolymorphic: () => undefined,
-    makeCommand: makeAbstractCommand,
+    makeCommand: abstract.makeAbstractCommand,
   },
 }
 

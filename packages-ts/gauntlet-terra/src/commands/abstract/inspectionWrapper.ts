@@ -43,6 +43,7 @@ export interface InspectInstruction<CommandInput, ContractExpectedInfo, Contract
 
 export const instructionToInspectCommand = <CommandInput, ContractExpectedInfo, ContractList extends string>(
   abstract: AbstractTools<ContractList>, inspectInstruction: InspectInstruction<CommandInput, ContractExpectedInfo, any>,
+  inspectInstruction: InspectInstruction<CommandInput, ContractExpectedInfo, any>,
 ) => {
   const id = `${inspectInstruction.command.contract}:${inspectInstruction.command.id}`
   return class Command extends TerraCommand {

@@ -1,5 +1,5 @@
 import schema from '../../lib/schema'
-import AbstractTools, { AbstractCommand, } from '.'
+import AbstractTools, { AbstractCommand } from '.'
 import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse } from '../..'
 import { AccAddress, MsgExecuteContract } from '@terra-money/terra.js'
@@ -12,7 +12,7 @@ export interface AbstractInstruction<Input, ContractInput, ContractList> {
     contract: string
     function: string
   }
-  getContract: (id: ContractList, version:string) => Promise<Contract>
+  getContract: (id: ContractList, version: string) => Promise<Contract>
   makeInput: (flags: any, args: string[]) => Promise<Input>
   validateInput: (input: Input) => boolean
   makeContractInput: (input: Input) => Promise<ContractInput>
@@ -21,12 +21,12 @@ export interface AbstractInstruction<Input, ContractInput, ContractList> {
 
 export const instructionToCommand = <ContractList extends string>(
   abstract: AbstractTools<ContractList>,
-  instruction: AbstractInstruction<any, any, ContractList>
+  instruction: AbstractInstruction<any, any, ContractList>,
 ) => {
   const id = `${instruction.instruction.contract}:${instruction.instruction.function}`
   const category = `${instruction.instruction.category}`
   const examples = instruction.examples || []
-  
+
   return class Command extends TerraCommand {
     static id = id
     static category = category

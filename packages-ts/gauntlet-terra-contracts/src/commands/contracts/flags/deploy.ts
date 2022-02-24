@@ -1,8 +1,14 @@
 import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress } from '@terra-money/terra.js'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { AbstractTools } from '@chainlink/gauntlet-terra'
+import {
+  AbstractInstruction,
+  instructionToCommand,
+} from '@chainlink/gauntlet-terra/dist/commands/abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
-import { CONTRACT_LIST } from '../../../lib/contracts'
+import { CONTRACT_LIST, getContract } from '../../../lib/contracts'
+
+const abstract = new AbstractTools<CONTRACT_LIST>(Object.values(CONTRACT_LIST), getContract)
 
 type CommandInput = {
   raisingAccessController: string
@@ -35,7 +41,7 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const deploy: AbstractInstruction<CommandInput, ContractInput> = {
+const deploy: AbstractInstruction<CommandInput, ContractInput, CONTRACT_LIST> = {
   instruction: {
     category: CATEGORIES.FLAGS,
     contract: CONTRACT_LIST.FLAGS,
@@ -44,6 +50,7 @@ const deploy: AbstractInstruction<CommandInput, ContractInput> = {
   makeInput: makeCommandInput,
   validateInput: validateInput,
   makeContractInput: makeContractInput,
+  getContract,
 }
 
-export default instructionToCommand(deploy)
+export default abstract.instructionToCommand(deploy)

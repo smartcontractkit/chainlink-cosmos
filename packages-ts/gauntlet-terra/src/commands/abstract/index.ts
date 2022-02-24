@@ -23,24 +23,24 @@ type AbstractExecute = (params: any, address?: string) => Promise<Result<Transac
 // Caller should only instantiate this once, to initialize
 // ContractList and getContract()
 export default class AbstractTools<ContractList extends string> {
-  contractList: ContractList
-  getContract : ContractGetter<ContractList>
-  instructionToInspectCommand: <CommandInput, Expected>(instruction: InspectInstruction<CommandInput, Expected, ContractList>) => TerraCommand
-  instructionToCommand: <CommandInput, Expected>(instruction: AbstractInstruction<CommandInput, Expected, ContractList>) => TerraCommand
+  contractList: ContractList[]
+  getContract: ContractGetter<ContractList>
 
-  constructor(getContract : ContractGetter<ContractList>, contractList : ContractList) {
-      this.getContract = getContract
-      this.contractList = contractList
-      //this.instructionToInspectCommand = makeInstructionToInspectCommand<CommandInput, Expected>(contractList)
-      //this.instructionToCommand = makeInstructionToCommand<CommandInput, Expected>(contractList)
+  instructionToInspectCommand<CommandInput, Expected>(
+    instruction: InspectInstruction<CommandInput, Expected, ContractList>,
+  ): typeof TerraCommand {
+    return instructionToInspectCommand<CommandInput, Expected, ContractList>(this, instruction)
+  }
+  instructionToCommand(instruction: AbstractInstruction<any, any, ContractList>): typeof TerraCommand {
+    return instructionToCommand<ContractList>(this, instruction)
   }
 
-  async makeAbstractCommand(
-    instruction: string,
-    flags: any,
-    args: string[],
-    input?: any,
-  ): Promise<TerraCommand> {
+  constructor(contractList: ContractList[], getContract: ContractGetter<ContractList>) {
+    this.contractList = contractList
+    this.getContract = getContract
+  }
+
+  async makeAbstractCommand(instruction: string, flags: any, args: string[], input?: any): Promise<TerraCommand> {
     const commandOpts = await this.parseInstruction(instruction, flags.version)
     const params = this.parseParams(commandOpts, input || flags)
     return new AbstractCommand<ContractList>(flags, args, commandOpts, params)

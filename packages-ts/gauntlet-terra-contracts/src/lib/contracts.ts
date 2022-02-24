@@ -3,9 +3,10 @@ import { existsSync, readFileSync } from 'fs'
 import path from 'path'
 import fetch from 'node-fetch'
 import { DEFAULT_RELEASE_VERSION, DEFAULT_CWPLUS_VERSION } from './constants'
-import { Contract, Contracts } from '@chainlink/gauntlet-terra'
+import { Contract } from '@chainlink/gauntlet-terra'
+import { TerraABI } from '@chainlink/gauntlet-terra/dist/lib/schema'
 
-export const enum CONTRACT_LIST {
+export enum CONTRACT_LIST {
   FLAGS = 'flags',
   DEVIATION_FLAGGING_VALIDATOR = 'deviation_flagging_validator',
   OCR_2 = 'ocr2',
@@ -71,7 +72,7 @@ const defaultContractVersions = {
   [CONTRACT_LIST.CW4_GROUP]: DEFAULT_CWPLUS_VERSION,
   [CONTRACT_LIST.MULTISIG]: DEFAULT_CWPLUS_VERSION,
 }
-export const getContractABI = (contractId: ContractList): TerraABI => {
+export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
   // Possible paths depending on how/where gauntlet is being executed
   const possibleContractPaths = [
     path.join(__dirname, './artifacts/contracts'),

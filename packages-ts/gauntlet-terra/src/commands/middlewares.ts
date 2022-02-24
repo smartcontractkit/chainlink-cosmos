@@ -7,7 +7,7 @@ import path from 'path'
 import { existsSync } from 'fs'
 import { BIP44_LUNA_PATH } from '../lib/constants'
 
-const isValidURL = (a) : boolean => true
+const isValidURL = (a): boolean => true
 export const withProvider: Middleware = (c: TerraCommand, next: Next) => {
   const nodeURL = process.env.NODE_URL
   assertions.assert(
@@ -16,8 +16,8 @@ export const withProvider: Middleware = (c: TerraCommand, next: Next) => {
   )
   const chainId = process.env.CHAIN_ID
   const gasPrices = process.env.DEFAULT_GAS_PRICE
-  assertions.assert(!!chainId, "Missing CHAIN_ID.  Please set env var")
-  assertions.assert(!!gasPrices, "Missing DEFAULT_GAS_PRICE.  Please set env var")
+  assertions.assert(!!chainId, 'Missing CHAIN_ID.  Please set env var')
+  assertions.assert(!!gasPrices, 'Missing DEFAULT_GAS_PRICE.  Please set env var')
 
   c.provider = new LCDClient({
     URL: nodeURL!,

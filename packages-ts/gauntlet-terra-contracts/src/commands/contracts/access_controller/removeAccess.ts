@@ -36,7 +36,7 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const removeAccess: AbstractInstruction<CommandInput, ContractInput> = {
+const removeAccess: AbstractInstruction<CommandInput, ContractInput, CONTRACT_LIST> = {
   instruction: {
     category: CATEGORIES.ACCESS_CONTROLLER,
     contract: 'access_controller',
@@ -45,6 +45,7 @@ const removeAccess: AbstractInstruction<CommandInput, ContractInput> = {
   makeInput: makeCommandInput,
   validateInput: validateInput,
   makeContractInput: makeContractInput,
+  getContract: getContract,
 }
 
-export default instructionToCommand(removeAccess)
+export default abstract.instructionToCommand(removeAccess)

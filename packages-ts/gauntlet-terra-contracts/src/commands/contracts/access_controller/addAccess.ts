@@ -1,6 +1,11 @@
 import { AccAddress } from '@terra-money/terra.js'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import {
+  AbstractInstruction,
+  instructionToCommand,
+} from '@chainlink/gauntlet-terra/dist/commands/abstract/executionWrapper'
+import { abstract } from '../..'
 import { CATEGORIES } from '../../../lib/constants'
+import { CONTRACT_LIST, getContract } from '../../../lib/contracts'
 
 type CommandInput = {
   address: string
@@ -30,7 +35,7 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const addAccess: AbstractInstruction<CommandInput, ContractInput> = {
+const addAccess: AbstractInstruction<CommandInput, ContractInput, CONTRACT_LIST> = {
   instruction: {
     category: CATEGORIES.ACCESS_CONTROLLER,
     contract: 'access_controller',
@@ -39,6 +44,7 @@ const addAccess: AbstractInstruction<CommandInput, ContractInput> = {
   makeInput: makeCommandInput,
   validateInput: validateInput,
   makeContractInput: makeContractInput,
+  getContract,
 }
 
-export default instructionToCommand(addAccess)
+export default abstract.instructionToCommand(addAccess)
