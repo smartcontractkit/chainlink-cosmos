@@ -11,6 +11,8 @@ import BeginProposal from './proposal/beginProposal'
 import AcceptProposal from './proposal/acceptProposal'
 import FinalizeProposal from './proposal/finalizeProposal'
 import Inspect from './inspection/inspect'
+import { getRDD } from '../../../lib/rdd'
+import { writeFileSync } from 'fs'
 
 export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse> {
   static id = 'ocr2:initialize:flow'
@@ -34,7 +36,7 @@ export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse>
       },
       {
         name: 'Change RDD',
-        exec: this.showRddInstructions,
+        exec: () => this.overwriteRDD(flags),
       },
       {
         name: 'Set Billing',
@@ -93,11 +95,26 @@ export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse>
   showRddInstructions = async () => {
     logger.info(
       `
-        Change the RDD ID with the new contract address: 
+        Change the RDD ID with the new contract address:
           - Contract Address: ${this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))}
       `,
     )
 
     await prompt('Ready? Continue')
+  }
+
+  overwriteRDD = (flags: any) => {
+    const oldContractAddress = flags.id
+    const newContractAddress = this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))
+    const rdd = getRDD(flags.rdd)
+    logger.info(
+      `
+        Changing the RDD ID with the new contract address:
+          - Contract Address: ${newContractAddress}
+      `,
+    )
+    rdd.contracts[newContractAddress] = rdd.contracts[oldContractAddress]
+    delete rdd.contracts[oldContractAddress]
+    writeFileSync(flags.rdd, JSON.stringify(rdd, null, 2))
   }
 }
