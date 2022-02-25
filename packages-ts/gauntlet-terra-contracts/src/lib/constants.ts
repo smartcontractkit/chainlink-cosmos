@@ -19,17 +19,17 @@ export const ORACLES_MAX_LENGTH = 31
 export const CW20_BASE_CODE_IDs = {
   mainnet: 3,
   local: 32,
-  'bombay-testnet': 148,
+  'testnet-bombay': 148,
 }
 
 export const CW4_GROUP_CODE_IDs = {
   mainnet: -1,
   local: -1,
-  'bombay-testnet': 36895,
+  'testnet-bombay': 36895,
 }
 
 export const CW3_FLEX_MULTISIG_CODE_IDs = {
   mainnet: -1,
   local: -1,
-  'bombay-testnet': 36059,
+  'testnet-bombay': 36059,
 }
