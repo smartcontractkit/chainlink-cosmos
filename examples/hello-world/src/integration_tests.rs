@@ -29,14 +29,8 @@ mod mock {
     use chainlink_terra::msg::QueryMsg as ChainlinkQueryMsg;
     use chainlink_terra::state::Round;
 
-    use schemars::JsonSchema;
-    use serde::{Deserialize, Serialize};
-
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-    pub struct InstantiateMsg {}
-
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-    pub enum ExecuteMsg {}
+    pub type InstantiateMsg = ();
+    pub type ExecuteMsg = ();
 
     pub const DECIMALS: u8 = 8;
     pub const ROUND: Round = Round {
@@ -84,14 +78,7 @@ fn setup() -> Env {
     let proxy_id = router.store_code(mock::contract());
 
     let proxy_addr = router
-        .instantiate_contract(
-            proxy_id,
-            owner.clone(),
-            &mock::InstantiateMsg {},
-            &[],
-            "hello_world",
-            None,
-        )
+        .instantiate_contract(proxy_id, owner.clone(), &(), &[], "hello_world", None)
         .unwrap();
 
     let hello_world_addr = router
