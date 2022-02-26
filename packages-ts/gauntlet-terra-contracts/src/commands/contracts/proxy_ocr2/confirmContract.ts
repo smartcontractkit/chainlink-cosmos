@@ -3,7 +3,6 @@ import { AccAddress } from '@terra-money/terra.js'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'
-import { getRDD } from '../../../lib/rdd'
 
 type CommandInput = {
   address: string
@@ -14,12 +13,10 @@ type ContractInput = {
 }
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
-  const rdd = getRDD(flags.rdd)
   const contract = args[0]
-  const aggregator = rdd.contracts[contract]
 
   return {
-    address: aggregator,
+    address: contract,
   }
 }
 
