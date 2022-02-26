@@ -9,12 +9,14 @@ import DeviationFlaggingValidator from './contracts/deviation_flagging_validator
 import Multisig from './contracts/multisig'
 import CW4_GROUP from './contracts/cw4_group'
 import { getContract, CONTRACT_LIST } from '../lib/contracts'
-import { AbstractTools } from '@chainlink/gauntlet-terra'
+import { AbstractTools, AbstractInstructionTemplate, InspectInstructionTemplate } from '@chainlink/gauntlet-terra/dist/commands/abstract'
 
 export const abstract: AbstractTools<CONTRACT_LIST> = new AbstractTools<CONTRACT_LIST>(
   Object.values(CONTRACT_LIST),
   getContract,
 )
+export type AbstractInstruction<CommandInput, ContractInput> = AbstractInstructionTemplate<CommandInput, ContractInput, CONTRACT_LIST>
+export type InspectInstruction<CommandInput, ContractInput> = InspectInstructionTemplate<CommandInput, ContractInput, CONTRACT_LIST>
 
 export default [
   Upload,

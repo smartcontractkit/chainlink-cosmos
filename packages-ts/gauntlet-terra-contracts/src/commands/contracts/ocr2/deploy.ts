@@ -1,13 +1,6 @@
 import { getRDD } from '../../../lib/rdd'
-import {
-  AbstractInstruction,
-  instructionToCommand,
-} from '@chainlink/gauntlet-terra/dist/commands/abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
-import { getContract, CONTRACT_LIST } from '../../../lib/contracts'
-import { AbstractTools } from '@chainlink/gauntlet-terra'
-
-const abstract = new AbstractTools<CONTRACT_LIST>(Object.values(CONTRACT_LIST), getContract)
+import { abstract, AbstractInstruction } from '../..'
 
 type CommandInput = {
   billingAccessController: string
@@ -61,7 +54,7 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const deployInstruction: AbstractInstruction<CommandInput, ContractInput, CONTRACT_LIST> = {
+const deployInstruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
     category: CATEGORIES.OCR,
     contract: 'ocr2',
@@ -70,7 +63,6 @@ const deployInstruction: AbstractInstruction<CommandInput, ContractInput, CONTRA
   makeInput: makeCommandInput,
   validateInput: validateInput,
   makeContractInput: makeContractInput,
-  getContract: getContract,
 }
 
 export default abstract.instructionToCommand(deployInstruction)

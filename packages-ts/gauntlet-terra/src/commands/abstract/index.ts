@@ -5,8 +5,10 @@ import { TERRA_OPERATIONS, isQueryFunction, isValidFunction } from '../../lib/sc
 import schema from '../../lib/schema'
 import { TransactionResponse, TerraCommand } from '../..'
 import { ContractGetter, Contract } from '../../lib/contracts'
-import { InspectInstruction, instructionToInspectCommand } from './inspectionWrapper'
-import { AbstractInstruction, instructionToCommand } from './executionWrapper'
+import { InspectInstructionTemplate, instructionToInspectCommand } from './inspectionWrapper'
+import { AbstractInstructionTemplate, instructionToCommand } from './executionWrapper'
+export { AbstractInstructionTemplate } from './executionWrapper'
+export { InspectInstructionTemplate } from './inspectionWrapper'
 
 interface AbstractOpts<ContractList> {
   contract: Contract
@@ -22,16 +24,16 @@ type AbstractExecute = (params: any, address?: string) => Promise<Result<Transac
 
 // Caller should only instantiate this once, to initialize
 // ContractList and getContract()
-export default class AbstractTools<ContractList extends string> {
+export class AbstractTools<ContractList extends string> {
   contractList: ContractList[]
   getContract: ContractGetter<ContractList>
 
-  instructionToInspectCommand<CommandInput, Expected>(
-    instruction: InspectInstruction<CommandInput, Expected, ContractList>,
+  instructionToInspectCommand<CommandInput, ContractExpectedInfo>(
+    instruction: InspectInstructionTemplate<CommandInput, ContractExpectedInfo, ContractList>,
   ): typeof TerraCommand {
-    return instructionToInspectCommand<CommandInput, Expected, ContractList>(this, instruction)
+    return instructionToInspectCommand<CommandInput, ContractExpectedInfo, ContractList>(this, instruction)
   }
-  instructionToCommand(instruction: AbstractInstruction<any, any, ContractList>): typeof TerraCommand {
+  instructionToCommand(instruction: AbstractInstructionTemplate<any, any, ContractList>): typeof TerraCommand {
     return instructionToCommand<ContractList>(this, instruction)
   }
 

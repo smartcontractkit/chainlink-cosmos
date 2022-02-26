@@ -1,10 +1,6 @@
 import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress } from '@terra-money/terra.js'
-import { abstract } from '../..'
-import {
-  AbstractInstruction,
-  instructionToCommand,
-} from '@chainlink/gauntlet-terra/dist/commands/abstract/executionWrapper'
+import { abstract, AbstractInstruction } from '../..'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST, getContract } from '../../../lib/contracts'
 
@@ -36,7 +32,7 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const removeAccess: AbstractInstruction<CommandInput, ContractInput, CONTRACT_LIST> = {
+const removeAccess: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
     category: CATEGORIES.ACCESS_CONTROLLER,
     contract: 'access_controller',
@@ -45,7 +41,6 @@ const removeAccess: AbstractInstruction<CommandInput, ContractInput, CONTRACT_LI
   makeInput: makeCommandInput,
   validateInput: validateInput,
   makeContractInput: makeContractInput,
-  getContract: getContract,
 }
 
 export default abstract.instructionToCommand(removeAccess)

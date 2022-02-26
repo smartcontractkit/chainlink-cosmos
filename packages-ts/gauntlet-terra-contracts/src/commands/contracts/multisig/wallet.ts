@@ -1,13 +1,7 @@
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { CATEGORIES } from '../../../lib/constants'
 import { isValidAddress } from '../../../lib/utils'
-import { CONTRACT_LIST, getContract } from '../../../lib/contracts'
-import { AbstractTools } from '@chainlink/gauntlet-terra'
-import {
-  AbstractInstruction,
-} from '@chainlink/gauntlet-terra/dist/commands/abstract/executionWrapper'
-
-const abstract = new AbstractTools<CONTRACT_LIST>(Object.values(CONTRACT_LIST), getContract)
+import { abstract, AbstractInstruction } from '../..'
 
 // 7 days
 const DEFAULT_MULTISIG_EXPIRATION_TIME_IN_SECS = 7 * 24 * 60 * 60
@@ -90,7 +84,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   }
 }
 
-const createWalletInstruction: AbstractInstruction<CommandInput, ContractInput, CONTRACT_LIST> = {
+const createWalletInstruction: AbstractInstruction<CommandInput, ContractInput> = {
   examples: [
     'yarn gauntlet cw3_flex_multisig:deploy --network=bombay-testnet --group=<GROUP_ADDRESS> --threshold=<THRESHOLD> (--time=<EXPIRATION_TIME_IN_SECS>)',
   ],
@@ -102,7 +96,6 @@ const createWalletInstruction: AbstractInstruction<CommandInput, ContractInput, 
   makeInput: makeCommandInput,
   validateInput,
   makeContractInput: makeContractInput,
-  getContract,
 }
 
 export const CreateWallet = abstract.instructionToCommand(createWalletInstruction)
