@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	tc "github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/smoke/common"
 	"github.com/smartcontractkit/integrations-framework/actions"
 )
@@ -16,7 +15,7 @@ var _ = Describe("Solana chaos suite", func() {
 		By("Deploying OCRv2 cluster", func() {
 			state.DeployCluster(5, true)
 			state.LabelChaosGroups()
-			tc.ImitateSource(state.MockServer, common.SourceChangeInterval, 2, 10)
+			state.ImitateSource(common.SourceChangeInterval, 2, 10)
 		})
 	})
 	It("Can tolerate chaos experiments", func() {

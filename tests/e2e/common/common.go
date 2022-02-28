@@ -158,17 +158,6 @@ func DefaultOffChainConfigParamsFromNodes(nodes []client.Chainlink) (contracts.O
 	}, nkb, nil
 }
 
-func ImitateSource(mockServer *client.MockserverClient, changeInterval time.Duration, min int, max int) {
-	go func() {
-		for {
-			_ = mockServer.SetValuePath("/variable", min)
-			time.Sleep(changeInterval)
-			_ = mockServer.SetValuePath("/variable", max)
-			time.Sleep(changeInterval)
-		}
-	}()
-}
-
 func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle, mock *client.MockserverClient) error {
 	bootstrapPeers := []client.P2PData{
 		{
@@ -184,7 +173,7 @@ func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle,
 		}
 		sourceValueBridge := client.BridgeTypeAttributes{
 			Name:        "variable",
-			URL:         fmt.Sprintf("%s/variable", mock.Config.ClusterURL),
+			URL:         fmt.Sprintf("%s/node%d", mock.Config.ClusterURL, nIdx),
 			RequestData: "{}",
 		}
 		observationSource := client.ObservationSourceSpecBridge(sourceValueBridge)
