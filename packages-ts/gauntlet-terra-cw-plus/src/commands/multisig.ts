@@ -1,15 +1,15 @@
 import { Result } from '@chainlink/gauntlet-core'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
-import { AccAddress, MsgExecuteContract } from '@terra-money/terra.js'
+import { AccAddress, MsgExecuteContract, MsgSend } from '@terra-money/terra.js'
 import { isDeepEqual } from '../lib/utils'
-import { Vote, WasmMsg, Action, State } from '../lib/types'
+import { Vote, Action, State } from '../lib/types'
 import { fetchProposalState, makeInspectionMessage } from './inspect'
 
 type ProposalAction = (
   signer: AccAddress,
   proposalId: number,
-  message: MsgExecuteContract,
+  message: MsgExecuteContract | MsgSend,
 ) => Promise<MsgExecuteContract>
 
 export const wrapCommand = (command) => {
@@ -43,7 +43,7 @@ export const wrapCommand = (command) => {
 
       if (state.proposal.nextAction !== Action.CREATE) {
         this.require(
-          await this.isSameProposal(state.proposal.data, [this.toWasmMsg(message)]),
+          await this.isSameProposal(state.data, [this.toMsg(message)]),
           'The transaction generated is different from the proposal provided',
         )
       }
@@ -51,8 +51,24 @@ export const wrapCommand = (command) => {
       return operations[state.proposal.nextAction](signer, Number(this.flags.proposal), message)
     }
 
-    isSameProposal = (proposalMsgs: WasmMsg[], generatedMsgs: WasmMsg[]) => {
+    isSameProposal = (proposalMsgs: (WasmMsg | BankMsg)[], generatedMsgs: (WasmMsg | BankMsg)[]) => {
       return isDeepEqual(proposalMsgs, generatedMsgs)
+    }
+
+    toMsg = (message: MsgSend | MsgExecuteContract): BankMsg | WasmMsg => {
+      if (message instanceof MsgSend) return this.toBankMsg(message as MsgSend)
+      if (message instanceof MsgExecuteContract) return this.toWasmMsg(message as MsgExecuteContract)
+    }
+
+    toBankMsg = (message: MsgSend): BankMsg => {
+      return {
+        bank: {
+          send: {
+            amount: message.amount.toArray().map((c) => c.toData()),
+            to_address: message.to_address,
+          },
+        },
+      }
     }
 
     toWasmMsg = (message: MsgExecuteContract): WasmMsg => {
@@ -72,7 +88,7 @@ export const wrapCommand = (command) => {
       const proposeInput = {
         propose: {
           description: command.id,
-          msgs: [this.toWasmMsg(message)],
+          msgs: [this.toMsg(message)],
           title: command.id,
           // TODO: Set expiration time
           // latest: { at_height: 7970238 },
