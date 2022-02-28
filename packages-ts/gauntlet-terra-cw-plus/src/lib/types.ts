@@ -14,15 +14,26 @@ export enum Action {
   NONE = 'none',
 }
 
+type Coin = {
+  denom: string
+  amount: string
+}
+
 export type WasmMsg = {
   wasm: {
     execute: {
       contract_addr: string
-      funds: {
-        denom: string
-        amount: string
-      }[]
+      funds: Coin[]
       msg: string
+    }
+  }
+}
+
+export type BankMsg = {
+  bank: {
+    send: {
+      amount: Coin[]
+      to_address: string
     }
   }
 }
