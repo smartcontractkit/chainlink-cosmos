@@ -31,8 +31,8 @@ export const wrapCommand = (command) => {
 
     makeRawTransaction = async (signer: AccAddress, state?: State) => {
       const message = await this.command.makeRawTransaction(this.multisig)
-      const estimatedGas = await this.command.simulate(this.multisig, [message])
-      logger.info(`Tx simulation successful: estimated gas usage is ${estimatedGas}`)
+      await this.command.simulate(this.multisig, [message])
+      logger.info(`Command simulation successful.`)
 
       const operations = {
         [Action.CREATE]: this.makeProposeTransaction,
