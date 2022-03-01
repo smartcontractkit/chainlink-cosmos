@@ -25,7 +25,7 @@ type AbstractExecute = (params: any, address?: string) => Promise<Result<Transac
 // Caller should only instantiate this once, to initialize
 // ContractList and getContract()
 export class AbstractTools<ContractList extends string> {
-  contractList: ContractList[]
+  contractRecords: Record<string, ContractList>
   getContract: ContractGetter<ContractList>
 
   instructionToInspectCommand<CommandInput, ContractExpectedInfo>(
@@ -37,24 +37,17 @@ export class AbstractTools<ContractList extends string> {
     return instructionToCommand<ContractList>(this, instruction)
   }
 
-  constructor(contractList: ContractList[], getContract: ContractGetter<ContractList>) {
-    this.contractList = contractList
+  constructor(contractRecords : Record<string, ContractList>, getContract: ContractGetter<ContractList>) {
+    this.contractRecords = contractRecords
     this.getContract = getContract
-  }
-
-  async makeAbstractCommand(instruction: string, flags: any, args: string[], input?: any): Promise<TerraCommand> {
-    const commandOpts = await this.parseInstruction(instruction, flags.version)
-    const params = this.parseParams(commandOpts, input || flags)
-    return new AbstractCommand<ContractList>(flags, args, commandOpts, params)
   }
 
   async parseInstruction(instruction: string, inputVersion: string): Promise<AbstractOpts<ContractList>> {
     const command = instruction.split(':')
     if (!command.length || command.length > 2) throw new Error(`Abstract: Contract ${command[0]} not found`)
 
-    const contractByteCode = await this.getContract(this.contractList[command[0]], inputVersion)
-    const contract = this.isValidContract(this.contractList[command[0]]) && contractByteCode
-    if (!contract) throw new Error(`Abstract: Contract ${command[0]} not found`)
+    const contractId: ContractList = this.lookupContractId(command[0])
+    const contract = await this.getContract(contractId, inputVersion)
 
     if (command[1] === 'help') {
       return {
@@ -82,9 +75,13 @@ export class AbstractTools<ContractList extends string> {
     }
   }
 
-  isValidContract(contractId: ContractList): boolean {
+  // Validates and looks up contract name in contractRecords
+  lookupContractId(contractName: string): ContractList {
     // Validate that we have this contract available
-    return this.contractList.includes(contractId)
+    if (!(contractName in this.contractRecords)) {
+        throw new Error(`Abstract: Contract ${contractName} not found`)
+    }
+    return this.contractRecords[contractName]
   }
 
   parseParams(commandOpts: AbstractOpts<ContractList>, params: any): AbstractParams {
@@ -108,6 +105,12 @@ export class AbstractTools<ContractList extends string> {
     }
 
     return data
+  }
+
+  async makeAbstractCommand(instruction: string, flags: any, args: string[], input?: any): Promise<TerraCommand> {
+    const commandOpts = await this.parseInstruction(instruction, flags.version)
+    const params = this.parseParams(commandOpts, input || flags)
+    return new AbstractCommand<ContractList>(flags, args, commandOpts, params)
   }
 }
 
