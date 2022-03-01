@@ -204,6 +204,7 @@ export default class AbstractCommand extends TerraCommand {
 
     const estimatedGas = await this.simulate(address, params)
     logger.info(`Tx simulation successful: estimated gas usage is ${estimatedGas}`)
+    return estimatedGas
   }
 
   execute = async () => {
