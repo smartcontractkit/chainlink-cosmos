@@ -19,7 +19,7 @@ type Coin = {
   amount: string
 }
 
-export type WasmMsg = {
+export type Cw3WasmMsg = {
   wasm: {
     execute: {
       contract_addr: string
@@ -29,7 +29,7 @@ export type WasmMsg = {
   }
 }
 
-export type BankMsg = {
+export type Cw3BankMsg = {
   bank: {
     send: {
       amount: Coin[]
@@ -45,6 +45,6 @@ export type State = {
   approvers: string[]
   // https://github.com/CosmWasm/cw-plus/blob/82138f9484e538913f7faf78bc292fb14407aae8/packages/cw3/src/query.rs#L75
   currentStatus?: 'pending' | 'open' | 'rejected' | 'passed' | 'executed'
-  data?: WasmMsg[]
+  data?: Cw3WasmMsg[]
   expiresAt?: Date
 }

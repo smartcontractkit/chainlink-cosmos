@@ -74,7 +74,6 @@ const makeOnchainData = (query: Query) => async (
       })
     }),
   )
-  console.log(owedPerTransmitter)
 
   return {
     description,

@@ -1,15 +1,20 @@
 import { Result, WriteCommand } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
-import { EventsByType, MsgStoreCode, AccAddress, TxLog, MsgSend } from '@terra-money/terra.js'
 import { SignMode } from '@terra-money/terra.proto/cosmos/tx/signing/v1beta1/signing'
 import { withProvider, withWallet, withCodeIds, withNetwork } from '../middlewares'
 import {
+  EventsByType,
+  MsgStoreCode,
+  AccAddress,
+  TxLog,
+  MsgSend,
   BlockTxBroadcastResult,
   LCDClient,
   MsgExecuteContract,
   MsgInstantiateContract,
   TxError,
   Wallet,
+  Msg,
 } from '@terra-money/terra.js'
 import { TransactionResponse } from '../types'
 import { LedgerKey } from '../ledgerKey'
@@ -70,7 +75,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     return await this.provider.wasm.contractQuery(address, input, params)
   }
 
-  signAndSend = async (messages: MsgExecuteContract[] | MsgSend[]): Promise<TransactionResponse> => {
+  signAndSend = async (messages: Msg[]): Promise<TransactionResponse> => {
     try {
       logger.loading('Signing transaction...')
       const tx = await this.wallet.createAndSignTx({
