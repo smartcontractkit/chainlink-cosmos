@@ -81,7 +81,7 @@ export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
     path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts/contracts'),
   ]
 
-  const toDirName = (contractId: CONTRACT_LIST) => contractDirName[contractId]
+  const toDirName = (contractId: CONTRACT_LIST) => contractDirName[CONTRACT_LIST[contractId]]
 
   const abi = possibleContractPaths
     .filter((path) => existsSync(`${path}/${toDirName(contractId)}/schema`))

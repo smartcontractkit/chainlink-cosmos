@@ -37,7 +37,7 @@ export class AbstractTools<ContractList extends string> {
     return instructionToCommand<ContractList>(this, instruction)
   }
 
-  constructor(contractRecords : Record<string, ContractList>, getContract: ContractGetter<ContractList>) {
+  constructor(contractRecords: Record<string, ContractList>, getContract: ContractGetter<ContractList>) {
     this.contractRecords = contractRecords
     this.getContract = getContract
   }
@@ -79,7 +79,7 @@ export class AbstractTools<ContractList extends string> {
   lookupContractId(contractName: string): ContractList {
     // Validate that we have this contract available
     if (!(contractName in this.contractRecords)) {
-        throw new Error(`Abstract: Contract ${contractName} not found`)
+      throw new Error(`Abstract: Contract ${contractName} not found`)
     }
     return this.contractRecords[contractName]
   }
