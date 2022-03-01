@@ -192,6 +192,20 @@ export default class AbstractCommand extends TerraCommand {
     }
   }
 
+  simulateExecute = async () => {
+    if (this.opts.action !== TERRA_OPERATIONS.EXECUTE) {
+      logger.info('Skipping tx simulation for non-execute operation')
+      return
+    }
+
+    const address = this.args[0]
+    const params = this.params
+    logger.loading(`Executing tx simulation for ${this.opts.contract.id}:${this.opts.function} at ${address}`)
+
+    const estimatedGas = await this.simulate(address, params)
+    logger.info(`Tx simulation successful: estimated gas usage is ${estimatedGas}`)
+  }
+
   execute = async () => {
     const operations = {
       [TERRA_OPERATIONS.DEPLOY]: this.abstractDeploy,

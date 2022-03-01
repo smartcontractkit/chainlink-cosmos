@@ -11,6 +11,7 @@ import {
   MsgInstantiateContract,
   TxError,
   Wallet,
+  SignerData,
 } from '@terra-money/terra.js'
 import { TransactionResponse } from '../types'
 import { LedgerKey } from '../ledgerKey'
@@ -22,8 +23,11 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   provider: LCDClient
   contracts: string[]
   public codeIds: CodeIds
+
   abstract execute: () => Promise<Result<TransactionResponse>>
   abstract makeRawTransaction: (signer: AccAddress) => Promise<MsgExecuteContract>
+
+  simulateExecute: () => any
   afterExecute?: (response: Result<TransactionResponse>) => any
 
   constructor(flags, args) {
@@ -133,5 +137,22 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     const res = await this.provider.tx.broadcast(tx)
 
     return this.wrapResponse(res)
+  }
+
+  async simulate(address, input): Promise<Number> {
+    const msg = new MsgExecuteContract(this.wallet.key.accAddress, address, input)
+
+    const signerData: SignerData = {
+      sequenceNumber: await this.wallet.sequence(),
+      publicKey: this.wallet.key.publicKey,
+    }
+    const tx = await this.wallet.createTx({
+      msgs: [msg],
+    })
+
+    // gas estimation successful => tx is valid (simulation is run under the hood)
+    return await this.provider.tx.estimateGas(tx, {
+      signers: [signerData],
+    })
   }
 }

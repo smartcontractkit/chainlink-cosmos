@@ -14,12 +14,15 @@ export interface AbstractInstruction<Input, ContractInput> {
   validateInput: (input: Input) => boolean
   makeContractInput: (input: Input) => Promise<ContractInput>
   afterExecute?: (response: Result<TransactionResponse>) => any
+  isSimulateBeforeExecution?: boolean
 }
 
 export const instructionToCommand = (instruction: AbstractInstruction<any, any>) => {
   const id = `${instruction.instruction.contract}:${instruction.instruction.function}`
   const category = `${instruction.instruction.category}`
   const examples = instruction.examples || []
+  const isSimulateExecute = !!instruction.isSimulateBeforeExecution
+
   return class Command extends TerraCommand {
     static id = id
     static category = category
@@ -50,6 +53,10 @@ export const instructionToCommand = (instruction: AbstractInstruction<any, any>)
 
     execute = async (): Promise<Result<TransactionResponse>> => {
       const command = await this.buildCommand()
+      if (isSimulateExecute) {
+        await command.simulateExecute()
+      }
+
       let response = await command.execute()
       if (this.afterExecute) {
         const data = this.afterExecute(response)
