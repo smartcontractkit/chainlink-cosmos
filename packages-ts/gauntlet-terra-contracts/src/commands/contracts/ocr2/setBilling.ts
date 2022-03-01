@@ -80,6 +80,7 @@ const setBillingInstruction: AbstractInstruction<CommandInput, ContractInput> = 
   makeInput: makeCommandInput,
   validateInput: validateInput,
   makeContractInput: makeContractInput,
+  isSimulateBeforeExecution: true
 }
 
 export default instructionToCommand(setBillingInstruction)
