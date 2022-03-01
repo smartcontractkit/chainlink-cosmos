@@ -10,7 +10,7 @@ import (
 	"github.com/smartcontractkit/integrations-framework/actions"
 )
 
-var _ = Describe("Terra OCRv2 @ocr", func() {
+var _ = Describe("Terra OCRv2 @ocr2", func() {
 	var state *tc.OCRv2State
 
 	BeforeEach(func() {
@@ -23,7 +23,7 @@ var _ = Describe("Terra OCRv2 @ocr", func() {
 
 	Describe("with Terra OCR2", func() {
 		It("performs OCR2 round", func() {
-			state.ValidateRoundsAfter(time.Now(), 10)
+			state.ValidateRoundsAfter(time.Now(), 10, false)
 		})
 	})
 

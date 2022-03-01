@@ -50,10 +50,13 @@ test_relay_unit:
 	go test -v ./pkg/terra/...
 
 test_smoke:
-	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo -p -procs=2 tests/e2e/smoke
+	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo -p -procs=3 tests/e2e/smoke
 
 test_ocr:
-	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo --focus=@ocr tests/e2e/smoke
+	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo --focus=@ocr2 tests/e2e/smoke
+
+test_ocr_proxy:
+	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo --focus=@ocr_proxy tests/e2e/smoke
 
 test_migration:
 	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo tests/e2e/migration
