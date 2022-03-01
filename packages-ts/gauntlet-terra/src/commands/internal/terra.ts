@@ -2,7 +2,6 @@ import { Result, WriteCommand } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { EventsByType, MsgStoreCode, AccAddress, TxLog, MsgSend } from '@terra-money/terra.js'
 import { SignMode } from '@terra-money/terra.proto/cosmos/tx/signing/v1beta1/signing'
-
 import { withProvider, withWallet, withCodeIds, withNetwork } from '../middlewares'
 import {
   BlockTxBroadcastResult,
@@ -24,8 +23,13 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   public codeIds: CodeIds
   abstract execute: () => Promise<Result<TransactionResponse>>
   abstract makeRawTransaction: (signer: AccAddress) => Promise<MsgExecuteContract | MsgSend>
-  beforeExecute?: (context?) => Promise<void>
-  afterExecute?: (response: Result<TransactionResponse>) => any
+  // Preferable option to initialize the command instead of new TerraCommand. This should be an static option to construct the command
+  buildCommand?: (flags, args) => Promise<TerraCommand>
+  beforeExecute: (context?: any) => Promise<void>
+
+  afterExecute = async (response: Result<TransactionResponse>): Promise<void> => {
+    logger.success(`Execution finished at transaction: ${response.responses[0].tx.hash}`)
+  }
 
   constructor(flags, args) {
     super(flags, args)

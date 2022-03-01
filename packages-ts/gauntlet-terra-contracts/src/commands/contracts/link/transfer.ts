@@ -35,7 +35,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   }
 }
 
-const beforeExecute = async (context: BeforeExecutionContext): Promise<void> => {
+const beforeExecute = (context: BeforeExecutionContext<CommandInput, ContractInput>) => async (): Promise<void> => {
   logger.info(
     `Transferring ${context.contractInput.amount} (${context.input.amount}) Tokens to ${context.contractInput.recipient}`,
   )
