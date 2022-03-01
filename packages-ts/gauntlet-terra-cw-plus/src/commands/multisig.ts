@@ -3,8 +3,8 @@ import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { AccAddress, MsgExecuteContract, MsgSend } from '@terra-money/terra.js'
 import { isDeepEqual } from '../lib/utils'
-import { Vote, Action, State } from '../lib/types'
 import { fetchProposalState, makeInspectionMessage } from './inspect'
+import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg } from '../lib/types'
 
 type ProposalAction = (
   signer: AccAddress,
@@ -55,16 +55,16 @@ export const wrapCommand = (command) => {
       return operations[state.proposal.nextAction](signer, Number(this.flags.proposal), message)
     }
 
-    isSameProposal = (proposalMsgs: (WasmMsg | BankMsg)[], generatedMsgs: (WasmMsg | BankMsg)[]) => {
+    isSameProposal = (proposalMsgs: (Cw3WasmMsg | Cw3BankMsg)[], generatedMsgs: (Cw3WasmMsg | Cw3BankMsg)[]) => {
       return isDeepEqual(proposalMsgs, generatedMsgs)
     }
 
-    toMsg = (message: MsgSend | MsgExecuteContract): BankMsg | WasmMsg => {
+    toMsg = (message: MsgSend | MsgExecuteContract): Cw3BankMsg | Cw3WasmMsg => {
       if (message instanceof MsgSend) return this.toBankMsg(message as MsgSend)
       if (message instanceof MsgExecuteContract) return this.toWasmMsg(message as MsgExecuteContract)
     }
 
-    toBankMsg = (message: MsgSend): BankMsg => {
+    toBankMsg = (message: MsgSend): Cw3BankMsg => {
       return {
         bank: {
           send: {
@@ -75,7 +75,7 @@ export const wrapCommand = (command) => {
       }
     }
 
-    toWasmMsg = (message: MsgExecuteContract): WasmMsg => {
+    toWasmMsg = (message: MsgExecuteContract): Cw3WasmMsg => {
       return {
         wasm: {
           execute: {

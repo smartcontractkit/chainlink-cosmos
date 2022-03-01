@@ -19,7 +19,7 @@ type Coin = {
   amount: string
 }
 
-export type WasmMsg = {
+export type Cw3WasmMsg = {
   wasm: {
     execute: {
       contract_addr: string
@@ -29,7 +29,7 @@ export type WasmMsg = {
   }
 }
 
-export type BankMsg = {
+export type Cw3BankMsg = {
   bank: {
     send: {
       amount: Coin[]
