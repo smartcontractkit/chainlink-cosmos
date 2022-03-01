@@ -61,7 +61,7 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   validateInput: validateInput,
   makeContractInput: makeContractInput,
   afterExecute,
-  isSimulateBeforeExecution: true
+  isSimulateBeforeExecution: true,
 }
 
 export default instructionToCommand(instruction)
