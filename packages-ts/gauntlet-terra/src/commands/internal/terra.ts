@@ -1,6 +1,5 @@
 import { Result, WriteCommand } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
-import { EventsByType, MsgStoreCode, AccAddress, TxLog } from '@terra-money/terra.js'
 import { SignMode } from '@terra-money/terra.proto/cosmos/tx/signing/v1beta1/signing'
 
 import { withProvider, withWallet, withCodeIds, withNetwork } from '../middlewares'
@@ -12,6 +11,13 @@ import {
   TxError,
   Wallet,
   SignerData,
+  EventsByType,
+  MsgStoreCode,
+  AccAddress,
+  AccPubKey,
+  TxLog,
+  SimplePublicKey,
+  BaseAccount,
 } from '@terra-money/terra.js'
 import { TransactionResponse } from '../types'
 import { LedgerKey } from '../ledgerKey'
@@ -27,7 +33,6 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   abstract execute: () => Promise<Result<TransactionResponse>>
   abstract makeRawTransaction: (signer: AccAddress) => Promise<MsgExecuteContract>
 
-  simulateExecute: () => any
   afterExecute?: (response: Result<TransactionResponse>) => any
 
   constructor(flags, args) {
@@ -139,13 +144,15 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     return this.wrapResponse(res)
   }
 
-  async simulate(address, input): Promise<Number> {
-    const msg = new MsgExecuteContract(this.wallet.key.accAddress, address, input)
+  async simulate(signer: AccAddress, contractAddress: AccAddress, input: any): Promise<Number> {
+    const msg = new MsgExecuteContract(signer, contractAddress, input)
 
+    const account = await this.provider.auth.accountInfo(signer)
     const signerData: SignerData = {
-      sequenceNumber: await this.wallet.sequence(),
-      publicKey: this.wallet.key.publicKey,
+      sequenceNumber: account.getSequenceNumber(),
+      publicKey: account.getPublicKey(),
     }
+
     const tx = await this.wallet.createTx({
       msgs: [msg],
     })

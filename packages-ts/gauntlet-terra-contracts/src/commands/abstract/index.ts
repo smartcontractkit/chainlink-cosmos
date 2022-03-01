@@ -21,7 +21,7 @@ export const makeAbstractCommand = async (
   flags: any,
   args: string[],
   input?: any,
-): Promise<TerraCommand> => {
+): Promise<AbstractCommand> => {
   const commandOpts = await parseInstruction(instruction, flags.version)
   const params = parseParams(commandOpts, input || flags)
   return new AbstractCommand(flags, args, commandOpts, params)
@@ -197,12 +197,13 @@ export default class AbstractCommand extends TerraCommand {
       logger.info('Skipping tx simulation for non-execute operation')
       return
     }
-
-    const address = this.args[0]
+    
+    const signer = this.wallet.key.accAddress // signer is the default loaded wallet
+    const contractAddress = this.args[0]
     const params = this.params
-    logger.loading(`Executing tx simulation for ${this.opts.contract.id}:${this.opts.function} at ${address}`)
+    logger.loading(`Executing tx simulation for ${this.opts.contract.id}:${this.opts.function} at ${contractAddress}`)
 
-    const estimatedGas = await this.simulate(address, params)
+    const estimatedGas = await this.simulate(signer, contractAddress, params)
     logger.info(`Tx simulation successful: estimated gas usage is ${estimatedGas}`)
     return estimatedGas
   }

@@ -33,7 +33,7 @@ export const instructionToCommand = (instruction: AbstractInstruction<any, any>)
 
     afterExecute = instruction.afterExecute
 
-    buildCommand = async (): Promise<TerraCommand> => {
+    buildCommand = async (): Promise<AbstractCommand> => {
       const commandInput = await instruction.makeInput(this.flags, this.args)
       if (!instruction.validateInput(commandInput)) {
         throw new Error(`Invalid input params:  ${JSON.stringify(commandInput)}`)
