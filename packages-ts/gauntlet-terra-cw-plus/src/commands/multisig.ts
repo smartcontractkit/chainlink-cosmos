@@ -21,12 +21,16 @@ export const wrapCommand = (command) => {
 
     constructor(flags, args) {
       super(flags, args)
+    }
 
-      this.command = new command(flags, args)
-
+    buildCommand = async (flags, args): Promise<TerraCommand> => {
       if (!AccAddress.validate(process.env.CW3_FLEX_MULTISIG)) throw new Error(`Invalid Multisig wallet address`)
       if (!AccAddress.validate(process.env.CW4_GROUP)) throw new Error(`Invalid Multisig group address`)
       this.multisig = process.env.CW3_FLEX_MULTISIG as AccAddress
+
+      const c = new command(flags, args) as TerraCommand
+      this.command = c.buildCommand ? await c.buildCommand(flags, args) : c
+      return this.command
     }
 
     makeRawTransaction = async (signer: AccAddress, state?: State) => {
@@ -143,6 +147,9 @@ export const wrapCommand = (command) => {
     }
 
     execute = async () => {
+      // TODO: Gauntlet core should initialize commands using `buildCommand` instead of new Command
+      await this.buildCommand(this.flags, this.args)
+
       let proposalId = !!this.flags.proposal && Number(this.flags.proposal)
       const state = await this.fetchState(proposalId)
       logger.info(makeInspectionMessage(state))
@@ -160,7 +167,9 @@ export const wrapCommand = (command) => {
       }
 
       if (this.flags.execute) {
-        await prompt(`Continue ${actionMessage[state.proposal.nextAction]} proposal?`)
+        await this.command.beforeExecute()
+
+        await prompt(`Continue ${actionMessage[state.nextAction]} proposal?`)
         const tx = await this.signAndSend([rawTx])
         let response: Result<TransactionResponse> = {
           responses: [

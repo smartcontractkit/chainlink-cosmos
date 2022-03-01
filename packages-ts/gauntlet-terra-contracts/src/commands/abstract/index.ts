@@ -21,7 +21,7 @@ export const makeAbstractCommand = async (
   flags: any,
   args: string[],
   input?: any,
-): Promise<TerraCommand> => {
+): Promise<AbstractCommand> => {
   const commandOpts = await parseInstruction(instruction, flags.version)
   const params = parseParams(commandOpts, input || flags)
   return new AbstractCommand(flags, args, commandOpts, params)

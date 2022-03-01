@@ -1,5 +1,4 @@
-import { BN, logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { defaultAfterExecute } from '../abstract/executionWrapper'
+import { BN, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress, MsgSend } from '@terra-money/terra.js'
 import { CATEGORIES, ULUNA_DECIMALS } from '../../lib/constants'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
@@ -24,27 +23,30 @@ export default class TransferLuna extends TerraCommand {
     super(flags, args)
   }
 
-  beforeExecute = async (input: CommandInput) => {
-    await prompt(`Continue sending ${input.amount} uLUNA to ${input.destination}?`)
+  buildCommand = async (flags, args): Promise<TerraCommand> => {
+    this.input = this.makeInput(flags, args)
+    return this
   }
-  afterExecute = defaultAfterExecute
 
-  makeInput = () => {
+  beforeExecute = async () => {
+    await prompt(`Continue sending ${this.input.amount} uLUNA to ${this.input.destination}?`)
+  }
+
+  makeInput = (flags, _) => {
     return {
-      destination: this.flags.to,
-      amount: new BN(this.flags.amount).mul(new BN(10).pow(new BN(ULUNA_DECIMALS))),
+      destination: flags.to,
+      amount: new BN(flags.amount).mul(new BN(10).pow(new BN(ULUNA_DECIMALS))),
     }
   }
 
   makeRawTransaction = async (signer: AccAddress) => {
-    this.input = this.makeInput()
     if (!AccAddress.validate(this.input.destination)) throw new Error('Invalid destination address')
     return new MsgSend(signer, this.input.destination, `${this.input.amount.toString()}uluna`)
   }
 
   execute = async () => {
     const message = await this.makeRawTransaction(this.wallet.key.accAddress)
-    await this.beforeExecute(this.input)
+    await this.beforeExecute()
     const tx = await this.signAndSend([message])
     const result = {
       responses: [
