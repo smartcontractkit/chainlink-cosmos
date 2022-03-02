@@ -6,18 +6,6 @@ import (
 	"math/big"
 )
 
-type Observation []byte
-
-const ObservationSizeBytes = 16
-
-func NewObservationFromInt(o *big.Int) (Observation, error) {
-	return ToBytes(o, ObservationSizeBytes)
-}
-
-func (o Observation) ToInt() (*big.Int, error) {
-	return ToInt(o, ObservationSizeBytes)
-}
-
 func ToInt(s []byte, numBytes uint) (*big.Int, error) {
 	if uint(len(s)) != numBytes {
 		return nil, fmt.Errorf("invalid int length: expected %d got %d", numBytes, len(s))

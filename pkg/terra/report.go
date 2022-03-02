@@ -10,6 +10,27 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
+const (
+	// Report data
+	TimestampSizeBytes       = 4
+	ObserversSizeBytes       = 32
+	ObservationsLenBytes     = 1
+	PrefixSizeBytes          = TimestampSizeBytes + ObserversSizeBytes + ObservationsLenBytes
+	JuelsPerFeeCoinSizeBytes = 16
+)
+
+type Observation []byte
+
+const ObservationSizeBytes = 16
+
+func NewObservationFromInt(o *big.Int) (Observation, error) {
+	return ToBytes(o, ObservationSizeBytes)
+}
+
+func (o Observation) ToInt() (*big.Int, error) {
+	return ToInt(o, ObservationSizeBytes)
+}
+
 var _ median.ReportCodec = (*ReportCodec)(nil)
 
 type ReportCodec struct{}
@@ -40,24 +61,24 @@ func (c ReportCodec) BuildReport(oo []median.ParsedAttributedObservation) (types
 		return oo[i].Value.Cmp(oo[j].Value) < 0
 	})
 
-	observers := [32]byte{}
-	observations := []*big.Int{}
-
+	var observers [32]byte
+	var observations []*big.Int
 	for i, o := range oo {
 		observers[i] = byte(o.Observer)
 		observations = append(observations, o.Value)
 	}
 
-	// encoding
-	report := []byte{}
-
+	// Add timestamp
+	var report []byte
 	time := make([]byte, 4)
 	binary.BigEndian.PutUint32(time, timestamp)
 	report = append(report, time[:]...)
 
+	// Add observers
 	report = append(report, observers[:]...)
+	// Add length of observations
 	report = append(report, byte(len(observations)))
-
+	// Add observations
 	for _, o := range observations {
 		obs, err := NewObservationFromInt(o)
 		if err != nil {
@@ -66,9 +87,9 @@ func (c ReportCodec) BuildReport(oo []median.ParsedAttributedObservation) (types
 		report = append(report, obs[:]...)
 	}
 
+	// Add juels per fee coin value
 	jBytes := make([]byte, JuelsPerFeeCoinSizeBytes)
 	report = append(report, juelsPerFeeCoin.FillBytes(jBytes)[:]...)
-
 	return report, nil
 }
 
@@ -79,7 +100,8 @@ func (c ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
 		return nil, fmt.Errorf("report length missmatch: %d (received), %d (expected)", rLen, PrefixSizeBytes)
 	}
 
-	n := int(report[4+32])
+	// Read observations length
+	n := int(report[TimestampSizeBytes+ObserversSizeBytes])
 	if n == 0 {
 		return nil, fmt.Errorf("unpacked report has no 'observations'")
 	}
