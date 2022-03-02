@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -90,5 +92,24 @@ func TestProxyMonitoring(t *testing.T) {
 		// Assertions
 		mock.AssertExpectationsForObjects(t, chainReader)
 		mock.AssertExpectationsForObjects(t, metrics)
+	})
+	t.Run("contract without a proxy are not monitored by the proxy source", func(t *testing.T) {
+
+		chainConfig := generateChainConfig()
+		feedConfig := generateFeedConfig()
+		feedConfig.ProxyAddressBech32 = ""
+		feedConfig.ProxyAddress = sdk.AccAddress{}
+
+		chainReader := new(mocks.ChainReader)
+		chainReader.Test(t)
+
+		sourceFactory := NewProxySourceFactory(chainReader, newNullLogger())
+		source, err := sourceFactory.NewSource(chainConfig, feedConfig)
+		require.NoError(t, err)
+
+		data, err := source.Fetch(context.Background())
+		require.Nil(t, data)
+		require.Error(t, err, relayMonitoring.ErrNoUpdate)
+
 	})
 }
