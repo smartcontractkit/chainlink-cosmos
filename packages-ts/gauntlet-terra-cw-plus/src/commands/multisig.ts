@@ -29,6 +29,7 @@ export const wrapCommand = (command) => {
       this.multisig = process.env.CW3_FLEX_MULTISIG as AccAddress
 
       const c = new command(flags, args) as TerraCommand
+      await c.invokeMiddlewares(c, c.middlewares)
       this.command = c.buildCommand ? await c.buildCommand(flags, args) : c
       return this.command
     }
@@ -167,7 +168,7 @@ export const wrapCommand = (command) => {
       }
 
       if (this.flags.execute) {
-        await this.command.beforeExecute()
+        await this.command.beforeExecute(this.multisig)
 
         await prompt(`Continue ${actionMessage[state.proposal.nextAction]} proposal?`)
         const tx = await this.signAndSend([rawTx])
