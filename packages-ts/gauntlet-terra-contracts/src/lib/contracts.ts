@@ -81,7 +81,7 @@ export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
     path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts/contracts'),
   ]
 
-  const toDirName = (contractId: CONTRACT_LIST) => contractDirName[CONTRACT_LIST[contractId]]
+  const toDirName = (contractId: CONTRACT_LIST) => contractDirName[contractId]
 
   const abi = possibleContractPaths
     .filter((path) => existsSync(`${path}/${toDirName(contractId)}/schema`))
@@ -93,6 +93,7 @@ export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
           return path.join(contractPath, `./${toDirName(contractId)}/schema/${type}`)
         }
       }
+
       return {
         execute: io.readJSON(toPath('execute_msg')),
         query: io.readJSON(toPath('query_msg')),
@@ -106,11 +107,15 @@ export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
   return abi[0]
 }
 
-export const getContract = async (id: CONTRACT_LIST, version): Promise<Contract> => {
+export const getContract = async (contractName: CONTRACT_LIST, version): Promise<Contract> => {
+  // First convert contactName (a string restricted to the values of CONTRACT_LIST) to an actual member of
+  //  the enum; typescript sees both as the same, but conversion must happen at runtime since javascript
+  //  treats them as two completely different types
+  const id: CONTRACT_LIST = CONTRACT_LIST[contractName]
   version = version ? version : defaultContractVersions[id]
   // Preload contracts
   return {
-    id,
+    id: id,
     abi: getContractABI(id),
     bytecode: await getContractCode(id, version),
   }
