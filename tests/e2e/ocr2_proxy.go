@@ -106,7 +106,7 @@ func (m *OCRv2Proxy) GetDecimals() (int, error) {
 	); err != nil {
 		return 0, err
 	}
-	log.Info().Interface("Description response", resp).Msg("The decimals from the proxy")
+	log.Info().Interface("Decimals response", resp).Msg("The decimals from the proxy")
 	return resp["query_result"], nil
 }
 

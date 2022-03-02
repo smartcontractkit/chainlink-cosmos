@@ -15,7 +15,7 @@ var _ = Describe("Terra OCRv2 @ocr2", func() {
 
 	BeforeEach(func() {
 		state = &tc.OCRv2State{}
-		By("Deoloying the cluster", func() {
+		By("Deploying the cluster", func() {
 			state.DeployCluster(5, false)
 			common.ImitateSource(state.MockServer, 1*time.Second, 2, 10)
 		})

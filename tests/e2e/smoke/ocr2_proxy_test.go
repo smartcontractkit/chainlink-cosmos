@@ -16,13 +16,13 @@ var _ = Describe("Terra OCRv2 Proxy @ocr_proxy", func() {
 
 	BeforeEach(func() {
 		state = &tc.OCRv2State{}
-		By("Deoloying the cluster", func() {
+		By("Deploying the cluster", func() {
 			state.DeployCluster(5, false)
 			common.ImitateSource(state.MockServer, 1*time.Second, 2, 10)
 		})
 	})
 
-	Describe("with Terra OCR2", func() {
+	Describe("with Terra OCR2 Proxy", func() {
 		It("performs OCR2 round through proxy", func() {
 			expectedDecimals := 8
 			expectedDescription := "ETH/USD"

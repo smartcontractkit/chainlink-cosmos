@@ -10,7 +10,7 @@ import (
 	"github.com/smartcontractkit/integrations-framework/actions"
 )
 
-var _ = Describe("Solana chaos suite", func() {
+var _ = Describe("Terra chaos suite", func() {
 	var state = &common.OCRv2State{}
 	BeforeEach(func() {
 		By("Deploying OCRv2 cluster", func() {
