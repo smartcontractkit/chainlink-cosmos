@@ -23,8 +23,10 @@ type TerraFeedConfig struct {
 
 	ContractAddressBech32 string         `json:"contract_address_bech32,omitempty"`
 	ContractAddress       sdk.AccAddress `json:"-"`
-	ProxyAddressBech32    string         `json:"proxy_address_bech32,omitempty"`
-	ProxyAddress          sdk.AccAddress `json:"-"`
+
+	// Optional fields! Internal feeds are not proxied. Check ProxyAddressBech32 == ""!
+	ProxyAddressBech32 string         `json:"proxy_address_bech32,omitempty"`
+	ProxyAddress       sdk.AccAddress `json:"-"`
 }
 
 var _ relayMonitoring.FeedConfig = TerraFeedConfig{}
@@ -110,9 +112,13 @@ func TerraFeedParser(buf io.ReadCloser) ([]relayMonitoring.FeedConfig, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse contract address '%s' from JSON at index i=%d: %w", rawFeed.ContractAddressBech32, i, err)
 		}
-		proxyAddress, err := sdk.AccAddressFromBech32(rawFeed.ProxyAddressBech32)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse proxy contract address '%s' from JSON at index i=%d: %w", rawFeed.ProxyAddressBech32, i, err)
+		var proxyAddress sdk.AccAddress
+		if rawFeed.ProxyAddressBech32 != "" {
+			address, err := sdk.AccAddressFromBech32(rawFeed.ProxyAddressBech32)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse proxy contract address '%s' from JSON at index i=%d: %w", rawFeed.ProxyAddressBech32, i, err)
+			}
+			proxyAddress = address
 		}
 		multiply, ok := new(big.Int).SetString(rawFeed.MultiplyRaw, 10)
 		if !ok {

@@ -57,6 +57,10 @@ type latestRoundDataRes struct {
 }
 
 func (p *proxySource) Fetch(ctx context.Context) (interface{}, error) {
+	if p.terraFeedConfig.ProxyAddressBech32 == "" {
+		p.log.Debugw("skipping fetch because no proxy contract is configured", "feed", p.terraFeedConfig.ContractAddressBech32)
+		return nil, relayMonitoring.ErrNoUpdate
+	}
 	res, err := p.client.ContractStore(
 		p.terraFeedConfig.ProxyAddress,
 		[]byte(`"latest_round_data"`),
