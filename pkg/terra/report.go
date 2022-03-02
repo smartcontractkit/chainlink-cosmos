@@ -59,21 +59,24 @@ func (c ReportCodec) BuildReport(oo []median.ParsedAttributedObservation) (types
 	report = append(report, byte(len(observations)))
 
 	for _, o := range observations {
-		oBytes := make([]byte, MedianLen)
-		report = append(report, o.FillBytes(oBytes)[:]...)
+		obs, err := NewObservationFromInt(o)
+		if err != nil {
+			return nil, err
+		}
+		report = append(report, obs[:]...)
 	}
 
-	jBytes := make([]byte, JuelsLen)
+	jBytes := make([]byte, JuelsPerFeeCoinSizeBytes)
 	report = append(report, juelsPerFeeCoin.FillBytes(jBytes)[:]...)
 
-	return types.Report(report), nil
+	return report, nil
 }
 
 func (c ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
 	// report should at least be able to contain timestamp, observers, observations length
 	rLen := len(report)
-	if rLen < PrefixLen {
-		return nil, fmt.Errorf("report length missmatch: %d (received), %d (expected)", rLen, PrefixLen)
+	if rLen < PrefixSizeBytes {
+		return nil, fmt.Errorf("report length missmatch: %d (received), %d (expected)", rLen, PrefixSizeBytes)
 	}
 
 	n := int(report[4+32])
@@ -81,16 +84,19 @@ func (c ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
 		return nil, fmt.Errorf("unpacked report has no 'observations'")
 	}
 
-	if rLen < PrefixLen+(MedianLen*n)+JuelsLen {
-		return nil, fmt.Errorf("report does not contain enough observations or is missing juels/eth observation")
+	if rLen < PrefixSizeBytes+(ObservationSizeBytes*n)+JuelsPerFeeCoinSizeBytes {
+		return nil, fmt.Errorf("report does not contain enough observations or is missing juels/feeCoin observation")
 	}
 
 	// unpack observations
-	observations := []*big.Int{}
+	var observations []*big.Int
 	for i := 0; i < n; i++ {
-		start := PrefixLen + MedianLen*i
-		end := start + MedianLen
-		o := big.NewInt(0).SetBytes(report[start:end])
+		start := PrefixSizeBytes + ObservationSizeBytes*i
+		end := start + ObservationSizeBytes
+		o, err := Observation(report[start:end]).ToInt()
+		if err != nil {
+			return nil, err
+		}
 		observations = append(observations, o)
 	}
 

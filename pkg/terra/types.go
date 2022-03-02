@@ -11,9 +11,8 @@ import (
 
 const (
 	// Report data
-	PrefixLen = 4 + 32 + 1
-	MedianLen = 16
-	JuelsLen  = 16
+	PrefixSizeBytes          = 4 + 32 + 1
+	JuelsPerFeeCoinSizeBytes = 16
 )
 
 type TransmitMsg struct {
