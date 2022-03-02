@@ -3,13 +3,20 @@ import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { AccAddress } from '@terra-money/terra.js'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { Query } from './inspectionWrapper'
 
 export type BeforeExecutionContext<Input, ContractInput> = {
   input: Input
   contractInput: ContractInput
   id: string
   contract: string
+  query: Query
+  flags: any
 }
+
+export type BeforeExecute<Input, ContractInput> = (
+  context: BeforeExecutionContext<Input, ContractInput>,
+) => (signer: AccAddress) => Promise<void>
 
 export interface AbstractInstruction<Input, ContractInput> {
   examples?: string[]
@@ -21,7 +28,7 @@ export interface AbstractInstruction<Input, ContractInput> {
   makeInput: (flags: any, args: string[]) => Promise<Input>
   validateInput: (input: Input) => boolean
   makeContractInput: (input: Input) => Promise<ContractInput>
-  beforeExecute?: (context: BeforeExecutionContext<Input, ContractInput>) => () => Promise<void>
+  beforeExecute?: BeforeExecute<Input, ContractInput>
   afterExecute?: (response: Result<TransactionResponse>) => any
 }
 
@@ -53,12 +60,15 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
       if (!instruction.validateInput(input)) {
         throw new Error(`Invalid input params:  ${JSON.stringify(input)}`)
       }
+      const query: Query = this.provider.wasm.contractQuery.bind(this.provider.wasm)
       const contractInput = await instruction.makeContractInput(input)
       const beforeExecutionContext: BeforeExecutionContext<Input, ContractInput> = {
         input,
         contractInput,
         id,
         contract: this.args[0],
+        query,
+        flags,
       }
       this.beforeExecute = instruction.beforeExecute
         ? instruction.beforeExecute(beforeExecutionContext)
@@ -79,7 +89,7 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
       // TODO: Command should be built from gauntet-core
       await this.buildCommand(this.flags, this.args)
       //
-      await this.beforeExecute()
+      await this.beforeExecute(this.wallet.key.accAddress)
       let response = await this.command.execute()
       const data = this.afterExecute(response)
       if (data) {
