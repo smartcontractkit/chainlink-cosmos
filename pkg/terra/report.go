@@ -11,24 +11,23 @@ import (
 )
 
 const (
-	// Report data
-	TimestampSizeBytes       = 4
-	ObserversSizeBytes       = 32
-	ObservationsLenBytes     = 1
-	PrefixSizeBytes          = TimestampSizeBytes + ObserversSizeBytes + ObservationsLenBytes
-	JuelsPerFeeCoinSizeBytes = 16
+	timestampSizeBytes       = 4
+	observersSizeBytes       = 32
+	observationsLenBytes     = 1
+	prefixSizeBytes          = timestampSizeBytes + observersSizeBytes + observationsLenBytes
+	juelsPerFeeCoinSizeBytes = 16
 )
 
-type Observation []byte
+type observation []byte
 
-const ObservationSizeBytes = 16
+const observationSizeBytes = 16
 
-func NewObservationFromInt(o *big.Int) (Observation, error) {
-	return ToBytes(o, ObservationSizeBytes)
+func newObservationFromInt(o *big.Int) (observation, error) {
+	return ToBytes(o, observationSizeBytes)
 }
 
-func (o Observation) ToInt() (*big.Int, error) {
-	return ToInt(o, ObservationSizeBytes)
+func (o observation) ToInt() (*big.Int, error) {
+	return ToInt(o, observationSizeBytes)
 }
 
 var _ median.ReportCodec = (*ReportCodec)(nil)
@@ -80,7 +79,7 @@ func (c ReportCodec) BuildReport(oo []median.ParsedAttributedObservation) (types
 	report = append(report, byte(len(observations)))
 	// Add observations
 	for _, o := range observations {
-		obs, err := NewObservationFromInt(o)
+		obs, err := newObservationFromInt(o)
 		if err != nil {
 			return nil, err
 		}
@@ -88,7 +87,7 @@ func (c ReportCodec) BuildReport(oo []median.ParsedAttributedObservation) (types
 	}
 
 	// Add juels per fee coin value
-	jBytes := make([]byte, JuelsPerFeeCoinSizeBytes)
+	jBytes := make([]byte, juelsPerFeeCoinSizeBytes)
 	report = append(report, juelsPerFeeCoin.FillBytes(jBytes)[:]...)
 	return report, nil
 }
@@ -96,26 +95,26 @@ func (c ReportCodec) BuildReport(oo []median.ParsedAttributedObservation) (types
 func (c ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
 	// report should at least be able to contain timestamp, observers, observations length
 	rLen := len(report)
-	if rLen < PrefixSizeBytes {
-		return nil, fmt.Errorf("report length missmatch: %d (received), %d (expected)", rLen, PrefixSizeBytes)
+	if rLen < prefixSizeBytes {
+		return nil, fmt.Errorf("report length missmatch: %d (received), %d (expected)", rLen, prefixSizeBytes)
 	}
 
 	// Read observations length
-	n := int(report[TimestampSizeBytes+ObserversSizeBytes])
+	n := int(report[timestampSizeBytes+observersSizeBytes])
 	if n == 0 {
 		return nil, fmt.Errorf("unpacked report has no 'observations'")
 	}
 
-	if rLen < PrefixSizeBytes+(ObservationSizeBytes*n)+JuelsPerFeeCoinSizeBytes {
+	if rLen < prefixSizeBytes+(observationSizeBytes*n)+juelsPerFeeCoinSizeBytes {
 		return nil, fmt.Errorf("report does not contain enough observations or is missing juels/feeCoin observation")
 	}
 
 	// unpack observations
 	var observations []*big.Int
 	for i := 0; i < n; i++ {
-		start := PrefixSizeBytes + ObservationSizeBytes*i
-		end := start + ObservationSizeBytes
-		o, err := Observation(report[start:end]).ToInt()
+		start := prefixSizeBytes + observationSizeBytes*i
+		end := start + observationSizeBytes
+		o, err := observation(report[start:end]).ToInt()
 		if err != nil {
 			return nil, err
 		}

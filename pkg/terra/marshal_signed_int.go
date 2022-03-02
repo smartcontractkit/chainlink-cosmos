@@ -6,6 +6,8 @@ import (
 	"math/big"
 )
 
+// ToInt interprets bytes s as a big-endian signed integer
+// of size numBytes.
 func ToInt(s []byte, numBytes uint) (*big.Int, error) {
 	if uint(len(s)) != numBytes {
 		return nil, fmt.Errorf("invalid int length: expected %d got %d", numBytes, len(s))
@@ -25,6 +27,8 @@ func ToInt(s []byte, numBytes uint) (*big.Int, error) {
 	return val, nil
 }
 
+// ToBytes converts *big.Int o into bytes as a big-endian signed
+// integer of size numBytes
 func ToBytes(o *big.Int, numBytes uint) ([]byte, error) {
 	negative := o.Sign() < 0
 	val := (&big.Int{})

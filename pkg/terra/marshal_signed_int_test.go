@@ -11,84 +11,112 @@ import (
 
 func TestMarshalSignedInt(t *testing.T) {
 	var tt = []struct {
-		bytesVal string
-		size     uint
-		expected *big.Int
+		bytesVal  string
+		size      uint
+		expected  *big.Int
+		expectErr bool
 	}{
 		{
 			"ffffffffffffffff",
 			8,
 			big.NewInt(-1),
+			false,
 		},
 		{
 			"fffffffffffffffe",
 			8,
 			big.NewInt(-2),
+			false,
 		},
 		{
 			"0000000000000000",
 			8,
 			big.NewInt(0),
+			false,
 		},
 		{
 			"0000000000000001",
 			8,
 			big.NewInt(1),
+			false,
 		},
 		{
 			"0000000000000002",
 			8,
 			big.NewInt(2),
+			false,
+		},
+		{
+			"7fffffffffffffff",
+			8,
+			big.NewInt(9223372036854775807), // 2^63 - 1
+			false,
 		},
 		{
 			"00000000000000000000000000000000",
 			16,
 			big.NewInt(0),
+			false,
 		},
 		{
 			"00000000000000000000000000000001",
 			16,
 			big.NewInt(1),
+			false,
 		},
 		{
 			"00000000000000000000000000000002",
 			16,
 			big.NewInt(2),
+			false,
+		},
+		{
+			"7fffffffffffffffffffffffffffffff", // 2^127 - 1
+			16,
+			big.NewInt(0).Sub(big.NewInt(0).Lsh(big.NewInt(1), 127), big.NewInt(1)),
+			false,
 		},
 		{
 			"ffffffffffffffffffffffffffffffff",
 			16,
 			big.NewInt(-1),
+			false,
 		},
 		{
 			"fffffffffffffffffffffffffffffffe",
 			16,
 			big.NewInt(-2),
+			false,
 		},
 		{
 			"000000000000000000000000000000000000000000000000",
 			24,
 			big.NewInt(0),
+			false,
 		},
 		{
 			"000000000000000000000000000000000000000000000001",
 			24,
 			big.NewInt(1),
+			false,
 		},
 		{
 			"000000000000000000000000000000000000000000000002",
 			24,
 			big.NewInt(2),
+			false,
 		},
 		{
 			"ffffffffffffffffffffffffffffffffffffffffffffffff",
 			24,
 			big.NewInt(-1),
+			false,
 		},
 		{
 			"fffffffffffffffffffffffffffffffffffffffffffffffe",
 			24,
 			big.NewInt(-2),
+			false,
 		},
 	}
 	for _, tc := range tt {
@@ -99,7 +127,7 @@ func TestMarshalSignedInt(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, i.String(), tc.expected.String())
 
-		// Marshalling back should give use the same
+		// Marshalling back should give us the same bytes
 		bAfter, err := ToBytes(i, tc.size)
 		require.NoError(t, err)
 		assert.Equal(t, tc.bytesVal, hex.EncodeToString(bAfter))
