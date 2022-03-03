@@ -91,6 +91,7 @@ func (t *txResultsSource) Fetch(ctx context.Context) (interface{}, error) {
 		return nil, fmt.Errorf("unable to decode transactions from response: %w", err)
 	}
 	// Filter recent transactions
+	// TODO (dru) keep latest processed tx in the state.
 	recentTxs := []fcdTx{}
 	func() {
 		t.latestTxIDMu.Lock()
