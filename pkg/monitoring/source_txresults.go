@@ -44,6 +44,10 @@ func (t *txResultsSourceFactory) NewSource(
 	}, nil
 }
 
+func (t *txResultsSourceFactory) GetType() string {
+	return "txresults"
+}
+
 type txResultsSource struct {
 	log             relayMonitoring.Logger
 	terraConfig     TerraConfig

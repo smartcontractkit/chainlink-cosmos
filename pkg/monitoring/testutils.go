@@ -85,6 +85,10 @@ func (f *fakeProxySourceFactory) NewSource(
 	return &fakeProxySource{f.log}, nil
 }
 
+func (f *fakeProxySourceFactory) GetType() string {
+	return "fake-proxy"
+}
+
 type fakeProxySource struct {
 	log relayMonitoring.Logger
 }
