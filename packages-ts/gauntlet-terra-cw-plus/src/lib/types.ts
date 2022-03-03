@@ -39,12 +39,16 @@ export type Cw3BankMsg = {
 }
 
 export type State = {
-  threshold: number
-  nextAction: Action
-  owners: AccAddress[]
-  approvers: string[]
-  // https://github.com/CosmWasm/cw-plus/blob/82138f9484e538913f7faf78bc292fb14407aae8/packages/cw3/src/query.rs#L75
-  currentStatus?: 'pending' | 'open' | 'rejected' | 'passed' | 'executed'
-  data?: Cw3WasmMsg[]
-  expiresAt?: Date
+  multisig: {
+    threshold: number
+    owners: AccAddress[]
+  }
+  proposal: {
+    id?: number
+    nextAction: Action
+    currentStatus?: 'pending' | 'open' | 'rejected' | 'passed' | 'executed'
+    data?: Cw3WasmMsg[]
+    expiresAt?: Date
+    approvers: string[]
+  }
 }

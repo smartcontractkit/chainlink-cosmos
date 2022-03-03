@@ -1,8 +1,8 @@
 import { AccAddress } from '@terra-money/terra.js'
+import { RDD } from '@chainlink/gauntlet-terra'
 import { AbstractInstruction, BeforeExecute } from '../../abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'
-import { getContractFromRDD, getRDD } from '../../../lib/rdd'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 
 type CommandInput = {
@@ -34,7 +34,7 @@ const validateInput = (input: CommandInput): boolean => {
 }
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
-  const currentOwner = await context.query(context.contract, 'owner')
+  const currentOwner = await context.provider.wasm.contractQuery(context.contract, 'owner' as any)
   if (!context.flags.rdd) {
     logger.warn('No RDD flag provided. Transferring without RDD check')
     logger.info(
@@ -43,7 +43,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     await prompt('Continue?')
     return
   }
-  const contract = getContractFromRDD(getRDD(context.flags.rdd), context.contract)
+  const contract = RDD.getContractFromRDD(RDD.getRDD(context.flags.rdd), context.contract)
   logger.info(`Proposing Ownership Transfer of contract of type "${contract.type}":
     - Contract: ${contract.address} ${contract.description ? '- ' + contract.description : ''}
     - Current Owner: ${currentOwner}

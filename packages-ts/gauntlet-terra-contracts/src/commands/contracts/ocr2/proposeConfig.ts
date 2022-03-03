@@ -1,8 +1,7 @@
+import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
 import { printDiff } from '../../../lib/utils'
-import { getRDD } from '../../../lib/rdd'
-import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../abstract/executionWrapper'
-import { filterTxsByEvent, getBlockTxs } from '../../../lib/provider'
+import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../abstract/executionWrapper' 
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 
 type OnchainConfig = any
@@ -26,7 +25,7 @@ type ContractInput = {
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const rdd = getRDD(flags.rdd)
+  const rdd = RDD.getRDD(flags.rdd)
   const contract = args[0]
   const aggregator = rdd.contracts[contract]
   const aggregatorOperators: any[] = aggregator.oracles.map((o) => rdd.operators[o.operator])
@@ -75,8 +74,11 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     throw new Error('No RDD flag provided!')
   }
 
-  const latestConfigDetails = await context.query(context.contract, 'latest_config_details')
-  const setConfigTx = filterTxsByEvent(await getBlockTxs(context.search, latestConfigDetails.block_number), 'wasm-set_config')
+  const latestConfigDetails: any = await context.provider.wasm.contractQuery(context.contract, 'latest_config_details' as any)
+  const setConfigTx = providerUtils.filterTxsByEvent(
+    await providerUtils.getBlockTxs(context.provider, latestConfigDetails.block_number),
+    'wasm-set_config',
+  )
   const event = setConfigTx?.logs?.[0].eventsByType['wasm-set_config']
 
   const currentConfig = {
