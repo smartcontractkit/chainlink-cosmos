@@ -358,7 +358,7 @@ pub fn execute_accept_proposal(
 
     let proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
 
-    let response = Response::new().add_attribute("method", "propose_config");
+    let response = Response::new().add_attribute("method", "accept_proposal");
 
     // Only approve proposal if finalized
     require!(proposal.finalized, InvalidInput);
