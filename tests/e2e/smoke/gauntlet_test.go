@@ -116,7 +116,7 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 
 			// ocr2:inspect
 			results := gd.OcrInspect(gd.OCR, digest, gd.RddPath)
-			Expect(len(results)).Should(Equal(10), "Did not find the expected number of results in the output")
+			Expect(len(results)).Should(Equal(28), "Did not find the expected number of results in the output")
 			for _, v := range results {
 				Expect(v.Pass).Should(Equal(true), fmt.Sprintf("%s expected %s but actually %s", v.Key, v.Expected, v.Actual))
 
