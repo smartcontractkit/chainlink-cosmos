@@ -1,6 +1,9 @@
 import { CATEGORIES } from '../../../lib/constants'
+import { printDiff } from '../../../lib/utils'
 import { getRDD } from '../../../lib/rdd'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../abstract/executionWrapper'
+import { filterTxsByEvent, getBlockTxs } from '../../../lib/provider'
+import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 
 type OnchainConfig = any
 type CommandInput = {
@@ -66,6 +69,37 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
+const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
+  const rddPath = context.flags.rdd
+  if (!rddPath) {
+    throw new Error('No RDD flag provided!')
+  }
+
+  const latestConfigDetails = await context.query(context.contract, 'latest_config_details')
+  const setConfigTx = filterTxsByEvent(await getBlockTxs(context.search, latestConfigDetails.block_number), 'wasm-set_config')
+  const event = setConfigTx?.logs?.[0].eventsByType['wasm-set_config']
+
+  const currentConfig = {
+    f: event?.f[0],
+    transmitters: event?.transmitters,
+    signers: event?.signers.map((s) => Buffer.from(s, 'hex').toString('base64')),
+    onchain_config: event?.onchain_config[0]
+    // todo: add payees
+  }
+
+  const proposedConfig = {
+    f: context.contractInput.f,
+    transmitters: context.contractInput.transmitters,
+    signers: context.contractInput.signers,
+    onchain_config: context.contractInput.onchain_config
+    // todo: add payees
+  }
+
+  logger.info('Review the changes below: green - added, red - deleted, yellow - no change.')
+  printDiff(currentConfig, proposedConfig)
+  await prompt('Continue?')
+}
+
 // yarn gauntlet ocr2:propose_config --network=bombay-testnet --proposalId=4 --rdd=../reference-data-directory/directory-terra-mainnet.json terra14nrtuhrrhl2ldad7gln5uafgl8s2m25du98hlx
 const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
@@ -76,6 +110,7 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   makeInput: makeCommandInput,
   validateInput: validateInput,
   makeContractInput: makeContractInput,
+  beforeExecute,
 }
 
 export default instructionToCommand(instruction)

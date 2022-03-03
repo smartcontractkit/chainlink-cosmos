@@ -3,7 +3,7 @@ import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { AccAddress } from '@terra-money/terra.js'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { Query } from './inspectionWrapper'
+import { Query, Search } from './inspectionWrapper'
 
 export type BeforeExecutionContext<Input, ContractInput> = {
   input: Input
@@ -11,6 +11,7 @@ export type BeforeExecutionContext<Input, ContractInput> = {
   id: string
   contract: string
   query: Query
+  search: Search
   flags: any
 }
 
@@ -61,6 +62,7 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
         throw new Error(`Invalid input params:  ${JSON.stringify(input)}`)
       }
       const query: Query = this.provider.wasm.contractQuery.bind(this.provider.wasm)
+      const search: Search = this.provider.tx.search.bind(this.provider.tx)
       const contractInput = await instruction.makeContractInput(input)
       const beforeExecutionContext: BeforeExecutionContext<Input, ContractInput> = {
         input,
@@ -68,6 +70,7 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
         id,
         contract: this.args[0],
         query,
+        search,
         flags,
       }
       this.beforeExecute = instruction.beforeExecute
