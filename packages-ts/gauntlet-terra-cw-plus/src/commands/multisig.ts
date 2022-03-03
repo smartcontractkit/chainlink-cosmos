@@ -47,7 +47,7 @@ export const wrapCommand = (command) => {
 
       if (state.proposal.nextAction !== Action.CREATE) {
         this.require(
-          await this.isSameProposal(state.data, [this.toMsg(message)]),
+          await this.isSameProposal(state.proposal.data, [this.toMsg(message)]),
           'The transaction generated is different from the proposal provided',
         )
       }
@@ -169,7 +169,7 @@ export const wrapCommand = (command) => {
       if (this.flags.execute) {
         await this.command.beforeExecute()
 
-        await prompt(`Continue ${actionMessage[state.nextAction]} proposal?`)
+        await prompt(`Continue ${actionMessage[state.proposal.nextAction]} proposal?`)
         const tx = await this.signAndSend([rawTx])
         let response: Result<TransactionResponse> = {
           responses: [

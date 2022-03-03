@@ -47,7 +47,7 @@ export type State = {
     id?: number
     nextAction: Action
     currentStatus?: 'pending' | 'open' | 'rejected' | 'passed' | 'executed'
-    data?: WasmMsg[]
+    data?: Cw3WasmMsg[]
     expiresAt?: Date
     approvers: string[]
   }
