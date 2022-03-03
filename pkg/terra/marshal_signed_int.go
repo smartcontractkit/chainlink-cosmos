@@ -6,17 +6,24 @@ import (
 	"math/big"
 )
 
+var i = big.NewInt
+
+func bounds(numBytes uint) (*big.Int, *big.Int) {
+	max := i(0).Sub(i(0).Lsh(i(1), numBytes*8-1), i(1)) // 2**(numBytes*8-1)- 1
+	min := i(0).Sub(i(0).Neg(max), i(1))                // -2**(numBytes*8-1)
+	return min, max
+}
+
 // ToInt interprets bytes s as a big-endian signed integer
 // of size numBytes.
-func ToInt(s []byte, numBytes uint) (*big.Int, error) {
+func ToBigInt(s []byte, numBytes uint) (*big.Int, error) {
 	if uint(len(s)) != numBytes {
 		return nil, fmt.Errorf("invalid int length: expected %d got %d", numBytes, len(s))
 	}
 	val := (&big.Int{}).SetBytes(s)
 	numBits := numBytes * 8
-	// 2**(numBits-1) - 1
-	maxPositive := big.NewInt(0).Sub(big.NewInt(0).Lsh(big.NewInt(1), numBits-1), big.NewInt(1))
-	negative := val.Cmp(maxPositive) > 0
+	_, max := bounds(numBytes)
+	negative := val.Cmp(max) > 0
 	if negative {
 		// Get the complement wrt to 2^numBits
 		maxUint := big.NewInt(1)
@@ -30,6 +37,10 @@ func ToInt(s []byte, numBytes uint) (*big.Int, error) {
 // ToBytes converts *big.Int o into bytes as a big-endian signed
 // integer of size numBytes
 func ToBytes(o *big.Int, numBytes uint) ([]byte, error) {
+	min, max := bounds(numBytes)
+	if o.Cmp(max) > 0 || o.Cmp(min) < 0 {
+		return nil, fmt.Errorf("value won't fit in int%v: 0x%x", numBytes*8, o)
+	}
 	negative := o.Sign() < 0
 	val := (&big.Int{})
 	numBits := numBytes * 8

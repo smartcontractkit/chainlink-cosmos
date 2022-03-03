@@ -26,8 +26,8 @@ func newObservationFromInt(o *big.Int) (observation, error) {
 	return ToBytes(o, observationSizeBytes)
 }
 
-func (o observation) ToInt() (*big.Int, error) {
-	return ToInt(o, observationSizeBytes)
+func (o observation) ToBigInt() (*big.Int, error) {
+	return ToBigInt(o, observationSizeBytes)
 }
 
 var _ median.ReportCodec = (*ReportCodec)(nil)
@@ -114,7 +114,7 @@ func (c ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
 	for i := 0; i < n; i++ {
 		start := prefixSizeBytes + observationSizeBytes*i
 		end := start + observationSizeBytes
-		o, err := observation(report[start:end]).ToInt()
+		o, err := observation(report[start:end]).ToBigInt()
 		if err != nil {
 			return nil, err
 		}

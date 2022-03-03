@@ -123,7 +123,7 @@ func TestMarshalSignedInt(t *testing.T) {
 		tc := tc
 		b, err := hex.DecodeString(tc.bytesVal)
 		require.NoError(t, err)
-		i, err := ToInt(b, tc.size)
+		i, err := ToBigInt(b, tc.size)
 		require.NoError(t, err)
 		assert.Equal(t, i.String(), tc.expected.String())
 
@@ -131,5 +131,56 @@ func TestMarshalSignedInt(t *testing.T) {
 		bAfter, err := ToBytes(i, tc.size)
 		require.NoError(t, err)
 		assert.Equal(t, tc.bytesVal, hex.EncodeToString(bAfter))
+	}
+
+	var tt2 = []struct {
+		o         *big.Int
+		numBytes  uint
+		expectErr bool
+	}{
+		{
+			big.NewInt(128),
+			1,
+			true,
+		},
+		{
+			big.NewInt(-129),
+			1,
+			true,
+		},
+		{
+			big.NewInt(-128),
+			1,
+			false,
+		},
+		{
+			big.NewInt(2147483648),
+			4,
+			true,
+		},
+		{
+			big.NewInt(2147483647),
+			4,
+			false,
+		},
+		{
+			big.NewInt(-2147483649),
+			4,
+			true,
+		},
+		{
+			big.NewInt(-2147483648),
+			4,
+			false,
+		},
+	}
+	for _, tc := range tt2 {
+		tc := tc
+		_, err := ToBytes(tc.o, tc.numBytes)
+		if tc.expectErr {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
 	}
 }
