@@ -112,10 +112,10 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			gd.ProposalDigest = gd.FinalizeProposal(gd.OCR, gd.ProposalId, gd.RddPath)
 
 			// ocr2:accept_proposal
-			digest := gd.AcceptProposal(gd.OCR, gd.ProposalId, gd.ProposalDigest, gd.RddPath)
+			gd.AcceptProposal(gd.OCR, gd.ProposalId, gd.ProposalDigest, gd.RddPath)
 
 			// ocr2:inspect
-			results := gd.OcrInspect(gd.OCR, digest, gd.RddPath)
+			results := gd.OcrInspect(gd.OCR, gd.RddPath)
 			Expect(len(results)).Should(Equal(28), "Did not find the expected number of results in the output")
 			for _, v := range results {
 				Expect(v.Pass).Should(Equal(true), fmt.Sprintf("%s expected %s but actually %s", v.Key, v.Expected, v.Actual))
