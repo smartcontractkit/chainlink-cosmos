@@ -1132,7 +1132,7 @@ pub fn execute_set_billing_access_controller(
 // ---
 
 pub fn execute_set_billing(
-    deps: DepsMut,
+    mut deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     billing_config: Billing,
@@ -1148,10 +1148,17 @@ pub fn execute_set_billing(
         Unauthorized
     );
 
+    // payout oracles
+    let (_total, response) = pay_oracles(
+        &mut deps,
+        &config,
+        Response::new().add_attribute("method", "set_billing"),
+    )?;
+
     config.billing = billing_config;
     CONFIG.save(deps.storage, &config)?;
 
-    Ok(Response::default().add_event(
+    Ok(response.add_event(
         Event::new("set_billing")
             .add_attribute(
                 "recommended_gas_price_micro",
