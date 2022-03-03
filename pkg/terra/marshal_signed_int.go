@@ -14,7 +14,7 @@ func bounds(numBytes uint) (*big.Int, *big.Int) {
 	return min, max
 }
 
-// ToInt interprets bytes s as a big-endian signed integer
+// ToBigInt interprets bytes s as a big-endian signed integer
 // of size numBytes.
 func ToBigInt(s []byte, numBytes uint) (*big.Int, error) {
 	if uint(len(s)) != numBytes {
