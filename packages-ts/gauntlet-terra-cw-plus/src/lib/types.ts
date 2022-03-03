@@ -14,15 +14,26 @@ export enum Action {
   NONE = 'none',
 }
 
-export type WasmMsg = {
+type Coin = {
+  denom: string
+  amount: string
+}
+
+export type Cw3WasmMsg = {
   wasm: {
     execute: {
       contract_addr: string
-      funds: {
-        denom: string
-        amount: string
-      }[]
+      funds: Coin[]
       msg: string
+    }
+  }
+}
+
+export type Cw3BankMsg = {
+  bank: {
+    send: {
+      amount: Coin[]
+      to_address: string
     }
   }
 }
@@ -34,6 +45,6 @@ export type State = {
   approvers: string[]
   // https://github.com/CosmWasm/cw-plus/blob/82138f9484e538913f7faf78bc292fb14407aae8/packages/cw3/src/query.rs#L75
   currentStatus?: 'pending' | 'open' | 'rejected' | 'passed' | 'executed'
-  data?: WasmMsg[]
+  data?: Cw3WasmMsg[]
   expiresAt?: Date
 }
