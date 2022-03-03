@@ -23,7 +23,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   contracts: string[]
   public codeIds: CodeIds
   abstract execute: () => Promise<Result<TransactionResponse>>
-  abstract makeRawTransaction: (signer: AccAddress) => Promise<MsgExecuteContract>
+  abstract makeRawTransaction: (signer: AccAddress) => Promise<MsgExecuteContract[]>
   afterExecute?: (response: Result<TransactionResponse>) => any
 
   constructor(flags, args) {
