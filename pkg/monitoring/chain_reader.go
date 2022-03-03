@@ -23,22 +23,25 @@ func NewChainReader(client *pkgClient.Client) ChainReader {
 	return &chainReader{
 		client,
 		sync.Mutex{},
+		sync.Mutex{},
 	}
 }
 
 type chainReader struct {
-	client    *pkgClient.Client
-	sequencer sync.Mutex
+	client *pkgClient.Client
+
+	txEventsSequencer      sync.Mutex
+	contractStoreSequencer sync.Mutex
 }
 
 func (c *chainReader) TxsEvents(events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error) {
-	c.sequencer.Lock()
-	defer c.sequencer.Unlock()
+	c.txEventsSequencer.Lock()
+	defer c.txEventsSequencer.Unlock()
 	return c.client.TxsEvents(events, paginationParams)
 }
 
 func (c *chainReader) ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
-	c.sequencer.Lock()
-	defer c.sequencer.Unlock()
+	c.contractStoreSequencer.Lock()
+	defer c.contractStoreSequencer.Unlock()
 	return c.client.ContractStore(contractAddress, queryMsg)
 }

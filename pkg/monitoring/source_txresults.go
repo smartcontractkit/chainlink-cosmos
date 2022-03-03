@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"sync"
@@ -86,9 +87,9 @@ func (t *txResultsSource) Fetch(ctx context.Context) (interface{}, error) {
 	defer res.Body.Close()
 	// Decode the response
 	txsResponse := fcdTxsResponse{}
-	decoder := json.NewDecoder(res.Body)
-	if err := decoder.Decode(&txsResponse); err != nil {
-		return nil, fmt.Errorf("unable to decode transactions from response: %w", err)
+	resBody, _ := io.ReadAll(res.Body)
+	if err := json.Unmarshal(resBody, &txsResponse); err != nil {
+		return nil, fmt.Errorf("unable to decode transactions from response '%s': %w", resBody, err)
 	}
 	// Filter recent transactions
 	// TODO (dru) keep latest processed tx in the state.
