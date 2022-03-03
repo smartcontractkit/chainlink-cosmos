@@ -1,13 +1,14 @@
-import AbstractCommand, { makeAbstractCommand } from '.'
+import { makeAbstractCommand } from '.'
 import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { CATEGORIES } from '../../lib/constants'
 import { CONTRACT_LIST } from '../../lib/contracts'
 import { APIParams } from '@terra-money/terra.js/dist/client/lcd/APIRequester'
+import { TxSearchOptions, TxSearchResult } from '@terra-money/terra.js'
 
 export type Query = (contractAddress: string, query: any, params?: APIParams) => Promise<any>
-
+export type Search = (options: Partial<TxSearchOptions>) => Promise<TxSearchResult>
 /**
  * Inspection commands need to match this interface
  * command: {
@@ -34,6 +35,7 @@ export interface InspectInstruction<CommandInput, ContractExpectedInfo> {
   makeInspectionData: (query: Query) => (input: CommandInput) => Promise<ContractExpectedInfo>
   makeOnchainData: (
     query: Query,
+    search: Search,
   ) => (instructionsData: any[], input: CommandInput, contractAddress: string) => Promise<ContractExpectedInfo>
   inspect: (expected: ContractExpectedInfo, data: ContractExpectedInfo) => boolean
 }
@@ -71,7 +73,8 @@ export const instructionToInspectCommand = <CommandInput, Expected>(
       )
 
       const query: Query = this.provider.wasm.contractQuery.bind(this.provider.wasm)
-      const onchainData = await inspectInstruction.makeOnchainData(query)(data, input, this.args[0])
+      const search: Search = this.provider.tx.search.bind(this.provider.tx)
+      const onchainData = await inspectInstruction.makeOnchainData(query, search)(data, input, this.args[0])
       const inspectData = await inspectInstruction.makeInspectionData(query)(input)
       const inspection = inspectInstruction.inspect(inspectData, onchainData)
       return {

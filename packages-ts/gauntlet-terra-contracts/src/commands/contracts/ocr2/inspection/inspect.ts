@@ -2,10 +2,14 @@ import { BN, inspection, logger } from '@chainlink/gauntlet-core/dist/utils'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { CATEGORIES, TOKEN_UNIT } from '../../../../lib/constants'
 import { getRDD } from '../../../../lib/rdd'
-import { InspectInstruction, instructionToInspectCommand, Query } from '../../../abstract/inspectionWrapper'
+import { InspectInstruction, instructionToInspectCommand, Query, Search } from '../../../abstract/inspectionWrapper'
+import { deserializeConfig } from '../../../../lib/encoding'
+import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
+import { toComparableNumber, wrappedComparableLongNumber } from '../../../../lib/inspection'
+import { filterTxsByEvent, getBlockTxs } from '../../../../lib/provider'
 
+// Command input and expected info is the same here
 type ContractExpectedInfo = {
-  digest: string
   description: string
   decimals: string | number
   transmitters: string[]
@@ -17,8 +21,10 @@ type ContractExpectedInfo = {
     recommendedGasPriceMicro: string
     transmissionPaymentGjuels: string
   }
+  offchainConfig: OffchainConfig
   totalOwed?: string
   linkAvailable?: string
+  owner?: string
 }
 
 const makeInput = async (flags: any, args: string[]): Promise<ContractExpectedInfo> => {
@@ -33,7 +39,6 @@ const makeInput = async (flags: any, args: string[]): Promise<ContractExpectedIn
   const link = flags.link || process.env.LINK
 
   return {
-    digest: flags.digest,
     description: info.name,
     decimals: info.decimals,
     transmitters,
@@ -45,12 +50,13 @@ const makeInput = async (flags: any, args: string[]): Promise<ContractExpectedIn
       recommendedGasPriceMicro: info.billing.recommendedGasPriceMicro,
       transmissionPaymentGjuels: info.billing.transmissionPaymentGjuels,
     },
+    offchainConfig: getOffchainConfigInput(rdd, contract),
   }
 }
 
 const makeInspectionData = () => async (input: ContractExpectedInfo): Promise<ContractExpectedInfo> => input
 
-const makeOnchainData = (query: Query) => async (
+const makeOnchainData = (query: Query, search: Search) => async (
   instructionsData: any[],
   input: ContractExpectedInfo,
   aggregator: string,
@@ -64,6 +70,7 @@ const makeOnchainData = (query: Query) => async (
   const requesterAC = instructionsData[6]
   const link = instructionsData[7]
   const linkAvailable = instructionsData[8]
+  const owner = instructionsData[9]
 
   const owedPerTransmitter: string[] = await Promise.all(
     transmitters.addresses.map((t) => {
@@ -75,6 +82,13 @@ const makeOnchainData = (query: Query) => async (
     }),
   )
 
+  // The contract only stores the block where the config was accepted. The tx log contains the config
+  const setConfigTx = filterTxsByEvent(await getBlockTxs(search, latestConfigDetails.block_number), 'wasm-set_config')
+  const event = setConfigTx?.logs?.[0].eventsByType['wasm-set_config']
+  const offchainConfig = event?.offchain_config
+    ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'hex'))
+    : ({} as OffchainConfig)
+
   return {
     description,
     decimals,
@@ -83,21 +97,21 @@ const makeOnchainData = (query: Query) => async (
     requesterAccessController: requesterAC,
     link,
     linkAvailable: linkAvailable.amount,
-    digest: Buffer.from(latestConfigDetails.config_digest).toString('hex'),
     billing: {
       observationPaymentGjuels: billing.observation_payment_gjuels,
       transmissionPaymentGjuels: billing.transmission_payment_gjuels,
       recommendedGasPriceMicro: billing.recommended_gas_price_micro,
     },
     totalOwed: owedPerTransmitter.reduce((agg: BN, v) => agg.add(new BN(v)), new BN(0)).toString(),
+    owner,
+    offchainConfig,
   }
 }
 
 const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedInfo): boolean => {
-  const inspections: inspection.Inspection[] = [
+  let inspections: inspection.Inspection[] = [
     inspection.makeInspection(onchainData.description, expected.description, 'Description'),
     inspection.makeInspection(onchainData.decimals, expected.decimals, 'Decimals'),
-    inspection.makeInspection(onchainData.digest, expected.digest, 'Offchain config digest'),
     inspection.makeInspection(onchainData.transmitters, expected.transmitters, 'Transmitters'),
     inspection.makeInspection(
       onchainData.billingAccessController,
@@ -126,10 +140,85 @@ const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedIn
       'Transmission Payment',
     ),
   ]
+
+  if (!!onchainData.offchainConfig.s) {
+    const offchainConfigInspections: inspection.Inspection[] = [
+      inspection.makeInspection(onchainData.offchainConfig.s, expected.offchainConfig.s, 'Offchain Config "s"'),
+      inspection.makeInspection(
+        onchainData.offchainConfig.peerIds,
+        expected.offchainConfig.peerIds,
+        'Offchain Config "peerIds"',
+      ),
+      inspection.makeInspection(
+        toComparableNumber(onchainData.offchainConfig.rMax),
+        toComparableNumber(expected.offchainConfig.rMax),
+        'Offchain Config "rMax"',
+      ),
+      inspection.makeInspection(
+        onchainData.offchainConfig.offchainPublicKeys.map((k) => Buffer.from(k).toString('hex')),
+        expected.offchainConfig.offchainPublicKeys,
+        `Offchain Config "offchainPublicKeys"`,
+      ),
+      inspection.makeInspection(
+        onchainData.offchainConfig.reportingPluginConfig.alphaReportInfinite,
+        expected.offchainConfig.reportingPluginConfig.alphaReportInfinite,
+        'Offchain Config "reportingPluginConfig.alphaReportInfinite"',
+      ),
+      inspection.makeInspection(
+        onchainData.offchainConfig.reportingPluginConfig.alphaAcceptInfinite,
+        expected.offchainConfig.reportingPluginConfig.alphaAcceptInfinite,
+        'Offchain Config "reportingPluginConfig.alphaAcceptInfinite"',
+      ),
+      inspection.makeInspection(
+        wrappedComparableLongNumber(onchainData.offchainConfig.reportingPluginConfig.alphaReportPpb),
+        toComparableNumber(expected.offchainConfig.reportingPluginConfig.alphaReportPpb),
+        `Offchain Config "reportingPluginConfig.alphaReportPpb"`,
+      ),
+      inspection.makeInspection(
+        wrappedComparableLongNumber(onchainData.offchainConfig.reportingPluginConfig.alphaAcceptPpb),
+        toComparableNumber(expected.offchainConfig.reportingPluginConfig.alphaAcceptPpb),
+        `Offchain Config "reportingPluginConfig.alphaAcceptPpb"`,
+      ),
+      inspection.makeInspection(
+        wrappedComparableLongNumber(onchainData.offchainConfig.reportingPluginConfig.deltaCNanoseconds),
+        toComparableNumber(expected.offchainConfig.reportingPluginConfig.deltaCNanoseconds),
+        `Offchain Config "reportingPluginConfig.deltaCNanoseconds"`,
+      ),
+    ]
+
+    const longNumberInspections = [
+      'deltaProgressNanoseconds',
+      'deltaResendNanoseconds',
+      'deltaRoundNanoseconds',
+      'deltaGraceNanoseconds',
+      'deltaStageNanoseconds',
+      'maxDurationQueryNanoseconds',
+      'maxDurationObservationNanoseconds',
+      'maxDurationReportNanoseconds',
+      'maxDurationShouldAcceptFinalizedReportNanoseconds',
+      'maxDurationShouldTransmitAcceptedReportNanoseconds',
+    ].map((prop) =>
+      inspection.makeInspection(
+        wrappedComparableLongNumber(onchainData.offchainConfig[prop]),
+        toComparableNumber(expected.offchainConfig[prop]),
+        `Offchain Config "${prop}"`,
+      ),
+    )
+
+    inspections = inspections.concat(offchainConfigInspections).concat(longNumberInspections)
+  } else {
+    logger.error('Could not get offchain config information from the contract. Skipping offchain config inspection')
+  }
+
   logger.line()
   logger.info('Inspection results:')
-  logger.info(`LINK Available: ${onchainData.linkAvailable}`)
-  logger.info(`Total LINK Owed: ${onchainData.totalOwed}`)
+  logger.info(`Ownership: 
+    - Owner: ${onchainData.owner}
+  `)
+  logger.info(`Funding:
+    - LINK Available: ${onchainData.linkAvailable}
+    - Total LINK Owed: ${onchainData.totalOwed}
+  `)
 
   const owedDiff = new BN(onchainData.linkAvailable).sub(new BN(onchainData.totalOwed)).div(new BN(TOKEN_UNIT))
   if (owedDiff.lt(new BN(0))) {
@@ -137,7 +226,11 @@ const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedIn
   } else {
     logger.success(`LINK Balance can cover debt. LINK after payment: ${owedDiff.toString()}`)
   }
-  return inspection.inspect(inspections)
+
+  const result = inspection.inspect(inspections)
+  logger.line()
+
+  return result
 }
 
 const instruction: InspectInstruction<any, ContractExpectedInfo> = {
@@ -182,6 +275,10 @@ const instruction: InspectInstruction<any, ContractExpectedInfo> = {
     {
       contract: 'ocr2',
       function: 'link_available_for_payment',
+    },
+    {
+      contract: 'ocr2',
+      function: 'owner',
     },
   ],
   makeInput,
