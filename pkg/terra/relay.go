@@ -2,6 +2,7 @@ package terra
 
 import (
 	"errors"
+	"fmt"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 	uuid "github.com/satori/go.uuid"
@@ -11,6 +12,15 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
+
+// ErrMsgUnsupported is returned when an unsupported type of message is encountered.
+type ErrMsgUnsupported struct {
+	Msg cosmosSDK.Msg
+}
+
+func (e *ErrMsgUnsupported) Error() string {
+	return fmt.Sprintf("unsupported message type %T: %s", e.Msg, e.Msg)
+}
 
 //go:generate mockery --name Logger --output ./mocks/
 type Logger interface {
@@ -25,9 +35,19 @@ type Logger interface {
 }
 
 type MsgEnqueuer interface {
-	Enqueue(contractID string, msg []byte) (int64, error)
-	Start() error
-	Close() error
+	// Enqueue enqueues msg for broadcast and returns its id.
+	// Returns ErrMsgUnsupported for unsupported message types.
+	Enqueue(contractID string, msg cosmosSDK.Msg) (int64, error)
+}
+
+// TxManager manages txs composed of batches of queued messages.
+type TxManager interface {
+	MsgEnqueuer
+
+	// GetMsgs returns any messages matching ids.
+	GetMsgs(ids ...int64) (Msgs, error)
+	// GasPrice returns the gas price in uluna.
+	GasPrice() (cosmosSDK.DecCoin, error)
 }
 
 // CL Core OCR2 job spec RelayConfig member for Terra
@@ -61,12 +81,14 @@ func NewRelayer(lggr Logger, chainSet ChainSet) *Relayer {
 }
 
 func (r *Relayer) Start() error {
-	return r.chainSet.Start()
+	if r.chainSet == nil {
+		return errors.New("Terra unavailable")
+	}
+	return nil
 }
 
-// Close will close all open subservices
 func (r *Relayer) Close() error {
-	return r.chainSet.Close()
+	return nil
 }
 
 func (r *Relayer) Ready() error {
@@ -92,7 +114,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 	if err != nil {
 		return nil, err
 	}
-	msgEnqueuer := chain.MsgEnqueuer()
+	msgEnqueuer := chain.TxManager()
 
 	contractAddr, err := cosmosSDK.AccAddressFromBech32(spec.ContractID)
 	if err != nil {
