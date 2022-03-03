@@ -44,6 +44,10 @@ func (p *proxySourceFactory) NewSource(
 	}, nil
 }
 
+func (p *proxySourceFactory) GetType() string {
+	return "proxy"
+}
+
 type proxySource struct {
 	client          ChainReader
 	log             relayMonitoring.Logger

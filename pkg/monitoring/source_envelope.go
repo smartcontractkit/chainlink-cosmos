@@ -49,6 +49,10 @@ func (e *envelopeSourceFactory) NewSource(
 	}, nil
 }
 
+func (e *envelopeSourceFactory) GetType() string {
+	return "envelope"
+}
+
 type envelopeSource struct {
 	client          ChainReader
 	log             relayMonitoring.Logger
