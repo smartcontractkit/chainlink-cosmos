@@ -67,12 +67,13 @@ func (t *txResultsSource) Fetch(ctx context.Context) (interface{}, error) {
 	// Query the FCD endpoint.
 	query := url.Values{}
 	query.Set("account", t.terraFeedConfig.ContractAddressBech32)
-	query.Set("limit", "100")
+	query.Set("limit", "10")
 	query.Set("offset", "0")
 	getTxsURL, err := url.Parse(t.terraConfig.FCDURL)
 	if err != nil {
 		return nil, err
 	}
+	getTxsURL.Path = "/v1/txs"
 	getTxsURL.RawQuery = query.Encode()
 	readTxsReq, err := http.NewRequestWithContext(ctx, http.MethodGet, getTxsURL.String(), nil)
 	if err != nil {
