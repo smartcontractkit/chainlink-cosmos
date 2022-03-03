@@ -1,12 +1,12 @@
 import { BN, inspection, logger } from '@chainlink/gauntlet-core/dist/utils'
+import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { CATEGORIES, TOKEN_UNIT } from '../../../../lib/constants'
-import { getRDD } from '../../../../lib/rdd'
-import { InspectInstruction, instructionToInspectCommand, Query, Search } from '../../../abstract/inspectionWrapper'
+import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
 import { deserializeConfig } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
 import { toComparableNumber, wrappedComparableLongNumber } from '../../../../lib/inspection'
-import { filterTxsByEvent, getBlockTxs } from '../../../../lib/provider'
+import { LCDClient } from '@terra-money/terra.js'
 
 // Command input and expected info is the same here
 type ContractExpectedInfo = {
@@ -29,7 +29,7 @@ type ContractExpectedInfo = {
 
 const makeInput = async (flags: any, args: string[]): Promise<ContractExpectedInfo> => {
   if (flags.input) return flags.input as ContractExpectedInfo
-  const rdd = getRDD(flags.rdd)
+  const rdd = RDD.getRDD(flags.rdd)
   const contract = args[0]
   const info = rdd.contracts[contract]
   const aggregatorOperators: string[] = info.oracles.map((o) => o.operator)
@@ -56,7 +56,7 @@ const makeInput = async (flags: any, args: string[]): Promise<ContractExpectedIn
 
 const makeInspectionData = () => async (input: ContractExpectedInfo): Promise<ContractExpectedInfo> => input
 
-const makeOnchainData = (query: Query, search: Search) => async (
+const makeOnchainData = (provider: LCDClient) => async (
   instructionsData: any[],
   input: ContractExpectedInfo,
   aggregator: string,
@@ -74,7 +74,7 @@ const makeOnchainData = (query: Query, search: Search) => async (
 
   const owedPerTransmitter: string[] = await Promise.all(
     transmitters.addresses.map((t) => {
-      return query(aggregator, {
+      return provider.wasm.contractQuery(aggregator, {
         owed_payment: {
           transmitter: t,
         },
@@ -83,7 +83,10 @@ const makeOnchainData = (query: Query, search: Search) => async (
   )
 
   // The contract only stores the block where the config was accepted. The tx log contains the config
-  const setConfigTx = filterTxsByEvent(await getBlockTxs(search, latestConfigDetails.block_number), 'wasm-set_config')
+  const setConfigTx = providerUtils.filterTxsByEvent(
+    await providerUtils.getBlockTxs(provider, latestConfigDetails.block_number),
+    'wasm-set_config',
+  )
   const event = setConfigTx?.logs?.[0].eventsByType['wasm-set_config']
   const offchainConfig = event?.offchain_config
     ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'hex'))

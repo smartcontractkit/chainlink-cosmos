@@ -4,11 +4,8 @@ import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { CATEGORIES } from '../../lib/constants'
 import { CONTRACT_LIST } from '../../lib/contracts'
-import { APIParams } from '@terra-money/terra.js/dist/client/lcd/APIRequester'
-import { TxSearchOptions, TxSearchResult } from '@terra-money/terra.js'
+import { LCDClient } from '@terra-money/terra.js'
 
-export type Query = (contractAddress: string, query: any, params?: APIParams) => Promise<any>
-export type Search = (options: Partial<TxSearchOptions>) => Promise<TxSearchResult>
 /**
  * Inspection commands need to match this interface
  * command: {
@@ -32,10 +29,9 @@ export interface InspectInstruction<CommandInput, ContractExpectedInfo> {
     function: string
   }[]
   makeInput: (flags: any, args: string[]) => Promise<CommandInput>
-  makeInspectionData: (query: Query) => (input: CommandInput) => Promise<ContractExpectedInfo>
+  makeInspectionData: (provider: LCDClient) => (input: CommandInput) => Promise<ContractExpectedInfo>
   makeOnchainData: (
-    query: Query,
-    search: Search,
+    provider: LCDClient,
   ) => (instructionsData: any[], input: CommandInput, contractAddress: string) => Promise<ContractExpectedInfo>
   inspect: (expected: ContractExpectedInfo, data: ContractExpectedInfo) => boolean
 }
@@ -72,10 +68,8 @@ export const instructionToInspectCommand = <CommandInput, Expected>(
         }),
       )
 
-      const query: Query = this.provider.wasm.contractQuery.bind(this.provider.wasm)
-      const search: Search = this.provider.tx.search.bind(this.provider.tx)
-      const onchainData = await inspectInstruction.makeOnchainData(query, search)(data, input, this.args[0])
-      const inspectData = await inspectInstruction.makeInspectionData(query)(input)
+      const onchainData = await inspectInstruction.makeOnchainData(this.provider)(data, input, this.args[0])
+      const inspectData = await inspectInstruction.makeInspectionData(this.provider)(input)
       const inspection = inspectInstruction.inspect(inspectData, onchainData)
       return {
         data: inspection,

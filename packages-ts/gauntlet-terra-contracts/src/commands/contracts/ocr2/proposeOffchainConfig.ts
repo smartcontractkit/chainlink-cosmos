@@ -1,10 +1,9 @@
-import { getRDD } from '../../../lib/rdd'
+import { RDD } from '@chainlink/gauntlet-terra'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 import { time, BN } from '@chainlink/gauntlet-core/dist/utils'
 import { serializeOffchainConfig } from '../../../lib/encoding'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
 import { CATEGORIES } from '../../../lib/constants'
-import { CONTRACT_LIST } from '../../../lib/contracts'
 
 type CommandInput = {
   proposalId: string
@@ -89,7 +88,7 @@ export const getOffchainConfigInput = (rdd: any, contract: string): OffchainConf
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const rdd = getRDD(flags.rdd)
+  const rdd = RDD.getRDD(flags.rdd)
   const contract = args[0]
 
   return {
