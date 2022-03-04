@@ -1532,6 +1532,7 @@ pub fn execute_accept_payeeship(
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+    use crate::Decimal;
     use cosmwasm_std::testing::{
         mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage,
     };
@@ -1707,5 +1708,29 @@ pub(crate) mod tests {
         };
         let execute_info = mock_info("payee2", &[]);
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+    }
+
+    #[test]
+    fn test_calculate_reimbursement() {
+        use std::str::FromStr;
+        let recommended_gas_price = Decimal::from_str("0.011000").unwrap();
+        let juels_per_fee_coin = u128::from_str("6000000000000000000").unwrap(); // 6e18 juels in 1 luna (i.e. 6 link)
+
+        // Sanity check
+        let r = calculate_reimbursement(
+            &Billing {
+                recommended_gas_price_micro: recommended_gas_price,
+                observation_payment_gjuels: 0,
+                transmission_payment_gjuels: 0,
+                gas_base: Some(84_000),
+                gas_per_signature: Some(17_000),
+                gas_adjustment: Some(140),
+            },
+            juels_per_fee_coin,
+            1,
+        );
+        // juels = ((gas_per_sig*sigcount + gas_base)*gas_price_uluna/1e6)*juels_per_fee_coin
+        // juels = ((1 * 17000 + 84000)*1.4*0.011/1e6)*6e18 = 9332400000000000
+        assert_eq!(Uint128::from_str("9332400000000000").unwrap(), r);
     }
 }
