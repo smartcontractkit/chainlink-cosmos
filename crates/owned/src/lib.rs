@@ -101,7 +101,7 @@ impl<'a> Auth<'a> {
         self.0.save(deps.storage, &state)?;
 
         Ok(Response::default().add_event(
-            Event::new("ownership_transfer_requested")
+            Event::new("ownership_transfer_accepted")
                 .add_attribute("from", old_owner)
                 .add_attribute("to", state.owner),
         ))

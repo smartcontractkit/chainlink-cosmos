@@ -87,8 +87,11 @@ func (c ReportCodec) BuildReport(oo []median.ParsedAttributedObservation) (types
 	}
 
 	// Add juels per fee coin value
-	jBytes := make([]byte, juelsPerFeeCoinSizeBytes)
-	report = append(report, juelsPerFeeCoin.FillBytes(jBytes)[:]...)
+	jBytes, err := ToBytes(juelsPerFeeCoin, juelsPerFeeCoinSizeBytes)
+	if err != nil {
+		return nil, err
+	}
+	report = append(report, jBytes...)
 	return report, nil
 }
 
