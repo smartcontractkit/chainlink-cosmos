@@ -1,7 +1,6 @@
 import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
-import { printDiff } from '../../../lib/diff'
-import { getLatestOCRConfig } from '../../../lib/inspection'
+import { getLatestOCRConfig, printDiff } from '../../../lib/inspection'
 import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../abstract/executionWrapper'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 
@@ -95,7 +94,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     // todo: add payees
   }
 
-  logger.info('Review the proposed changes below: green - added, red - deleted, yellow - no change.')
+  logger.info('Review the proposed changes below: green - added, red - deleted.')
   printDiff(contractConfig, proposedConfig)
   await prompt('Continue?')
 }

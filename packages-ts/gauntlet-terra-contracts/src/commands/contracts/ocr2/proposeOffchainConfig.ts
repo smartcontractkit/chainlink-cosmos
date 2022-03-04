@@ -3,8 +3,7 @@ import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../
 import { time, BN } from '@chainlink/gauntlet-core/dist/utils'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
 import { CATEGORIES } from '../../../lib/constants'
-import { printDiff } from '../../../lib/diff'
-import { getLatestOCRConfig } from '../../../lib/inspection'
+import { getLatestOCRConfig, printDiff } from '../../../lib/inspection'
 import { serializeOffchainConfig, deserializeConfig, generateSecretEncryptions } from '../../../lib/encoding'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 
@@ -125,7 +124,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     configPublicKeys: undefined,
   }
 
-  logger.info('Review the proposed changes below: green - added, red - deleted, yellow - no change.')
+  logger.info('Review the proposed changes below: green - added, red - deleted.')
   printDiff(contractOffchainConfig, proposedOffchainConfig)
   await prompt('Continue?')
 }

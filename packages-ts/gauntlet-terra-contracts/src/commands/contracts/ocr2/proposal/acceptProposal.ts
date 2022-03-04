@@ -3,10 +3,9 @@ import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TransactionResponse, providerUtils, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
 import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../../abstract/executionWrapper'
-import { printDiff } from '../../../../lib/diff'
 import { serializeOffchainConfig, deserializeConfig, generateSecretEncryptions } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
-import { getLatestOCRConfig } from '../../../../lib/inspection'
+import { getLatestOCRConfig, printDiff } from '../../../../lib/inspection'
 import Long from 'long'
 import assert from 'assert'
 
@@ -65,10 +64,10 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 }
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
-  const { proposalId, offchainConfig: offchainConfigInRDD } = context.input
+  const { proposalId, offchainConfig: offchainLocalConfig } = context.input
 
-  const serializedConfigInRDD = await serializeOffchainConfig(offchainConfigInRDD)
-  const configInRDD = serializedConfigInRDD.toString('base64')
+  const serializedLocalConfig = await serializeOffchainConfig(offchainLocalConfig)
+  const localConfig = serializedLocalConfig.toString('base64')
 
   // Config in Proposal
   const proposal: any = await context.provider.wasm.contractQuery(context.contract, {
@@ -80,7 +79,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const configInProposal = translateConfig(offchainConfigInProposal, { f: proposal.f })
 
   try {
-    // assert.equal(configInRDD, proposal.offchain_config)
+    // assert.equal(localConfig, proposal.offchain_config)
   } catch (err) {
     logger.error("RDD configuration doesn't correspond the proposal configuration!")
     throw err
@@ -94,7 +93,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const configInContract = translateConfig(offchainConfigInContract, { f: event?.f[0] })
 
   logger.info(
-    'Review the configuration difference in contract and proposal: green - added, red - deleted, yellow - no change.',
+    'Review the configuration difference from contract and proposal: green - added, red - deleted.',
   )
   printDiff(configInContract, configInProposal)
   await prompt('Continue?')
