@@ -10,23 +10,13 @@ import (
 	"sync"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
 	cosmosQuery "github.com/cosmos/cosmos-sdk/types/query"
 	cosmosTx "github.com/cosmos/cosmos-sdk/types/tx"
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 	pkgTerra "github.com/smartcontractkit/chainlink-terra/pkg/terra"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"go.uber.org/multierr"
 )
-
-// ChainReader is a subset of the pkg/terra/client.Reader interface
-// that is used by this envelope source.
-type ChainReader interface {
-	TxsEvents(events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error)
-	ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
-}
 
 // NewEnvelopeSourceFactory build a new object that reads observations and
 // configurations from the Terra chain.
@@ -57,6 +47,10 @@ func (e *envelopeSourceFactory) NewSource(
 		terraConfig,
 		terraFeedConfig,
 	}, nil
+}
+
+func (e *envelopeSourceFactory) GetType() string {
+	return "envelope"
 }
 
 type envelopeSource struct {

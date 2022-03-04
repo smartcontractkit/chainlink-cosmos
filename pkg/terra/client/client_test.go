@@ -1,21 +1,21 @@
 package client
 
 import (
-	"time"
-
 	"fmt"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/mocks"
 	"github.com/smartcontractkit/terra.go/msg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/abci/types"
 	wasmtypes "github.com/terra-money/core/x/wasm/types"
+
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/mocks"
 )
 
 func TestErrMatch(t *testing.T) {
@@ -26,8 +26,7 @@ func TestErrMatch(t *testing.T) {
 }
 
 func TestBatchSim(t *testing.T) {
-	accounts, testdir := SetupLocalTerraNode(t, "42")
-	tendermintURL := "http://127.0.0.1:26657"
+	accounts, testdir, tendermintURL := SetupLocalTerraNode(t, "42")
 
 	lggr := new(mocks.Logger)
 	lggr.Test(t)
@@ -38,7 +37,7 @@ func TestBatchSim(t *testing.T) {
 		lggr)
 	require.NoError(t, err)
 
-	contract := DeployTestContract(t, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
+	contract := DeployTestContract(t, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 	var succeed sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), ExecuteMsg: []byte(`{"reset":{"count":5}}`)}
 	var fail sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), ExecuteMsg: []byte(`{"blah":{"count":5}}`)}
 
@@ -111,8 +110,7 @@ func TestBatchSim(t *testing.T) {
 
 func TestTerraClient(t *testing.T) {
 	// Local only for now, could maybe run on CI if we install terrad there?
-	accounts, testdir := SetupLocalTerraNode(t, "42")
-	tendermintURL := "http://127.0.0.1:26657"
+	accounts, testdir, tendermintURL := SetupLocalTerraNode(t, "42")
 	lggr := new(mocks.Logger)
 	lggr.Test(t)
 	lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Maybe()
@@ -126,7 +124,7 @@ func TestTerraClient(t *testing.T) {
 	gpe := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
 		"uluna": sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("0.01")),
 	})
-	contract := DeployTestContract(t, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
+	contract := DeployTestContract(t, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 
 	t.Run("send tx between accounts", func(t *testing.T) {
 		// Assert balance before

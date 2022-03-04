@@ -20,7 +20,7 @@ var _ = Describe("Terra OCRv2 @ocr-spec-migration", func() {
 
 	BeforeEach(func() {
 		state = &tc.OCRv2State{}
-		By("Deoloying the cluster", func() {
+		By("Deploying the cluster", func() {
 			migrateToImage = os.Getenv("CHAINLINK_IMAGE_TO")
 			if migrateToImage == "" {
 				Fail("Provide CHAINLINK_IMAGE_TO variable: an image on which we migrate")
@@ -36,9 +36,9 @@ var _ = Describe("Terra OCRv2 @ocr-spec-migration", func() {
 
 	Describe("with Terra OCR2", func() {
 		It("performs OCR2 round", func() {
-			state.ValidateRoundsAfter(time.Now(), rounds)
+			state.ValidateRoundsAfter(time.Now(), rounds, false)
 			state.UpdateChainlinkVersion(migrateToImage, migrateToVersion)
-			state.ValidateRoundsAfter(time.Now(), rounds)
+			state.ValidateRoundsAfter(time.Now(), rounds, false)
 		})
 	})
 

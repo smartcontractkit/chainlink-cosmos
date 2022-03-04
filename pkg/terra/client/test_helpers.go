@@ -1,9 +1,12 @@
 package client
 
 import (
+	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"os/exec"
 	"path"
@@ -39,15 +42,16 @@ type Account struct {
 // 0.001
 var minGasPrice = msg.NewDecCoinFromDec("uluna", msg.NewDecWithPrec(1, 3))
 
-func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string) {
+// SetupLocalTerraNode sets up a local terra node via terrad, and returns pre-funded accounts, the test directory, and the url.
+func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string, string) {
 	testdir, err := ioutil.TempDir("", "integration-test")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, os.RemoveAll(testdir))
 	})
 	t.Log(testdir)
-	_, err = exec.Command("terrad", "init", "integration-test", "-o", "--chain-id", chainID, "--home", testdir).Output()
-	require.NoError(t, err)
+	out, err := exec.Command("terrad", "init", "integration-test", "-o", "--chain-id", chainID, "--home", testdir).Output()
+	require.NoError(t, err, string(out))
 
 	p := path.Join(testdir, "config", "app.toml")
 	f, err := os.ReadFile(p)
@@ -75,8 +79,8 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string) {
 		privateKey, address := createKeyFromMnemonic(t, k.Mnemonic)
 		require.Equal(t, expAcctAddr, address)
 		// Give it 100 luna
-		_, err = exec.Command("terrad", "add-genesis-account", k.Address, "100000000uluna", "--home", testdir).Output()
-		require.NoError(t, err)
+		out2, err2 := exec.Command("terrad", "add-genesis-account", k.Address, "100000000uluna", "--home", testdir).Output() //nolint:gosec
+		require.NoError(t, err2, string(out2))
 		accounts = append(accounts, Account{
 			Name:       account,
 			Address:    address,
@@ -84,21 +88,41 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string) {
 		})
 	}
 	// Stake 10 luna in first acct
-	out, err := exec.Command("terrad", "gentx", accounts[0].Name, "10000000uluna", fmt.Sprintf("--chain-id=%s", chainID), "--keyring-backend", "test", "--keyring-dir", testdir, "--home", testdir).CombinedOutput()
+	out, err = exec.Command("terrad", "gentx", accounts[0].Name, "10000000uluna", fmt.Sprintf("--chain-id=%s", chainID), "--keyring-backend", "test", "--keyring-dir", testdir, "--home", testdir).CombinedOutput() //nolint:gosec
 	require.NoError(t, err, string(out))
 	out, err = exec.Command("terrad", "collect-gentxs", "--home", testdir).CombinedOutput()
 	require.NoError(t, err, string(out))
-	cmd := exec.Command("terrad", "start", "--home", testdir)
+
+	port := mustRandomPort()
+	tendermintURL := fmt.Sprintf("http://127.0.0.1:%d", port)
+	t.Log(tendermintURL)
+	cmd := exec.Command("terrad", "start", "--home", testdir,
+		"--rpc.laddr", fmt.Sprintf("tcp://127.0.0.1:%d", port),
+		"--rpc.pprof_laddr", "0.0.0.0:0",
+		"--grpc.address", "0.0.0.0:0",
+		"--grpc-web.address", "0.0.0.0:0",
+		"--p2p.laddr", "0.0.0.0:0")
+	var stdErr bytes.Buffer
+	cmd.Stderr = &stdErr
 	require.NoError(t, cmd.Start())
 	t.Cleanup(func() {
-		require.NoError(t, cmd.Process.Kill())
+		assert.NoError(t, cmd.Process.Kill())
+		if err2 := cmd.Wait(); assert.Error(t, err2) {
+			if !assert.Contains(t, err2.Error(), "signal: killed", cmd.ProcessState.String()) {
+				t.Log("terrad stderr:", stdErr.String())
+			}
+		}
 	})
+
 	// Wait for api server to boot
 	var ready bool
-	for i := 0; i < 10; i++ {
-		time.Sleep(1 * time.Second)
-		out, err = exec.Command("curl", "http://127.0.0.1:26657/abci_info").Output()
-		require.NoError(t, err)
+	for i := 0; i < 30; i++ {
+		time.Sleep(time.Second)
+		out, err = exec.Command("curl", tendermintURL+"/abci_info").Output() //nolint:gosec
+		if err != nil {
+			t.Logf("API server not ready yet (attempt %d): %v\n", i+1, err)
+			continue
+		}
 		var a struct {
 			Result struct {
 				Response struct {
@@ -106,18 +130,22 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string) {
 				} `json:"response"`
 			} `json:"result"`
 		}
-		require.NoError(t, json.Unmarshal(out, &a))
-		if a.Result.Response.LastBlockHeight != "" {
-			ready = true
-			break
+		require.NoError(t, json.Unmarshal(out, &a), string(out))
+		if a.Result.Response.LastBlockHeight == "" {
+			t.Logf("API server not ready yet (attempt %d)\n", i+1)
+			continue
 		}
+		ready = true
+		break
 	}
 	require.True(t, ready)
-	return accounts, testdir
+	return accounts, testdir, tendermintURL
 }
 
-func DeployTestContract(t *testing.T, deployAccount, ownerAccount Account, tc *Client, testdir, wasmTestContractPath string) sdk.AccAddress {
-	out, err := exec.Command("terrad", "tx", "wasm", "store", wasmTestContractPath,
+// DeployTestContract deploys a test contract.
+func DeployTestContract(t *testing.T, tendermintURL string, deployAccount, ownerAccount Account, tc *Client, testdir, wasmTestContractPath string) sdk.AccAddress {
+	//nolint:gosec
+	out, err := exec.Command("terrad", "tx", "wasm", "store", wasmTestContractPath, "--node", tendermintURL,
 		"--from", deployAccount.Name, "--gas", "auto", "--fees", "100000uluna", "--chain-id", "42", "--broadcast-mode", "block", "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes").CombinedOutput()
 	require.NoError(t, err, string(out))
 	an, sn, err2 := tc.Account(ownerAccount.Address)
@@ -153,4 +181,12 @@ func GetContractAddr(t *testing.T, tc *Client, deploymentHash string) sdk.AccAdd
 	contract, err := sdk.AccAddressFromBech32(contractAddr)
 	require.NoError(t, err)
 	return contract
+}
+
+func mustRandomPort() int {
+	r, err := rand.Int(rand.Reader, big.NewInt(65535-1023))
+	if err != nil {
+		panic(fmt.Errorf("unexpected error generating random port: %w", err))
+	}
+	return int(r.Int64() + 1024)
 }

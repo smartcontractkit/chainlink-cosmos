@@ -1,9 +1,10 @@
 package terra
 
 import (
+	"github.com/smartcontractkit/terra.go/msg"
+
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
-	"github.com/smartcontractkit/terra.go/msg"
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
@@ -47,7 +48,7 @@ type Msg struct {
 	db.Msg
 
 	// In memory only
-	ExecuteContract *msg.ExecuteContract
+	DecodedMsg msg.Msg
 }
 
 type Msgs []Msg
@@ -57,7 +58,7 @@ func (tms Msgs) GetSimMsgs() client.SimMsgs {
 	for i := range tms {
 		msgs = append(msgs, client.SimMsg{
 			ID:  tms[i].ID,
-			Msg: tms[i].ExecuteContract,
+			Msg: tms[i].DecodedMsg,
 		})
 	}
 	return msgs
