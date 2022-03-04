@@ -90,8 +90,8 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     f: context.contractInput.f,
     transmitters: context.contractInput.transmitters,
     signers: context.contractInput.signers,
+    payees: context.contractInput.payees,
     onchain_config: context.contractInput.onchain_config,
-    // todo: add payees
   }
 
   logger.info('Review the proposed changes below: green - added, red - deleted.')
