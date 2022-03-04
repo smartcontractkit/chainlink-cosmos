@@ -21,21 +21,20 @@ type ContractInput = {
   digest: string
 }
 
-const translateConfig = (rawOffchainConfig: any, additionalConfig?: any): any => {
-  const res = {
-    ...rawOffchainConfig,
-    ...(additionalConfig || {}),
-    offchainPublicKeys: rawOffchainConfig.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
-  }
-
-  const longsToNumber = (obj) => {
-    for (const [key, value] of Object.entries(obj)) {
-      if (Long.isLong(value)) {
-        obj[key] = (value as Long).toNumber()
-      } else if (typeof value === 'object') {
-        longsToNumber(value)
-      }
+const longsToNumber = (obj) => {
+  for (const [key, value] of Object.entries(obj)) {
+    if (Long.isLong(value)) {
+      obj[key] = (value as Long).toNumber()
+    } else if (typeof value === 'object') {
+      longsToNumber(value)
     }
+  }
+}
+
+const translateConfig = (config: any): any => {
+  const res = {
+    ...config,
+    offchainPublicKeys: config.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
   }
 
   longsToNumber(res)
@@ -72,7 +71,10 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     },
   })
   const offchainConfigInProposal = await deserializeConfig(Buffer.from(proposal.offchain_config, 'base64'))
-  const configInProposal = translateConfig(offchainConfigInProposal, { f: proposal.f })
+  const configInProposal = translateConfig({
+    ...offchainConfigInProposal,
+    f: proposal.f
+  })
 
   try {
     assert.equal(localConfig, proposal.offchain_config)
@@ -86,7 +88,10 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const offchainConfigInContract = event?.offchain_config
     ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
     : ({} as OffchainConfig)
-  const configInContract = translateConfig(offchainConfigInContract, { f: event?.f[0] })
+  const configInContract = translateConfig({
+    ...offchainConfigInContract,
+    f: event?.f[0]
+  })
 
   logger.info('Review the configuration difference from contract and proposal: green - added, red - deleted.')
   printDiff(configInContract, configInProposal)
