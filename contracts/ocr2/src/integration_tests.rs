@@ -941,3 +941,67 @@ fn revert_payouts_correctly() {
         }
     }
 }
+
+#[test]
+fn set_billing_payout() {
+    let mut env = setup();
+    // expected in juels
+    let observation_payment = Uint128::from(5 * GIGA);
+    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
+
+    // -- set billing
+    // price in uLUNA
+    let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
+    let msg = ExecuteMsg::SetBilling {
+        config: Billing {
+            recommended_gas_price_micro: recommended_gas_price,
+            observation_payment_gjuels: 5,
+            transmission_payment_gjuels: 0,
+            ..Default::default()
+        },
+    };
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    // -- call transmit
+    transmit_report(&mut env, 1, 1);
+
+    // -- set billing again
+    let msg = ExecuteMsg::SetBilling {
+        config: Billing {
+            recommended_gas_price_micro: recommended_gas_price,
+            observation_payment_gjuels: 1,
+            transmission_payment_gjuels: 1,
+            ..Default::default()
+        },
+    };
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    // oracles should be paid out (same as changing LINK token)
+    for payee in env
+        .transmitters
+        .iter()
+        .enumerate()
+        .map(|(i, _)| Addr::unchecked(format!("payee{}", i)))
+    {
+        let cw20::BalanceResponse { balance } = env
+            .router
+            .wrap()
+            .query_wasm_smart(
+                env.link_token_addr.to_string(),
+                &cw20::Cw20QueryMsg::Balance {
+                    address: payee.to_string(),
+                },
+            )
+            .unwrap();
+
+        if payee == "payee0" {
+            assert_eq!(balance, observation_payment + reimbursement);
+        } else {
+            assert_eq!(balance, observation_payment);
+        }
+    }
+}
