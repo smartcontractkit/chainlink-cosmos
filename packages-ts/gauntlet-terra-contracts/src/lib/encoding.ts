@@ -31,7 +31,7 @@ export const deserializeConfig = (buffer: Buffer): OffchainConfig => {
 
 // constructs a SharedSecretEncryptions from
 // a set of SharedSecretEncryptionPublicKeys, the sharedSecret, and a cryptographic randomness source
-const generateSecretEncryptions = async (
+export const generateSecretEncryptions = async (
   operatorsPublicKeys: string[],
 ): Promise<sharedSecretEncryptions.SharedSecretEncryptions> => {
   const gauntletSecret = process.env.SECRET
