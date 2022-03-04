@@ -5,7 +5,7 @@ import { CATEGORIES, TOKEN_UNIT } from '../../../../lib/constants'
 import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
 import { deserializeConfig } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
-import { toComparableNumber, wrappedComparableLongNumber } from '../../../../lib/inspection'
+import { toComparableNumber } from '../../../../lib/inspection'
 import { LCDClient } from '@terra-money/terra.js'
 
 // Command input and expected info is the same here
@@ -92,6 +92,7 @@ const makeOnchainData = (provider: LCDClient) => async (
     ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
     : ({} as OffchainConfig)
 
+  const totalOwed = owedPerTransmitter.reduce((agg: BN, v) => agg.add(new BN(v)), new BN(0)).toString()
   return {
     description,
     decimals,
@@ -105,7 +106,7 @@ const makeOnchainData = (provider: LCDClient) => async (
       transmissionPaymentGjuels: billing.transmission_payment_gjuels,
       recommendedGasPriceMicro: billing.recommended_gas_price_micro,
     },
-    totalOwed: owedPerTransmitter.reduce((agg: BN, v) => agg.add(new BN(v)), new BN(0)).toString(),
+    totalOwed,
     owner,
     offchainConfig,
   }
@@ -173,17 +174,17 @@ const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedIn
         'Offchain Config "reportingPluginConfig.alphaAcceptInfinite"',
       ),
       inspection.makeInspection(
-        wrappedComparableLongNumber(onchainData.offchainConfig.reportingPluginConfig.alphaReportPpb),
+        toComparableNumber(onchainData.offchainConfig.reportingPluginConfig.alphaReportPpb),
         toComparableNumber(expected.offchainConfig.reportingPluginConfig.alphaReportPpb),
         `Offchain Config "reportingPluginConfig.alphaReportPpb"`,
       ),
       inspection.makeInspection(
-        wrappedComparableLongNumber(onchainData.offchainConfig.reportingPluginConfig.alphaAcceptPpb),
+        toComparableNumber(onchainData.offchainConfig.reportingPluginConfig.alphaAcceptPpb),
         toComparableNumber(expected.offchainConfig.reportingPluginConfig.alphaAcceptPpb),
         `Offchain Config "reportingPluginConfig.alphaAcceptPpb"`,
       ),
       inspection.makeInspection(
-        wrappedComparableLongNumber(onchainData.offchainConfig.reportingPluginConfig.deltaCNanoseconds),
+        toComparableNumber(onchainData.offchainConfig.reportingPluginConfig.deltaCNanoseconds),
         toComparableNumber(expected.offchainConfig.reportingPluginConfig.deltaCNanoseconds),
         `Offchain Config "reportingPluginConfig.deltaCNanoseconds"`,
       ),
@@ -202,7 +203,7 @@ const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedIn
       'maxDurationShouldTransmitAcceptedReportNanoseconds',
     ].map((prop) =>
       inspection.makeInspection(
-        wrappedComparableLongNumber(onchainData.offchainConfig[prop]),
+        toComparableNumber(onchainData.offchainConfig[prop]),
         toComparableNumber(expected.offchainConfig[prop]),
         `Offchain Config "${prop}"`,
       ),

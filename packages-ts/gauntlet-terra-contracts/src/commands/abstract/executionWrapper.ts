@@ -86,14 +86,10 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
     execute = async (): Promise<Result<TransactionResponse>> => {
       // TODO: Command should be built from gauntet-core
       await this.buildCommand(this.flags, this.args)
-      //
       await this.beforeExecute(this.wallet.key.accAddress)
       let response = await this.command.execute()
       const data = this.afterExecute(response)
-      if (data) {
-        response = { ...response, data: { ...data } }
-      }
-      return response
+      return !!data ? { ...response, data: { ...data } } : response
     }
   }
 }

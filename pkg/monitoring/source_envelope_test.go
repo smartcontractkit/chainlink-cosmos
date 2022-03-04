@@ -166,17 +166,17 @@ func TestEnvelopeSource(t *testing.T) {
 			return query[0] == fmt.Sprintf(`wasm-set_config.contract_address='%s'`, feedConfig.ContractAddressBech32)
 		}),
 		&cosmosQuery.PageRequest{Limit: 1},
-	).Return(setConfigRes, nil)
+	).Return(setConfigRes, nil).Once()
 	chainReader.On("TxsEvents",
 		mock.MatchedBy(func(query []string) bool {
 			return query[0] == fmt.Sprintf(`wasm-new_transmission.contract_address='%s'`, feedConfig.ContractAddressBech32)
 		}),
 		&cosmosQuery.PageRequest{Limit: 1},
-	).Return(newTransmissionRes, nil)
+	).Return(newTransmissionRes, nil).Once()
 	chainReader.On("ContractStore",
 		chainConfig.LinkTokenAddress,
 		[]byte(fmt.Sprintf(`{"balance":{"address":"%s"}}`, feedConfig.ContractAddressBech32)),
-	).Once().Return(balanceRes, nil)
+	).Return(balanceRes, nil).Once()
 	// Execute Fetch()
 	factory := NewEnvelopeSourceFactory(chainReader, newNullLogger())
 	source, err := factory.NewSource(chainConfig, feedConfig)

@@ -4,13 +4,6 @@ import { AccAddress, LCDClient } from '@terra-money/terra.js'
 import { providerUtils } from '@chainlink/gauntlet-terra'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 
-export const toComparableNumber = (v: string | number) => new BN(v).toString()
-export const toComparableLongNumber = (v: Long) => new BN(Proto.Protobuf.longToString(v)).toString()
-export const wrappedComparableLongNumber = (v: any) => {
-  // Proto encoding will ignore falsy values.
-  if (!v) return '0'
-  return toComparableLongNumber(v)
-}
 
 // TODO: find the right place for this function
 export const getLatestOCRConfig = async (provider: LCDClient, contract: AccAddress) => {
@@ -95,4 +88,13 @@ export function printDiff(existing: Object, incoming: Object, options?: DIFF_OPT
   }
 
   logger.log(initialIndent, '}')
+}
+
+export const toComparableLongNumber = (v: Long) => new BN(Proto.Protobuf.longToString(v)).toString()
+
+export const toComparableNumber = (v: string | number | Long) => {
+  // Proto encoding will ignore falsy values.
+  if (!v) return '0'
+  if (typeof v === 'string' || typeof v === 'number') return new BN(v).toString()
+  return toComparableLongNumber(v)
 }
