@@ -6,7 +6,9 @@ use cosmwasm_std::{Addr, Binary, Uint128};
 use cw20::Cw20Contract;
 use cw_storage_plus::{Item, Map, U128Key, U32Key};
 use owned::Auth;
+use std::convert::TryFrom;
 
+use crate::error::ContractError;
 use crate::Decimal;
 
 /// Maximum number of oracles the offchain reporting protocol is designed for
@@ -156,9 +158,13 @@ pub fn config_digest_from_data(
     offchain_config_version: u64,
     offchain_config: &[u8],
 ) -> [u8; 32] {
+    // validate chain_id length fits into u8
+    let chain_id_length = u8::try_from(chain_id.len())
+        .map_err(|_| ContractError::InvalidInput)
+        .unwrap();
     use blake2::{Blake2s, Digest};
     let mut hasher = Blake2s::default();
-    hasher.update((chain_id.len() as u8).to_be_bytes());
+    hasher.update(chain_id_length.to_be_bytes());
     hasher.update(&chain_id.as_bytes());
     hasher.update(contract_address.as_bytes());
     hasher.update(&config_count.to_be_bytes());
@@ -232,3 +238,25 @@ pub const TRANSMISSIONS: Map<U32Key, Transmission> = Map::new("transmissions");
 // transmitter -> payment address
 pub const PAYEES: Map<&Addr, Addr> = Map::new("payees");
 pub const PROPOSED_PAYEES: Map<&Addr, Addr> = Map::new("proposed_payees");
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic]
+    fn invalid_chain_id_length() {
+        let empty: [u8; 0] = [];
+        let empty_oracle: [(&Binary, &Addr); 0] = [];
+        config_digest_from_data(
+            &"a".repeat(256),
+            &Addr::unchecked("test"),
+            1,
+            &empty_oracle,
+            1,
+            &empty,
+            1,
+            &empty,
+        );
+    }
+}

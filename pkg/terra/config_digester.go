@@ -3,7 +3,9 @@ package terra
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
+	"math"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
@@ -30,6 +32,10 @@ func NewOffchainConfigDigester(chainID string, contract cosmosSDK.AccAddress) Of
 func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.ConfigDigest, error) {
 	digest := types.ConfigDigest{}
 	buf := bytes.NewBuffer([]byte{})
+
+	if len(cd.chainID) > math.MaxUint8 {
+		return digest, errors.New("chainID exceeds max uint8 length")
+	}
 
 	if err := binary.Write(buf, binary.BigEndian, uint8(len(cd.chainID))); err != nil {
 		return digest, err
