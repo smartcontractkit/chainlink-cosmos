@@ -89,7 +89,7 @@ const makeOnchainData = (provider: LCDClient) => async (
   )
   const event = setConfigTx?.logs?.[0].eventsByType['wasm-set_config']
   const offchainConfig = event?.offchain_config
-    ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'hex'))
+    ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
     : ({} as OffchainConfig)
 
   return {

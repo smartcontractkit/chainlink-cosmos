@@ -354,13 +354,12 @@ func (gd *GauntletDeployer) AcceptProposal(ocr, proposalId, proposalDigest, rddP
 }
 
 // OcrInspect gets the inspections results data
-func (gd *GauntletDeployer) OcrInspect(ocr, digest, rddPath string) map[string]InspectionResult {
+func (gd *GauntletDeployer) OcrInspect(ocr, rddPath string) map[string]InspectionResult {
 	UpdateReportName("inspect", gd.Cli)
 	output, err := gd.Cli.ExecCommandWithRetries([]string{
 		"ocr2:inspect",
 		gd.Cli.Flag("version", gd.Version),
 		gd.Cli.Flag("rdd", rddPath),
-		gd.Cli.Flag("digest", digest),
 		ocr,
 	}, []string{
 		TERRA_COMMAND_ERROR,
