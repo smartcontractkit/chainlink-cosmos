@@ -1,15 +1,21 @@
 import AbstractCommand, { makeAbstractCommand } from '.'
 import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
-import { AccAddress } from '@terra-money/terra.js'
+import { AccAddress, LCDClient } from '@terra-money/terra.js'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 
-export type BeforeExecutionContext<Input, ContractInput> = {
+export type ExecutionContext<Input, ContractInput> = {
   input: Input
   contractInput: ContractInput
   id: string
   contract: string
+  provider: LCDClient
+  flags: any
 }
+
+export type BeforeExecute<Input, ContractInput> = (
+  context: ExecutionContext<Input, ContractInput>,
+) => (signer: AccAddress) => Promise<void>
 
 export interface AbstractInstruction<Input, ContractInput> {
   examples?: string[]
@@ -21,8 +27,14 @@ export interface AbstractInstruction<Input, ContractInput> {
   makeInput: (flags: any, args: string[]) => Promise<Input>
   validateInput: (input: Input) => boolean
   makeContractInput: (input: Input) => Promise<ContractInput>
-  beforeExecute?: (context: BeforeExecutionContext<Input, ContractInput>) => () => Promise<void>
+  beforeExecute?: BeforeExecute<Input, ContractInput>
   afterExecute?: (response: Result<TransactionResponse>) => any
+}
+
+const defaultBeforeExecute = <Input, ContractInput>(context: ExecutionContext<Input, ContractInput>) => async () => {
+  logger.loading(`Executing ${context.id} from contract ${context.contract}`)
+  logger.log('Input Params:', context.contractInput)
+  await prompt(`Continue?`)
 }
 
 export const instructionToCommand = <Input, ContractInput>(instruction: AbstractInstruction<Input, ContractInput>) => {
@@ -40,12 +52,6 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
       super(flags, args)
     }
 
-    defaultBeforeExecute = (context: BeforeExecutionContext<Input, ContractInput>) => async () => {
-      logger.loading(`Executing ${context.id} from contract ${context.contract}`)
-      logger.log('Input Params:', context.contractInput)
-      await prompt(`Continue?`)
-    }
-
     afterExecute = instruction.afterExecute || this.afterExecute
 
     buildCommand = async (flags, args): Promise<TerraCommand> => {
@@ -54,15 +60,17 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
         throw new Error(`Invalid input params:  ${JSON.stringify(input)}`)
       }
       const contractInput = await instruction.makeContractInput(input)
-      const beforeExecutionContext: BeforeExecutionContext<Input, ContractInput> = {
+      const executionContext: ExecutionContext<Input, ContractInput> = {
         input,
         contractInput,
         id,
         contract: this.args[0],
+        provider: this.provider,
+        flags,
       }
       this.beforeExecute = instruction.beforeExecute
-        ? instruction.beforeExecute(beforeExecutionContext)
-        : this.defaultBeforeExecute(beforeExecutionContext)
+        ? instruction.beforeExecute(executionContext)
+        : defaultBeforeExecute(executionContext)
 
       const abstractCommand = await makeAbstractCommand(id, this.flags, this.args, contractInput)
       await abstractCommand.invokeMiddlewares(abstractCommand, abstractCommand.middlewares)
@@ -79,7 +87,7 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
       // TODO: Command should be built from gauntet-core
       await this.buildCommand(this.flags, this.args)
       //
-      await this.beforeExecute()
+      await this.beforeExecute(this.wallet.key.accAddress)
       let response = await this.command.execute()
       const data = this.afterExecute(response)
       if (data) {

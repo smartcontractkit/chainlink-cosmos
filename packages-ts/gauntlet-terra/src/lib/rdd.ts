@@ -21,3 +21,33 @@ export const getRDD = (path: string, fileDescription: string = 'RDD'): any => {
     )
   }
 }
+
+export enum CONTRACT_TYPES {
+  PROXY = 'proxies',
+  FLAG = 'flags',
+  ACCESS_CONTROLLER = 'accessControllers',
+  CONTRACT = 'contracts',
+  VALIDATOR = 'validators',
+}
+
+export type RDDContract = {
+  type: CONTRACT_TYPES
+  contract: any
+  address: string
+  description?: string
+}
+
+export const getContractFromRDD = (rdd: any, address: string): RDDContract => {
+  return Object.values(CONTRACT_TYPES).reduce((agg, type) => {
+    const content = rdd[type]?.[address]
+    if (content) {
+      return {
+        type,
+        contract: content,
+        address,
+        ...((type === CONTRACT_TYPES.CONTRACT || type === CONTRACT_TYPES.PROXY) && { description: content.name }),
+      }
+    }
+    return agg
+  }, {} as RDDContract)
+}

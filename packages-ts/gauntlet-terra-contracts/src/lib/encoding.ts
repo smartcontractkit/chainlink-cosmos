@@ -19,7 +19,7 @@ export const serializeOffchainConfig = async (input: OffchainConfig): Promise<Bu
   return Buffer.from(proto.encode('offchainreporting2_config.OffchainConfigProto', offchainConfig))
 }
 
-export const deserializeConfig = (buffer: Buffer): any => {
+export const deserializeConfig = (buffer: Buffer): OffchainConfig => {
   const proto = new Proto.Protobuf({ descriptor: descriptor })
   const offchain = proto.decode('offchainreporting2_config.OffchainConfigProto', buffer)
   const reportingPluginConfig = proto.decode(
