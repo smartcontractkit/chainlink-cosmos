@@ -24,6 +24,7 @@ const makeCommandInput = async (flags: any): Promise<CommandInput> => {
 
 const validateInput = (input: CommandInput): boolean => {
   if (!AccAddress.validate(input.to)) throw new Error(`Invalid destination address`)
+  if (isNaN(Number(input.amount))) throw new Error(`Amount ${input.amount} is not a number`)
   return true
 }
 
