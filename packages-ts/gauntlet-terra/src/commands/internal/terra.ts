@@ -15,7 +15,7 @@ import {
   TxError,
   Wallet,
   Msg,
-  SignerData
+  SignerData,
 } from '@terra-money/terra.js'
 import { TransactionResponse } from '../types'
 import { LedgerKey } from '../ledgerKey'

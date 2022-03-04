@@ -89,7 +89,7 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
       await this.buildCommand(this.flags, this.args)
       await this.command.simulateExecute()
       await this.beforeExecute(this.wallet.key.accAddress)
-      
+
       let response = await this.command.execute()
       const data = this.afterExecute(response)
       return !!data ? { ...response, data: { ...data } } : response
