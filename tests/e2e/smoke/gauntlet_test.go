@@ -106,13 +106,13 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			gd.ProposeConfig(gd.OCR, gd.ProposalId, gd.RddPath)
 
 			// ocr2:propose_offchain_config
-			gd.ProposeOffchainConfig(gd.OCR, gd.ProposalId, gd.RddPath)
+			gd.OffchainProposalSecret = gd.ProposeOffchainConfig(gd.OCR, gd.ProposalId, gd.RddPath)
 
 			// ocr2:finalize_proposal
 			gd.ProposalDigest = gd.FinalizeProposal(gd.OCR, gd.ProposalId, gd.RddPath)
 
 			// ocr2:accept_proposal
-			gd.AcceptProposal(gd.OCR, gd.ProposalId, gd.ProposalDigest, gd.RddPath)
+			gd.AcceptProposal(gd.OCR, gd.ProposalId, gd.ProposalDigest, gd.OffchainProposalSecret, gd.RddPath)
 
 			// ocr2:inspect
 			results := gd.OcrInspect(gd.OCR, gd.RddPath)

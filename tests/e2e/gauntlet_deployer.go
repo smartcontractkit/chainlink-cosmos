@@ -30,6 +30,7 @@ type GauntletDeployer struct {
 	RddPath                    string
 	ProposalId                 string
 	ProposalDigest             string
+	OffchainProposalSecret     string
 }
 
 type InspectionResult struct {
@@ -298,7 +299,7 @@ func (gd *GauntletDeployer) ProposeConfig(ocr, proposalId, rddPath string) {
 }
 
 // ProposeOffchainConfig proposes the offchain config
-func (gd *GauntletDeployer) ProposeOffchainConfig(ocr, proposalId, rddPath string) {
+func (gd *GauntletDeployer) ProposeOffchainConfig(ocr, proposalId, rddPath string) string {
 	reportName := "propose_offchain_config"
 	gd.Cli.NetworkConfig["SECRET"] = gd.Cli.NetworkConfig["MNEMONIC"]
 	UpdateReportName(reportName, gd.Cli)
@@ -312,6 +313,9 @@ func (gd *GauntletDeployer) ProposeOffchainConfig(ocr, proposalId, rddPath strin
 		TERRA_COMMAND_ERROR,
 	}, RETRY_COUNT)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to propose offchain config")
+	offchainProposalReport, err := LoadReportJson(reportName + ".json")
+	Expect(err).ShouldNot(HaveOccurred())
+	return offchainProposalReport["data"].(map[string]interface{})["randomSecret"].(string)
 }
 
 // FinalizeProposal finalizes the proposal
@@ -334,7 +338,7 @@ func (gd *GauntletDeployer) FinalizeProposal(ocr, proposalId, rddPath string) st
 }
 
 // AcceptProposal accepts the proposal
-func (gd *GauntletDeployer) AcceptProposal(ocr, proposalId, proposalDigest, rddPath string) string {
+func (gd *GauntletDeployer) AcceptProposal(ocr, proposalId, proposalDigest, secret, rddPath string) string {
 	reportName := "accept_proposal"
 	UpdateReportName(reportName, gd.Cli)
 	_, err := gd.Cli.ExecCommandWithRetries([]string{
@@ -343,6 +347,7 @@ func (gd *GauntletDeployer) AcceptProposal(ocr, proposalId, proposalDigest, rddP
 		gd.Cli.Flag("rdd", rddPath),
 		gd.Cli.Flag("proposalId", proposalId),
 		gd.Cli.Flag("digest", proposalDigest),
+		gd.Cli.Flag("secret", secret),
 		ocr,
 	}, []string{
 		TERRA_COMMAND_ERROR,
