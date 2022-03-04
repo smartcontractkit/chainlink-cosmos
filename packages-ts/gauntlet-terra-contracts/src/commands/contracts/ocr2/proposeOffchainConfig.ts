@@ -1,9 +1,12 @@
-import { RDD } from '@chainlink/gauntlet-terra'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
+import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../abstract/executionWrapper'
 import { time, BN } from '@chainlink/gauntlet-core/dist/utils'
-import { serializeOffchainConfig } from '../../../lib/encoding'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
 import { CATEGORIES } from '../../../lib/constants'
+import { printDiff } from '../../../lib/diff'
+import { getLatestOCRConfig } from '../../../lib/inspection'
+import { serializeOffchainConfig, deserializeConfig, generateSecretEncryptions } from '../../../lib/encoding'
+import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 
 type CommandInput = {
   proposalId: string
@@ -88,7 +91,13 @@ export const getOffchainConfigInput = (rdd: any, contract: string): OffchainConf
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const rdd = RDD.getRDD(flags.rdd)
+
+  const { rdd: rddPath } = flags
+  if (!rddPath) {
+    throw new Error('No RDD flag provided!')
+  }
+
+  const rdd = RDD.getRDD(rddPath)
   const contract = args[0]
 
   return {
@@ -96,6 +105,29 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     offchainConfig: getOffchainConfigInput(rdd, contract),
     offchainConfigVersion: 2,
   }
+}
+
+const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
+  const event = await getLatestOCRConfig(context.provider, context.contract)
+  const offchainConfig = event?.offchain_config
+    ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
+    : ({} as OffchainConfig)
+
+  const contractOffchainConfig = {
+    ...offchainConfig,
+    offchainPublicKeys: offchainConfig.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
+    f: event?.f,
+  }
+
+  const proposedOffchainConfig = {
+    ...context.input.offchainConfig,
+    sharedSecretEncryptions: await generateSecretEncryptions(context.input.offchainConfig.configPublicKeys),
+    configPublicKeys: undefined,
+  }
+
+  logger.info('Review the proposed changes below: green - added, red - deleted, yellow - no change.')
+  printDiff(contractOffchainConfig, proposedOffchainConfig)
+  await prompt('Continue?')
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
@@ -173,6 +205,7 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   makeInput: makeCommandInput,
   validateInput: validateInput,
   makeContractInput: makeContractInput,
+  beforeExecute,
 }
 
 export default instructionToCommand(instruction)
