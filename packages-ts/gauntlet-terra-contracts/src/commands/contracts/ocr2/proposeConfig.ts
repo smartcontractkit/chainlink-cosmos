@@ -1,7 +1,8 @@
 import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
-import { printDiff } from '../../../lib/utils'
-import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../abstract/executionWrapper' 
+import { printDiff } from '../../../lib/diff'
+import { getLatestOCRConfig } from '../../../lib/inspection'
+import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../abstract/executionWrapper'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 
 type OnchainConfig = any
@@ -25,7 +26,14 @@ type ContractInput = {
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const rdd = RDD.getRDD(flags.rdd)
+
+  const { rdd: rddPath } = flags
+
+  if (!rddPath) {
+    throw new Error('No RDD flag provided!')
+  }
+
+  const rdd = RDD.getRDD(rddPath)
   const contract = args[0]
   const aggregator = rdd.contracts[contract]
   const aggregatorOperators: any[] = aggregator.oracles.map((o) => rdd.operators[o.operator])
@@ -69,23 +77,13 @@ const validateInput = (input: CommandInput): boolean => {
 }
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
-  const rddPath = context.flags.rdd
-  if (!rddPath) {
-    throw new Error('No RDD flag provided!')
-  }
+  const event = await getLatestOCRConfig(context.provider, context.contract)
 
-  const latestConfigDetails: any = await context.provider.wasm.contractQuery(context.contract, 'latest_config_details' as any)
-  const setConfigTx = providerUtils.filterTxsByEvent(
-    await providerUtils.getBlockTxs(context.provider, latestConfigDetails.block_number),
-    'wasm-set_config',
-  )
-  const event = setConfigTx?.logs?.[0].eventsByType['wasm-set_config']
-
-  const currentConfig = {
+  const contractConfig = {
     f: event?.f[0],
     transmitters: event?.transmitters,
     signers: event?.signers.map((s) => Buffer.from(s, 'hex').toString('base64')),
-    onchain_config: event?.onchain_config[0]
+    onchain_config: event?.onchain_config[0],
     // todo: add payees
   }
 
@@ -93,12 +91,12 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     f: context.contractInput.f,
     transmitters: context.contractInput.transmitters,
     signers: context.contractInput.signers,
-    onchain_config: context.contractInput.onchain_config
+    onchain_config: context.contractInput.onchain_config,
     // todo: add payees
   }
 
-  logger.info('Review the changes below: green - added, red - deleted, yellow - no change.')
-  printDiff(currentConfig, proposedConfig)
+  logger.info('Review the proposed changes below: green - added, red - deleted, yellow - no change.')
+  printDiff(contractConfig, proposedConfig)
   await prompt('Continue?')
 }
 
