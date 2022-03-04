@@ -4,7 +4,6 @@ import { AccAddress, LCDClient } from '@terra-money/terra.js'
 import { providerUtils } from '@chainlink/gauntlet-terra'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 
-
 // TODO: find the right place for this function
 export const getLatestOCRConfig = async (provider: LCDClient, contract: AccAddress) => {
   // The contract only stores the block where the config was accepted. The tx log contains the config

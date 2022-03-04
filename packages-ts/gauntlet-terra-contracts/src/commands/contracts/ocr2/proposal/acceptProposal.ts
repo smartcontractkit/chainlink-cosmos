@@ -73,7 +73,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const offchainConfigInProposal = await deserializeConfig(Buffer.from(proposal.offchain_config, 'base64'))
   const configInProposal = translateConfig({
     ...offchainConfigInProposal,
-    f: proposal.f
+    f: proposal.f,
   })
 
   try {
@@ -90,7 +90,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     : ({} as OffchainConfig)
   const configInContract = translateConfig({
     ...offchainConfigInContract,
-    f: event?.f[0]
+    f: event?.f[0],
   })
 
   logger.info('Review the configuration difference from contract and proposal: green - added, red - deleted.')
