@@ -31,6 +31,10 @@ func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.C
 	digest := types.ConfigDigest{}
 	buf := bytes.NewBuffer([]byte{})
 
+	if err := binary.Write(buf, binary.BigEndian, uint8(len(cd.chainID))); err != nil {
+		return digest, err
+	}
+
 	if _, err := buf.Write([]byte(cd.chainID)); err != nil {
 		return digest, err
 	}

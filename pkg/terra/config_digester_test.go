@@ -34,5 +34,5 @@ func TestConfigDigester(t *testing.T) {
 
 	digest, err := d.ConfigDigest(config)
 	assert.NoError(t, err)
-	assert.Equal(t, "0002d5b58e9164cba342550204a08494d008ae8e68899911665553604d90d988", digest.Hex())
+	assert.Equal(t, "0002c337db7a24692b6dc0a0da59c4ee80a3afbd4c782e40e4d8267454f3cf61", digest.Hex())
 }

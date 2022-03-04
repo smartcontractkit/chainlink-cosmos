@@ -158,7 +158,8 @@ pub fn config_digest_from_data(
 ) -> [u8; 32] {
     use blake2::{Blake2s, Digest};
     let mut hasher = Blake2s::default();
-    hasher.update(chain_id.as_bytes());
+    hasher.update((chain_id.len() as u8).to_be_bytes());
+    hasher.update(&chain_id.as_bytes());
     hasher.update(contract_address.as_bytes());
     hasher.update(&config_count.to_be_bytes());
     hasher.update([(oracles.len() as u8)]);
