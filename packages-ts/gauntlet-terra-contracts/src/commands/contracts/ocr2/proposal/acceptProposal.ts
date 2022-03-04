@@ -44,19 +44,9 @@ const translateConfig = (rawOffchainConfig: any, additionalConfig?: any): any =>
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const { rdd: rddPath, proposalId, randomSecret } = flags
+  const { rdd: rddPath, secret } = flags
 
-  if (!rddPath) {
-    throw new Error('No RDD flag provided!')
-  }
-
-  if (!proposalId) {
-    throw new Error('No proposalId flag provided!')
-  }
-
-  if (!randomSecret) {
-    throw new Error('No randomSecret flag provided!')
-  }
+  if (!rddPath) throw new Error('RDD flag is required. Provide it with --rdd flag')
 
   const rdd = RDD.getRDD(rddPath)
   const contract = args[0]
@@ -65,15 +55,15 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     proposalId: flags.proposalId,
     digest: flags.digest,
     offchainConfig: getOffchainConfigInput(rdd, contract),
-    randomSecret,
+    randomSecret: secret,
   }
 }
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
   const { proposalId, randomSecret, offchainConfig: offchainLocalConfig } = context.input
 
-  const serializedLocalConfig = await serializeOffchainConfig(offchainLocalConfig, randomSecret)
-  const localConfig = serializedLocalConfig.toString('base64')
+  const { offchainConfig } = await serializeOffchainConfig(offchainLocalConfig, process.env.SECRET!, randomSecret)
+  const localConfig = offchainConfig.toString('base64')
 
   // Config in Proposal
   const proposal: any = await context.provider.wasm.contractQuery(context.contract, {
@@ -87,10 +77,10 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   try {
     assert.equal(localConfig, proposal.offchain_config)
   } catch (err) {
-    logger.error("RDD configuration doesn't correspond the proposal configuration!")
-    throw err
+    throw new Error('RDD configuration does not correspond the proposal configuration')
   }
 
+  logger.success('RDD Generated configuration matches with onchain proposal configuration')
   // Config in contract
   const event = await getLatestOCRConfig(context.provider, context.contract)
   const offchainConfigInContract = event?.offchain_config
@@ -112,22 +102,19 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
 
 const validateInput = (input: CommandInput): boolean => {
   if (!input.proposalId) throw new Error('A proposal ID is required. Provide it with --proposalId flag')
+  if (!input.randomSecret)
+    throw new Error('Secret generated at proposing offchain config is required. Provide it with --secret flag')
   return true
 }
 
-const afterExecute = (response: Result<TransactionResponse>) => {
+const afterExecute = () => async (response: Result<TransactionResponse>) => {
+  logger.success(`Proposal accepted on tx ${response.responses[0].tx.hash}`)
   const events = response.responses[0].tx.events
   if (!events) {
     logger.error('Could not retrieve events from tx')
     return
   }
-
   const digest = events[0]['wasm-set_config'].latest_config_digest[0]
-  logger.success(`Proposal accepted`)
-  logger.line()
-  logger.info('Important: To inspect the aggregator, save the following DIGEST:')
-  logger.info(digest)
-  logger.line()
   return {
     digest,
   }

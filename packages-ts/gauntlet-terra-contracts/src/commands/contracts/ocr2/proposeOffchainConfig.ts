@@ -1,17 +1,17 @@
 import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
-import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../abstract/executionWrapper'
+import { AbstractInstruction, instructionToCommand, BeforeExecute, AfterExecute } from '../../abstract/executionWrapper'
 import { time, BN } from '@chainlink/gauntlet-core/dist/utils'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
 import { CATEGORIES } from '../../../lib/constants'
 import { getLatestOCRConfig, printDiff } from '../../../lib/inspection'
-import { serializeOffchainConfig, deserializeConfig, generateSecretEncryptions } from '../../../lib/encoding'
+import { serializeOffchainConfig, deserializeConfig, generateSecretWords } from '../../../lib/encoding'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 
 type CommandInput = {
   proposalId: string
   offchainConfig: OffchainConfig
   offchainConfigVersion: number
-  randomSecret: string
+  randomSecret?: string
 }
 
 type ContractInput = {
@@ -98,10 +98,6 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     throw new Error('No RDD flag provided!')
   }
 
-  if (!randomSecret) {
-    throw new Error('No randomSecret flag provided!')
-  }
-
   const rdd = RDD.getRDD(rddPath)
   const contract = args[0]
 
@@ -109,7 +105,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     proposalId: flags.proposalId,
     offchainConfig: getOffchainConfigInput(rdd, contract),
     offchainConfigVersion: 2,
-    randomSecret,
+    randomSecret: randomSecret || (await generateSecretWords()),
   }
 }
 
@@ -127,21 +123,41 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
 
   const proposedOffchainConfig = {
     ...context.input.offchainConfig,
-    sharedSecretEncryptions: await generateSecretEncryptions(context.input.offchainConfig.configPublicKeys),
     configPublicKeys: undefined,
   }
 
   logger.info('Review the proposed changes below: green - added, red - deleted.')
   printDiff(contractOffchainConfig, proposedOffchainConfig)
+
+  logger.info(
+    `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
+    SECRET: ${context.input.randomSecret}`,
+  )
+
   await prompt('Continue?')
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
-  const offchainConfig = await serializeOffchainConfig(input.offchainConfig, input.randomSecret)
+  const { offchainConfig } = await serializeOffchainConfig(
+    input.offchainConfig,
+    process.env.SECRET!,
+    input.randomSecret,
+  )
   return {
     id: input.proposalId,
     offchain_config_version: 2,
     offchain_config: offchainConfig.toString('base64'),
+  }
+}
+
+const afterExecute: AfterExecute<CommandInput, ContractInput> = (context) => async (result): Promise<any> => {
+  logger.success(`Tx succeded at ${result.responses[0].tx.hash}`)
+  logger.info(
+    `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
+    SECRET: ${context.input.randomSecret}`,
+  )
+  return {
+    randomSecret: context.input.randomSecret,
   }
 }
 
@@ -212,6 +228,7 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   validateInput: validateInput,
   makeContractInput: makeContractInput,
   beforeExecute,
+  afterExecute,
 }
 
 export default instructionToCommand(instruction)

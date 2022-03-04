@@ -1,5 +1,3 @@
-import { Result } from '@chainlink/gauntlet-core'
-import { TransactionResponse } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
 import { instructionToCommand, AbstractInstruction } from '../../../abstract/executionWrapper'
 
@@ -29,11 +27,6 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const afterExecute = async (response: Result<TransactionResponse>) => {
-  console.log(response.data)
-  return
-}
-
 // yarn gauntlet ocr2:clear_proposal --network=bombay-testnet --id=7 terra14nrtuhrrhl2ldad7gln5uafgl8s2m25du98hlx
 const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
@@ -44,7 +37,6 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   makeInput: makeCommandInput,
   validateInput: validateInput,
   makeContractInput: makeContractInput,
-  afterExecute,
 }
 
 export default instructionToCommand(instruction)

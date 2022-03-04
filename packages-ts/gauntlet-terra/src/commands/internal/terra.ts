@@ -32,7 +32,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   buildCommand?: (flags, args) => Promise<TerraCommand>
   beforeExecute: (context?: any) => Promise<void>
 
-  afterExecute = async (response: Result<TransactionResponse>): Promise<void> => {
+  afterExecute = async (response: Result<TransactionResponse>): Promise<any> => {
     logger.success(`Execution finished at transaction: ${response.responses[0].tx.hash}`)
   }
 

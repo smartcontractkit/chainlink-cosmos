@@ -20,7 +20,9 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const afterExecute = (response: Result<TransactionResponse>): { proposalId: string } | undefined => {
+const afterExecute = () => async (
+  response: Result<TransactionResponse>,
+): Promise<{ proposalId: string } | undefined> => {
   const events = response.responses[0].tx.events
   if (!events) {
     logger.error('No events found. Proposal ID could not be retrieved')

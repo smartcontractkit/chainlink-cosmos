@@ -30,7 +30,9 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const afterExecute = (response: Result<TransactionResponse>): { proposalId: string; digest: string } | undefined => {
+const afterExecute = () => async (
+  response: Result<TransactionResponse>,
+): Promise<{ proposalId: string; digest: string } | undefined> => {
   const events = response.responses[0].tx.events
   if (!events) {
     logger.error('Could not retrieve events from tx')
