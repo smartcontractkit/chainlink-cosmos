@@ -11,6 +11,7 @@ type CommandInput = {
   proposalId: string
   offchainConfig: OffchainConfig
   offchainConfigVersion: number
+  randomSecret: string
 }
 
 type ContractInput = {
@@ -91,9 +92,14 @@ export const getOffchainConfigInput = (rdd: any, contract: string): OffchainConf
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
 
-  const { rdd: rddPath } = flags
+  const { rdd: rddPath, randomSecret } = flags
+
   if (!rddPath) {
     throw new Error('No RDD flag provided!')
+  }
+
+  if (!randomSecret) {
+    throw new Error('No randomSecret flag provided!')
   }
 
   const rdd = RDD.getRDD(rddPath)
@@ -103,6 +109,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     proposalId: flags.proposalId,
     offchainConfig: getOffchainConfigInput(rdd, contract),
     offchainConfigVersion: 2,
+    randomSecret
   }
 }
 
@@ -130,7 +137,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
-  const offchainConfig = await serializeOffchainConfig(input.offchainConfig)
+  const offchainConfig = await serializeOffchainConfig(input.offchainConfig, input.randomSecret)
   return {
     id: input.proposalId,
     offchain_config_version: 2,

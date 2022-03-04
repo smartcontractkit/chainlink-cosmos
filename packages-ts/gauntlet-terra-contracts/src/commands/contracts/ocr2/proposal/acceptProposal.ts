@@ -12,7 +12,8 @@ import assert from 'assert'
 type CommandInput = {
   proposalId: string
   digest: string
-  offchainConfig: OffchainConfig
+  offchainConfig: OffchainConfig,
+  randomSecret: string
 }
 
 type ContractInput = {
@@ -43,7 +44,7 @@ const translateConfig = (rawOffchainConfig: any, additionalConfig?: any): Offcha
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const { rdd: rddPath, proposalId } = flags
+  const { rdd: rddPath, proposalId, randomSecret } = flags
 
   if (!rddPath) {
     throw new Error('No RDD flag provided!')
@@ -53,6 +54,10 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     throw new Error('No proposalId flag provided!')
   }
 
+  if (!randomSecret) {
+    throw new Error('No randomSecret flag provided!')
+  }
+
   const rdd = RDD.getRDD(rddPath)
   const contract = args[0]
 
@@ -60,13 +65,14 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     proposalId: flags.proposalId,
     digest: flags.digest,
     offchainConfig: getOffchainConfigInput(rdd, contract),
+    randomSecret
   }
 }
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
-  const { proposalId, offchainConfig: offchainLocalConfig } = context.input
+  const { proposalId, randomSecret, offchainConfig: offchainLocalConfig } = context.input
 
-  const serializedLocalConfig = await serializeOffchainConfig(offchainLocalConfig)
+  const serializedLocalConfig = await serializeOffchainConfig(offchainLocalConfig, randomSecret)
   const localConfig = serializedLocalConfig.toString('base64')
 
   // Config in Proposal
@@ -79,7 +85,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const configInProposal = translateConfig(offchainConfigInProposal, { f: proposal.f })
 
   try {
-    // assert.equal(localConfig, proposal.offchain_config)
+    assert.equal(localConfig, proposal.offchain_config)
   } catch (err) {
     logger.error("RDD configuration doesn't correspond the proposal configuration!")
     throw err
