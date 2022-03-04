@@ -33,11 +33,11 @@ export const deserializeConfig = (buffer: Buffer): OffchainConfig => {
 // a set of SharedSecretEncryptionPublicKeys, the sharedSecret, and a cryptographic randomness source
 export const generateSecretEncryptions = async (
   operatorsPublicKeys: string[],
-  randomSecret?: string
+  randomSecret?: string,
 ): Promise<sharedSecretEncryptions.SharedSecretEncryptions> => {
   const gauntletSecret = process.env.SECRET
   const path = join(process.cwd(), 'packages-ts/gauntlet-terra-contracts/artifacts/bip-0039', 'english.txt')
-  const secret = randomSecret || await sharedSecretEncryptions.generateSecretWords(path)
+  const secret = randomSecret || (await sharedSecretEncryptions.generateSecretWords(path))
   return await sharedSecretEncryptions.makeSharedSecretEncryptions(gauntletSecret!, operatorsPublicKeys, secret)
 }
 

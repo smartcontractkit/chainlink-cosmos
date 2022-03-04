@@ -1,9 +1,9 @@
 import { Result } from '@chainlink/gauntlet-core'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { TransactionResponse, providerUtils, RDD } from '@chainlink/gauntlet-terra'
+import { TransactionResponse, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
 import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../../abstract/executionWrapper'
-import { serializeOffchainConfig, deserializeConfig, generateSecretEncryptions } from '../../../../lib/encoding'
+import { serializeOffchainConfig, deserializeConfig } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
 import { getLatestOCRConfig, printDiff } from '../../../../lib/inspection'
 import Long from 'long'
@@ -12,7 +12,7 @@ import assert from 'assert'
 type CommandInput = {
   proposalId: string
   digest: string
-  offchainConfig: OffchainConfig,
+  offchainConfig: OffchainConfig
   randomSecret: string
 }
 
@@ -21,7 +21,7 @@ type ContractInput = {
   digest: string
 }
 
-const translateConfig = (rawOffchainConfig: any, additionalConfig?: any): OffchainConfig => {
+const translateConfig = (rawOffchainConfig: any, additionalConfig?: any): any => {
   const res = {
     ...rawOffchainConfig,
     ...(additionalConfig || {}),
@@ -39,7 +39,7 @@ const translateConfig = (rawOffchainConfig: any, additionalConfig?: any): Offcha
   }
 
   longsToNumber(res)
-  return res as OffchainConfig
+  return res
 }
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
@@ -65,7 +65,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     proposalId: flags.proposalId,
     digest: flags.digest,
     offchainConfig: getOffchainConfigInput(rdd, contract),
-    randomSecret
+    randomSecret,
   }
 }
 
@@ -98,9 +98,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     : ({} as OffchainConfig)
   const configInContract = translateConfig(offchainConfigInContract, { f: event?.f[0] })
 
-  logger.info(
-    'Review the configuration difference from contract and proposal: green - added, red - deleted.',
-  )
+  logger.info('Review the configuration difference from contract and proposal: green - added, red - deleted.')
   printDiff(configInContract, configInProposal)
   await prompt('Continue?')
 }

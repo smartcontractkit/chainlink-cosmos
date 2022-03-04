@@ -109,7 +109,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     proposalId: flags.proposalId,
     offchainConfig: getOffchainConfigInput(rdd, contract),
     offchainConfigVersion: 2,
-    randomSecret
+    randomSecret,
   }
 }
 
