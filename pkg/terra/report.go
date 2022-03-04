@@ -10,6 +10,26 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
+const (
+	timestampSizeBytes       = 4
+	observersSizeBytes       = 32
+	observationsLenBytes     = 1
+	prefixSizeBytes          = timestampSizeBytes + observersSizeBytes + observationsLenBytes
+	juelsPerFeeCoinSizeBytes = 16
+)
+
+type observation []byte
+
+const observationSizeBytes = 16
+
+func newObservationFromInt(o *big.Int) (observation, error) {
+	return ToBytes(o, observationSizeBytes)
+}
+
+func (o observation) ToBigInt() (*big.Int, error) {
+	return ToBigInt(o, observationSizeBytes)
+}
+
 var _ median.ReportCodec = (*ReportCodec)(nil)
 
 type ReportCodec struct{}
@@ -40,57 +60,64 @@ func (c ReportCodec) BuildReport(oo []median.ParsedAttributedObservation) (types
 		return oo[i].Value.Cmp(oo[j].Value) < 0
 	})
 
-	observers := [32]byte{}
-	observations := []*big.Int{}
-
+	var observers [32]byte
+	var observations []*big.Int
 	for i, o := range oo {
 		observers[i] = byte(o.Observer)
 		observations = append(observations, o.Value)
 	}
 
-	// encoding
-	report := []byte{}
-
+	// Add timestamp
+	var report []byte
 	time := make([]byte, 4)
 	binary.BigEndian.PutUint32(time, timestamp)
 	report = append(report, time[:]...)
 
+	// Add observers
 	report = append(report, observers[:]...)
+	// Add length of observations
 	report = append(report, byte(len(observations)))
-
+	// Add observations
 	for _, o := range observations {
-		oBytes := make([]byte, MedianLen)
-		report = append(report, o.FillBytes(oBytes)[:]...)
+		obs, err := newObservationFromInt(o)
+		if err != nil {
+			return nil, err
+		}
+		report = append(report, obs[:]...)
 	}
 
-	jBytes := make([]byte, JuelsLen)
+	// Add juels per fee coin value
+	jBytes := make([]byte, juelsPerFeeCoinSizeBytes)
 	report = append(report, juelsPerFeeCoin.FillBytes(jBytes)[:]...)
-
-	return types.Report(report), nil
+	return report, nil
 }
 
 func (c ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
 	// report should at least be able to contain timestamp, observers, observations length
 	rLen := len(report)
-	if rLen < PrefixLen {
-		return nil, fmt.Errorf("report length missmatch: %d (received), %d (expected)", rLen, PrefixLen)
+	if rLen < prefixSizeBytes {
+		return nil, fmt.Errorf("report length missmatch: %d (received), %d (expected)", rLen, prefixSizeBytes)
 	}
 
-	n := int(report[4+32])
+	// Read observations length
+	n := int(report[timestampSizeBytes+observersSizeBytes])
 	if n == 0 {
 		return nil, fmt.Errorf("unpacked report has no 'observations'")
 	}
 
-	if rLen < PrefixLen+(MedianLen*n)+JuelsLen {
-		return nil, fmt.Errorf("report does not contain enough observations or is missing juels/eth observation")
+	if rLen < prefixSizeBytes+(observationSizeBytes*n)+juelsPerFeeCoinSizeBytes {
+		return nil, fmt.Errorf("report does not contain enough observations or is missing juels/feeCoin observation")
 	}
 
 	// unpack observations
-	observations := []*big.Int{}
+	var observations []*big.Int
 	for i := 0; i < n; i++ {
-		start := PrefixLen + MedianLen*i
-		end := start + MedianLen
-		o := big.NewInt(0).SetBytes(report[start:end])
+		start := prefixSizeBytes + observationSizeBytes*i
+		end := start + observationSizeBytes
+		o, err := observation(report[start:end]).ToBigInt()
+		if err != nil {
+			return nil, err
+		}
 		observations = append(observations, o)
 	}
 

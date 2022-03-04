@@ -9,13 +9,6 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
-const (
-	// Report data
-	PrefixLen = 4 + 32 + 1
-	MedianLen = 16
-	JuelsLen  = 16
-)
-
 type TransmitMsg struct {
 	Transmit TransmitPayload `json:"transmit"`
 }
