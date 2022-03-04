@@ -3,5 +3,6 @@
   "ocr2": 3024,
   "proxy_ocr2": 3202,
   "cw3_flex_multisig": 3192,
-  "cw4_group": 3193
+  "cw4_group": 3193,
+  "cw20_base": 3
 }
