@@ -36,6 +36,8 @@ export const wrapCommand = (command) => {
 
     makeRawTransaction = async (signer: AccAddress, state?: State) => {
       const message = await this.command.makeRawTransaction(this.multisig)
+      await this.command.simulate(this.multisig, [message])
+      logger.info(`Command simulation successful.`)
 
       const operations = {
         [Action.CREATE]: this.makeProposeTransaction,

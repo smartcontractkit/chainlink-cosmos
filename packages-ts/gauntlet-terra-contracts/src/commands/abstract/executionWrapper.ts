@@ -41,6 +41,7 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
   const id = `${instruction.instruction.contract}:${instruction.instruction.function}`
   const category = `${instruction.instruction.category}`
   const examples = instruction.examples || []
+
   return class Command extends TerraCommand {
     static id = id
     static category = category
@@ -86,7 +87,9 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
     execute = async (): Promise<Result<TransactionResponse>> => {
       // TODO: Command should be built from gauntet-core
       await this.buildCommand(this.flags, this.args)
+      await this.command.simulateExecute()
       await this.beforeExecute(this.wallet.key.accAddress)
+
       let response = await this.command.execute()
       const data = this.afterExecute(response)
       return !!data ? { ...response, data: { ...data } } : response
