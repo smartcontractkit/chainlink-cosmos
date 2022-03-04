@@ -1,21 +1,5 @@
-# Chainlink Terra Integration
+# Chainlink Terra
 
-This repository is a monorepo of the various components required for Chainlink on Terra.
+## Quick Start
 
-- [Terra Contracts](contracts)
-- [Terra CL Relay](pkg/terra)
-- [Terra Gauntlet](packages-ts)
-- [Terra On-chain Monitoring](pkg/monitoring)
-- [Ops](ops)
-- [Integration/E2E Tests](tests/e2e)
-- [Demos & Examples](examples)
-
-# Local asdf initial setup
-
-    asdf plugin-add golang https://github.com/kennyp/asdf-golang.git 
-    # for other golang requirements for your os go to https://github.com/kennyp/asdf-golang
-    asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git
-    asdf plugin-add rust https://github.com/asdf-community/asdf-rust.git 
-
-    # Then run
-    asdf install
+For more information, see the [Chainlink Terra Documentation](./docs/).
