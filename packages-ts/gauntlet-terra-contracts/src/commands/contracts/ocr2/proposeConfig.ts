@@ -1,5 +1,5 @@
+import { RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
-import { getRDD } from '../../../lib/rdd'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
 type OnchainConfig = any
@@ -23,7 +23,7 @@ type ContractInput = {
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const rdd = getRDD(flags.rdd)
+  const rdd = RDD.getRDD(flags.rdd)
   const contract = args[0]
   const aggregator = rdd.contracts[contract]
   const aggregatorOperators: any[] = aggregator.oracles.map((o) => rdd.operators[o.operator])

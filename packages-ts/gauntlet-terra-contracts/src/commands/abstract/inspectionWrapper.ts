@@ -1,12 +1,10 @@
-import AbstractCommand, { makeAbstractCommand } from '.'
+import { makeAbstractCommand } from '.'
 import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { CATEGORIES } from '../../lib/constants'
 import { CONTRACT_LIST } from '../../lib/contracts'
-import { APIParams } from '@terra-money/terra.js/dist/client/lcd/APIRequester'
-
-export type Query = (contractAddress: string, query: any, params?: APIParams) => Promise<any>
+import { LCDClient } from '@terra-money/terra.js'
 
 /**
  * Inspection commands need to match this interface
@@ -31,8 +29,10 @@ export interface InspectInstruction<CommandInput, ContractExpectedInfo> {
     function: string
   }[]
   makeInput: (flags: any, args: string[]) => Promise<CommandInput>
-  makeInspectionData: (query: Query) => (input: CommandInput) => Promise<ContractExpectedInfo>
-  makeOnchainData: (query: Query) => (instructionsData: any[]) => ContractExpectedInfo
+  makeInspectionData: (provider: LCDClient) => (input: CommandInput) => Promise<ContractExpectedInfo>
+  makeOnchainData: (
+    provider: LCDClient,
+  ) => (instructionsData: any[], input: CommandInput, contractAddress: string) => Promise<ContractExpectedInfo>
   inspect: (expected: ContractExpectedInfo, data: ContractExpectedInfo) => boolean
 }
 
@@ -68,9 +68,8 @@ export const instructionToInspectCommand = <CommandInput, Expected>(
         }),
       )
 
-      const query: Query = this.provider.wasm.contractQuery.bind(this.provider.wasm)
-      const onchainData = inspectInstruction.makeOnchainData(query)(data)
-      const inspectData = await inspectInstruction.makeInspectionData(query)(input)
+      const onchainData = await inspectInstruction.makeOnchainData(this.provider)(data, input, this.args[0])
+      const inspectData = await inspectInstruction.makeInspectionData(this.provider)(input)
       const inspection = inspectInstruction.inspect(inspectData, onchainData)
       return {
         data: inspection,

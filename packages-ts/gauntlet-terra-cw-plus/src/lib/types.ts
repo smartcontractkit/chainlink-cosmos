@@ -14,15 +14,26 @@ export enum Action {
   NONE = 'none',
 }
 
-export type WasmMsg = {
+type Coin = {
+  denom: string
+  amount: string
+}
+
+export type Cw3WasmMsg = {
   wasm: {
     execute: {
       contract_addr: string
-      funds: {
-        denom: string
-        amount: string
-      }[]
+      funds: Coin[]
       msg: string
+    }
+  }
+}
+
+export type Cw3BankMsg = {
+  bank: {
+    send: {
+      amount: Coin[]
+      to_address: string
     }
   }
 }
@@ -36,7 +47,7 @@ export type State = {
     id?: number
     nextAction: Action
     currentStatus?: 'pending' | 'open' | 'rejected' | 'passed' | 'executed'
-    data?: WasmMsg[]
+    data?: Cw3WasmMsg[]
     expiresAt?: Date
     approvers: string[]
   }

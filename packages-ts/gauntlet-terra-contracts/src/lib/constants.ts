@@ -1,3 +1,5 @@
+import { BN } from '@chainlink/gauntlet-core/dist/utils'
+
 export const enum CATEGORIES {
   OWNERSHIP = 'Ownership',
   PROXIES = 'Proxies',
@@ -9,6 +11,7 @@ export const enum CATEGORIES {
   ACCESS_CONTROLLER = 'Access Controller',
   MULTISIG = 'Multisig',
   DEVIATION_FLAGGING_VALIDATOR = 'Devaiation Flagging Validator',
+  WALLET = 'Wallet',
 }
 
 export const DEFAULT_RELEASE_VERSION = 'local'
@@ -33,3 +36,8 @@ export const CW3_FLEX_MULTISIG_CODE_IDs = {
   local: -1,
   'testnet-bombay': 36059,
 }
+
+export const TOKEN_DECIMALS = 18
+export const TOKEN_UNIT = new BN(10).pow(new BN(TOKEN_DECIMALS))
+
+export const ULUNA_DECIMALS = 6
