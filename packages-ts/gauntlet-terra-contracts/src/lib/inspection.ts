@@ -3,6 +3,8 @@ import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress, LCDClient } from '@terra-money/terra.js'
 import { providerUtils } from '@chainlink/gauntlet-terra'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
+import { deepCopy } from './utils'
+import Long from 'long'
 
 // TODO: find the right place for this function
 export const getLatestOCRConfig = async (provider: LCDClient, contract: AccAddress) => {
@@ -87,6 +89,29 @@ export function printDiff(existing: Object, incoming: Object, options?: DIFF_OPT
   }
 
   logger.log(initialIndent, '}')
+}
+
+export const longsInObjToNumbers = (obj) => {
+  const copy = deepCopy(obj)
+  for (const [key, value] of Object.entries(obj)) {
+
+    if (Array.isArray(value) || Buffer.isBuffer(value) || value instanceof Date) {
+      // skip non-convertable arrays and buffers
+      continue
+    }
+
+    if (Long.isLong(value)) {
+      // transform long struct into readable and comparable number
+      copy[key] = toComparableLongNumber(value)
+      continue
+    }
+
+    if (typeof value === 'object') {
+      // for all other object recursively 
+      copy[key] = longsInObjToNumbers(value)
+    }
+  }
+  return copy
 }
 
 export const toComparableLongNumber = (v: Long) => new BN(Proto.Protobuf.longToString(v)).toString()

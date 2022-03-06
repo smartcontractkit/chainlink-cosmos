@@ -5,8 +5,7 @@ import { CATEGORIES } from '../../../../lib/constants'
 import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../../abstract/executionWrapper'
 import { serializeOffchainConfig, deserializeConfig } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
-import { getLatestOCRConfig, printDiff } from '../../../../lib/inspection'
-import Long from 'long'
+import { getLatestOCRConfig, longsToNumber, printDiff } from '../../../../lib/inspection'
 import assert from 'assert'
 
 type CommandInput = {
@@ -19,26 +18,6 @@ type CommandInput = {
 type ContractInput = {
   id: string
   digest: string
-}
-
-const longsToNumber = (obj) => {
-  for (const [key, value] of Object.entries(obj)) {
-    if (Long.isLong(value)) {
-      obj[key] = (value as Long).toNumber()
-    } else if (typeof value === 'object') {
-      longsToNumber(value)
-    }
-  }
-}
-
-const translateConfig = (config: any): any => {
-  const res = {
-    ...config,
-    offchainPublicKeys: config.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
-  }
-
-  longsToNumber(res)
-  return res
 }
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
@@ -71,8 +50,9 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     },
   })
   const offchainConfigInProposal = await deserializeConfig(Buffer.from(proposal.offchain_config, 'base64'))
-  const configInProposal = translateConfig({
+  const configInProposal = longsToNumber({
     ...offchainConfigInProposal,
+    offchainPublicKeys: offchainConfigInProposal.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
     f: proposal.f,
   })
 
@@ -88,8 +68,9 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const offchainConfigInContract = event?.offchain_config
     ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
     : ({} as OffchainConfig)
-  const configInContract = translateConfig({
+  const configInContract = longsToNumber({
     ...offchainConfigInContract,
+    offchainPublicKeys: offchainConfigInContract.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
     f: event?.f[0],
   })
 
