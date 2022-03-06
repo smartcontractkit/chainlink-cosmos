@@ -72,7 +72,7 @@ func (p *proxySource) Fetch(ctx context.Context) (interface{}, error) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		answer, err := p.fetchLatestRoundFromProxy()
+		answer, err := p.fetchLatestRoundFromProxy(ctx)
 		proxyDataMu.Lock()
 		defer proxyDataMu.Unlock()
 		if err != nil {
@@ -83,7 +83,7 @@ func (p *proxySource) Fetch(ctx context.Context) (interface{}, error) {
 	}()
 	go func() {
 		defer wg.Done()
-		amount, err := p.fetchLinkAvailableForPayment()
+		amount, err := p.fetchLinkAvailableForPayment(ctx)
 		proxyDataMu.Lock()
 		defer proxyDataMu.Unlock()
 		if err != nil {
@@ -101,8 +101,9 @@ type latestRoundDataRes struct {
 	Answer string `json:"answer,omitempty"`
 }
 
-func (p *proxySource) fetchLatestRoundFromProxy() (*big.Int, error) {
+func (p *proxySource) fetchLatestRoundFromProxy(ctx context.Context) (*big.Int, error) {
 	res, err := p.client.ContractStore(
+		ctx,
 		p.terraFeedConfig.ProxyAddress,
 		[]byte(`"latest_round_data"`),
 	)
@@ -124,8 +125,9 @@ type linkAvailableForPaymentRes struct {
 	Amount string `json:"amount,omitempty"`
 }
 
-func (p *proxySource) fetchLinkAvailableForPayment() (*big.Int, error) {
+func (p *proxySource) fetchLinkAvailableForPayment(ctx context.Context) (*big.Int, error) {
 	res, err := p.client.ContractStore(
+		ctx,
 		p.terraFeedConfig.ContractAddress,
 		[]byte(`"link_available_for_payment"`),
 	)
