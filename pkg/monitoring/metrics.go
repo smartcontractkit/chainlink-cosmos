@@ -109,4 +109,17 @@ func (d *defaultMetrics) Cleanup(
 	if !proxyAnswers.Delete(labels) {
 		d.log.Errorw("failed to delete metric", "name", "proxy_answers", "labels", labels)
 	}
+	linkLeftLabels := prometheus.Labels{
+		"feed_id":         feedID,
+		"chain_id":        chainID,
+		"contract_status": contractStatus,
+		"contract_type":   contractType,
+		"feed_name":       feedName,
+		"feed_path":       feedPath,
+		"network_id":      networkID,
+		"network_name":    networkName,
+	}
+	if !linkAvailableForPayment.Delete(linkLeftLabels) {
+		d.log.Errorw("failed to delete metric", "name", "link_available_for_payment", "labels", linkLeftLabels)
+	}
 }
