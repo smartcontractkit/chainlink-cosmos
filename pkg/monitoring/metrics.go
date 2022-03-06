@@ -10,6 +10,7 @@ import (
 type Metrics interface {
 	SetProxyAnswersRaw(answer float64, proxyContractAddress, feedID, chainID, contractStatus, contractType, feedName, feedPath, networkID, networkName string)
 	SetProxyAnswers(answer float64, proxyContractAddress, feedID, chainID, contractStatus, contractType, feedName, feedPath, networkID, networkName string)
+	SetLinkAvailableForPayment(amount float64, feedID, chainID, contractStatus, contractType, feedName, feedPath, networkID, networkName string)
 	Cleanup(proxyContractAddress, feedID, chainID, contractStatus, contractType, feedName, feedPath, networkID, networkName string)
 }
 
@@ -27,6 +28,13 @@ var (
 			Help: "Reports the latest answer from the proxy contract divided by the feed's multiplier parameter.",
 		},
 		[]string{"proxy_contract_address", "feed_id", "chain_id", "contract_status", "contract_type", "feed_name", "feed_path", "network_id", "network_name"},
+	)
+	linkAvailableForPayment = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "link_available_for_payments",
+			Help: "Reports the amount of link the contract can use to make payments to node operators. This may be different from the LINK balance of the contract since that can contain debt",
+		},
+		[]string{"feed_id", "chain_id", "contract_status", "contract_type", "feed_name", "feed_path", "network_id", "network_name"},
 	)
 )
 
@@ -65,6 +73,19 @@ func (d *defaultMetrics) SetProxyAnswers(answer float64, proxyContractAddress, f
 		"network_id":             networkID,
 		"network_name":           networkName,
 	}).Set(answer)
+}
+
+func (d *defaultMetrics) SetLinkAvailableForPayment(amount float64, feedID, chainID, contractStatus, contractType, feedName, feedPath, networkID, networkName string) {
+	linkAvailableForPayment.With(prometheus.Labels{
+		"feed_id":         feedID,
+		"chain_id":        chainID,
+		"contract_status": contractStatus,
+		"contract_type":   contractType,
+		"feed_name":       feedName,
+		"feed_path":       feedPath,
+		"network_id":      networkID,
+		"network_name":    networkName,
+	}).Set(amount)
 }
 
 func (d *defaultMetrics) Cleanup(

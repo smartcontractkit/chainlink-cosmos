@@ -14,6 +14,11 @@ func (_m *Metrics) Cleanup(proxyContractAddress string, feedID string, chainID s
 	_m.Called(proxyContractAddress, feedID, chainID, contractStatus, contractType, feedName, feedPath, networkID, networkName)
 }
 
+// SetLinkAvailableForPayment provides a mock function with given fields: amount, feedID, chainID, contractStatus, contractType, feedName, feedPath, networkID, networkName
+func (_m *Metrics) SetLinkAvailableForPayment(amount float64, feedID string, chainID string, contractStatus string, contractType string, feedName string, feedPath string, networkID string, networkName string) {
+	_m.Called(amount, feedID, chainID, contractStatus, contractType, feedName, feedPath, networkID, networkName)
+}
+
 // SetProxyAnswers provides a mock function with given fields: answer, proxyContractAddress, feedID, chainID, contractStatus, contractType, feedName, feedPath, networkID, networkName
 func (_m *Metrics) SetProxyAnswers(answer float64, proxyContractAddress string, feedID string, chainID string, contractStatus string, contractType string, feedName string, feedPath string, networkID string, networkName string) {
 	_m.Called(answer, proxyContractAddress, feedID, chainID, contractStatus, contractType, feedName, feedPath, networkID, networkName)
