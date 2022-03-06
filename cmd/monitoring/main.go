@@ -12,7 +12,7 @@ import (
 func main() {
 	ctx := context.Background()
 
-	coreLog := logger.NewLogger().With("project", "terra")
+	coreLog := logger.NewLogger()
 	log := logWrapper{coreLog}
 
 	terraConfig, err := monitoring.ParseTerraConfig()
