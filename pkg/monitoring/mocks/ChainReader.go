@@ -3,6 +3,8 @@
 package mocks
 
 import (
+	context "context"
+
 	mock "github.com/stretchr/testify/mock"
 
 	query "github.com/cosmos/cosmos-sdk/types/query"
@@ -17,13 +19,13 @@ type ChainReader struct {
 	mock.Mock
 }
 
-// ContractStore provides a mock function with given fields: contractAddress, queryMsg
-func (_m *ChainReader) ContractStore(contractAddress types.AccAddress, queryMsg []byte) ([]byte, error) {
-	ret := _m.Called(contractAddress, queryMsg)
+// ContractStore provides a mock function with given fields: ctx, contractAddress, queryMsg
+func (_m *ChainReader) ContractStore(ctx context.Context, contractAddress types.AccAddress, queryMsg []byte) ([]byte, error) {
+	ret := _m.Called(ctx, contractAddress, queryMsg)
 
 	var r0 []byte
-	if rf, ok := ret.Get(0).(func(types.AccAddress, []byte) []byte); ok {
-		r0 = rf(contractAddress, queryMsg)
+	if rf, ok := ret.Get(0).(func(context.Context, types.AccAddress, []byte) []byte); ok {
+		r0 = rf(ctx, contractAddress, queryMsg)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
@@ -31,8 +33,8 @@ func (_m *ChainReader) ContractStore(contractAddress types.AccAddress, queryMsg 
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(types.AccAddress, []byte) error); ok {
-		r1 = rf(contractAddress, queryMsg)
+	if rf, ok := ret.Get(1).(func(context.Context, types.AccAddress, []byte) error); ok {
+		r1 = rf(ctx, contractAddress, queryMsg)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -40,13 +42,13 @@ func (_m *ChainReader) ContractStore(contractAddress types.AccAddress, queryMsg 
 	return r0, r1
 }
 
-// TxsEvents provides a mock function with given fields: events, paginationParams
-func (_m *ChainReader) TxsEvents(events []string, paginationParams *query.PageRequest) (*tx.GetTxsEventResponse, error) {
-	ret := _m.Called(events, paginationParams)
+// TxsEvents provides a mock function with given fields: ctx, events, paginationParams
+func (_m *ChainReader) TxsEvents(ctx context.Context, events []string, paginationParams *query.PageRequest) (*tx.GetTxsEventResponse, error) {
+	ret := _m.Called(ctx, events, paginationParams)
 
 	var r0 *tx.GetTxsEventResponse
-	if rf, ok := ret.Get(0).(func([]string, *query.PageRequest) *tx.GetTxsEventResponse); ok {
-		r0 = rf(events, paginationParams)
+	if rf, ok := ret.Get(0).(func(context.Context, []string, *query.PageRequest) *tx.GetTxsEventResponse); ok {
+		r0 = rf(ctx, events, paginationParams)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*tx.GetTxsEventResponse)
@@ -54,8 +56,8 @@ func (_m *ChainReader) TxsEvents(events []string, paginationParams *query.PageRe
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func([]string, *query.PageRequest) error); ok {
-		r1 = rf(events, paginationParams)
+	if rf, ok := ret.Get(1).(func(context.Context, []string, *query.PageRequest) error); ok {
+		r1 = rf(ctx, events, paginationParams)
 	} else {
 		r1 = ret.Error(1)
 	}
