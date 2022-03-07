@@ -23,6 +23,16 @@ func TestErrMatch(t *testing.T) {
 	m := failedMsgIndexRe.FindStringSubmatch(errStr)
 	require.Equal(t, 2, len(m))
 	assert.Equal(t, m[1], "0")
+
+	errStr = "rpc error: code = InvalidArgument desc = failed to execute message; message index: 10: Error parsing into type my_first_contract::msg::ExecuteMsg: unknown variant `blah`, expected `increment` or `reset`: execute wasm contract failed: invalid request"
+	m = failedMsgIndexRe.FindStringSubmatch(errStr)
+	require.Equal(t, 2, len(m))
+	assert.Equal(t, m[1], "10")
+
+	errStr = "rpc error: code = InvalidArgument desc = failed to execute message; message index: 10000: Error parsing into type my_first_contract::msg::ExecuteMsg: unknown variant `blah`, expected `increment` or `reset`: execute wasm contract failed: invalid request"
+	m = failedMsgIndexRe.FindStringSubmatch(errStr)
+	require.Equal(t, 2, len(m))
+	assert.Equal(t, m[1], "10000")
 }
 
 func TestBatchSim(t *testing.T) {
