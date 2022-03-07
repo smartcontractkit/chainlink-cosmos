@@ -52,7 +52,8 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   try {
     assert.equal(localConfig, proposal.offchain_config)
   } catch (err) {
-    throw new Error(`RDD configuration does not correspond the proposal configuration. Error: ${err.message}`)
+    console.log(err)
+    throw new Error(`RDD configuration does not correspond the proposal configuration.`)
   }
   logger.success('RDD Generated configuration matches with onchain proposal configuration')
 
