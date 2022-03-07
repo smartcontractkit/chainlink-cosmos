@@ -149,14 +149,13 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
 
   async simulate(signer: AccAddress, msgs: (MsgExecuteContract | MsgSend)[]): Promise<Number> {
     const account = await this.provider.auth.accountInfo(signer)
+
     const signerData: SignerData = {
       sequenceNumber: account.getSequenceNumber(),
       publicKey: account.getPublicKey(),
     }
 
-    const tx = await this.wallet.createTx({
-      msgs,
-    })
+    const tx = await this.provider.tx.create([{ ...signerData, address: signer }], { msgs })
 
     // gas estimation successful => tx is valid (simulation is run under the hood)
     return await this.provider.tx.estimateGas(tx, {
