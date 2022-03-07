@@ -94,7 +94,6 @@ export function printDiff(existing: Object, incoming: Object, options?: DIFF_OPT
 export const longsInObjToNumbers = (obj) => {
   const copy = deepCopy(obj)
   for (const [key, value] of Object.entries(obj)) {
-
     if (Array.isArray(value) || Buffer.isBuffer(value) || value instanceof Date) {
       // skip non-convertable arrays and buffers
       continue
@@ -107,7 +106,7 @@ export const longsInObjToNumbers = (obj) => {
     }
 
     if (typeof value === 'object') {
-      // for all other object recursively 
+      // for all nested objects repeat recursively
       copy[key] = longsInObjToNumbers(value)
     }
   }

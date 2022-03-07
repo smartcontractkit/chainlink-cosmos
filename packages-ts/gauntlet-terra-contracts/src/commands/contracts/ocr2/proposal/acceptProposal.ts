@@ -5,7 +5,7 @@ import { CATEGORIES } from '../../../../lib/constants'
 import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../../abstract/executionWrapper'
 import { serializeOffchainConfig, deserializeConfig } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
-import { getLatestOCRConfig, longsToNumber, printDiff } from '../../../../lib/inspection'
+import { getLatestOCRConfig, longsInObjToNumbers, printDiff } from '../../../../lib/inspection'
 import assert from 'assert'
 
 type CommandInput = {
@@ -50,7 +50,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     },
   })
   const offchainConfigInProposal = await deserializeConfig(Buffer.from(proposal.offchain_config, 'base64'))
-  const configInProposal = longsToNumber({
+  const configInProposal = longsInObjToNumbers({
     ...offchainConfigInProposal,
     offchainPublicKeys: offchainConfigInProposal.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
     f: proposal.f,
@@ -68,7 +68,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const offchainConfigInContract = event?.offchain_config
     ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
     : ({} as OffchainConfig)
-  const configInContract = longsToNumber({
+  const configInContract = longsInObjToNumbers({
     ...offchainConfigInContract,
     offchainPublicKeys: offchainConfigInContract.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
     f: event?.f[0],
