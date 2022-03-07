@@ -25,21 +25,21 @@ download:
 	go mod download
 
 # Note for linux users running this command, should be ran inside of a nix shell
+#  for example: nix develop -c make install
 install:
+ifeq ($(OSFLAG),$(WINDOWS))
+		echo "If you are running windows and know how to install what is needed, please contribute by adding it here!"
+		exit 1
+endif
 ifeq ($(OSFLAG),$(OSX))
 		brew install asdf
 		asdf plugin-add golang https://github.com/kennyp/asdf-golang.git || true
-		asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git || true
+		asdf plugin-add nodejs https://github.com/asdf-vm/asdf-nodejs.git || true
 		asdf plugin-add ginkgo https://github.com/jimmidyson/asdf-ginkgo.git || true
 		asdf install
 endif
 ifeq ($(OSFLAG),$(LINUX))
-		ginkgo_version = $(shell cat ./.tool-versions | grep ginkgo | sed -En "s/ginkgo.(.*)/\1/p")
-		go install github.com/onsi/ginkgo/v2/ginkgo@$(ginkgo_version)
-endif
-ifeq ($(OSFLAG),$(WINDOWS))
-		echo "If you are running windows and know how to install what is needed, please contribute by adding it here!"
-		exit 1
+		go install github.com/onsi/ginkgo/v2/ginkgo@v$(shell cat ./.tool-versions | grep ginkgo | sed -En "s/ginkgo.(.*)/\1/p")
 endif
 
 build_js:
