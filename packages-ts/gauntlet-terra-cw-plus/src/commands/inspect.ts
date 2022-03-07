@@ -24,7 +24,7 @@ export default class Inspect extends TerraCommand {
     const proposalId = Number(this.flags.proposal)
     const state = await this.fetchState(msig, proposalId)
 
-    logger.log(state)
+    logger.info(makeInspectionMessage(state))
     return {} as Result<TransactionResponse>
   }
 }
@@ -33,33 +33,44 @@ export const fetchProposalState = (query: (contractAddress: string, query: any) 
   multisig: string,
   proposalId?: number,
 ): Promise<State> => {
-  const groupState = await query(multisig, {
-    list_voters: {},
-  })
-  const owners = groupState.voters.map((m) => m.addr)
-  const thresholdState = await query(multisig, {
-    threshold: {},
-  })
-  const threshold = thresholdState.absolute_count.total_weight
+  const _queryMultisig = (params) => () => query(multisig, params)
+  const multisigQueries = [
+    _queryMultisig({
+      list_voters: {},
+    }),
+    _queryMultisig({
+      threshold: {},
+    }),
+  ]
+  const proposalQueries = [
+    _queryMultisig({
+      proposal: {
+        proposal_id: proposalId,
+      },
+    }),
+    _queryMultisig({
+      list_votes: {
+        proposal_id: proposalId,
+      },
+    }),
+  ]
+  const queries = !!proposalId ? multisigQueries.concat(proposalQueries) : multisigQueries
+
+  const [groupState, thresholdState, proposalState, votes] = await Promise.all(queries.map((q) => q()))
+
+  const multisigState = {
+    threshold: thresholdState.absolute_count.weight,
+    owners: groupState.voters.map((m) => m.addr),
+  }
   if (!proposalId) {
     return {
-      threshold,
-      nextAction: Action.CREATE,
-      owners,
-      approvers: [],
+      multisig: multisigState,
+      proposal: {
+        nextAction: Action.CREATE,
+        approvers: [],
+      },
     }
   }
-  const proposalState = await query(multisig, {
-    proposal: {
-      proposal_id: proposalId,
-    },
-  })
-  const votes = await query(multisig, {
-    list_votes: {
-      proposal_id: proposalId,
-    },
-  })
-  const status = proposalState.status
   const toNextAction = {
     passed: Action.EXECUTE,
     open: Action.APPROVE,
@@ -67,14 +78,44 @@ export const fetchProposalState = (query: (contractAddress: string, query: any) 
     rejected: Action.NONE,
     executed: Action.NONE,
   }
-
   return {
-    threshold,
-    nextAction: toNextAction[status],
-    owners,
-    currentStatus: status,
-    data: proposalState.msgs,
-    approvers: votes.votes.filter((v) => v.vote === Vote.YES).map((v) => v.voter),
-    expiresAt: proposalState.expires.at_time ? new Date(proposalState.expires.at_time / 1e6) : null,
+    multisig: multisigState,
+    proposal: {
+      id: proposalId,
+      nextAction: toNextAction[proposalState.status],
+      currentStatus: proposalState.status,
+      data: proposalState.msgs,
+      approvers: votes.votes.filter((v) => v.vote === Vote.YES).map((v) => v.voter),
+      expiresAt: proposalState.expires.at_time ? new Date(proposalState.expires.at_time / 1e6) : null,
+    },
   }
+}
+
+export const makeInspectionMessage = (state: State): string => {
+  const newline = `\n`
+  const indent = '  '.repeat(2)
+  const ownersList = state.multisig.owners.map((o) => `\n${indent.repeat(2)} - ${o}`).join('')
+  const multisigMessage = `Multisig State:
+    - Threshold: ${state.multisig.threshold}
+    - Total Owners: ${state.multisig.owners.length}
+    - Owners List: ${ownersList}`
+
+  let proposalMessage = `Proposal State:
+    - Next Action: ${state.proposal.nextAction.toUpperCase()}`
+
+  if (!state.proposal.id) return multisigMessage.concat(newline)
+
+  const approversList = state.proposal.approvers.map((a) => `\n${indent.repeat(2)} - ${a}`).join('')
+  proposalMessage = proposalMessage.concat(`
+    - Proposal ID: ${state.proposal.id}
+    - Total Approvers: ${state.proposal.approvers.length}
+    - Approvers List: ${approversList}
+    `)
+
+  if (state.proposal.expiresAt) {
+    const expiration = `- Approvals expire at ${state.proposal.expiresAt}`
+    proposalMessage = proposalMessage.concat(expiration)
+  }
+
+  return multisigMessage.concat(newline).concat(proposalMessage).concat(newline)
 }

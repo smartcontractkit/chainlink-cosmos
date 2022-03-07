@@ -9,7 +9,7 @@ import (
 	"github.com/smartcontractkit/integrations-framework/actions"
 )
 
-var _ = Describe("Solana chaos suite", func() {
+var _ = Describe("Terra chaos suite", func() {
 	var state = &common.OCRv2State{}
 	BeforeEach(func() {
 		By("Deploying OCRv2 cluster", func() {
@@ -20,7 +20,7 @@ var _ = Describe("Solana chaos suite", func() {
 	})
 	It("Can tolerate chaos experiments", func() {
 		By("Stable and working", func() {
-			state.ValidateRoundsAfter(time.Now(), 10)
+			state.ValidateRoundsAfter(time.Now(), 10, false)
 		})
 		By("Can work with faulty nodes offline", func() {
 			state.CanWorkWithFaultyNodesOffline()

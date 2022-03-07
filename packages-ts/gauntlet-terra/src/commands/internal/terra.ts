@@ -1,16 +1,21 @@
 import { Result, WriteCommand } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
-import { EventsByType, MsgStoreCode, AccAddress, TxLog } from '@terra-money/terra.js'
 import { SignMode } from '@terra-money/terra.proto/cosmos/tx/signing/v1beta1/signing'
-
 import { withProvider, withWallet, withCodeIds, withNetwork } from '../middlewares'
 import {
+  EventsByType,
+  MsgStoreCode,
+  AccAddress,
+  TxLog,
+  MsgSend,
   BlockTxBroadcastResult,
   LCDClient,
   MsgExecuteContract,
   MsgInstantiateContract,
   TxError,
   Wallet,
+  Msg,
+  SignerData,
 } from '@terra-money/terra.js'
 import { TransactionResponse } from '../types'
 import { LedgerKey } from '../ledgerKey'
@@ -22,9 +27,16 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   provider: LCDClient
   contracts: string[]
   public codeIds: CodeIds
+
   abstract execute: () => Promise<Result<TransactionResponse>>
-  abstract makeRawTransaction: (signer: AccAddress) => Promise<MsgExecuteContract>
-  afterExecute?: (response: Result<TransactionResponse>) => any
+  abstract makeRawTransaction: (signer: AccAddress) => Promise<MsgExecuteContract | MsgSend>
+  // Preferable option to initialize the command instead of new TerraCommand. This should be an static option to construct the command
+  buildCommand?: (flags, args) => Promise<TerraCommand>
+  beforeExecute: (context?: any) => Promise<void>
+
+  afterExecute = async (response: Result<TransactionResponse>): Promise<void> => {
+    logger.success(`Execution finished at transaction: ${response.responses[0].tx.hash}`)
+  }
 
   constructor(flags, args) {
     super(flags, args)
@@ -65,7 +77,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     return await this.provider.wasm.contractQuery(address, input, params)
   }
 
-  signAndSend = async (messages: MsgExecuteContract[]): Promise<TransactionResponse> => {
+  signAndSend = async (messages: Msg[]): Promise<TransactionResponse> => {
     try {
       logger.loading('Signing transaction...')
       const tx = await this.wallet.createAndSignTx({
@@ -133,5 +145,22 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     const res = await this.provider.tx.broadcast(tx)
 
     return this.wrapResponse(res)
+  }
+
+  async simulate(signer: AccAddress, msgs: (MsgExecuteContract | MsgSend)[]): Promise<Number> {
+    const account = await this.provider.auth.accountInfo(signer)
+    const signerData: SignerData = {
+      sequenceNumber: account.getSequenceNumber(),
+      publicKey: account.getPublicKey(),
+    }
+
+    const tx = await this.wallet.createTx({
+      msgs,
+    })
+
+    // gas estimation successful => tx is valid (simulation is run under the hood)
+    return await this.provider.tx.estimateGas(tx, {
+      signers: [signerData],
+    })
   }
 }

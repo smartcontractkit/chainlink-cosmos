@@ -78,7 +78,8 @@ type Msg struct {
 	ChainID    string `db:"terra_chain_id"`
 	ContractID string
 	State      State
-	Raw        []byte // serialized msg
+	Type       string // cosmos-sdk/types.MsgTypeURL()
+	Raw        []byte // proto.Marshal()
 	TxHash     *string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time

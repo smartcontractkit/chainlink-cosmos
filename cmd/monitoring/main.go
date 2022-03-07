@@ -31,9 +31,10 @@ func main() {
 		log.Fatalw("failed to create a terra client", "error", err)
 		return
 	}
+	chainReader := monitoring.NewChainReader(client)
 
 	envelopeSourceFactory := monitoring.NewEnvelopeSourceFactory(
-		client,
+		chainReader,
 		log.With("component", "source-envelope"),
 	)
 	txResultsFactory := monitoring.NewTxResultsSourceFactory(
@@ -52,6 +53,21 @@ func main() {
 		log.Fatalw("failed to build entrypoint", "error", err)
 		return
 	}
+
+	proxySourceFactory := monitoring.NewProxySourceFactory(
+		chainReader,
+		log.With("component", "source-proxy"),
+	)
+	if entrypoint.Config.Feature.TestOnlyFakeReaders {
+		proxySourceFactory = monitoring.NewFakeProxySourceFactory(log.With("component", "fake-proxy-source"))
+	}
+	entrypoint.SourceFactories = append(entrypoint.SourceFactories, proxySourceFactory)
+
+	prometheusExporterFactory := monitoring.NewPrometheusExporterFactory(
+		log.With("component", "terra-prometheus-exporter"),
+		monitoring.NewMetrics(log.With("component", "terra-metrics")),
+	)
+	entrypoint.ExporterFactories = append(entrypoint.ExporterFactories, prometheusExporterFactory)
 
 	entrypoint.Run()
 	log.Info("monitor stopped")

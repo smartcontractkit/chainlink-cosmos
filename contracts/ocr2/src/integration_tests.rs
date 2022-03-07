@@ -801,3 +801,207 @@ fn set_link_token() {
         .unwrap();
     assert_eq!(token_addr, new_link_token);
 }
+
+#[test]
+fn revert_payouts_correctly() {
+    let mut env = setup();
+
+    // set billing
+    let observation_payment = Uint128::from(5 * GIGA);
+    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
+    let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
+    let msg = ExecuteMsg::SetBilling {
+        config: Billing {
+            recommended_gas_price_micro: recommended_gas_price,
+            observation_payment_gjuels: 5,
+            transmission_payment_gjuels: 0,
+            ..Default::default()
+        },
+    };
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    // withdraw all LINK
+    let available: LinkAvailableForPaymentResponse = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkAvailableForPayment)
+        .unwrap();
+    let msg = ExecuteMsg::WithdrawFunds {
+        recipient: env.owner.to_string(),
+        amount: Uint128::from(available.amount as u128),
+    };
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+    let available: LinkAvailableForPaymentResponse = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkAvailableForPayment)
+        .unwrap();
+    assert_eq!(0, available.amount);
+
+    // transmit round
+    transmit_report(&mut env, 1, 1);
+
+    // check owed balance
+    let transmitter = Addr::unchecked("transmitter0");
+    let payee = Addr::unchecked("payee0");
+
+    let owed: Uint128 = env
+        .router
+        .wrap()
+        .query_wasm_smart(
+            &env.ocr2_addr,
+            &QueryMsg::OwedPayment {
+                transmitter: transmitter.to_string(),
+            },
+        )
+        .unwrap();
+    assert_eq!(reimbursement + observation_payment, owed);
+
+    // attempt to withdraw should fail without LINK token balance
+    // tests the underlying `pay_oracle` function
+    let msg = ExecuteMsg::WithdrawPayment {
+        transmitter: transmitter.to_string(),
+    };
+    assert!(env
+        .router
+        .execute_contract(payee.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .is_err());
+
+    // owed balance should not have changed
+    let owed_new: Uint128 = env
+        .router
+        .wrap()
+        .query_wasm_smart(
+            &env.ocr2_addr,
+            &QueryMsg::OwedPayment {
+                transmitter: transmitter.to_string(),
+            },
+        )
+        .unwrap();
+    assert_eq!(owed, owed_new);
+
+    // attempt to change LINK token to trigger paying all oracles
+    // tests the underlying `pay_oracles` function
+    let new_link_token = env
+        .router
+        .instantiate_contract(
+            env.link_token_id,
+            env.owner.clone(),
+            &cw20_base::msg::InstantiateMsg {
+                name: String::from("Chainlink"),
+                symbol: String::from("LINK"),
+                decimals: 18,
+                initial_balances: vec![Cw20Coin {
+                    address: env.owner.to_string(),
+                    amount: Uint128::from(1_000_000_000_u128),
+                }],
+                mint: None,
+                marketing: None,
+            },
+            &[],
+            "LINK2",
+            None,
+        )
+        .unwrap();
+    let msg = ExecuteMsg::SetLinkToken {
+        link_token: new_link_token.to_string(),
+        recipient: env.owner.to_string(),
+    };
+    assert!(env
+        .router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .is_err());
+
+    // oracles owed balance should not have changed
+    for transmitter in env
+        .transmitters
+        .iter()
+        .enumerate()
+        .map(|(i, _)| Addr::unchecked(format!("transmitter{}", i)))
+    {
+        let balance: Uint128 = env
+            .router
+            .wrap()
+            .query_wasm_smart(
+                &env.ocr2_addr,
+                &QueryMsg::OwedPayment {
+                    transmitter: transmitter.to_string(),
+                },
+            )
+            .unwrap();
+
+        if transmitter == "transmitter0" {
+            assert_eq!(balance, observation_payment + reimbursement);
+        } else {
+            assert_eq!(balance, observation_payment);
+        }
+    }
+}
+
+#[test]
+fn set_billing_payout() {
+    let mut env = setup();
+    // expected in juels
+    let observation_payment = Uint128::from(5 * GIGA);
+    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
+
+    // -- set billing
+    // price in uLUNA
+    let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
+    let msg = ExecuteMsg::SetBilling {
+        config: Billing {
+            recommended_gas_price_micro: recommended_gas_price,
+            observation_payment_gjuels: 5,
+            transmission_payment_gjuels: 0,
+            ..Default::default()
+        },
+    };
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    // -- call transmit
+    transmit_report(&mut env, 1, 1);
+
+    // -- set billing again
+    let msg = ExecuteMsg::SetBilling {
+        config: Billing {
+            recommended_gas_price_micro: recommended_gas_price,
+            observation_payment_gjuels: 1,
+            transmission_payment_gjuels: 1,
+            ..Default::default()
+        },
+    };
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    // oracles should be paid out (same as changing LINK token)
+    for payee in env
+        .transmitters
+        .iter()
+        .enumerate()
+        .map(|(i, _)| Addr::unchecked(format!("payee{}", i)))
+    {
+        let cw20::BalanceResponse { balance } = env
+            .router
+            .wrap()
+            .query_wasm_smart(
+                env.link_token_addr.to_string(),
+                &cw20::Cw20QueryMsg::Balance {
+                    address: payee.to_string(),
+                },
+            )
+            .unwrap();
+
+        if payee == "payee0" {
+            assert_eq!(balance, observation_payment + reimbursement);
+        } else {
+            assert_eq!(balance, observation_payment);
+        }
+    }
+}

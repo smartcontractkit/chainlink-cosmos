@@ -255,11 +255,17 @@ func (m *OCRv2State) ValidateNoRoundsAfter(chaosStartTime time.Time) {
 }
 
 // ValidateRoundsAfter validates there are new rounds after some point in time
-func (m *OCRv2State) ValidateRoundsAfter(chaosStartTime time.Time, rounds int) {
+func (m *OCRv2State) ValidateRoundsAfter(chaosStartTime time.Time, rounds int, throughProxy bool) {
 	m.RoundsFound = 0
 	m.LastRoundTime = chaosStartTime
 	Eventually(func(g Gomega) {
-		answer, timestamp, roundID, err := m.OCR2.GetLatestRoundData()
+		var answer, timestamp, roundID uint64
+		var err error
+		if throughProxy {
+			answer, timestamp, roundID, err = m.OCR2Proxy.GetLatestRoundData()
+		} else {
+			answer, timestamp, roundID, err = m.OCR2.GetLatestRoundData()
+		}
 		g.Expect(err).ShouldNot(HaveOccurred())
 		roundTime := time.Unix(int64(timestamp), 0)
 		g.Expect(roundTime.After(m.LastRoundTime)).Should(BeTrue())
