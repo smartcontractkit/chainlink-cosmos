@@ -29,7 +29,7 @@ var _ = Describe("Terra OCRv2 @ocr-spec-migration", func() {
 				Fail("Provide CHAINLINK_VERSION_TO variable: a version on which we migrate")
 			}
 			state.DeployCluster(nodes, true)
-			state.ImitateSource(1*time.Second, 2, 10)
+			state.SetAllAdapterResponsesToTheSameValue(2)
 		})
 	})
 

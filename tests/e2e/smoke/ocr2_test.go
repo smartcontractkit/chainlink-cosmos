@@ -16,7 +16,7 @@ var _ = Describe("Terra OCRv2 @ocr2", func() {
 		state = &tc.OCRv2State{}
 		By("Deploying the cluster", func() {
 			state.DeployCluster(5, false)
-			state.ImitateSource(1*time.Second, 2, 10)
+			state.SetAllAdapterResponsesToTheSameValue(2)
 		})
 	})
 

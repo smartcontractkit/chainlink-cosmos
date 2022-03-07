@@ -15,7 +15,7 @@ var _ = Describe("Terra chaos suite", func() {
 		By("Deploying OCRv2 cluster", func() {
 			state.DeployCluster(5, true)
 			state.LabelChaosGroups()
-			state.ImitateSource(common.SourceChangeInterval, 2, 10)
+			state.SetAllAdapterResponsesToTheSameValue(2)
 		})
 	})
 	It("Can tolerate chaos experiments", func() {

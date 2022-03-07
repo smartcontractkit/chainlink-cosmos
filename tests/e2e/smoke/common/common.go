@@ -176,17 +176,6 @@ func (m *OCRv2State) SetAllAdapterResponsesToDifferentValues(responses []int) {
 	}
 }
 
-func (m *OCRv2State) ImitateSource(changeInterval time.Duration, min int, max int) {
-	go func() {
-		for {
-			m.SetAllAdapterResponsesToTheSameValue(min)
-			time.Sleep(changeInterval)
-			m.SetAllAdapterResponsesToTheSameValue(max)
-			time.Sleep(changeInterval)
-		}
-	}()
-}
-
 // CreateJobs creating OCR jobs and EA stubs
 func (m *OCRv2State) CreateJobs() {
 	m.SetAllAdapterResponsesToTheSameValue(5)
