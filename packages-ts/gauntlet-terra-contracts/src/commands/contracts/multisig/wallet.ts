@@ -3,8 +3,8 @@ import { CATEGORIES } from '../../../lib/constants'
 import { isValidAddress } from '../../../lib/utils'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
-// 7 days
-const DEFAULT_MULTISIG_EXPIRATION_TIME_IN_SECS = 7 * 24 * 60 * 60
+// 24 hours
+const DEFAULT_MULTISIG_EXPIRATION_TIME_IN_SECS = 24 * 60 * 60
 
 type Duration = {
   time: number // length of time in seconds
