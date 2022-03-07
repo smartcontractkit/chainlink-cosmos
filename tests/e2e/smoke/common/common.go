@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"os"
 	"time"
@@ -159,10 +160,25 @@ func (m *OCRv2State) DeployContracts() {
 	Expect(m.Err).ShouldNot(HaveOccurred())
 }
 
+func (m *OCRv2State) SetAllAdapterResponsesToTheSameValue(response int) {
+	for i := range m.Nodes {
+		path := fmt.Sprintf("/node%d", i)
+		m.Err = m.MockServer.SetValuePath(path, response)
+		Expect(m.Err).ShouldNot(HaveOccurred())
+	}
+}
+
+func (m *OCRv2State) SetAllAdapterResponsesToDifferentValues(responses []int) {
+	Expect(len(responses)).Should(BeNumerically("==", len(m.Nodes)))
+	for i := range m.Nodes {
+		m.Err = m.MockServer.SetValuePath(fmt.Sprintf("/node%d", i), responses[i])
+		Expect(m.Err).ShouldNot(HaveOccurred())
+	}
+}
+
 // CreateJobs creating OCR jobs and EA stubs
 func (m *OCRv2State) CreateJobs() {
-	m.Err = m.MockServer.SetValuePath("/variable", 5)
-	Expect(m.Err).ShouldNot(HaveOccurred())
+	m.SetAllAdapterResponsesToTheSameValue(5)
 	m.Err = m.MockServer.SetValuePath("/juels", 1)
 	Expect(m.Err).ShouldNot(HaveOccurred())
 	m.Err = common.CreateJobs(m.OCR2.Address(), m.Nodes, m.NodeKeysBundle, m.MockServer)
