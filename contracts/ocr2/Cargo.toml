@@ -35,6 +35,7 @@ hex = "0.4.3"
 access-controller = { version = "0.1", path = "../access-controller", default-features = false, features = ["library"] }
 deviation-flagging-validator = { version = "0.1", path = "../deviation-flagging-validator", default-features = false, features = ["library"] }
 owned = { version = "0.1", path = "../../crates/owned" }
+anyhow = "1.0"
 
 [dev-dependencies]
 cosmwasm-schema = { version = "0.16.0" }

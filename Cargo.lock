@@ -989,6 +989,7 @@ name = "ocr2"
 version = "0.1.0"
 dependencies = [
  "access-controller",
+ "anyhow",
  "blake2",
  "cosmwasm-schema",
  "cosmwasm-std",

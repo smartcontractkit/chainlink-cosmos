@@ -5,11 +5,12 @@ use crate::msg::{
     ExecuteMsg, InstantiateMsg, LatestConfigDetailsResponse, LatestTransmissionDetailsResponse,
     LinkAvailableForPaymentResponse, QueryMsg,
 };
+use anyhow::Result as AnyResult;
 use crate::state::{Billing, Round, Validator};
 use crate::Decimal;
 use cosmwasm_std::{to_binary, Addr, Binary, Empty, Uint128};
 use cw20::Cw20Coin;
-use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, AppBuilder, AppResponse, Contract, ContractWrapper, Executor};
 use deviation_flagging_validator as validator;
 use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes};
 use rand::thread_rng;
@@ -84,7 +85,8 @@ fn transmit_report(
     epoch: u32,
     round: u8,
     answer: i128,
-) -> cw_multi_test::AppResponse {
+    valid_sig: bool,
+) -> AnyResult<AppResponse> {
     // Build a report
     let len: u8 = 4;
     let mut report = Vec::new();
@@ -132,7 +134,11 @@ fn transmit_report(
 
             let mut result = Vec::new();
             result.extend_from_slice(&pk_bytes);
-            result.extend_from_slice(&sig_bytes);
+            if valid_sig {
+                result.extend_from_slice(&sig_bytes);
+            } else{
+                result.extend_from_slice(&[0]);
+            }
             Binary(result)
         })
         .collect();
@@ -144,11 +150,9 @@ fn transmit_report(
         signatures,
     };
 
-    let response = env
+    env
         .router
         .execute_contract(transmitter.clone(), env.ocr2_addr.clone(), &msg, &[])
-        .unwrap();
-    response
 }
 
 fn setup() -> Env {
@@ -411,8 +415,15 @@ fn transmit_happy_path() {
         .unwrap();
     assert_eq!(decimals, 18);
 
+    // Should revert
+    let res = transmit_report(&mut env, 1, 1, ANSWER, false);
+    assert!(res.is_err());
+    assert_eq!(res.err().unwrap().to_string(), "invalid signature");
+
     // -- call transmit
-    transmit_report(&mut env, 1, 1, ANSWER);
+    let res = transmit_report(&mut env, 1, 1, ANSWER, true);
+    assert!(!res.is_err());
+
 
     let transmitter = Addr::unchecked(env.transmitters.first().cloned().unwrap());
 
@@ -715,7 +726,7 @@ fn set_link_token() {
     assert_eq!(decimals, 18);
 
     // -- call transmit
-    transmit_report(&mut env, 1, 1, ANSWER);
+    transmit_report(&mut env, 1, 1, ANSWER, true);
 
     let transmitter = Addr::unchecked(env.transmitters.first().cloned().unwrap());
 
@@ -886,7 +897,7 @@ fn revert_payouts_correctly() {
     assert_eq!(0, available.amount);
 
     // transmit round
-    transmit_report(&mut env, 1, 1, ANSWER);
+    transmit_report(&mut env, 1, 1, ANSWER, true);
 
     // check owed balance
     let transmitter = Addr::unchecked("transmitter0");
@@ -1052,7 +1063,7 @@ fn transmit_failing_validation() {
         .unwrap();
 
     // -- call transmit
-    transmit_report(&mut env, 1, 1, 1);
+    transmit_report(&mut env, 1, 1, 1, true);
 
     // check validator didn't flag
     let flagged: bool = env
@@ -1069,7 +1080,7 @@ fn transmit_failing_validation() {
 
     // this should be out of threshold
     assert!(!validator::contract::is_valid(1, 1, 1000).unwrap());
-    transmit_report(&mut env, 1, 2, 1000);
+    transmit_report(&mut env, 1, 2, 1000, true);
 
     // check validator flagged
     let flagged: bool = env
@@ -1117,7 +1128,7 @@ fn set_billing_payout() {
         .unwrap();
 
     // -- call transmit
-    transmit_report(&mut env, 1, 1, ANSWER);
+    transmit_report(&mut env, 1, 1, ANSWER, true);
 
     // -- set billing again
     let msg = ExecuteMsg::SetBilling {
