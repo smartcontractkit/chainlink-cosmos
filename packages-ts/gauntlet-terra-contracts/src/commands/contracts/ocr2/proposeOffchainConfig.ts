@@ -3,7 +3,7 @@ import { AbstractInstruction, instructionToCommand, BeforeExecute, AfterExecute 
 import { time, BN } from '@chainlink/gauntlet-core/dist/utils'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
 import { CATEGORIES } from '../../../lib/constants'
-import { getLatestOCRConfig, printDiff } from '../../../lib/inspection'
+import { getLatestOCRConfigEvent, printDiff } from '../../../lib/inspection'
 import { serializeOffchainConfig, deserializeConfig, generateSecretWords } from '../../../lib/encoding'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 
@@ -110,7 +110,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 }
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
-  const event = await getLatestOCRConfig(context.provider, context.contract)
+  const event = await getLatestOCRConfigEvent(context.provider, context.contract)
   const offchainConfig = event?.offchain_config
     ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
     : ({} as OffchainConfig)

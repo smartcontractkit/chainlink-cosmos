@@ -7,7 +7,7 @@ import { deepCopy } from './utils'
 import Long from 'long'
 
 // TODO: find the right place for this function
-export const getLatestOCRConfig = async (provider: LCDClient, contract: AccAddress) => {
+export const getLatestOCRConfigEvent = async (provider: LCDClient, contract: AccAddress) => {
   // The contract only stores the block where the config was accepted. The tx log contains the config
   const latestConfigDetails: any = await provider.wasm.contractQuery(contract, 'latest_config_details' as any)
   const setConfigTx = providerUtils.filterTxsByEvent(
@@ -29,6 +29,8 @@ type DIFF_OPTIONS = {
   propertyName?: string
 }
 
+// TODO: find a better place for this function (likely gauntlet-core to expose it for other project)
+// https://github.com/smartcontractkit/chainlink-terra/issues/181
 export function printDiff(existing: Object, incoming: Object, options?: DIFF_OPTIONS) {
   const { initialIndent = '', propertyName = 'Object' } = options || {}
   logger.log(initialIndent, propertyName, '{')
@@ -116,7 +118,7 @@ export const longsInObjToNumbers = (obj) => {
 export const toComparableLongNumber = (v: Long) => new BN(Proto.Protobuf.longToString(v)).toString()
 
 export const toComparableNumber = (v: string | number | Long) => {
-  // Proto encoding will ignore falsy values.
+  // Proto encoding will ignore falsy values
   if (!v) return '0'
   if (typeof v === 'string' || typeof v === 'number') return new BN(v).toString()
   return toComparableLongNumber(v)

@@ -1,6 +1,6 @@
 import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
-import { getLatestOCRConfig, printDiff } from '../../../lib/inspection'
+import { getLatestOCRConfigEvent, printDiff } from '../../../lib/inspection'
 import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../abstract/executionWrapper'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 
@@ -76,14 +76,14 @@ const validateInput = (input: CommandInput): boolean => {
 }
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
-  const event = await getLatestOCRConfig(context.provider, context.contract)
+  const event = await getLatestOCRConfigEvent(context.provider, context.contract)
 
   const contractConfig = {
     f: event?.f[0],
     transmitters: event?.transmitters,
     signers: event?.signers.map((s) => Buffer.from(s, 'hex').toString('base64')),
     onchain_config: event?.onchain_config[0],
-    // todo: add payees
+    // todo: add payees to set_config event (https://github.com/smartcontractkit/chainlink-terra/issues/180)
   }
 
   const proposedConfig = {

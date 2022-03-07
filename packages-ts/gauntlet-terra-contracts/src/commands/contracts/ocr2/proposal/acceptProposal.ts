@@ -5,7 +5,7 @@ import { CATEGORIES } from '../../../../lib/constants'
 import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../../abstract/executionWrapper'
 import { serializeOffchainConfig, deserializeConfig } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
-import { getLatestOCRConfig, longsInObjToNumbers, printDiff } from '../../../../lib/inspection'
+import { getLatestOCRConfigEvent, longsInObjToNumbers, printDiff } from '../../../../lib/inspection'
 import assert from 'assert'
 
 type CommandInput = {
@@ -43,12 +43,20 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const { offchainConfig } = await serializeOffchainConfig(offchainLocalConfig, process.env.SECRET!, randomSecret)
   const localConfig = offchainConfig.toString('base64')
 
-  // Config in Proposal
   const proposal: any = await context.provider.wasm.contractQuery(context.contract, {
     proposal: {
       id: proposalId,
     },
   })
+
+  try {
+    assert.equal(localConfig, proposal.offchain_config)
+  } catch (err) {
+    throw new Error(`RDD configuration does not correspond the proposal configuration. Error: ${err.message}`)
+  }
+  logger.success('RDD Generated configuration matches with onchain proposal configuration')
+
+  // Config in Proposal
   const offchainConfigInProposal = await deserializeConfig(Buffer.from(proposal.offchain_config, 'base64'))
   const configInProposal = longsInObjToNumbers({
     ...offchainConfigInProposal,
@@ -56,15 +64,8 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     f: proposal.f,
   })
 
-  try {
-    assert.equal(localConfig, proposal.offchain_config)
-  } catch (err) {
-    throw new Error('RDD configuration does not correspond the proposal configuration')
-  }
-
-  logger.success('RDD Generated configuration matches with onchain proposal configuration')
   // Config in contract
-  const event = await getLatestOCRConfig(context.provider, context.contract)
+  const event = await getLatestOCRConfigEvent(context.provider, context.contract)
   const offchainConfigInContract = event?.offchain_config
     ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
     : ({} as OffchainConfig)
