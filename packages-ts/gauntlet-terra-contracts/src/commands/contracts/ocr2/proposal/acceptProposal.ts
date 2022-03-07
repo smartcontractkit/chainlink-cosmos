@@ -1,12 +1,18 @@
 import { Result } from '@chainlink/gauntlet-core'
-import { logger } from '@chainlink/gauntlet-core/dist/utils'
-import { TransactionResponse } from '@chainlink/gauntlet-terra'
+import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { TransactionResponse, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
-import { AbstractInstruction, instructionToCommand } from '../../../abstract/executionWrapper'
+import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../../abstract/executionWrapper'
+import { serializeOffchainConfig, deserializeConfig } from '../../../../lib/encoding'
+import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
+import { getLatestOCRConfigEvent, longsInObjToNumbers, printDiff } from '../../../../lib/inspection'
+import assert from 'assert'
 
 type CommandInput = {
   proposalId: string
   digest: string
+  offchainConfig: OffchainConfig
+  randomSecret: string
 }
 
 type ContractInput = {
@@ -16,10 +22,62 @@ type ContractInput = {
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
+  const { rdd: rddPath, secret } = flags
+
+  if (!rddPath) throw new Error('RDD flag is required. Provide it with --rdd flag')
+
+  const rdd = RDD.getRDD(rddPath)
+  const contract = args[0]
+
   return {
     proposalId: flags.proposalId,
     digest: flags.digest,
+    offchainConfig: getOffchainConfigInput(rdd, contract),
+    randomSecret: secret,
   }
+}
+
+const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
+  const { proposalId, randomSecret, offchainConfig: offchainLocalConfig } = context.input
+
+  const { offchainConfig } = await serializeOffchainConfig(offchainLocalConfig, process.env.SECRET!, randomSecret)
+  const localConfig = offchainConfig.toString('base64')
+
+  const proposal: any = await context.provider.wasm.contractQuery(context.contract, {
+    proposal: {
+      id: proposalId,
+    },
+  })
+
+  try {
+    assert.equal(localConfig, proposal.offchain_config)
+  } catch (err) {
+    throw new Error(`RDD configuration does not correspond the proposal configuration. Error: ${err.message}`)
+  }
+  logger.success('RDD Generated configuration matches with onchain proposal configuration')
+
+  // Config in Proposal
+  const offchainConfigInProposal = await deserializeConfig(Buffer.from(proposal.offchain_config, 'base64'))
+  const configInProposal = longsInObjToNumbers({
+    ...offchainConfigInProposal,
+    offchainPublicKeys: offchainConfigInProposal.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
+    f: proposal.f,
+  })
+
+  // Config in contract
+  const event = await getLatestOCRConfigEvent(context.provider, context.contract)
+  const offchainConfigInContract = event?.offchain_config
+    ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
+    : ({} as OffchainConfig)
+  const configInContract = longsInObjToNumbers({
+    ...offchainConfigInContract,
+    offchainPublicKeys: offchainConfigInContract.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
+    f: event?.f[0],
+  })
+
+  logger.info('Review the configuration difference from contract and proposal: green - added, red - deleted.')
+  printDiff(configInContract, configInProposal)
+  await prompt('Continue?')
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
@@ -31,22 +89,19 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
 
 const validateInput = (input: CommandInput): boolean => {
   if (!input.proposalId) throw new Error('A proposal ID is required. Provide it with --proposalId flag')
+  if (!input.randomSecret)
+    throw new Error('Secret generated at proposing offchain config is required. Provide it with --secret flag')
   return true
 }
 
-const afterExecute = (response: Result<TransactionResponse>) => {
+const afterExecute = () => async (response: Result<TransactionResponse>) => {
+  logger.success(`Proposal accepted on tx ${response.responses[0].tx.hash}`)
   const events = response.responses[0].tx.events
   if (!events) {
     logger.error('Could not retrieve events from tx')
     return
   }
-
   const digest = events[0]['wasm-set_config'].latest_config_digest[0]
-  logger.success(`Proposal accepted`)
-  logger.line()
-  logger.info('Important: To inspect the aggregator, save the following DIGEST:')
-  logger.info(digest)
-  logger.line()
   return {
     digest,
   }
@@ -62,6 +117,7 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   makeInput: makeCommandInput,
   validateInput: validateInput,
   makeContractInput: makeContractInput,
+  beforeExecute,
   afterExecute,
 }
 

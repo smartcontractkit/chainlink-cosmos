@@ -17,6 +17,10 @@ export type BeforeExecute<Input, ContractInput> = (
   context: ExecutionContext<Input, ContractInput>,
 ) => (signer: AccAddress) => Promise<void>
 
+export type AfterExecute<Input, ContractInput> = (
+  context: ExecutionContext<Input, ContractInput>,
+) => (response: Result<TransactionResponse>) => Promise<any>
+
 export interface AbstractInstruction<Input, ContractInput> {
   examples?: string[]
   instruction: {
@@ -28,7 +32,7 @@ export interface AbstractInstruction<Input, ContractInput> {
   validateInput: (input: Input) => boolean
   makeContractInput: (input: Input) => Promise<ContractInput>
   beforeExecute?: BeforeExecute<Input, ContractInput>
-  afterExecute?: (response: Result<TransactionResponse>) => any
+  afterExecute?: AfterExecute<Input, ContractInput>
 }
 
 const defaultBeforeExecute = <Input, ContractInput>(context: ExecutionContext<Input, ContractInput>) => async () => {
@@ -53,8 +57,6 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
       super(flags, args)
     }
 
-    afterExecute = instruction.afterExecute || this.afterExecute
-
     buildCommand = async (flags, args): Promise<TerraCommand> => {
       const input = await instruction.makeInput(flags, args)
       if (!instruction.validateInput(input)) {
@@ -72,6 +74,8 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
       this.beforeExecute = instruction.beforeExecute
         ? instruction.beforeExecute(executionContext)
         : defaultBeforeExecute(executionContext)
+
+      this.afterExecute = instruction.afterExecute ? instruction.afterExecute(executionContext) : this.afterExecute
 
       const abstractCommand = await makeAbstractCommand(id, this.flags, this.args, contractInput)
       await abstractCommand.invokeMiddlewares(abstractCommand, abstractCommand.middlewares)
@@ -91,7 +95,7 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
       await this.beforeExecute(this.wallet.key.accAddress)
 
       let response = await this.command.execute()
-      const data = this.afterExecute(response)
+      const data = await this.afterExecute(response)
       return !!data ? { ...response, data: { ...data } } : response
     }
   }

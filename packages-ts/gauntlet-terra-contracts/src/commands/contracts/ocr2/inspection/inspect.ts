@@ -5,7 +5,7 @@ import { CATEGORIES, TOKEN_UNIT } from '../../../../lib/constants'
 import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
 import { deserializeConfig } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
-import { toComparableNumber } from '../../../../lib/inspection'
+import { toComparableNumber, getLatestOCRConfigEvent } from '../../../../lib/inspection'
 import { LCDClient } from '@terra-money/terra.js'
 
 // Command input and expected info is the same here
@@ -82,12 +82,7 @@ const makeOnchainData = (provider: LCDClient) => async (
     }),
   )
 
-  // The contract only stores the block where the config was accepted. The tx log contains the config
-  const setConfigTx = providerUtils.filterTxsByEvent(
-    await providerUtils.getBlockTxs(provider, latestConfigDetails.block_number),
-    'wasm-set_config',
-  )
-  const event = setConfigTx?.logs?.[0].eventsByType['wasm-set_config']
+  const event = await getLatestOCRConfigEvent(provider, aggregator)
   const offchainConfig = event?.offchain_config
     ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
     : ({} as OffchainConfig)
