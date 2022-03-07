@@ -9,8 +9,8 @@ import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg } from '../lib/types'
 type ProposalAction = (
   signer: AccAddress,
   proposalId: number,
-  message: MsgExecuteContract | MsgSend,
-) => Promise<MsgExecuteContract>
+  messages: (MsgExecuteContract | MsgSend)[],
+) => Promise<MsgExecuteContract[]>
 
 export const wrapCommand = (command) => {
   return class Multisig extends TerraCommand {
@@ -35,8 +35,8 @@ export const wrapCommand = (command) => {
     }
 
     makeRawTransaction = async (signer: AccAddress, state?: State) => {
-      const message = await this.command.makeRawTransaction(this.multisig)
-      await this.command.simulate(this.multisig, [message])
+      const messages = await this.command.makeRawTransaction(this.multisig)
+      await this.command.simulate(this.multisig, messages)
       logger.info(`Command simulation successful.`)
 
       const operations = {
@@ -50,12 +50,12 @@ export const wrapCommand = (command) => {
 
       if (state.proposal.nextAction !== Action.CREATE) {
         this.require(
-          await this.isSameProposal(state.proposal.data, [this.toMsg(message)]),
+          await this.isSameProposal(state.proposal.data, messages.map(this.toMsg)),
           'The transaction generated is different from the proposal provided',
         )
       }
 
-      return operations[state.proposal.nextAction](signer, Number(this.flags.proposal), message)
+      return operations[state.proposal.nextAction](signer, Number(this.flags.proposal), messages)
     }
 
     isSameProposal = (proposalMsgs: (Cw3WasmMsg | Cw3BankMsg)[], generatedMsgs: (Cw3WasmMsg | Cw3BankMsg)[]) => {
@@ -90,18 +90,18 @@ export const wrapCommand = (command) => {
       }
     }
 
-    makeProposeTransaction: ProposalAction = async (signer, _, message) => {
+    makeProposeTransaction: ProposalAction = async (signer, _, messages) => {
       logger.info('Generating data for creating new proposal')
       const proposeInput = {
         propose: {
           description: command.id,
-          msgs: [this.toMsg(message)],
+          msgs: messages.map(this.toMsg)
           title: command.id,
           // TODO: Set expiration time
           // latest: { at_height: 7970238 },
         },
       }
-      return new MsgExecuteContract(signer, this.multisig, proposeInput)
+      return [new MsgExecuteContract(signer, this.multisig, proposeInput)]
     }
 
     makeAcceptTransaction: ProposalAction = async (signer, proposalId) => {
@@ -112,7 +112,7 @@ export const wrapCommand = (command) => {
           proposal_id: proposalId,
         },
       }
-      return new MsgExecuteContract(signer, this.multisig, approvalInput)
+      return [new MsgExecuteContract(signer, this.multisig, approvalInput)]
     }
 
     makeExecuteTransaction: ProposalAction = async (signer, proposalId) => {
@@ -122,7 +122,7 @@ export const wrapCommand = (command) => {
           proposal_id: proposalId,
         },
       }
-      return new MsgExecuteContract(signer, this.multisig, executeInput)
+      return new [MsgExecuteContract(signer, this.multisig, executeInput)]
     }
 
     fetchState = async (proposalId?: number): Promise<State> => {
@@ -173,7 +173,7 @@ export const wrapCommand = (command) => {
         await this.command.beforeExecute(this.multisig)
 
         await prompt(`Continue ${actionMessage[state.proposal.nextAction]} proposal?`)
-        const tx = await this.signAndSend([rawTx])
+        const tx = await this.signAndSend(rawTx)
         let response: Result<TransactionResponse> = {
           responses: [
             {
@@ -204,11 +204,11 @@ export const wrapCommand = (command) => {
       }
 
       // TODO: Test raw message
-      const msgData = Buffer.from(JSON.stringify(rawTx.execute_msg)).toString('base64')
+      const msgsData = rawTx.map((msg) => Buffer.from(JSON.stringify(msg.execute_msg)).toString('base64'))
       logger.line()
       logger.success(`Message generated succesfully for ${actionMessage[state.proposal.nextAction]} proposal`)
       logger.log()
-      logger.log(msgData)
+      logger.log(msgsData)
       logger.log()
       logger.line()
 
@@ -221,7 +221,7 @@ export const wrapCommand = (command) => {
         ],
         data: {
           proposalId,
-          message: msgData,
+          message: msgsData,
         },
       } as Result<TransactionResponse>
     }
