@@ -95,7 +95,7 @@ export const wrapCommand = (command) => {
       const proposeInput = {
         propose: {
           description: command.id,
-          msgs: messages.map(this.toMsg)
+          msgs: messages.map(this.toMsg),
           title: command.id,
           // TODO: Set expiration time
           // latest: { at_height: 7970238 },
@@ -122,7 +122,7 @@ export const wrapCommand = (command) => {
           proposal_id: proposalId,
         },
       }
-      return new [MsgExecuteContract(signer, this.multisig, executeInput)]
+      return [new MsgExecuteContract(signer, this.multisig, executeInput)]
     }
 
     fetchState = async (proposalId?: number): Promise<State> => {

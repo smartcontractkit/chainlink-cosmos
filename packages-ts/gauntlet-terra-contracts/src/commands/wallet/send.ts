@@ -41,13 +41,13 @@ export default class TransferLuna extends TerraCommand {
 
   makeRawTransaction = async (signer: AccAddress) => {
     if (!AccAddress.validate(this.input.destination)) throw new Error('Invalid destination address')
-    return new MsgSend(signer, this.input.destination, `${this.input.amount.toString()}uluna`)
+    return [new MsgSend(signer, this.input.destination, `${this.input.amount.toString()}uluna`)]
   }
 
   execute = async () => {
-    const message = await this.makeRawTransaction(this.wallet.key.accAddress)
+    const messages = await this.makeRawTransaction(this.wallet.key.accAddress)
     await this.beforeExecute()
-    const tx = await this.signAndSend([message])
+    const tx = await this.signAndSend(messages)
     const result = {
       responses: [
         {

@@ -5,6 +5,7 @@ import { TransactionResponse, TerraCommand } from '@chainlink/gauntlet-terra'
 import { Contract, CONTRACT_LIST, getContract, TerraABI, TERRA_OPERATIONS } from '../../lib/contracts'
 import { DEFAULT_RELEASE_VERSION } from '../../lib/constants'
 import schema from '../../lib/schema'
+import { parse as parseCSV } from 'csv-parse/sync'
 
 export interface AbstractOpts {
   contract: Contract
@@ -23,7 +24,10 @@ export const makeAbstractCommand = async (
   input?: any,
 ): Promise<AbstractCommand> => {
   const commandOpts = await parseInstruction(instruction, flags.version)
-  const params = parseParams(commandOpts, input || flags)
+  const params = Array.isArray(input) ?
+    input.map((x) => parseParams(commandOpts, x)) :
+    parseParams(commandOpts, input || flags)
+  
   return new AbstractCommand(flags, args, commandOpts, params)
 }
 
@@ -131,9 +135,14 @@ export default class AbstractCommand extends TerraCommand {
     this.contracts = [this.opts.contract.id]
   }
 
-  makeRawTransaction = async (signer: AccAddress): Promise<MsgExecuteContract> => {
+  makeRawTransaction = async (signer: AccAddress): Promise<MsgExecuteContract[]> => {
     const address = this.args[0]
-    return new MsgExecuteContract(signer, address, this.params)
+
+    if (Array.isArray(this.params)) {
+      return this.params.map((input) => new MsgExecuteContract(signer, address, input))
+    } else {
+      return [new MsgExecuteContract(signer, address, this.params)]
+    }   
   }
 
   abstractDeploy: AbstractExecute = async (params: any) => {

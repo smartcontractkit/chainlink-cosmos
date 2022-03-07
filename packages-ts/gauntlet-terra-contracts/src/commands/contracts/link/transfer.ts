@@ -43,6 +43,20 @@ const beforeExecute = (context: ExecutionContext<CommandInput, ContractInput>) =
   await prompt('Continue?')
 }
 
+const beforeBatchExecute = (context: BatchExecutionContext<CommandInputs, ContractInputs>) => async (): Promise<void> => {
+  const inputs = context.inputs
+  const contractInputs = context.contractInputs
+
+  assert(inputs.length == contractInputs.length, 'Length mismatch!')
+  for (let i = 0; i < inputs.length; i++) {
+    logger.info(
+      `Request to Send ${contractInputs[i].amount} (${inputs[i].amount}) Tokens to ${contractInputs[i].recipient}.`,
+    )
+  }
+
+  await prompt('Send all?')
+}
+
 const transferToken: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
     category: CATEGORIES.LINK,
