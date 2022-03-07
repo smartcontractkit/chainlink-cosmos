@@ -6,10 +6,10 @@ download:
 	go mod download
 
 install:
-	go get github.com/onsi/ginkgo/v2/ginkgo/generators@v2.1.2
-	go get github.com/onsi/ginkgo/v2/ginkgo/internal@v2.1.2
-	go get github.com/onsi/ginkgo/v2/ginkgo/labels@v2.1.2
-	go install github.com/onsi/ginkgo/v2/ginkgo
+	# go get github.com/onsi/ginkgo/v2/ginkgo/generators@v2.1.2
+	# go get github.com/onsi/ginkgo/v2/ginkgo/internal@v2.1.2
+	# go get github.com/onsi/ginkgo/v2/ginkgo/labels@v2.1.2
+	go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.2
 
 build_js:
 	yarn install --frozen-lockfile
