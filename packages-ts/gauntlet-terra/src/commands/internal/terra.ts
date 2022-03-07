@@ -113,7 +113,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   async deploy(codeId, instantiateMsg, migrationContract = undefined) {
     const instantiate = new MsgInstantiateContract(
       this.wallet.key.accAddress,
-      migrationContract,
+      migrationContract || this.wallet.key.accAddress,
       codeId,
       instantiateMsg,
     )
