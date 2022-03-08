@@ -5,7 +5,7 @@ export GO111MODULE ?= on
 LINUX=LINUX
 OSX=OSX
 WINDOWS=WIN32
-OSFLAG 				:=
+OSFLAG :=
 ifeq ($(OS),Windows_NT)
 	OSFLAG = $(WINDOWS)
 else
@@ -17,9 +17,6 @@ else
 		OSFLAG = $(OSX)
 	endif
 endif
-
-os:
-	echo $(OSFLAG)
 
 download:
 	go mod download
@@ -39,6 +36,7 @@ ifeq ($(OSFLAG),$(OSX))
 		asdf install
 endif
 ifeq ($(OSFLAG),$(LINUX))
+		# pulls the ginkgo version from the .tool-versions asdf file to install so we only have the version in one place
 		go install github.com/onsi/ginkgo/v2/ginkgo@v$(shell cat ./.tool-versions | grep ginkgo | sed -En "s/ginkgo.(.*)/\1/p")
 endif
 
