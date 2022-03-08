@@ -451,6 +451,11 @@ pub fn execute_accept_proposal(
         .iter()
         .map(|(_, transmitter, _)| attr("transmitters", transmitter));
 
+    let payees = proposal
+        .oracles
+        .iter()
+        .map(|(_, _, payee)| attr("payees", payee));
+
     response = response.add_event(
         Event::new("set_config")
             .add_attribute(
@@ -464,6 +469,7 @@ pub fn execute_accept_proposal(
             .add_attribute("config_count", config.config_count.to_string())
             .add_attributes(signers)
             .add_attributes(transmitters)
+            .add_attributes(payees)
             .add_attribute("f", proposal.f.to_string())
             .add_attribute("onchain_config", Binary(onchain_config).to_base64())
             .add_attribute(
@@ -629,6 +635,9 @@ fn validate_answer(deps: Deps, config: &Config, round_id: u32, answer: i128) -> 
         .answer;
 
     Some(
+        // Validation happens in a submessage, which will "will revert any partial state changes due to this message,
+        // but not revert any state changes in the calling contract." This way the validator going over the gas limit
+        // or failing validation won't block publishing to the feed.
         SubMsg::new(WasmMsg::Execute {
             contract_addr: validator.address.to_string(),
             msg: to_binary(&ValidatorMsg::Validate {
