@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"math/big"
 	"net/url"
 	"os"
+	"strconv"
 	"time"
 
-	cosmtypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/rs/zerolog/log"
@@ -35,6 +36,8 @@ const (
 type NetworkConfig struct {
 	ContractDeployed bool          `mapstructure:"contracts_deployed" yaml:"contracts_deployed"`
 	External         bool          `mapstructure:"external" yaml:"external"`
+	RetryAttempts    uint          `mapstructure:"retry_attempts" yaml:"retry_attempts"`
+	RetryDelay       time.Duration `mapstructure:"retry_delay" yaml:"retry_delay"`
 	Currency         string        `mapstructure:"currency" yaml:"currency"`
 	Name             string        `mapstructure:"name" yaml:"name"`
 	ID               string        `mapstructure:"id" yaml:"id"`
@@ -52,11 +55,10 @@ type TerraWallet struct {
 	Mnemonic   string
 	PrivateKey key.PrivKey
 	AccAddress msg.AccAddress
-	Address    cosmtypes.Address
 }
 
-// NewTerraWallet returns the instantiated Terra wallet based on a given Mnemonic with 0,0 derivation path
-func NewTerraWallet(mnemonic string) (*TerraWallet, error) {
+// LoadWallet returns the instantiated Terra wallet based on a given Mnemonic with 0,0 derivation path
+func LoadWallet(mnemonic string) (*TerraWallet, error) {
 	privKeyBz, err := key.DerivePrivKeyBz(mnemonic, key.CreateHDPath(0, 0))
 	if err != nil {
 		return nil, err
@@ -73,19 +75,56 @@ func NewTerraWallet(mnemonic string) (*TerraWallet, error) {
 		Mnemonic:   mnemonic,
 		PrivateKey: privKey,
 		AccAddress: accAddr,
-		Address:    privKey.PubKey().Address(),
 	}, nil
+}
+
+type EphemeralWallets struct {
+	Index   int
+	Wallets []*TerraWallet
+}
+
+func (ew *EphemeralWallets) Add(w *TerraWallet) {
+	ew.Wallets = append(ew.Wallets, w)
+}
+
+func (ew *EphemeralWallets) Next() *TerraWallet {
+	w := ew.Wallets[ew.Index]
+	ew.Index++
+	if ew.Index > len(ew.Wallets) {
+		ew.Index = 0
+	}
+	return w
 }
 
 // TerraLCDClient is terra lite chain client allowing to upload and interact with the contracts
 type TerraLCDClient struct {
 	*client.LCDClient
+	Clients       []ifclient.BlockchainClient
 	Wallets       []*TerraWallet
 	DefaultWallet *TerraWallet
 	BroadcastMode tx.BroadcastMode
 	ID            int
 	Config        *NetworkConfig
-	CurrentCodeID uint64
+}
+
+func NewEphemeralWallet() (*TerraWallet, error) {
+	m, err := key.CreateMnemonic()
+	if err != nil {
+		return nil, err
+	}
+	privKey, err := key.PrivKeyGen([]byte(m))
+	if err != nil {
+		return nil, err
+	}
+	accAddr, err := msg.AccAddressFromHex(privKey.PubKey().Address().String())
+	if err != nil {
+		return nil, err
+	}
+	return &TerraWallet{
+		Mnemonic:   m,
+		PrivateKey: privKey,
+		AccAddress: accAddr,
+	}, nil
 }
 
 func (t *TerraLCDClient) GetNetworkType() string {
@@ -109,7 +148,7 @@ func ClientURLSFunc() func(e *environment.Environment) ([]*url.URL, error) {
 	}
 }
 
-func ClientInitFunc() func(networkName string, networkConfig map[string]interface{}, urls []*url.URL) (ifclient.BlockchainClient, error) {
+func ClientInitFunc(contracts int) func(networkName string, networkConfig map[string]interface{}, urls []*url.URL) (ifclient.BlockchainClient, error) {
 	return func(networkName string, networkConfig map[string]interface{}, urls []*url.URL) (ifclient.BlockchainClient, error) {
 		d, err := yaml.Marshal(networkConfig)
 		if err != nil {
@@ -125,35 +164,44 @@ func ClientInitFunc() func(networkName string, networkConfig map[string]interfac
 			urlStrings = append(urlStrings, u.String())
 		}
 		cfg.URLs = urlStrings
-		c, err := NewClient(cfg)
+		rootClient, err := NewClient(cfg)
 		if err != nil {
 			return nil, err
 		}
-		if err := c.LoadWallets(cfg); err != nil {
+		if err := rootClient.LoadWallets(cfg); err != nil {
 			return nil, err
 		}
-		return c, nil
+		rootClient.LCDClient.PrivKey = rootClient.Wallets[0].PrivateKey
+		rootClient.DefaultWallet = rootClient.Wallets[0]
+		for i := 0; i < contracts; i++ {
+			c, err := NewClient(cfg)
+			if err != nil {
+				return nil, err
+			}
+			w, err := NewEphemeralWallet()
+			if err != nil {
+				return nil, err
+			}
+			if err := rootClient.Fund(w.AccAddress.String(), big.NewFloat(1e10)); err != nil {
+				return nil, err
+			}
+			c.LCDClient.PrivKey = w.PrivateKey
+			c.DefaultWallet = w
+			rootClient.Clients = append(rootClient.Clients, c)
+		}
+		return rootClient, nil
 	}
 }
 
 // NewClient derives deployer key and creates new LCD client for Terra
 func NewClient(cfg *NetworkConfig) (*TerraLCDClient, error) {
-	// Derive and set the key from first Mnemonic, later keys can be changed by calling other methods with particular wallet
-	privKeyBz, err := key.DerivePrivKeyBz(cfg.Mnemonics[0], key.CreateHDPath(0, 0))
-	if err != nil {
-		return nil, err
-	}
-	privKey, err := key.PrivKeyGen(privKeyBz)
-	if err != nil {
-		return nil, err
-	}
 	return &TerraLCDClient{
 		LCDClient: client.NewLCDClient(
 			cfg.URLs[0],
 			cfg.Name,
 			msg.NewDecCoinFromDec(cfg.Currency, msg.NewDecFromIntWithPrec(msg.NewInt(15), 2)),
 			msg.NewDecFromIntWithPrec(msg.NewInt(15), 1),
-			privKey,
+			nil,
 			DefaultTerraTXTimeout,
 		),
 		Config:        cfg,
@@ -164,13 +212,13 @@ func NewClient(cfg *NetworkConfig) (*TerraLCDClient, error) {
 func (t *TerraLCDClient) LoadWallets(nc interface{}) error {
 	cfg := nc.(*NetworkConfig)
 	for _, mnemonic := range cfg.Mnemonics {
-		w, err := NewTerraWallet(mnemonic)
+		w, err := LoadWallet(mnemonic)
 		if err != nil {
 			return err
 		}
 		t.Wallets = append(t.Wallets, w)
 	}
-	return t.SetWallet(1)
+	return nil
 }
 
 func (t *TerraLCDClient) SetWallet(num int) error {
@@ -195,7 +243,7 @@ func (t *TerraLCDClient) SwitchNode(node int) error {
 }
 
 func (t *TerraLCDClient) GetClients() []ifclient.BlockchainClient {
-	panic("implement me")
+	return t.Clients
 }
 
 func (t *TerraLCDClient) HeaderHashByNumber(ctx context.Context, bn *big.Int) (string, error) {
@@ -288,20 +336,34 @@ func (t *TerraLCDClient) Instantiate(path string, instMsg interface{}) (string, 
 	if err != nil {
 		return "", err
 	}
-	t.CurrentCodeID++
-	log.Info().
-		Str("Path", path).
-		Uint64("CodeID", t.CurrentCodeID).
-		Msg("Instantiating contract")
 	txBlockResp, err := t.SendTX(client.CreateTxOptions{
 		Msgs: []msg.Msg{
 			msg.NewMsgStoreCode(sender, dat),
+		},
+	}, false)
+	if err != nil {
+		return "", err
+	}
+	codeID, err := t.GetEventAttrValue(txBlockResp, EventAttrKeyCodeID)
+	if err != nil {
+		return "", err
+	}
+	cID, err := strconv.Atoi(codeID)
+	if err != nil {
+		return "", err
+	}
+	log.Info().
+		Str("Path", path).
+		Int("CodeID", cID).
+		Msg("Instantiating contract")
+	txBlockResp, err = t.SendTX(client.CreateTxOptions{
+		Msgs: []msg.Msg{
 			msg.NewMsgInstantiateContract(
 				sender,
 				sender,
-				t.CurrentCodeID,
+				uint64(cID),
 				instMsgBytes,
-				msg.NewCoins(msg.NewInt64Coin(t.Config.Currency, 1e12)),
+				msg.NewCoins(msg.NewInt64Coin(t.Config.Currency, 1e8)),
 			),
 		},
 	}, false)
@@ -317,23 +379,64 @@ func (t *TerraLCDClient) Instantiate(path string, instMsg interface{}) (string, 
 
 // SendTX signs and broadcast tx using default broadcast mode
 func (t *TerraLCDClient) SendTX(txOpts client.CreateTxOptions, logMsgs bool) (*types.TxResponse, error) {
+	var txBlockResp *types.TxResponse
 	if logMsgs {
 		log.Info().Interface("Msgs", txOpts.Msgs).Msg("Sending TX")
 	}
-	txn, err := t.CreateAndSignTx(context.Background(), txOpts)
-	if err != nil {
-		return nil, err
+	for i := 0; i < int(t.Config.RetryAttempts); i++ {
+		txn, err := t.CreateAndSignTx(context.Background(), txOpts)
+		if err != nil {
+			log.Error().Err(err).Msg("Simulate error, retrying")
+			continue
+		}
+		txBlockResp, err := t.Broadcast(context.Background(), txn, t.BroadcastMode)
+		if err != nil {
+			log.Error().Err(err).Msg("Broadcast error, retrying")
+			continue
+		}
+		log.Info().Interface("Response", txBlockResp).Msg("TX Response")
+		switch txBlockResp.Code {
+		case 32:
+			log.Warn().Msg("Account sequence mismatch, retrying")
+			continue
+		case 0:
+			return txBlockResp, nil
+		default:
+			return txBlockResp, errors.Wrapf(err, "tx failed with code: %d: %s", txBlockResp.Code, txBlockResp.RawLog)
+		}
 	}
-	txBlockResp, err := t.Broadcast(context.Background(), txn, t.BroadcastMode)
-	if err != nil {
-		return nil, err
-	}
-	log.Info().Interface("Response", txBlockResp).Msg("TX Response")
+	//err := retry.Do(
+	//	func() error {
+	//		txn, err := t.CreateAndSignTx(context.Background(), txOpts)
+	//		if err != nil {
+	//			return errors.Wrap(err, "simulate error, retrying")
+	//		}
+	//		txBlockResp, err := t.Broadcast(context.Background(), txn, t.BroadcastMode)
+	//		if err != nil {
+	//			return errors.Wrap(err, "broadcast error, retrying")
+	//		}
+	//		log.Info().Interface("Response", txBlockResp).Msg("TX Response")
+	//		switch txBlockResp.Code {
+	//		case 0:
+	//			return nil
+	//		case 32:
+	//			return errors.Wrap(err, "account sequence mismatch, retrying")
+	//		default:
+	//			return errors.Wrapf(err, "tx failed with code: %d: %s", txBlockResp.Code, txBlockResp.RawLog)
+	//		}
+	//	},
+	//	retry.Delay(t.Config.RetryDelay),
+	//	retry.DelayType(retry.FixedDelay),
+	//	retry.Attempts(t.Config.RetryAttempts),
+	//)
 	return txBlockResp, nil
 }
 
 // GetEventAttrValue gets attr value by key from sdkTypes.TxResponse
 func (t *TerraLCDClient) GetEventAttrValue(tx *types.TxResponse, attrKey string) (string, error) {
+	if tx == nil {
+		return "", errors.New("tx is nil")
+	}
 	for _, eventLog := range tx.Logs {
 		for _, event := range eventLog.Events {
 			for _, eventAttr := range event.Attributes {

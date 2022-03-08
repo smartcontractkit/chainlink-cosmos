@@ -3,6 +3,8 @@ selected_networks:
 networks:
   localterra:
     name: "localterra"
+    retry_attempts: 30
+    retry_delay: 1s
     type: terra
     currency: uluna
     contracts_deployed: false
