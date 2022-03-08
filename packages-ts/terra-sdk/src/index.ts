@@ -1,13 +1,11 @@
 import { WebSocketClient } from '@terra-money/terra.js';
 import { TxLog, Int } from '@terra-money/terra.js';
 
-export class Chainlink {
+export class OCR2Feed {
     private _wsClient: WebSocketClient;
 
-    constructor(
-        readonly url: string, //TODO or pass own client?
-    ){
-        this._wsClient = new WebSocketClient(url);
+    constructor(readonly client: WebSocketClient){
+        this._wsClient = client;
     }
 
     public start() {
@@ -24,7 +22,7 @@ export class Chainlink {
             },
             async data => {
                 const txRes = data.value.TxResult.result;
-                Chainlink.parseLog(txRes.log).forEach(callback);
+                OCR2Feed.parseLog(txRes.log).forEach(callback);
             }
         );
     }
