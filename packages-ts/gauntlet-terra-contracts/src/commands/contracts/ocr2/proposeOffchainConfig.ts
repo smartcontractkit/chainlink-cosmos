@@ -110,7 +110,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   const contract = args[0]
 
   return {
-    proposalId: flags.proposalId,
+    proposalId: flags.proposalId || flags.configProposal, // -configProposal alias requested by eng ops
     offchainConfig: getOffchainConfigInput(rdd, contract),
     offchainConfigVersion: 2,
     randomSecret: randomSecret || (await generateSecretWords()),
@@ -221,8 +221,10 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-// yarn gauntlet ocr2:propose_offchain_config --network=bombay-testnet --proposalId=4 --rdd=../reference-data-directory/directory-terra-mainnet.json terra14nrtuhrrhl2ldad7gln5uafgl8s2m25du98hlx
 const instruction: AbstractInstruction<CommandInput, ContractInput> = {
+  examples: [
+    'yarn gauntlet ocr2:propose_offchain_config --network=NETWORK --proposalId=<PROPOSAL_ID> <CONTRACT_ADDRESS>',
+  ],
   instruction: {
     category: CATEGORIES.OCR,
     contract: 'ocr2',
