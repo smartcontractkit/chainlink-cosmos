@@ -2,13 +2,13 @@ module.exports = {
   rootDir: '.',
   projects: [
     {
-      displayName: 'event-client',
+      displayName: 'terra-sdk',
       preset: 'ts-jest',
       testEnvironment: 'node',
-      testMatch: ['<rootDir>/packages-ts/event-client/**/*.test.ts'],
+      testMatch: ['<rootDir>/packages-ts/terra-sdk/**/*.test.ts'],
       globals: {
         'ts-jest': {
-          tsconfig: '<rootDir>/packages-ts/event-client/tsconfig.json',
+          tsconfig: '<rootDir>/packages-ts/terra-sdk/tsconfig.json',
         },
       },
     },
