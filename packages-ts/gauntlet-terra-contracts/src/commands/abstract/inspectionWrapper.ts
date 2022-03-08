@@ -23,6 +23,7 @@ export interface InspectInstruction<CommandInput, ContractExpectedInfo> {
     category: CATEGORIES
     contract: CONTRACT_LIST
     id: 'inspect'
+    examples: string[]
   }
   instructions: {
     contract: string
@@ -42,6 +43,7 @@ export const instructionToInspectCommand = <CommandInput, Expected>(
   const id = `${inspectInstruction.command.contract}:${inspectInstruction.command.id}`
   return class Command extends TerraCommand {
     static id = id
+    static examples = inspectInstruction.command.examples
 
     constructor(flags, args) {
       super(flags, args)

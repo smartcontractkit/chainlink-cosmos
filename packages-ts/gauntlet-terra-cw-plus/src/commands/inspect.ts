@@ -5,6 +5,9 @@ import { Action, State, Vote } from '../lib/types'
 
 export default class Inspect extends TerraCommand {
   static id = 'cw3_flex_multisig:inspect'
+  static examples = [
+    'cw3_flex_multisig:inspect --network=<NETWORK> --multisigProposal=<PROPOSAL_ID> <CW3_FLEX_MULTISIG_ADDRESS>',
+  ]
 
   constructor(flags, args: string[]) {
     super(flags, args)
@@ -21,7 +24,7 @@ export default class Inspect extends TerraCommand {
 
   execute = async () => {
     const msig = this.args[0] || process.env.CW3_FLEX_MULTISIG
-    const proposalId = Number(this.flags.proposal)
+    const proposalId = Number(this.flags.proposal || this.flags.multisigProposal) // alias requested by eng ops
     const state = await this.fetchState(msig, proposalId)
 
     logger.info(makeInspectionMessage(state))
@@ -107,7 +110,7 @@ export const makeInspectionMessage = (state: State): string => {
 
   const approversList = state.proposal.approvers.map((a) => `\n${indent.repeat(2)} - ${a}`).join('')
   proposalMessage = proposalMessage.concat(`
-    - Proposal ID: ${state.proposal.id}
+    - Multisig Proposal ID: ${state.proposal.id}
     - Total Approvers: ${state.proposal.approvers.length}
     - Approvers List: ${approversList}
     `)
