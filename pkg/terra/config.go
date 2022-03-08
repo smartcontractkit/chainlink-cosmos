@@ -38,6 +38,7 @@ var defaultConfigSet = configSet{
 	MaxMsgsPerBatch:     100,
 	OCR2CachePollPeriod: 4 * time.Second,
 	OCR2CacheTTL:        time.Minute,
+	TxMsgTimeout:        10 * time.Minute,
 }
 
 type Config interface {
@@ -50,6 +51,7 @@ type Config interface {
 	MaxMsgsPerBatch() int64
 	OCR2CachePollPeriod() time.Duration
 	OCR2CacheTTL() time.Duration
+	TxMsgTimeout() time.Duration
 
 	// Update sets new chain config values.
 	Update(db.ChainCfg)
@@ -65,6 +67,7 @@ type configSet struct {
 	MaxMsgsPerBatch       int64
 	OCR2CachePollPeriod   time.Duration
 	OCR2CacheTTL          time.Duration
+	TxMsgTimeout          time.Duration
 }
 
 var _ Config = (*config)(nil)
@@ -189,6 +192,16 @@ func (c *config) OCR2CacheTTL() time.Duration {
 		return ch.Duration()
 	}
 	return c.defaults.OCR2CacheTTL
+}
+
+func (c *config) TxMsgTimeout() time.Duration {
+	c.chainMu.RLock()
+	ch := c.chain.TxMsgTimeout
+	c.chainMu.RUnlock()
+	if ch != nil {
+		return ch.Duration()
+	}
+	return c.defaults.TxMsgTimeout
 }
 
 const invalidFallbackMsg = `Invalid value provided for %s, "%s" - falling back to default "%s": %v`
