@@ -635,6 +635,9 @@ fn validate_answer(deps: Deps, config: &Config, round_id: u32, answer: i128) -> 
         .answer;
 
     Some(
+        // Validation happens in a submessage, which will "will revert any partial state changes due to this message,
+        // but not revert any state changes in the calling contract." This way the validator going over the gas limit
+        // or failing validation won't block publishing to the feed.
         SubMsg::new(WasmMsg::Execute {
             contract_addr: validator.address.to_string(),
             msg: to_binary(&ValidatorMsg::Validate {
