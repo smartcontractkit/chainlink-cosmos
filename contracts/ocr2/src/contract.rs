@@ -451,6 +451,11 @@ pub fn execute_accept_proposal(
         .iter()
         .map(|(_, transmitter, _)| attr("transmitters", transmitter));
 
+    let payees = proposal
+        .oracles
+        .iter()
+        .map(|(_, _, payee)| attr("payees", payee));
+
     response = response.add_event(
         Event::new("set_config")
             .add_attribute(
@@ -464,6 +469,7 @@ pub fn execute_accept_proposal(
             .add_attribute("config_count", config.config_count.to_string())
             .add_attributes(signers)
             .add_attributes(transmitters)
+            .add_attributes(payees)
             .add_attribute("f", proposal.f.to_string())
             .add_attribute("onchain_config", Binary(onchain_config).to_base64())
             .add_attribute(
