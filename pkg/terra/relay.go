@@ -109,7 +109,8 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 		return nil, errors.New("unsuccessful cast to 'terra.OCR2Spec'")
 	}
 
-	chain, err := r.chainSet.Chain(spec.ChainID)
+	// At the time of creating services, we don't have a context, hence using Background context here.
+	chain, err := r.chainSet.Chain(context.Background(), spec.ChainID)
 	if err != nil {
 		return nil, err
 	}
