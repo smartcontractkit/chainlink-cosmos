@@ -4,7 +4,7 @@ import { TransactionResponse, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
 import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../../abstract/executionWrapper'
 import { serializeOffchainConfig, deserializeConfig } from '../../../../lib/encoding'
-import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
+import { getOffchainConfigInput, OffchainConfig, prepareOffchainConfigForDiff } from '../proposeOffchainConfig'
 import { getLatestOCRConfigEvent, longsInObjToNumbers, printDiff } from '../../../../lib/inspection'
 import assert from 'assert'
 
@@ -23,10 +23,6 @@ type ContractInput = {
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
   const { rdd: rddPath, secret } = flags
-
-  if (!rddPath) {
-    throw new Error('RDD flag is required. Provide it with --rdd flag')
-  }
 
   if (!secret) {
     throw new Error('--secret flag is required.')
@@ -68,22 +64,14 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
 
   // Config in Proposal
   const offchainConfigInProposal = deserializeConfig(Buffer.from(proposal.offchain_config, 'base64'))
-  const configInProposal = longsInObjToNumbers({
-    ...offchainConfigInProposal,
-    offchainPublicKeys: offchainConfigInProposal.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
-    f: proposal.f,
-  })
+  const configInProposal = prepareOffchainConfigForDiff(offchainConfigInProposal, { f: proposal.f })
 
   // Config in contract
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
   const offchainConfigInContract = event?.offchain_config
     ? deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
     : ({} as OffchainConfig)
-  const configInContract = longsInObjToNumbers({
-    ...offchainConfigInContract,
-    offchainPublicKeys: offchainConfigInContract.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
-    f: event?.f[0],
-  })
+  const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, { f: event?.f[0] })
 
   logger.info('Review the configuration difference from contract and proposal: green - added, red - deleted.')
   printDiff(configInContract, configInProposal)

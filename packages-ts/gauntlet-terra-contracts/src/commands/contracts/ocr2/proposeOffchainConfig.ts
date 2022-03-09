@@ -89,14 +89,22 @@ export const getOffchainConfigInput = (rdd: any, contract: string): OffchainConf
   return input
 }
 
+export const prepareOffchainConfigForDiff = (config: OffchainConfig, extra?: Object) => {
+  return longsInObjToNumbers({
+    ...config,
+    ...(extra || {}),
+    offchainPublicKeys: config.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
+  })
+}
+
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
 
-  const { rdd: rddPath, randomSecret } = flags
-
-  if (!rddPath) {
-    throw new Error('No RDD flag provided!')
+  if (!process.env.SECRET) {
+    throw new Error('SECRET is not set in env!')
   }
+
+  const { rdd: rddPath, randomSecret } = flags
 
   const rdd = RDD.getRDD(rddPath)
   const contract = args[0]
@@ -115,18 +123,11 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const offchainConfigInContract = event?.offchain_config
     ? deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
     : ({} as OffchainConfig)
-  const configInContract = longsInObjToNumbers({
-    ...offchainConfigInContract,
-    offchainPublicKeys: offchainConfigInContract.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
-    f: event?.f,
-  })
+  const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, { f: event?.f })
 
   // Proposed config
   const proposedOffchainConfig = deserializeConfig(Buffer.from(context.contractInput.offchain_config, 'base64'))
-  const proposedConfig = longsInObjToNumbers({
-    ...proposedOffchainConfig,
-    offchainPublicKeys: proposedOffchainConfig.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
-  })
+  const proposedConfig = prepareOffchainConfigForDiff(proposedOffchainConfig)
 
   logger.info('Review the proposed changes below: green - added, red - deleted.')
   printDiff(configInContract, proposedConfig)
@@ -140,10 +141,6 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
-  if (!process.env.SECRET) {
-    throw new Error('SECRET is not set in env!')
-  }
-
   const { offchainConfig } = await serializeOffchainConfig(
     input.offchainConfig,
     process.env.SECRET!,
