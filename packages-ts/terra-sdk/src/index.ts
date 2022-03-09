@@ -37,7 +37,7 @@ export class OCR2Feed {
 
     public static parseLog(log: string): Round[] {
         let logs: TxLog[] = JSON.parse(log).map(TxLog.fromData);
-        return logs.map(l=>l.eventsByType['wasm-new_transmission']).map(this.roundFromAttributes);
+        return logs.map(l=>l.eventsByType['wasm-new_transmission']).filter(x => x != null).map(this.roundFromAttributes);
     }
 
     private static roundFromAttributes(attrs: {[k:string]:string[]}): Round {

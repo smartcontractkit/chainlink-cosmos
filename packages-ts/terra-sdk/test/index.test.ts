@@ -31,7 +31,7 @@ describe('OCR2Feed', () => {
             observationsTS: new Date("2022-03-04T20:27:03.000Z"),
         }]);
     })
-    it('parseLogEmpty', () => {
+    it('parseLog missing fields', () => {
         let got = OCR2Feed.parseLog('[{"events":[{"type":"execute_contract","attributes":[{"key":"sender","value":"terra167h3sh8c4pgs8grxz24pam2x764flydv3h9pd8"},{"key":"contract_address","value":"terra1fwhxcdlm7cefu585pv54vgcpacq9daxppa823c"}]},{"type":"from_contract","attributes":[{"key":"contract_address","value":"terra1fwhxcdlm7cefu585pv54vgcpacq9daxppa823c"},{"key":"method","value":"transmit"},{"key":"method","value":"transmit"}]},{"type":"message","attributes":[{"key":"action","value":"/terra.wasm.v1beta1.MsgExecuteContract"},{"key":"module","value":"wasm"},{"key":"sender","value":"terra167h3sh8c4pgs8grxz24pam2x764flydv3h9pd8"}]},{"type":"wasm","attributes":[{"key":"contract_address","value":"terra1fwhxcdlm7cefu585pv54vgcpacq9daxppa823c"},{"key":"method","value":"transmit"},{"key":"method","value":"transmit"}]},{"type":"wasm-new_transmission","attributes":[{"key":"contract_address","value":"terra1fwhxcdlm7cefu585pv54vgcpacq9daxppa823c"},{"key":"transmitter","value":"terra167h3sh8c4pgs8grxz24pam2x764flydv3h9pd8"},{"key":"observers","value":"0d0c020805010409060b0e0003070000000000000000000000000000000000"},{"key":"juels_per_fee_coin","value":"156135087"},{"key":"config_digest","value":"000283aa7440f0e70a44e5e122a6a4112b4670c9a72f8746eeda1cc93c296b1a"},{"key":"reimbursement","value":"460650"},{"key":"observations","value":"9094516578"},{"key":"observations","value":"9094516578"},{"key":"observations","value":"9094516578"}]},{"type":"wasm-transmitted","attributes":[{"key":"contract_address","value":"terra1fwhxcdlm7cefu585pv54vgcpacq9daxppa823c"},{"key":"config_digest","value":"000283aa7440f0e70a44e5e122a6a4112b4670c9a72f8746eeda1cc93c296b1a"}]}]}]');
         expect(got).toEqual([{
             answer:null,
@@ -40,6 +40,10 @@ describe('OCR2Feed', () => {
             aggregatorRoundId:null,
             observationsTS:null,
         }]);
+    })
+    it('parseLog missing event', () => {
+        let got = OCR2Feed.parseLog('[{"events":[{"type":"execute_contract","attributes":[{"key":"sender","value":"terra167h3sh8c4pgs8grxz24pam2x764flydv3h9pd8"},{"key":"contract_address","value":"terra1fwhxcdlm7cefu585pv54vgcpacq9daxppa823c"}]},{"type":"from_contract","attributes":[{"key":"contract_address","value":"terra1fwhxcdlm7cefu585pv54vgcpacq9daxppa823c"},{"key":"method","value":"transmit"},{"key":"method","value":"transmit"}]},{"type":"message","attributes":[{"key":"action","value":"/terra.wasm.v1beta1.MsgExecuteContract"},{"key":"module","value":"wasm"},{"key":"sender","value":"terra167h3sh8c4pgs8grxz24pam2x764flydv3h9pd8"}]},{"type":"wasm","attributes":[{"key":"contract_address","value":"terra1fwhxcdlm7cefu585pv54vgcpacq9daxppa823c"},{"key":"method","value":"transmit"},{"key":"method","value":"transmit"}]},{"type":"wasm-transmitted","attributes":[{"key":"contract_address","value":"terra1fwhxcdlm7cefu585pv54vgcpacq9daxppa823c"},{"key":"config_digest","value":"000283aa7440f0e70a44e5e122a6a4112b4670c9a72f8746eeda1cc93c296b1a"}]}]}]');
+        expect(got).toEqual([]);
     })
     // requires a WS_URL for Columbus-5
     it('onRound', async () => {
