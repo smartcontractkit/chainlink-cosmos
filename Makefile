@@ -30,14 +30,17 @@ ifeq ($(OSFLAG),$(WINDOWS))
 endif
 ifeq ($(OSFLAG),$(OSX))
 		brew install asdf
-		asdf plugin-add golang https://github.com/kennyp/asdf-golang.git || true
 		asdf plugin-add nodejs https://github.com/asdf-vm/asdf-nodejs.git || true
+		asdf plugin-add rust https://github.com/code-lever/asdf-rust.git || true
+		asdf plugin-add golang https://github.com/kennyp/asdf-golang.git || true
 		asdf plugin-add ginkgo https://github.com/jimmidyson/asdf-ginkgo.git || true
 		asdf install
 endif
 ifeq ($(OSFLAG),$(LINUX))
+		# install nix
+		sh <(curl -L https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install) --daemon --tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve --nix-extra-conf-file ./nix.conf
 		# pulls the ginkgo version from the .tool-versions asdf file to install so we only have the version in one place
-		go install github.com/onsi/ginkgo/v2/ginkgo@v$(shell cat ./.tool-versions | grep ginkgo | sed -En "s/ginkgo.(.*)/\1/p")
+		nix develop -c go install github.com/onsi/ginkgo/v2/ginkgo@v$(shell cat ./.tool-versions | grep ginkgo | sed -En "s/ginkgo.(.*)/\1/p")
 endif
 
 build_js:
