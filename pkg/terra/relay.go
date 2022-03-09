@@ -1,6 +1,7 @@
 package terra
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -80,7 +81,8 @@ func NewRelayer(lggr Logger, chainSet ChainSet) *Relayer {
 	}
 }
 
-func (r *Relayer) Start() error {
+// Start starts the relayer respecting the given context.
+func (r *Relayer) Start(context.Context) error {
 	if r.chainSet == nil {
 		return errors.New("Terra unavailable")
 	}
@@ -100,7 +102,7 @@ func (r *Relayer) Healthy() error {
 	return r.chainSet.Healthy()
 }
 
-func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relaytypes.OCR2Provider, error) {
+func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relaytypes.OCR2ProviderCtx, error) {
 	spec, ok := s.(OCR2Spec)
 	if !ok {
 		return nil, errors.New("unsuccessful cast to 'terra.OCR2Spec'")
@@ -166,7 +168,8 @@ type ocr2Provider struct {
 	contractCache *ContractCache
 }
 
-func (p *ocr2Provider) Start() error {
+// Start starts OCR2Provider respecting the given context.
+func (p *ocr2Provider) Start(context.Context) error {
 	return p.StartOnce("TerraOCR2Provider", func() error {
 		p.lggr.Debugf("Starting")
 
