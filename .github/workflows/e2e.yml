@@ -102,6 +102,8 @@ jobs:
         if: steps.cache-packages.outputs.cache-hit != 'true'
         run: nix develop -c make download
       - name: Install Ginkgo CLI
+        env:
+          IS_CI: true
         run: |
           nix develop -c make install
       - uses: actions/download-artifact@master
