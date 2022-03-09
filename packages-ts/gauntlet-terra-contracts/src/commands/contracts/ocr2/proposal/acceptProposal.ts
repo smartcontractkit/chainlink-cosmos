@@ -24,7 +24,17 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   if (flags.input) return flags.input as CommandInput
   const { rdd: rddPath, secret } = flags
 
-  if (!rddPath) throw new Error('RDD flag is required. Provide it with --rdd flag')
+  if (!rddPath) {
+    throw new Error('RDD flag is required. Provide it with --rdd flag')
+  }
+
+  if (!secret) {
+    throw new Error('--secret flag is required.')
+  }
+
+  if (!process.env.SECRET) {
+    throw new Error('SECRET is not set in env!')
+  }
 
   const rdd = RDD.getRDD(rddPath)
   const contract = args[0]
@@ -57,7 +67,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   logger.success('RDD Generated configuration matches with onchain proposal configuration')
 
   // Config in Proposal
-  const offchainConfigInProposal = await deserializeConfig(Buffer.from(proposal.offchain_config, 'base64'))
+  const offchainConfigInProposal = deserializeConfig(Buffer.from(proposal.offchain_config, 'base64'))
   const configInProposal = longsInObjToNumbers({
     ...offchainConfigInProposal,
     offchainPublicKeys: offchainConfigInProposal.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
@@ -67,7 +77,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   // Config in contract
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
   const offchainConfigInContract = event?.offchain_config
-    ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
+    ? deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
     : ({} as OffchainConfig)
   const configInContract = longsInObjToNumbers({
     ...offchainConfigInContract,
