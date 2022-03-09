@@ -1,7 +1,7 @@
 mod integration_tests;
 
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
+    entry_point, to_binary, Addr, Deps, DepsMut, Env, Event, MessageInfo, QueryResponse, Response,
     StdError, StdResult,
 };
 
@@ -147,7 +147,8 @@ pub fn execute(
             let address = deps.api.addr_validate(&address)?;
             validate_ownership(deps.as_ref(), &env, info)?;
             PROPOSED_CONTRACT.save(deps.storage, &address)?;
-            Ok(Response::default())
+            Ok(Response::default()
+                .add_event(Event::new("propose_contract").add_attribute("address", address)))
         }
         ExecuteMsg::ConfirmContract { address } => {
             let address = deps.api.addr_validate(&address)?;
@@ -173,7 +174,10 @@ pub fn execute(
                 &current_phase.contract_address,
             )?;
 
-            Ok(Response::default())
+            Ok(Response::default().add_event(
+                Event::new("confirm_contract")
+                    .add_attribute("address", current_phase.contract_address),
+            ))
         }
         ExecuteMsg::TransferOwnership { to } => {
             Ok(OWNER.execute_transfer_ownership(deps, info, api.addr_validate(&to)?)?)
