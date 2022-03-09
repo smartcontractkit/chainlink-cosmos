@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"os"
 	"time"
@@ -159,10 +160,25 @@ func (m *OCRv2State) DeployContracts() {
 	Expect(m.Err).ShouldNot(HaveOccurred())
 }
 
+func (m *OCRv2State) SetAllAdapterResponsesToTheSameValue(response int) {
+	for i := range m.Nodes {
+		path := fmt.Sprintf("/node%d", i)
+		m.Err = m.MockServer.SetValuePath(path, response)
+		Expect(m.Err).ShouldNot(HaveOccurred())
+	}
+}
+
+func (m *OCRv2State) SetAllAdapterResponsesToDifferentValues(responses []int) {
+	Expect(len(responses)).Should(BeNumerically("==", len(m.Nodes)))
+	for i := range m.Nodes {
+		m.Err = m.MockServer.SetValuePath(fmt.Sprintf("/node%d", i), responses[i])
+		Expect(m.Err).ShouldNot(HaveOccurred())
+	}
+}
+
 // CreateJobs creating OCR jobs and EA stubs
 func (m *OCRv2State) CreateJobs() {
-	m.Err = m.MockServer.SetValuePath("/variable", 5)
-	Expect(m.Err).ShouldNot(HaveOccurred())
+	m.SetAllAdapterResponsesToTheSameValue(5)
 	m.Err = m.MockServer.SetValuePath("/juels", 1)
 	Expect(m.Err).ShouldNot(HaveOccurred())
 	m.Err = common.CreateJobs(m.OCR2.Address(), m.Nodes, m.NodeKeysBundle, m.MockServer)
@@ -190,6 +206,21 @@ func (m *OCRv2State) LoadContracts() error {
 	return nil
 }
 
+func (m *OCRv2State) UpdateChainlinkVersion(image string, version string) {
+	chart, err := m.Env.Charts.Get("chainlink")
+	Expect(err).ShouldNot(HaveOccurred())
+	chart.Values["chainlink"] = map[string]interface{}{
+		"image": map[string]interface{}{
+			"image":   image,
+			"version": version,
+		},
+	}
+	err = chart.Upgrade()
+	Expect(err).ShouldNot(HaveOccurred())
+	err = m.Env.ConnectAll()
+	Expect(err).ShouldNot(HaveOccurred())
+}
+
 // DumpContracts dumps contracts to a file
 func (m *OCRv2State) DumpContracts() error {
 	s := &ContractsAddresses{OCR: m.OCR2.Address()}
@@ -213,11 +244,17 @@ func (m *OCRv2State) ValidateNoRoundsAfter(chaosStartTime time.Time) {
 }
 
 // ValidateRoundsAfter validates there are new rounds after some point in time
-func (m *OCRv2State) ValidateRoundsAfter(chaosStartTime time.Time, rounds int) {
+func (m *OCRv2State) ValidateRoundsAfter(chaosStartTime time.Time, rounds int, throughProxy bool) {
 	m.RoundsFound = 0
 	m.LastRoundTime = chaosStartTime
 	Eventually(func(g Gomega) {
-		answer, timestamp, roundID, err := m.OCR2.GetLatestRoundData()
+		var answer, timestamp, roundID uint64
+		var err error
+		if throughProxy {
+			answer, timestamp, roundID, err = m.OCR2Proxy.GetLatestRoundData()
+		} else {
+			answer, timestamp, roundID, err = m.OCR2.GetLatestRoundData()
+		}
 		g.Expect(err).ShouldNot(HaveOccurred())
 		roundTime := time.Unix(int64(timestamp), 0)
 		g.Expect(roundTime.After(m.LastRoundTime)).Should(BeTrue())

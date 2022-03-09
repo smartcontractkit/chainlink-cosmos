@@ -7,6 +7,8 @@ import Flags from './contracts/flags'
 import Proxy_OCR2 from './contracts/proxy_ocr2'
 import DeviationFlaggingValidator from './contracts/deviation_flagging_validator'
 import Multisig from './contracts/multisig'
+import CW4_GROUP from './contracts/cw4_group'
+import Wallet from './wallet'
 
 export default [
   Upload,
@@ -18,4 +20,6 @@ export default [
   ...DeviationFlaggingValidator,
   ...Proxy_OCR2,
   ...Multisig,
+  ...CW4_GROUP,
+  ...Wallet,
 ]

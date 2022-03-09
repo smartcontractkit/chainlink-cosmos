@@ -38,6 +38,7 @@ type ChainCfg struct {
 	MaxMsgsPerBatch       null.Int
 	OCR2CachePollPeriod   *models.Duration
 	OCR2CacheTTL          *models.Duration
+	TxMsgTimeout          *models.Duration
 }
 
 func (c *ChainCfg) Scan(value interface{}) error {
@@ -78,7 +79,8 @@ type Msg struct {
 	ChainID    string `db:"terra_chain_id"`
 	ContractID string
 	State      State
-	Raw        []byte // serialized msg
+	Type       string // cosmos-sdk/types.MsgTypeURL()
+	Raw        []byte // proto.Marshal()
 	TxHash     *string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time

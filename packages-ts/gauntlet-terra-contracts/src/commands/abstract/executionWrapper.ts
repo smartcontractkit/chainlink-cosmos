@@ -1,8 +1,28 @@
 import AbstractCommand, { makeAbstractCommand } from '.'
 import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
+import { AccAddress, LCDClient } from '@terra-money/terra.js'
+import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+
+export type ExecutionContext<Input, ContractInput> = {
+  input: Input
+  contractInput: ContractInput
+  id: string
+  contract: string
+  provider: LCDClient
+  flags: any
+}
+
+export type BeforeExecute<Input, ContractInput> = (
+  context: ExecutionContext<Input, ContractInput>,
+) => (signer: AccAddress) => Promise<void>
+
+export type AfterExecute<Input, ContractInput> = (
+  context: ExecutionContext<Input, ContractInput>,
+) => (response: Result<TransactionResponse>) => Promise<any>
 
 export interface AbstractInstruction<Input, ContractInput> {
+  examples?: string[]
   instruction: {
     category: string
     contract: string
@@ -11,35 +31,72 @@ export interface AbstractInstruction<Input, ContractInput> {
   makeInput: (flags: any, args: string[]) => Promise<Input>
   validateInput: (input: Input) => boolean
   makeContractInput: (input: Input) => Promise<ContractInput>
-  afterExecute?: (response: Result<TransactionResponse>) => any
+  beforeExecute?: BeforeExecute<Input, ContractInput>
+  afterExecute?: AfterExecute<Input, ContractInput>
 }
 
-export const instructionToCommand = (instruction: AbstractInstruction<any, any>) => {
+const defaultBeforeExecute = <Input, ContractInput>(context: ExecutionContext<Input, ContractInput>) => async () => {
+  logger.loading(`Executing ${context.id} from contract ${context.contract}`)
+  logger.log('Input Params:', context.contractInput)
+  await prompt(`Continue?`)
+}
+
+export const instructionToCommand = <Input, ContractInput>(instruction: AbstractInstruction<Input, ContractInput>) => {
   const id = `${instruction.instruction.contract}:${instruction.instruction.function}`
   const category = `${instruction.instruction.category}`
+  const examples = instruction.examples || []
+
   return class Command extends TerraCommand {
     static id = id
     static category = category
+    static examples = examples
+
     command: AbstractCommand
 
     constructor(flags, args) {
       super(flags, args)
     }
 
-    execute = async (): Promise<Result<TransactionResponse>> => {
-      const commandInput = await instruction.makeInput(this.flags, this.args)
-      if (!instruction.validateInput(commandInput)) {
-        throw new Error(`Invalid input params:  ${JSON.stringify(commandInput)}`)
+    buildCommand = async (flags, args): Promise<TerraCommand> => {
+      const input = await instruction.makeInput(flags, args)
+      if (!instruction.validateInput(input)) {
+        throw new Error(`Invalid input params:  ${JSON.stringify(input)}`)
       }
-      const input = await instruction.makeContractInput(commandInput)
-      const abstractCommand = await makeAbstractCommand(id, this.flags, this.args, input)
+      const contractInput = await instruction.makeContractInput(input)
+      const executionContext: ExecutionContext<Input, ContractInput> = {
+        input,
+        contractInput,
+        id,
+        contract: this.args[0],
+        provider: this.provider,
+        flags,
+      }
+      this.beforeExecute = instruction.beforeExecute
+        ? instruction.beforeExecute(executionContext)
+        : defaultBeforeExecute(executionContext)
+
+      this.afterExecute = instruction.afterExecute ? instruction.afterExecute(executionContext) : this.afterExecute
+
+      const abstractCommand = await makeAbstractCommand(id, this.flags, this.args, contractInput)
       await abstractCommand.invokeMiddlewares(abstractCommand, abstractCommand.middlewares)
-      let response = await abstractCommand.execute()
-      if (instruction.afterExecute) {
-        const data = instruction.afterExecute(response)
-        response = { ...response, data: { ...data } }
-      }
-      return response
+      this.command = abstractCommand
+
+      return this
+    }
+
+    makeRawTransaction = async (signer: AccAddress) => {
+      return this.command.makeRawTransaction(signer)
+    }
+
+    execute = async (): Promise<Result<TransactionResponse>> => {
+      // TODO: Command should be built from gauntet-core
+      await this.buildCommand(this.flags, this.args)
+      await this.command.simulateExecute()
+      await this.beforeExecute(this.wallet.key.accAddress)
+
+      let response = await this.command.execute()
+      const data = await this.afterExecute(response)
+      return !!data ? { ...response, data: { ...data } } : response
     }
   }
 }

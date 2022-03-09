@@ -4,21 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"sync"
 
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	"github.com/smartcontractkit/chainlink/core/logger"
 )
 
 // NewTxResultsSourceFactory builds sources of TxResults objects expected by the relay monitoring.
-func NewTxResultsSourceFactory(log logger.Logger) relayMonitoring.SourceFactory {
+func NewTxResultsSourceFactory(log relayMonitoring.Logger) relayMonitoring.SourceFactory {
 	return &txResultsSourceFactory{log, &http.Client{}}
 }
 
 type txResultsSourceFactory struct {
-	log        logger.Logger
+	log        relayMonitoring.Logger
 	httpClient *http.Client
 }
 
@@ -44,8 +44,12 @@ func (t *txResultsSourceFactory) NewSource(
 	}, nil
 }
 
+func (t *txResultsSourceFactory) GetType() string {
+	return "txresults"
+}
+
 type txResultsSource struct {
-	log             logger.Logger
+	log             relayMonitoring.Logger
 	terraConfig     TerraConfig
 	terraFeedConfig TerraFeedConfig
 	httpClient      *http.Client
@@ -68,12 +72,13 @@ func (t *txResultsSource) Fetch(ctx context.Context) (interface{}, error) {
 	// Query the FCD endpoint.
 	query := url.Values{}
 	query.Set("account", t.terraFeedConfig.ContractAddressBech32)
-	query.Set("limit", "100")
+	query.Set("limit", "10")
 	query.Set("offset", "0")
 	getTxsURL, err := url.Parse(t.terraConfig.FCDURL)
 	if err != nil {
 		return nil, err
 	}
+	getTxsURL.Path = "/v1/txs"
 	getTxsURL.RawQuery = query.Encode()
 	readTxsReq, err := http.NewRequestWithContext(ctx, http.MethodGet, getTxsURL.String(), nil)
 	if err != nil {
@@ -86,11 +91,12 @@ func (t *txResultsSource) Fetch(ctx context.Context) (interface{}, error) {
 	defer res.Body.Close()
 	// Decode the response
 	txsResponse := fcdTxsResponse{}
-	decoder := json.NewDecoder(res.Body)
-	if err := decoder.Decode(&txsResponse); err != nil {
-		return nil, fmt.Errorf("unable to decode transactions from response: %w", err)
+	resBody, _ := io.ReadAll(res.Body)
+	if err := json.Unmarshal(resBody, &txsResponse); err != nil {
+		return nil, fmt.Errorf("unable to decode transactions from response '%s': %w", resBody, err)
 	}
 	// Filter recent transactions
+	// TODO (dru) keep latest processed tx in the state.
 	recentTxs := []fcdTx{}
 	func() {
 		t.latestTxIDMu.Lock()

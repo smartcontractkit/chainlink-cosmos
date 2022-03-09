@@ -325,7 +325,7 @@ type BatchSimResults struct {
 	Succeeded SimMsgs
 }
 
-var failedMsgIndexRe = regexp.MustCompile(`^.*failed to execute message; message index: (?P<Index>\d{1}):.*$`)
+var failedMsgIndexRe = regexp.MustCompile(`^.*failed to execute message; message index: (?P<Index>\d+):.*$`)
 
 func (c *Client) failedMsgIndex(err error) (bool, int) {
 	if err == nil {

@@ -1,13 +1,44 @@
 mod integration_tests;
 
 use cosmwasm_std::{
-    entry_point, to_binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response, StdResult,
+    entry_point, to_binary, Addr, Deps, DepsMut, Env, Event, MessageInfo, QueryResponse, Response,
+    StdError,
 };
+
+use cw_storage_plus::{Item, Map, U16Key};
+
+use thiserror::Error;
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub use query_proxy::{ContractError, Phase, CURRENT_PHASE, OWNER, PHASES, PROPOSED_CONTRACT};
+use owned::Auth;
+
+#[derive(Error, Debug)]
+pub enum ContractError {
+    #[error("{0}")]
+    Std(#[from] StdError),
+
+    #[error("{0}")]
+    Owned(#[from] owned::Error),
+
+    #[error("Unauthorized")]
+    Unauthorized,
+
+    #[error("Invalid")]
+    Invalid,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Phase {
+    pub id: u16,
+    pub contract_address: Addr,
+}
+
+pub const OWNER: Auth = Auth::new("owner");
+pub const CURRENT_PHASE: Item<Phase> = Item::new("current_phase");
+pub const PROPOSED_CONTRACT: Item<Addr> = Item::new("proposed_contract");
+pub const PHASES: Map<U16Key, Addr> = Map::new("phases");
 
 pub mod state {
     use super::*;
@@ -25,7 +56,30 @@ pub mod state {
 
 pub mod msg {
     use super::*;
-    pub use query_proxy::{ExecuteMsg, InstantiateMsg};
+
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+    pub struct InstantiateMsg {
+        pub contract_address: String,
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum ExecuteMsg {
+        ProposeContract {
+            address: String,
+        },
+        ConfirmContract {
+            address: String,
+        },
+        /// Initiate contract ownership transfer to another address.
+        /// Can be used only by owner
+        TransferOwnership {
+            /// Address to transfer ownership to
+            to: String,
+        },
+        /// Finish contract ownership transfer. Can be used only by pending owner
+        AcceptOwnership,
+    }
 
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
     #[serde(rename_all = "snake_case")]
@@ -93,7 +147,12 @@ pub fn execute(
             let address = deps.api.addr_validate(&address)?;
             validate_ownership(deps.as_ref(), &env, info)?;
             PROPOSED_CONTRACT.save(deps.storage, &address)?;
-            Ok(Response::default())
+            let current_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
+            Ok(Response::default().add_event(
+                Event::new("propose_contract")
+                    .add_attribute("current_address", current_address)
+                    .add_attribute("proposed_address", address),
+            ))
         }
         ExecuteMsg::ConfirmContract { address } => {
             let address = deps.api.addr_validate(&address)?;
@@ -107,19 +166,24 @@ pub fn execute(
 
             // Update state
             PROPOSED_CONTRACT.remove(deps.storage);
-            let current_phase =
-                CURRENT_PHASE.update(deps.storage, |mut phase| -> StdResult<Phase> {
-                    phase.id += 1;
-                    phase.contract_address = address;
-                    Ok(phase)
-                })?;
+
+            let mut current_phase = CURRENT_PHASE.load(deps.storage)?;
+            current_phase.id += 1;
+            let old_address = current_phase.contract_address;
+            current_phase.contract_address = address;
+            CURRENT_PHASE.save(deps.storage, &current_phase)?;
+
             PHASES.save(
                 deps.storage,
                 current_phase.id.into(),
                 &current_phase.contract_address,
             )?;
 
-            Ok(Response::default())
+            Ok(Response::default().add_event(
+                Event::new("confirm_contract")
+                    .add_attribute("old_address", old_address)
+                    .add_attribute("new_address", current_phase.contract_address),
+            ))
         }
         ExecuteMsg::TransferOwnership { to } => {
             Ok(OWNER.execute_transfer_ownership(deps, info, api.addr_validate(&to)?)?)
@@ -133,24 +197,24 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
     match msg {
         QueryMsg::Decimals => {
             let contract_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
-            Ok(to_binary(&deps.querier.query_wasm_smart(
-                contract_address,
-                &ocr2::msg::QueryMsg::Decimals,
-            )?)?)
+            let decimals: u8 = deps
+                .querier
+                .query_wasm_smart(&contract_address, &ocr2::msg::QueryMsg::Decimals)?;
+            Ok(to_binary(&decimals)?)
         }
         QueryMsg::Version => {
             let contract_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
-            Ok(to_binary(&deps.querier.query_wasm_smart(
-                contract_address,
-                &ocr2::msg::QueryMsg::Version,
-            )?)?)
+            let version: String = deps
+                .querier
+                .query_wasm_smart(contract_address, &ocr2::msg::QueryMsg::Version)?;
+            Ok(to_binary(&version)?)
         }
         QueryMsg::Description => {
             let contract_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
-            Ok(to_binary(&deps.querier.query_wasm_smart(
-                contract_address,
-                &ocr2::msg::QueryMsg::Description,
-            )?)?)
+            let description: String = deps
+                .querier
+                .query_wasm_smart(contract_address, &ocr2::msg::QueryMsg::Description)?;
+            Ok(to_binary(&description)?)
         }
         QueryMsg::RoundData { round_id } => {
             let (phase_id, round_id) = parse_round_id(round_id);

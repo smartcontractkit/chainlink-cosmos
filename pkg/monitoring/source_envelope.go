@@ -14,21 +14,19 @@ import (
 	cosmosTx "github.com/cosmos/cosmos-sdk/types/tx"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 	pkgTerra "github.com/smartcontractkit/chainlink-terra/pkg/terra"
-	pkgClient "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
-	"github.com/smartcontractkit/chainlink/core/logger"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"go.uber.org/multierr"
 )
 
 // NewEnvelopeSourceFactory build a new object that reads observations and
 // configurations from the Terra chain.
-func NewEnvelopeSourceFactory(client pkgClient.Reader, log logger.Logger) relayMonitoring.SourceFactory {
+func NewEnvelopeSourceFactory(client ChainReader, log relayMonitoring.Logger) relayMonitoring.SourceFactory {
 	return &envelopeSourceFactory{client, log}
 }
 
 type envelopeSourceFactory struct {
-	client pkgClient.Reader
-	log    logger.Logger
+	client ChainReader
+	log    relayMonitoring.Logger
 }
 
 func (e *envelopeSourceFactory) NewSource(
@@ -51,9 +49,13 @@ func (e *envelopeSourceFactory) NewSource(
 	}, nil
 }
 
+func (e *envelopeSourceFactory) GetType() string {
+	return "envelope"
+}
+
 type envelopeSource struct {
-	client          pkgClient.Reader
-	log             logger.Logger
+	client          ChainReader
+	log             relayMonitoring.Logger
 	terraConfig     TerraConfig
 	terraFeedConfig TerraFeedConfig
 }
@@ -70,7 +72,8 @@ func (e *envelopeSource) Fetch(ctx context.Context) (interface{}, error) {
 	wg.Add(3)
 	go func() {
 		defer wg.Done()
-		configDigest, epoch, round, latestAnswer, latestTimestamp, blockNumber, transmitter, aggregatorRoundID, juelsPerFeeCoin, err := e.fetchLatestTransmission()
+		configDigest, epoch, round, latestAnswer, latestTimestamp, blockNumber,
+			transmitter, aggregatorRoundID, juelsPerFeeCoin, err := e.fetchLatestTransmission(ctx)
 		envelopeMu.Lock()
 		defer envelopeMu.Unlock()
 		if err != nil {
@@ -82,6 +85,7 @@ func (e *envelopeSource) Fetch(ctx context.Context) (interface{}, error) {
 		envelope.Round = round
 		envelope.LatestAnswer = latestAnswer
 		envelope.LatestTimestamp = latestTimestamp
+		// Note: block number is read from the transmission transaction, not set_config!
 		envelope.BlockNumber = blockNumber
 		envelope.Transmitter = transmitter
 		envelope.JuelsPerFeeCoin = juelsPerFeeCoin
@@ -89,7 +93,7 @@ func (e *envelopeSource) Fetch(ctx context.Context) (interface{}, error) {
 	}()
 	go func() {
 		defer wg.Done()
-		contractConfig, err := e.fetchLatestConfig()
+		contractConfig, err := e.fetchLatestConfig(ctx)
 		envelopeMu.Lock()
 		defer envelopeMu.Unlock()
 		if err != nil {
@@ -100,25 +104,11 @@ func (e *envelopeSource) Fetch(ctx context.Context) (interface{}, error) {
 	}()
 	go func() {
 		defer wg.Done()
-		query := fmt.Sprintf(`{"balance":{"address":"%s"}}`, e.terraFeedConfig.ContractAddressBech32)
-		res, err := e.client.ContractStore(
-			e.terraConfig.LinkTokenAddress,
-			[]byte(query),
-		)
+		balance, err := e.fetchLinkBalance(ctx)
 		envelopeMu.Lock()
 		defer envelopeMu.Unlock()
 		if err != nil {
-			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to fetch balance: %w", err))
-			return
-		}
-		balanceRes := linkBalanceResponse{}
-		if err = json.Unmarshal(res, &balanceRes); err != nil {
-			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to unmarshal balance response: %w", err))
-			return
-		}
-		balance, success := new(big.Int).SetString(balanceRes.Balance, 10)
-		if !success {
-			envelopeErr = multierr.Combine(fmt.Errorf("failed to parse link balance from '%s'", balanceRes.Balance))
+			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to fetch link balance: %w", err))
 			return
 		}
 		envelope.LinkBalance = balance
@@ -127,7 +117,7 @@ func (e *envelopeSource) Fetch(ctx context.Context) (interface{}, error) {
 	return envelope, envelopeErr
 }
 
-func (e *envelopeSource) fetchLatestTransmission() (
+func (e *envelopeSource) fetchLatestTransmission(ctx context.Context) (
 	configDigest types.ConfigDigest,
 	epoch uint32,
 	round uint8,
@@ -140,9 +130,9 @@ func (e *envelopeSource) fetchLatestTransmission() (
 	err error,
 ) {
 	query := []string{
-		fmt.Sprintf("wasm-new_transmission.contract_address='%s'", e.terraFeedConfig.ContractAddressBech32),
+		fmt.Sprintf(`wasm-new_transmission.contract_address='%s'`, e.terraFeedConfig.ContractAddressBech32),
 	}
-	res, err := e.client.TxsEvents(query, &cosmosQuery.PageRequest{Limit: 1})
+	res, err := e.client.TxsEvents(ctx, query, &cosmosQuery.PageRequest{Limit: 1})
 	if err != nil {
 		return types.ConfigDigest{}, 0, 0, nil, time.Time{}, 0, "", 0, nil,
 			fmt.Errorf("failed to fetch latest 'new_transmission' event: %w", err)
@@ -183,7 +173,7 @@ func (e *envelopeSource) fetchLatestTransmission() (
 			aggregatorRoundID = uint32(raw)
 			return pasrseErr
 		},
-		"juels_per_luna": func(value string) error {
+		"juels_per_fee_coin": func(value string) error {
 			var success bool
 			juelsPerFeeCoin, success = new(big.Int).SetString(value, 10)
 			if !success {
@@ -201,11 +191,11 @@ func (e *envelopeSource) fetchLatestTransmission() (
 		transmitter, aggregatorRoundID, juelsPerFeeCoin, nil
 }
 
-func (e *envelopeSource) fetchLatestConfig() (types.ContractConfig, error) {
+func (e *envelopeSource) fetchLatestConfig(ctx context.Context) (types.ContractConfig, error) {
 	query := []string{
-		fmt.Sprintf("wasm-set_config.contract_address='%s'", e.terraFeedConfig.ContractAddressBech32),
+		fmt.Sprintf(`wasm-set_config.contract_address='%s'`, e.terraFeedConfig.ContractAddressBech32),
 	}
-	res, err := e.client.TxsEvents(query, &cosmosQuery.PageRequest{Limit: 1})
+	res, err := e.client.TxsEvents(ctx, query, &cosmosQuery.PageRequest{Limit: 1})
 	if err != nil {
 		return types.ContractConfig{}, fmt.Errorf("failed to fetch latest 'set_config' event: %w", err)
 	}
@@ -262,6 +252,27 @@ func (e *envelopeSource) fetchLatestConfig() (types.ContractConfig, error) {
 	return output, nil
 }
 
+func (e *envelopeSource) fetchLinkBalance(ctx context.Context) (*big.Int, error) {
+	query := fmt.Sprintf(`{"balance":{"address":"%s"}}`, e.terraFeedConfig.ContractAddressBech32)
+	res, err := e.client.ContractStore(
+		ctx,
+		e.terraConfig.LinkTokenAddress,
+		[]byte(query),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch balance: %w", err)
+	}
+	balanceRes := linkBalanceResponse{}
+	if err = json.Unmarshal(res, &balanceRes); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal balance response: %w", err)
+	}
+	balance, success := new(big.Int).SetString(balanceRes.Balance, 10)
+	if !success {
+		return nil, fmt.Errorf("failed to parse link balance from '%s'", balanceRes.Balance)
+	}
+	return balance, nil
+}
+
 // Helpers
 
 func extractDataFromTxResponse(eventType string, res *cosmosTx.GetTxsEventResponse, extractors map[string]func(string) error) error {
@@ -269,6 +280,10 @@ func extractDataFromTxResponse(eventType string, res *cosmosTx.GetTxsEventRespon
 		len(res.TxResponses[0].Logs) == 0 ||
 		len(res.TxResponses[0].Logs[0].Events) == 0 {
 		return fmt.Errorf("no events found of event type '%s'", eventType)
+	}
+	extracted := map[string]bool{}
+	for key := range extractors {
+		extracted[key] = false
 	}
 	for _, event := range res.TxResponses[0].Logs[0].Events {
 		if event.Type != eventType {
@@ -283,6 +298,12 @@ func extractDataFromTxResponse(eventType string, res *cosmosTx.GetTxsEventRespon
 			if err := extractor(value); err != nil {
 				return fmt.Errorf("failed to extract '%s' from raw value '%s': %w", key, value, err)
 			}
+			extracted[key] = true
+		}
+	}
+	for key, wasExtracted := range extracted {
+		if !wasExtracted {
+			return fmt.Errorf("failed to extract key '%s' TxEventResponse", key)
 		}
 	}
 	return nil

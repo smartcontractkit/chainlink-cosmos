@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -159,17 +158,6 @@ func DefaultOffChainConfigParamsFromNodes(nodes []client.Chainlink) (contracts.O
 	}, nkb, nil
 }
 
-func ImitateSource(mockServer *client.MockserverClient, changeInterval time.Duration, min int, max int) {
-	go func() {
-		for {
-			_ = mockServer.SetValuePath("/variable", min)
-			time.Sleep(changeInterval)
-			_ = mockServer.SetValuePath("/variable", max)
-			time.Sleep(changeInterval)
-		}
-	}()
-}
-
 func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle, mock *client.MockserverClient) error {
 	bootstrapPeers := []client.P2PData{
 		{
@@ -179,13 +167,13 @@ func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle,
 		},
 	}
 	for nIdx, n := range nodes {
-		var IsBootstrapPeer bool
+		jobType := "offchainreporting2"
 		if nIdx == 0 {
-			IsBootstrapPeer = true
+			jobType = "bootstrap"
 		}
 		sourceValueBridge := client.BridgeTypeAttributes{
 			Name:        "variable",
-			URL:         fmt.Sprintf("%s/variable", mock.Config.ClusterURL),
+			URL:         fmt.Sprintf("%s/node%d", mock.Config.ClusterURL, nIdx),
 			RequestData: "{}",
 		}
 		observationSource := client.ObservationSourceSpecBridge(sourceValueBridge)
@@ -224,12 +212,13 @@ func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle,
 		}
 		jobSpec := &client.OCR2TaskJobSpec{
 			Name:                  fmt.Sprintf("terra-OCRv2-%d-%s", nIdx, uuid.NewV4().String()),
+			JobType:               jobType,
 			ContractID:            ocr2Addr,
 			Relay:                 ChainName,
 			RelayConfig:           relayConfig,
 			P2PPeerID:             nkb[nIdx].PeerID,
+			PluginType:            "median",
 			P2PBootstrapPeers:     bootstrapPeers,
-			IsBootstrapPeer:       IsBootstrapPeer,
 			OCRKeyBundleID:        nkb[nIdx].OCR2Key.Data.ID,
 			TransmitterID:         nkb[nIdx].TXKey.Data.ID,
 			ObservationSource:     observationSource,
@@ -240,18 +229,4 @@ func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle,
 		}
 	}
 	return nil
-}
-
-// GetDefaultGauntletConfig gets  the default config gauntlet will need to start making commands
-// 	against the environment
-func GetDefaultGauntletConfig(nodeUrl *url.URL) map[string]string {
-	networkConfig := map[string]string{
-		"NETWORK":           "localterra",
-		"NODE_URL":          nodeUrl.String(),
-		"CHAIN_ID":          "localterra",
-		"DEFAULT_GAS_PRICE": "1",
-		"MNEMONIC":          "satisfy adjust timber high purchase tuition stool faith fine install that you unaware feed domain license impose boss human eager hat rent enjoy dawn",
-	}
-
-	return networkConfig
 }

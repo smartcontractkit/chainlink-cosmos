@@ -47,4 +47,7 @@ pub enum ContractError {
 
     #[error("median is out of min-max range")]
     MedianOutOfRange,
+
+    #[error("unknown reply id {id}")]
+    UnknownReplyId { id: u64 },
 }

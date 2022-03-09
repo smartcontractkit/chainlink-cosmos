@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install -y ca-certificates
 COPY --from=build /terra-monitoring/monitoring /monitoring
 
 # dependency of terra-money/core
-COPY --from=build /root/go/pkg/mod/github.com/\!cosm\!wasm/wasmvm@v*/api/libwasmvm.so /usr/lib/libwasmvm.so
+COPY --from=build /root/go/pkg/mod/github.com/\!cosm\!wasm/wasmvm@v*/api/libwasmvm.so /usr/lib/
 RUN chmod 755 /usr/lib/libwasmvm.so
 
 # Expose prometheus default port

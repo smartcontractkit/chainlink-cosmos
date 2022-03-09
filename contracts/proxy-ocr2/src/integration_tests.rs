@@ -37,6 +37,10 @@ mod mock {
     pub const LATEST_ROUND: Item<u32> = Item::new("latest_round");
     pub const ROUNDS: Map<U32Key, ocr2::state::Round> = Map::new("rounds");
 
+    pub const DECIMALS: u8 = 8;
+    pub const VERSION: &str = "0.0.0";
+    pub const NAME: &str = "mock test";
+
     pub fn contract() -> Box<dyn Contract<Empty>> {
         pub fn execute(
             deps: DepsMut,
@@ -47,7 +51,7 @@ mod mock {
             match msg {
                 ExecuteMsg::Insert(round) => {
                     let round_id = LATEST_ROUND
-                        .update(deps.storage, |round_id: u32| StdResult::Ok(round_id + 1))?;
+                        .update(deps.storage, |_: u32| StdResult::Ok(round.round_id))?; // store data based on passed in round_id
                     ROUNDS.save(deps.storage, round_id.into(), &round)?;
                     Ok(Response::default())
                 }
@@ -74,6 +78,9 @@ mod mock {
                     let round = ROUNDS.load(deps.storage, latest_round.into())?;
                     to_binary(&round)
                 }
+                QueryMsg::Decimals => to_binary(&DECIMALS),
+                QueryMsg::Version => to_binary(&VERSION),
+                QueryMsg::Description => to_binary(&NAME.to_string()),
                 _ => unimplemented!(),
             }
         }
@@ -178,6 +185,30 @@ fn it_works() {
 
     assert_eq!(parse_round_id(latest_round.round_id), (1, 2));
 
+    // query decimals
+    let decimal: u8 = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Decimals)
+        .unwrap();
+    assert_eq!(decimal, mock::DECIMALS);
+
+    // query version
+    let version: String = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Version)
+        .unwrap();
+    assert_eq!(version, mock::VERSION.to_string());
+
+    // query description
+    let desc: String = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Description)
+        .unwrap();
+    assert_eq!(desc, mock::NAME.to_string());
+
     // query by round id, it should match latest round
     let round: Round = env
         .router
@@ -252,7 +283,43 @@ fn it_works() {
 
     assert_eq!(proposed_latest_round.round_id, 3);
 
-    // confirm it
+    // (proposed) query by round id, it should match latest round
+    let proposed_round: Round = env
+        .router
+        .wrap()
+        .query_wasm_smart(
+            &env.proxy_addr,
+            &QueryMsg::ProposedRoundData {
+                round_id: proposed_latest_round.round_id as u32,
+            },
+        )
+        .unwrap();
+    assert_eq!(proposed_round, proposed_latest_round);
+
+    // store old aggregator address
+    let old_aggregator: String = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Aggregator)
+        .unwrap();
+    assert_eq!(env.ocr2_addr.to_string(), old_aggregator);
+
+    // store old aggregator address
+    let proposed_aggregator: String = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::ProposedAggregator)
+        .unwrap();
+    assert_eq!(ocr2_addr2.to_string(), proposed_aggregator);
+
+    // save original phase
+    let old_phase: u16 = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::PhaseId)
+        .unwrap();
+
+    // confirm aggregator swap
     env.router
         .execute_contract(
             env.owner.clone(),
@@ -264,7 +331,46 @@ fn it_works() {
         )
         .unwrap();
 
-    // query latest round, it should now point to the new aggregator
+    // fetch new aggregator address
+    let new_aggregator: String = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Aggregator)
+        .unwrap();
+    assert_ne!(old_aggregator, new_aggregator);
+    assert_eq!(ocr2_addr2.to_string(), new_aggregator);
+    assert_eq!(proposed_aggregator, new_aggregator);
+
+    // check phase details after switching
+    let new_phase: u16 = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::PhaseId)
+        .unwrap();
+    assert_ne!(old_phase, new_phase);
+    let old_phase_agg: String = env
+        .router
+        .wrap()
+        .query_wasm_smart(
+            &env.proxy_addr,
+            &QueryMsg::PhaseAggregators {
+                phase_id: old_phase,
+            },
+        )
+        .unwrap();
+    let new_phase_agg: String = env
+        .router
+        .wrap()
+        .query_wasm_smart(
+            &env.proxy_addr,
+            &QueryMsg::PhaseAggregators {
+                phase_id: new_phase,
+            },
+        )
+        .unwrap();
+    assert_eq!(old_aggregator, old_phase_agg);
+    assert_eq!(new_aggregator, new_phase_agg);
+
     let latest_round: Round = env
         .router
         .wrap()
@@ -285,4 +391,75 @@ fn it_works() {
         .unwrap();
 
     assert_eq!(round, historic_round);
+
+    // test ownership transfer
+    let old_owner: String = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Owner)
+        .unwrap();
+    let owner2 = Addr::unchecked("new_owner");
+    // cannot transfer if not owner
+    assert!(env
+        .router
+        .execute_contract(
+            owner2.clone(),
+            env.proxy_addr.clone(),
+            &ExecuteMsg::TransferOwnership {
+                to: owner2.to_string(),
+            },
+            &[],
+        )
+        .is_err());
+    // owner can transfer ownership
+    assert!(env
+        .router
+        .execute_contract(
+            env.owner.clone(),
+            env.proxy_addr.clone(),
+            &ExecuteMsg::TransferOwnership {
+                to: env.owner.to_string(),
+            },
+            &[],
+        )
+        .is_ok());
+    // owner can transfer ownership again (overwrite pending)
+    assert!(env
+        .router
+        .execute_contract(
+            env.owner.clone(),
+            env.proxy_addr.clone(),
+            &ExecuteMsg::TransferOwnership {
+                to: owner2.to_string(),
+            },
+            &[],
+        )
+        .is_ok());
+    // current owner cannot accept ownership of new owner
+    assert!(env
+        .router
+        .execute_contract(
+            env.owner.clone(),
+            env.proxy_addr.clone(),
+            &ExecuteMsg::AcceptOwnership,
+            &[],
+        )
+        .is_err());
+    // new owner can accept ownership
+    assert!(env
+        .router
+        .execute_contract(
+            owner2.clone(),
+            env.proxy_addr.clone(),
+            &ExecuteMsg::AcceptOwnership,
+            &[],
+        )
+        .is_ok());
+    let new_owner: String = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Owner)
+        .unwrap();
+    assert_ne!(old_owner, new_owner);
+    assert_eq!(owner2.to_string(), new_owner);
 }

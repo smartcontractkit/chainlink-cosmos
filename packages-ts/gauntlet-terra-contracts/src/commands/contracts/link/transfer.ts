@@ -1,42 +1,58 @@
-import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
-import { Result } from '@chainlink/gauntlet-core'
 import { BN, logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { CATEGORIES } from '../../../lib/constants'
+import { CATEGORIES, TOKEN_DECIMALS } from '../../../lib/constants'
+import { AbstractInstruction, ExecutionContext, instructionToCommand } from '../../abstract/executionWrapper'
+import { AccAddress } from '@terra-money/terra.js'
 
-export default class TransferLink extends TerraCommand {
-  static description = 'Transfer LINK'
-  static examples = [
-    `yarn gauntlet token:transfer --network=bombay-testnet --to=[RECEIVER] --amount=[AMOUNT_IN_TOKEN_UNITS]`,
-    `yarn gauntlet token:transfer --network=bombay-testnet --to=[RECEIVER] --amount=[AMOUNT_IN_TOKEN_UNITS] --link=[TOKEN_ADDRESS] --decimals=[TOKEN_DECIMALS]`,
-  ]
+type CommandInput = {
+  to: string
+  // Units in LINK
+  amount: string
+}
 
-  static id = 'token:transfer'
-  static category = CATEGORIES.LINK
+type ContractInput = {
+  recipient: string
+  amount: string
+}
 
-  constructor(flags, args: string[]) {
-    super(flags, args)
-  }
-
-  execute = async () => {
-    const decimals = this.flags.decimals || 18
-    const link = this.flags.link || process.env.LINK
-    const amount = new BN(this.flags.amount).mul(new BN(10).pow(new BN(decimals)))
-
-    await prompt(`Sending ${this.flags.amount} LINK (${amount.toString()}) to ${this.flags.to}. Continue?`)
-    const tx = await this.call(link, {
-      transfer: {
-        recipient: this.flags.to,
-        amount: amount.toString(),
-      },
-    })
-    logger.success(`LINK transferred successfully to ${this.flags.to} (txhash: ${tx.hash})`)
-    return {
-      responses: [
-        {
-          tx,
-          contract: link,
-        },
-      ],
-    } as Result<TransactionResponse>
+const makeCommandInput = async (flags: any): Promise<CommandInput> => {
+  if (flags.input) return flags.input as CommandInput
+  return {
+    to: flags.to,
+    amount: flags.amount,
   }
 }
+
+const validateInput = (input: CommandInput): boolean => {
+  if (!AccAddress.validate(input.to)) throw new Error(`Invalid destination address`)
+  if (isNaN(Number(input.amount))) throw new Error(`Amount ${input.amount} is not a number`)
+  return true
+}
+
+const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
+  const amount = new BN(input.amount).mul(new BN(10).pow(new BN(TOKEN_DECIMALS)))
+  return {
+    recipient: input.to,
+    amount: amount.toString(),
+  }
+}
+
+const beforeExecute = (context: ExecutionContext<CommandInput, ContractInput>) => async (): Promise<void> => {
+  logger.info(
+    `Transferring ${context.contractInput.amount} (${context.input.amount}) Tokens to ${context.contractInput.recipient}`,
+  )
+  await prompt('Continue?')
+}
+
+const transferToken: AbstractInstruction<CommandInput, ContractInput> = {
+  instruction: {
+    category: CATEGORIES.LINK,
+    contract: 'cw20_base',
+    function: 'transfer',
+  },
+  makeInput: makeCommandInput,
+  validateInput: validateInput,
+  makeContractInput: makeContractInput,
+  beforeExecute,
+}
+
+export default instructionToCommand(transferToken)

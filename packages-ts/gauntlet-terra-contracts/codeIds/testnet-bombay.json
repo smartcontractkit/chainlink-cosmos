@@ -1,0 +1,10 @@
+{
+  "flags": 51109,
+  "ocr2": 51111,
+  "access_controller": 51113,
+  "deviation_flagging_validator": 51110,
+  "cw3_flex_multisig": 36059,
+  "cw4_group": 36895,
+  "cw20_base": 50820,
+  "proxy_ocr2": 51112
+}

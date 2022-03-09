@@ -1,7 +1,6 @@
-import { getRDD } from '../../../lib/rdd'
+import { RDD } from '@chainlink/gauntlet-terra'
 import { instructionToCommand, AbstractInstruction } from '../../abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
-import { CONTRACT_LIST } from '../../../lib/contracts'
 
 type CommandInput = {
   billingAccessController: string
@@ -23,10 +22,11 @@ type ContractInput = {
   min_answer: string
 }
 
-const makeCommandInput = async (flags: any): Promise<CommandInput> => {
+const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const rdd = getRDD(flags.rdd)
-  const aggregator = rdd.contracts[flags.id]
+  const rdd = RDD.getRDD(flags.rdd)
+  const contract = args[0]
+  const aggregator = rdd.contracts[contract]
   return {
     maxAnswer: aggregator.maxSubmissionValue,
     minAnswer: aggregator.minSubmissionValue,

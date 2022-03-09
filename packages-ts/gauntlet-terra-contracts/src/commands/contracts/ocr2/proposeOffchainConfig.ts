@@ -1,15 +1,17 @@
-import { getRDD } from '../../../lib/rdd'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
+import { AbstractInstruction, instructionToCommand, BeforeExecute, AfterExecute } from '../../abstract/executionWrapper'
 import { time, BN } from '@chainlink/gauntlet-core/dist/utils'
-import { serializeOffchainConfig } from '../../../lib/encoding'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
 import { CATEGORIES } from '../../../lib/constants'
-import { CONTRACT_LIST } from '../../../lib/contracts'
+import { getLatestOCRConfigEvent, longsInObjToNumbers, printDiff } from '../../../lib/inspection'
+import { serializeOffchainConfig, deserializeConfig, generateSecretWords } from '../../../lib/encoding'
+import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 
 type CommandInput = {
   proposalId: string
   offchainConfig: OffchainConfig
   offchainConfigVersion: number
+  randomSecret?: string
 }
 
 type ContractInput = {
@@ -87,24 +89,79 @@ export const getOffchainConfigInput = (rdd: any, contract: string): OffchainConf
   return input
 }
 
+export const prepareOffchainConfigForDiff = (config: OffchainConfig, extra?: Object) => {
+  return longsInObjToNumbers({
+    ...config,
+    ...(extra || {}),
+    offchainPublicKeys: config.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
+  })
+}
+
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const rdd = getRDD(flags.rdd)
+
+  if (!process.env.SECRET) {
+    throw new Error('SECRET is not set in env!')
+  }
+
+  const { rdd: rddPath, randomSecret } = flags
+
+  const rdd = RDD.getRDD(rddPath)
   const contract = args[0]
 
   return {
     proposalId: flags.proposalId,
     offchainConfig: getOffchainConfigInput(rdd, contract),
     offchainConfigVersion: 2,
+    randomSecret: randomSecret || (await generateSecretWords()),
   }
 }
 
+const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
+  // Config in contract
+  const event = await getLatestOCRConfigEvent(context.provider, context.contract)
+  const offchainConfigInContract = event?.offchain_config
+    ? deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
+    : ({} as OffchainConfig)
+  const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, { f: event?.f })
+
+  // Proposed config
+  const proposedOffchainConfig = deserializeConfig(Buffer.from(context.contractInput.offchain_config, 'base64'))
+  const proposedConfig = prepareOffchainConfigForDiff(proposedOffchainConfig)
+
+  logger.info('Review the proposed changes below: green - added, red - deleted.')
+  printDiff(configInContract, proposedConfig)
+
+  logger.info(
+    `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
+    SECRET: ${context.input.randomSecret}`,
+  )
+
+  await prompt('Continue?')
+}
+
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
-  const offchainConfig = await serializeOffchainConfig(input.offchainConfig)
+  const { offchainConfig } = await serializeOffchainConfig(
+    input.offchainConfig,
+    process.env.SECRET!,
+    input.randomSecret,
+  )
+
   return {
     id: input.proposalId,
     offchain_config_version: 2,
-    offchain_config: offchainConfig,
+    offchain_config: offchainConfig.toString('base64'),
+  }
+}
+
+const afterExecute: AfterExecute<CommandInput, ContractInput> = (context) => async (result): Promise<any> => {
+  logger.success(`Tx succeded at ${result.responses[0].tx.hash}`)
+  logger.info(
+    `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
+    SECRET: ${context.input.randomSecret}`,
+  )
+  return {
+    randomSecret: context.input.randomSecret,
   }
 }
 
@@ -174,6 +231,8 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   makeInput: makeCommandInput,
   validateInput: validateInput,
   makeContractInput: makeContractInput,
+  beforeExecute,
+  afterExecute,
 }
 
 export default instructionToCommand(instruction)

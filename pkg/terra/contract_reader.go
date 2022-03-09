@@ -67,66 +67,153 @@ func (r *OCR2Reader) LatestConfig(ctx context.Context, changedInBlock uint64) (t
 
 	for _, event := range res.TxResponses[0].Logs[0].Events {
 		if event.Type == "wasm-set_config" {
-			return parseAttributes(event.Attributes)
+			cc, unknown, err := parseAttributes(event.Attributes)
+			if len(unknown) > 0 {
+				r.lggr.Warnf("wasm-set_config event contained unrecognized attributes: %v", unknown)
+			}
+			return cc, err
 		}
 	}
 	return types.ContractConfig{}, fmt.Errorf("No set_config event found for tx %s", res.TxResponses[0].TxHash)
 }
 
-func parseAttributes(attrs []cosmosSDK.Attribute) (output types.ContractConfig, err error) {
+// parseAttributes returns a ContractConfig parsed from attrs.
+// An error will be returned if any of the 8 required attributes are not present, or if any duplicates are found for
+// unique attributes.
+// unknownKeys contains counts of any unrecognized keys, which are otherwise ignored.
+func parseAttributes(attrs []cosmosSDK.Attribute) (output types.ContractConfig, unknownKeys map[string]int, err error) {
+	const uniqueKeys = 8
+	known := make(map[string]struct{}, uniqueKeys)
+	first := func(key string) bool {
+		_, ok := known[key]
+		if ok {
+			return false
+		}
+		known[key] = struct{}{}
+		return true
+	}
 	for _, attr := range attrs {
 		key, value := attr.Key, attr.Value
 		switch key {
 		case "latest_config_digest":
+			if !first(key) {
+				err = ErrAttrDupe(key)
+				return
+			}
 			// parse byte array encoded as hex string
-			if err := HexToConfigDigest(value, &output.ConfigDigest); err != nil {
-				return types.ContractConfig{}, err
+			if err = HexToConfigDigest(value, &output.ConfigDigest); err != nil {
+				err = &ErrAttrInvalid{Err: err, Key: key}
+				return
 			}
 		case "config_count":
-			i, err := strconv.ParseInt(value, 10, 64)
+			if !first(key) {
+				err = ErrAttrDupe(key)
+				return
+			}
+			var i int64
+			i, err = strconv.ParseInt(value, 10, 64)
 			if err != nil {
-				return types.ContractConfig{}, err
+				err = &ErrAttrInvalid{Err: err, Key: key}
+				return
 			}
 			output.ConfigCount = uint64(i)
 		case "signers":
+			known[key] = struct{}{}
 			// this assumes the value will be a hex encoded string which each signer 32 bytes and each signer will be a separate parameter
 			var v []byte
-			if err := HexToByteArray(value, &v); err != nil {
-				return types.ContractConfig{}, err
+			if err = HexToByteArray(value, &v); err != nil {
+				err = &ErrAttrInvalid{Err: err, Key: key}
+				return
+			}
+			if len(v) != 32 {
+				err = fmt.Errorf("failed to parse attribute %q: length '%d' != 32", key, len(v))
+				return
 			}
 			output.Signers = append(output.Signers, v)
 		case "transmitters":
+			known[key] = struct{}{}
 			// this assumes the return value be a string for each transmitter and each transmitter will be separate
 			output.Transmitters = append(output.Transmitters, types.Account(attr.Value))
 		case "f":
-			i, err := strconv.ParseInt(value, 10, 8)
+			if !first(key) {
+				err = ErrAttrDupe(key)
+				return
+			}
+			var i int64
+			i, err = strconv.ParseInt(value, 10, 8)
 			if err != nil {
-				return types.ContractConfig{}, err
+				err = &ErrAttrInvalid{Err: err, Key: key}
+				return
 			}
 			output.F = uint8(i)
 		case "onchain_config":
+			if !first(key) {
+				err = ErrAttrDupe(key)
+				return
+			}
+			var config []byte
 			// parse byte array encoded as base64
-			config, err := base64.StdEncoding.DecodeString(value)
+			config, err = base64.StdEncoding.DecodeString(value)
 			if err != nil {
-				return types.ContractConfig{}, err
+				err = &ErrAttrInvalid{Err: err, Key: key}
+				return
 			}
 			output.OnchainConfig = config
 		case "offchain_config_version":
-			i, err := strconv.ParseInt(value, 10, 64)
+			if !first(key) {
+				err = ErrAttrDupe(key)
+				return
+			}
+			var i int64
+			i, err = strconv.ParseInt(value, 10, 64)
 			if err != nil {
-				return types.ContractConfig{}, err
+				err = &ErrAttrInvalid{Err: err, Key: key}
+				return
 			}
 			output.OffchainConfigVersion = uint64(i)
 		case "offchain_config":
+			if !first(key) {
+				err = ErrAttrDupe(key)
+				return
+			}
+			var bytes []byte
 			// parse byte array encoded as base64
-			bytes, err := base64.StdEncoding.DecodeString(value)
+			bytes, err = base64.StdEncoding.DecodeString(value)
 			if err != nil {
-				return types.ContractConfig{}, err
+				err = &ErrAttrInvalid{Err: err, Key: key}
+				return
 			}
 			output.OffchainConfig = bytes
+		default:
+			if unknownKeys == nil {
+				unknownKeys = make(map[string]int)
+			}
+			unknownKeys[key]++
 		}
 	}
-	return output, nil
+	if len(known) != uniqueKeys {
+		err = fmt.Errorf("expected %d types of known keys, but found %d: %v", uniqueKeys, len(known), known)
+	}
+	return
+}
+
+// ErrAttrInvalid is returned when parsing fails.
+type ErrAttrInvalid struct {
+	Key string
+	Err error
+}
+
+func (e *ErrAttrInvalid) Error() string {
+	return fmt.Sprintf("failed to parse attribute %q: %s", e.Key, e.Err.Error())
+}
+
+func (e *ErrAttrInvalid) Unwrap() error { return e.Err }
+
+// ErrAttrDupe is returned when a duplicate attribute is found for a unique key.
+type ErrAttrDupe string
+
+func (e ErrAttrDupe) Error() string {
+	return fmt.Sprintf("duplicate attributes for %q", string(e))
 }
 
 // LatestTransmissionDetails fetches the latest transmission details from address state

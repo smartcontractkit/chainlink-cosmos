@@ -1,7 +1,7 @@
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { CATEGORIES, CW20_BASE_CODE_IDs } from '../../../lib/constants'
+import { CATEGORIES, CW20_BASE_CODE_IDs, TOKEN_DECIMALS } from '../../../lib/constants'
 
 export default class DeployLink extends TerraCommand {
   static description = 'Deploys LINK token contract'
@@ -19,12 +19,16 @@ export default class DeployLink extends TerraCommand {
     super(flags, args)
   }
 
+  makeRawTransaction = async () => {
+    throw new Error('Deploy LINK command: makeRawTransaction method not implemented')
+  }
+
   execute = async () => {
     await prompt(`Begin deploying LINK Token?`)
     const deploy = await this.deploy(CW20_BASE_CODE_IDs[this.flags.network], {
       name: 'ChainLink Token',
       symbol: 'LINK',
-      decimals: 18,
+      decimals: TOKEN_DECIMALS,
       initial_balances: [{ address: this.wallet.key.accAddress, amount: '1000000000000000000000000000' }],
       marketing: {
         project: 'Chainlink',
