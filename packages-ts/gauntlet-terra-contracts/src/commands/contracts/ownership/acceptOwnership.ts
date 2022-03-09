@@ -14,9 +14,6 @@ const validateInput = (input: CommandInput): boolean => true
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async (signer) => {
   const currentOwner = await context.provider.wasm.contractQuery(context.contract, 'owner' as any)
-  if (!context.flags.rdd) {
-    throw new Error(`No RDD flag provided!`)
-  }
   const contract = RDD.getContractFromRDD(RDD.getRDD(context.flags.rdd), context.contract)
   logger.info(`Accepting Ownership Transfer of contract of type "${contract.type}":
     - Contract: ${contract.address} ${contract.description ? '- ' + contract.description : ''}

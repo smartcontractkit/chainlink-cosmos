@@ -28,10 +28,6 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 
   const { rdd: rddPath } = flags
 
-  if (!rddPath) {
-    throw new Error('No RDD flag provided!')
-  }
-
   const rdd = RDD.getRDD(rddPath)
   const contract = args[0]
   const aggregator = rdd.contracts[contract]

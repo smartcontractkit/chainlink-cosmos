@@ -24,8 +24,6 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   if (flags.input) return flags.input as CommandInput
   const { rdd: rddPath, secret } = flags
 
-  if (!rddPath) throw new Error('RDD flag is required. Provide it with --rdd flag')
-
   const rdd = RDD.getRDD(rddPath)
   const contract = args[0]
 

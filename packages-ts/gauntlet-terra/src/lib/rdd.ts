@@ -4,6 +4,12 @@ import { join } from 'path'
 export const getRDD = (path: string, fileDescription: string = 'RDD'): any => {
   let pathToUse
   // test whether the file exists as a relative path or an absolute path
+  if (!path) {
+    path = process.env.RDD
+    if (!path) {
+      throw new Error(`No reference data directory specified!  Must pass --rdd flag or set RDD=...`)
+    }
+  }
   if (existsSync(path)) {
     pathToUse = path
   } else if (existsSync(join(process.cwd(), path))) {
