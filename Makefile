@@ -32,6 +32,7 @@ ifeq ($(OSFLAG),$(OSX))
 	asdf plugin-add rust https://github.com/code-lever/asdf-rust.git || true
 	asdf plugin-add golang https://github.com/kennyp/asdf-golang.git || true
 	asdf plugin-add ginkgo https://github.com/jimmidyson/asdf-ginkgo.git || true
+	asdf plugin-add pulumi || true
 	asdf install
 endif
 ifeq ($(OSFLAG),$(LINUX))

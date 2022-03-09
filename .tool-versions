@@ -2,3 +2,4 @@ nodejs 14.19.0
 rust 1.59.0
 golang 1.17.8
 ginkgo 2.1.2
+pulumi 3.25.1
