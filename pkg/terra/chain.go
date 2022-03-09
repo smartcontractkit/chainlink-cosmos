@@ -8,7 +8,8 @@ import (
 
 type ChainSet interface {
 	ServiceCtx
-	Chain(id string) (Chain, error)
+	// Chain returns chain for the given id.
+	Chain(ctx context.Context, id string) (Chain, error)
 }
 
 type Chain interface {
