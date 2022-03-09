@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order, Response,
+    attr, to_binary, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order, Reply, Response,
     StdResult, SubMsg, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
@@ -33,6 +33,9 @@ const GIGA: u128 = 10u128.pow(9);
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:ocr2";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+// ID used by the reply call for validator::validate
+const REPLY_VALIDATOR_VALIDATE: u64 = 1;
 
 // Converts a raw Map key back into Addr. Works around a cw-storage-plus limitation
 fn to_addr(raw_key: Vec<u8>) -> Addr {
@@ -235,6 +238,24 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Proposal { id } => to_binary(&query_proposal(deps, id)?),
         QueryMsg::Version => Ok(to_binary(CONTRACT_VERSION)?),
         QueryMsg::Owner => Ok(to_binary(&OWNER.query_owner(deps)?)?),
+    }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(_deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+    match msg.id {
+        REPLY_VALIDATOR_VALIDATE => {
+            // The docs are unclear, but apparently we need an empty error handler to not revert the whole tx
+            // if validation fails.
+            //
+            // SEMANTICS.md
+            // > The error may then be intercepted by the calling contract (for ReplyOn::Always and ReplyOn::Error).
+            // > In this case, the messages error doesn't abort the whole transaction
+
+            Ok(Response::default())
+        }
+        // There are no other submessages in use
+        id => Err(ContractError::UnknownReplyId { id }),
     }
 }
 
@@ -638,18 +659,20 @@ fn validate_answer(deps: Deps, config: &Config, round_id: u32, answer: i128) -> 
         // Validation happens in a submessage, which will "will revert any partial state changes due to this message,
         // but not revert any state changes in the calling contract." This way the validator going over the gas limit
         // or failing validation won't block publishing to the feed.
-        SubMsg::new(WasmMsg::Execute {
-            contract_addr: validator.address.to_string(),
-            msg: to_binary(&ValidatorMsg::Validate {
-                previous_round_id,
-                previous_answer,
-                round_id,
-                answer,
-            })
-            .ok()
-            .unwrap(), // maybe use Result<Option<SubMsg> _> so we can return the error from here
-            funds: vec![],
-        })
+        SubMsg::reply_on_error(
+            WasmMsg::Execute {
+                contract_addr: validator.address.to_string(),
+                msg: to_binary(&ValidatorMsg::Validate {
+                    previous_round_id,
+                    previous_answer,
+                    round_id,
+                    answer,
+                })
+                .unwrap(), // maybe use Result<Option<SubMsg> _> so we can return the error from here
+                funds: vec![],
+            },
+            REPLY_VALIDATOR_VALIDATE,
+        )
         .with_gas_limit(validator.gas_limit),
     )
 }
