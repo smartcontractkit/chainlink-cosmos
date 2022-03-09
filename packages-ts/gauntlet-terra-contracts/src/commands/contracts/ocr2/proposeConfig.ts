@@ -28,10 +28,6 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 
   const { rdd: rddPath } = flags
 
-  if (!rddPath) {
-    throw new Error('No RDD flag provided!')
-  }
-
   const rdd = RDD.getRDD(rddPath)
   const contract = args[0]
   const aggregator = rdd.contracts[contract]
@@ -82,8 +78,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     f: event?.f[0],
     transmitters: event?.transmitters,
     signers: event?.signers.map((s) => Buffer.from(s, 'hex').toString('base64')),
-    onchain_config: event?.onchain_config[0],
-    // todo: add payees to set_config event (https://github.com/smartcontractkit/chainlink-terra/issues/180)
+    payees: event?.payees,
   }
 
   const proposedConfig = {
@@ -91,7 +86,6 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     transmitters: context.contractInput.transmitters,
     signers: context.contractInput.signers,
     payees: context.contractInput.payees,
-    onchain_config: context.contractInput.onchain_config,
   }
 
   logger.info('Review the proposed changes below: green - added, red - deleted.')

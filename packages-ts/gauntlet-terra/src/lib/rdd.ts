@@ -2,8 +2,13 @@ import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 
 export const getRDD = (path: string, fileDescription: string = 'RDD'): any => {
-  let pathToUse
+  path = path || process.env.RDD
+  if (!path) {
+    throw new Error(`No reference data directory specified!  Must pass in the '--rdd' flag or set the 'RDD' env var`)
+  }
+
   // test whether the file exists as a relative path or an absolute path
+  let pathToUse
   if (existsSync(path)) {
     pathToUse = path
   } else if (existsSync(join(process.cwd(), path))) {
