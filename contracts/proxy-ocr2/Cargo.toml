@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 library = []
 
 [dependencies]
-ocr2 = { path = "../ocr2", default-features = false }
+ocr2 = { path = "../ocr2", default-features = false, features = ["library"] }
 owned = { version = "0.1", path = "../../crates/owned" }
 cosmwasm-std = { version = "0.16.2" }
 cosmwasm-storage = { version = "0.16.0" }
