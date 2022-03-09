@@ -21,6 +21,7 @@ type Chain interface {
 	Reader(nodeName string) (client.Reader, error)
 }
 
+// ServiceCtx replaces Service interface due to new Start(ctx) method signature.
 type ServiceCtx interface {
 	// Start starts the service, context can be cancelled to abort Start routine.
 	Start(context.Context) error

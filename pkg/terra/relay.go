@@ -102,6 +102,7 @@ func (r *Relayer) Healthy() error {
 	return r.chainSet.Healthy()
 }
 
+// NewOCR2Provider creates a new OCR2ProviderCtx instance.
 func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relaytypes.OCR2ProviderCtx, error) {
 	spec, ok := s.(OCR2Spec)
 	if !ok {
