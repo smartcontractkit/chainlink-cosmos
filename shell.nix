@@ -23,7 +23,7 @@ pkgs.mkShell {
     gopls
     delve
     golangci-lint
-    goimports
+    gotools
 
     # NodeJS + TS
     nodePackages.typescript-language-server

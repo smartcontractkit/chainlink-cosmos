@@ -38,6 +38,7 @@ type ChainCfg struct {
 	MaxMsgsPerBatch       null.Int
 	OCR2CachePollPeriod   *models.Duration
 	OCR2CacheTTL          *models.Duration
+	TxMsgTimeout          *models.Duration
 }
 
 func (c *ChainCfg) Scan(value interface{}) error {

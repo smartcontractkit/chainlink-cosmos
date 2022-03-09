@@ -1,8 +1,8 @@
 mod integration_tests;
 
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
-    StdError, StdResult,
+    entry_point, to_binary, Addr, Deps, DepsMut, Env, Event, MessageInfo, QueryResponse, Response,
+    StdError,
 };
 
 use cw_storage_plus::{Item, Map, U16Key};
@@ -147,7 +147,12 @@ pub fn execute(
             let address = deps.api.addr_validate(&address)?;
             validate_ownership(deps.as_ref(), &env, info)?;
             PROPOSED_CONTRACT.save(deps.storage, &address)?;
-            Ok(Response::default())
+            let current_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
+            Ok(Response::default().add_event(
+                Event::new("propose_contract")
+                    .add_attribute("current_address", current_address)
+                    .add_attribute("proposed_address", address),
+            ))
         }
         ExecuteMsg::ConfirmContract { address } => {
             let address = deps.api.addr_validate(&address)?;
@@ -161,19 +166,24 @@ pub fn execute(
 
             // Update state
             PROPOSED_CONTRACT.remove(deps.storage);
-            let current_phase =
-                CURRENT_PHASE.update(deps.storage, |mut phase| -> StdResult<Phase> {
-                    phase.id += 1;
-                    phase.contract_address = address;
-                    Ok(phase)
-                })?;
+
+            let mut current_phase = CURRENT_PHASE.load(deps.storage)?;
+            current_phase.id += 1;
+            let old_address = current_phase.contract_address;
+            current_phase.contract_address = address;
+            CURRENT_PHASE.save(deps.storage, &current_phase)?;
+
             PHASES.save(
                 deps.storage,
                 current_phase.id.into(),
                 &current_phase.contract_address,
             )?;
 
-            Ok(Response::default())
+            Ok(Response::default().add_event(
+                Event::new("confirm_contract")
+                    .add_attribute("old_address", old_address)
+                    .add_attribute("new_address", current_phase.contract_address),
+            ))
         }
         ExecuteMsg::TransferOwnership { to } => {
             Ok(OWNER.execute_transfer_ownership(deps, info, api.addr_validate(&to)?)?)
