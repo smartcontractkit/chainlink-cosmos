@@ -3,7 +3,7 @@ import { AbstractInstruction, instructionToCommand, BeforeExecute, AfterExecute 
 import { time, BN } from '@chainlink/gauntlet-core/dist/utils'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
 import { CATEGORIES } from '../../../lib/constants'
-import { getLatestOCRConfigEvent, printDiff } from '../../../lib/inspection'
+import { getLatestOCRConfigEvent, longsInObjToNumbers, printDiff } from '../../../lib/inspection'
 import { serializeOffchainConfig, deserializeConfig, generateSecretWords } from '../../../lib/encoding'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 
@@ -110,24 +110,26 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 }
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
+  // Config in contract
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
-  const offchainConfig = event?.offchain_config
-    ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
+  const offchainConfigInContract = event?.offchain_config
+    ? deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
     : ({} as OffchainConfig)
-
-  const contractOffchainConfig = {
-    ...offchainConfig,
-    offchainPublicKeys: offchainConfig.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
+  const configInContract = longsInObjToNumbers({
+    ...offchainConfigInContract,
+    offchainPublicKeys: offchainConfigInContract.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
     f: event?.f,
-  }
+  })
 
-  const proposedOffchainConfig = {
-    ...context.input.offchainConfig,
-    configPublicKeys: undefined,
-  }
+  // Proposed config
+  const proposedOffchainConfig = deserializeConfig(Buffer.from(context.contractInput.offchain_config, 'base64'))
+  const proposedConfig = longsInObjToNumbers({
+    ...proposedOffchainConfig,
+    offchainPublicKeys: proposedOffchainConfig.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
+  })
 
   logger.info('Review the proposed changes below: green - added, red - deleted.')
-  printDiff(contractOffchainConfig, proposedOffchainConfig)
+  printDiff(configInContract, proposedConfig)
 
   logger.info(
     `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
@@ -138,11 +140,16 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
+  if (!process.env.SECRET) {
+    throw new Error('SECRET is not set in env!')
+  }
+
   const { offchainConfig } = await serializeOffchainConfig(
     input.offchainConfig,
     process.env.SECRET!,
     input.randomSecret,
   )
+
   return {
     id: input.proposalId,
     offchain_config_version: 2,
