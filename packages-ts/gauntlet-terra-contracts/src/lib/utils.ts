@@ -20,7 +20,7 @@ export function dateFromUnix(unixTimestamp: number): Date {
 }
 
 export const fmtAddress = (address: AccAddress): string => {
-  const e = '\033['
+  const e = '['
   return address == multisig
     ? `[${e}2;31m multisig🧳${e}2;33m${multisig} ${e}0;0m]`
     : `[${e}0;33m👝${address} ${e}0;0m]`
