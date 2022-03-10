@@ -8,6 +8,12 @@ import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg, Expiration } from '../lib/
 
 export const DEFAULT_VOTING_PERIOD_IN_SECS = 24 * 60 * 60
 
+export const multisig: AccAddress = ((): AccAddress => {
+  const address = process.env.CW3_FLEX_MULTISIG
+  if (!AccAddress.validate(address)) throw new Error(`Invalid Multisig wallet address`)
+  return address
+})()
+
 type ProposalAction = (
   signer: AccAddress,
   proposalId: number,
@@ -17,7 +23,6 @@ type ProposalAction = (
 export const wrapCommand = (command) => {
   return class Multisig extends TerraCommand {
     command: TerraCommand
-    multisig: AccAddress
 
     static id = `${command.id}:multisig`
 
@@ -26,9 +31,7 @@ export const wrapCommand = (command) => {
     }
 
     buildCommand = async (flags, args): Promise<TerraCommand> => {
-      if (!AccAddress.validate(process.env.CW3_FLEX_MULTISIG)) throw new Error(`Invalid Multisig wallet address`)
       if (!AccAddress.validate(process.env.CW4_GROUP)) throw new Error(`Invalid Multisig group address`)
-      this.multisig = process.env.CW3_FLEX_MULTISIG as AccAddress
 
       const c = new command(flags, args) as TerraCommand
       await c.invokeMiddlewares(c, c.middlewares)
@@ -37,8 +40,8 @@ export const wrapCommand = (command) => {
     }
 
     makeRawTransaction = async (signer: AccAddress, state?: State) => {
-      const message = await this.command.makeRawTransaction(this.multisig)
-      await this.command.simulate(this.multisig, [message])
+      const message = await this.command.makeRawTransaction(multisig)
+      await this.command.simulate(multisig, [message])
       logger.info(`Command simulation successful.`)
 
       const operations = {
@@ -124,7 +127,7 @@ export const wrapCommand = (command) => {
           latest: expiration,
         },
       }
-      return new MsgExecuteContract(signer, this.multisig, proposeInput)
+      return new MsgExecuteContract(signer, multisig, proposeInput)
     }
 
     makeAcceptTransaction: ProposalAction = async (signer, proposalId) => {
@@ -135,7 +138,7 @@ export const wrapCommand = (command) => {
           proposal_id: proposalId,
         },
       }
-      return new MsgExecuteContract(signer, this.multisig, approvalInput)
+      return new MsgExecuteContract(signer, multisig, approvalInput)
     }
 
     makeExecuteTransaction: ProposalAction = async (signer, proposalId) => {
@@ -145,11 +148,11 @@ export const wrapCommand = (command) => {
           proposal_id: proposalId,
         },
       }
-      return new MsgExecuteContract(signer, this.multisig, executeInput)
+      return new MsgExecuteContract(signer, multisig, executeInput)
     }
 
     fetchState = async (proposalId?: number): Promise<State> => {
-      return fetchProposalState(this.provider)(this.multisig, proposalId)
+      return fetchProposalState(this.provider)(multisig, proposalId)
     }
 
     printPostInstructions = async (proposalId: number) => {
@@ -192,7 +195,7 @@ export const wrapCommand = (command) => {
       }
 
       if (this.flags.execute) {
-        await this.command.beforeExecute(this.multisig)
+        await this.command.beforeExecute(multisig)
 
         await prompt(`Continue ${actionMessage[state.proposal.nextAction]} multisig proposal?`)
         const tx = await this.signAndSend([rawTx])
@@ -200,7 +203,7 @@ export const wrapCommand = (command) => {
           responses: [
             {
               tx,
-              contract: this.multisig,
+              contract: multisig,
             },
           ],
           data: {
@@ -238,7 +241,7 @@ export const wrapCommand = (command) => {
         responses: [
           {
             tx: {},
-            contract: this.multisig,
+            contract: multisig,
           },
         ],
         data: {

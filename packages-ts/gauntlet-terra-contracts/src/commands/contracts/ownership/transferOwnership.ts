@@ -4,6 +4,7 @@ import { AbstractInstruction, BeforeExecute } from '../../abstract/executionWrap
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { fmtAddress } from '../../../lib/utils'
 
 type CommandInput = {
   to: string
@@ -34,12 +35,12 @@ const validateInput = (input: CommandInput): boolean => {
 }
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
-  const currentOwner = await context.provider.wasm.contractQuery(context.contract, 'owner' as any)
+  const currentOwner: AccAddress = await context.provider.wasm.contractQuery(context.contract, 'owner' as any)
   const contract = RDD.getContractFromRDD(RDD.getRDD(context.flags.rdd), context.contract)
   logger.info(`Proposing Ownership Transfer of contract of type "${contract.type}":
     - Contract: ${contract.address} ${contract.description ? '- ' + contract.description : ''}
-    - Current Owner: ${currentOwner}
-    - Next Owner: ${context.contractInput.to}
+    - Current Owner: ${fmtAddress(currentOwner)}
+    - Next Owner: ${fmtAddress(context.contractInput.to)}
   `)
   await prompt('Continue?')
 }
