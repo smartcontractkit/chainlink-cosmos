@@ -43,3 +43,4 @@ rand = "0.8"
 cw-multi-test = "0.9.1"
 cw20-base = "0.9.1"
 cosmwasm-vm = { version = "0.16.0", features = ["iterator"] }
+flags = { path = "../flags", default-features = false, features = ["library"] }

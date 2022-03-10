@@ -1001,6 +1001,7 @@ dependencies = [
  "cw20-base",
  "deviation-flagging-validator",
  "ed25519-zebra 3.0.0",
+ "flags",
  "hex",
  "owned",
  "rand",
