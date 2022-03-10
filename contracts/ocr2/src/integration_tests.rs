@@ -1,15 +1,16 @@
 #![cfg(test)]
 #![cfg(not(tarpaulin_include))]
-use crate::contract::{execute, instantiate, query};
+use crate::contract::{execute, instantiate, query, reply};
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, LatestConfigDetailsResponse, LatestTransmissionDetailsResponse,
     LinkAvailableForPaymentResponse, QueryMsg,
 };
-use crate::state::{Billing, Round};
+use crate::state::{Billing, Round, Validator};
 use crate::Decimal;
 use cosmwasm_std::{to_binary, Addr, Binary, Empty, Uint128};
 use cw20::Cw20Coin;
 use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
+use deviation_flagging_validator as validator;
 use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes};
 use rand::thread_rng;
 use std::convert::TryFrom;
@@ -22,7 +23,7 @@ fn mock_app() -> App {
 }
 
 pub fn contract_ocr2() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(execute, instantiate, query);
+    let contract = ContractWrapper::new(execute, instantiate, query).with_reply(reply);
     Box::new(contract)
 }
 
@@ -44,6 +45,24 @@ pub fn contract_access_controller() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
+pub fn contract_validator() -> Box<dyn Contract<Empty>> {
+    let contract = ContractWrapper::new(
+        validator::contract::execute,
+        validator::contract::instantiate,
+        validator::contract::query,
+    );
+    Box::new(contract)
+}
+
+pub fn contract_flags() -> Box<dyn Contract<Empty>> {
+    let contract = ContractWrapper::new(
+        flags::contract::execute,
+        flags::contract::instantiate,
+        flags::contract::query,
+    );
+    Box::new(contract)
+}
+
 #[allow(unused)]
 struct Env {
     router: App,
@@ -60,7 +79,12 @@ struct Env {
 
 const ANSWER: i128 = 1234567890;
 
-fn transmit_report(env: &mut Env, epoch: u32, round: u8, answer: i128) {
+fn transmit_report(
+    env: &mut Env,
+    epoch: u32,
+    round: u8,
+    answer: i128,
+) -> cw_multi_test::AppResponse {
     // Build a report
     let len: u8 = 4;
     let mut report = Vec::new();
@@ -119,9 +143,12 @@ fn transmit_report(env: &mut Env, epoch: u32, round: u8, answer: i128) {
         report: Binary(report),
         signatures,
     };
-    env.router
+
+    let response = env
+        .router
         .execute_contract(transmitter.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();
+    response
 }
 
 fn setup() -> Env {
@@ -956,6 +983,115 @@ fn revert_payouts_correctly() {
             assert_eq!(balance, observation_payment);
         }
     }
+}
+
+#[test]
+fn transmit_failing_validation() {
+    let mut env = setup();
+
+    let flags_id = env.router.store_code(contract_flags());
+    let validator_id = env.router.store_code(contract_validator());
+
+    // setup flags
+
+    let flags_addr = env
+        .router
+        .instantiate_contract(
+            flags_id,
+            env.owner.clone(),
+            &flags::msg::InstantiateMsg {
+                lowering_access_controller: env.billing_access_controller_addr.to_string(),
+                raising_access_controller: env.billing_access_controller_addr.to_string(),
+            },
+            &[],
+            "flags",
+            None,
+        )
+        .unwrap();
+
+    let validator_addr = env
+        .router
+        .instantiate_contract(
+            validator_id,
+            env.owner.clone(),
+            &validator::msg::InstantiateMsg {
+                flags: flags_addr.to_string(),
+                flagging_threshold: 1, // 1%?
+            },
+            &[],
+            "validator",
+            None,
+        )
+        .unwrap();
+
+    // Add validator to the flags access controller list
+    env.router
+        .execute_contract(
+            env.owner.clone(),
+            env.billing_access_controller_addr.clone(),
+            &access_controller::msg::ExecuteMsg::AddAccess {
+                address: validator_addr.to_string(),
+            },
+            &[],
+        )
+        .unwrap();
+
+    // Configure the aggregator to use the validator
+    env.router
+        .execute_contract(
+            env.owner.clone(),
+            env.ocr2_addr.clone(),
+            &ExecuteMsg::SetValidatorConfig {
+                config: Some(Validator {
+                    address: validator_addr.clone(),
+                    gas_limit: u64::MAX,
+                }),
+            },
+            &[],
+        )
+        .unwrap();
+
+    // -- call transmit
+    transmit_report(&mut env, 1, 1, 1);
+
+    // check validator didn't flag
+    let flagged: bool = env
+        .router
+        .wrap()
+        .query_wasm_smart(
+            &flags_addr,
+            &flags::msg::QueryMsg::Flag {
+                subject: env.ocr2_addr.to_string(),
+            },
+        )
+        .unwrap();
+    assert!(!flagged);
+
+    // this should be out of threshold
+    assert!(!validator::contract::is_valid(1, 1, 1000).unwrap());
+    transmit_report(&mut env, 1, 2, 1000);
+
+    // check validator flagged
+    let flagged: bool = env
+        .router
+        .wrap()
+        .query_wasm_smart(
+            &flags_addr,
+            &flags::msg::QueryMsg::Flag {
+                subject: env.ocr2_addr.to_string(),
+            },
+        )
+        .unwrap();
+    assert!(flagged);
+
+    // read latest value to be -1
+    let round: Round = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestRoundData)
+        .unwrap();
+    assert_eq!(round.round_id, 2);
+    assert_eq!(round.answer, 1000);
 }
 
 #[test]
