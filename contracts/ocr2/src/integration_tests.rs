@@ -1,6 +1,5 @@
 #![cfg(test)]
 #![cfg(not(tarpaulin_include))]
-use crate::contract::tests::REPORT;
 use crate::contract::{execute, instantiate, query};
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, LatestConfigDetailsResponse, LatestTransmissionDetailsResponse,
@@ -59,17 +58,34 @@ struct Env {
     config_digest: [u8; 32],
 }
 
-fn transmit_report(env: &mut Env, epoch: u32, round: u8) {
-    let report = REPORT.to_vec();
+const ANSWER: i128 = 1234567890;
 
+fn transmit_report(env: &mut Env, epoch: u32, round: u8, answer: i128) {
+    // Build a report
+    let len: u8 = 4;
+    let mut report = Vec::new();
+    report.extend_from_slice(&[97, 91, 43, 83]); // observations_timestamp
+    let mut observers = [0; 32];
+    for i in 0..len {
+        observers[i as usize] = i;
+    }
+    report.extend_from_slice(&observers); // observers
+    report.extend_from_slice(&[len]); // len
+    let bytes = answer.to_be_bytes();
+    for _ in 0..len {
+        report.extend_from_slice(&bytes); // observation
+    }
+    report.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0]); // juels per luna (1 with 18 decimal places)
+
+    // Generate report context
     let mut report_context = vec![0; 96];
     let (cfg_digest, ctx) = report_context.split_at_mut(32);
     let (epoch_and_round, _context) = ctx.split_at_mut(32);
     cfg_digest.copy_from_slice(&env.config_digest);
 
-    // epoch 1
+    // epoch
     epoch_and_round[27..27 + 4].clone_from_slice(&epoch.to_be_bytes());
-    // round 1
+    // round
     epoch_and_round[31] = round;
 
     // determine hash to sign
@@ -369,7 +385,7 @@ fn transmit_happy_path() {
     assert_eq!(decimals, 18);
 
     // -- call transmit
-    transmit_report(&mut env, 1, 1);
+    transmit_report(&mut env, 1, 1, ANSWER);
 
     let transmitter = Addr::unchecked(env.transmitters.first().cloned().unwrap());
 
@@ -380,7 +396,7 @@ fn transmit_happy_path() {
         .unwrap();
     assert_eq!(data.observations_timestamp, 1633364819);
     assert_eq!(data.transmission_timestamp, 1571797419);
-    assert_eq!(data.answer, 1234567890i128);
+    assert_eq!(data.answer, ANSWER);
 
     let response: LatestTransmissionDetailsResponse = env
         .router
@@ -672,7 +688,7 @@ fn set_link_token() {
     assert_eq!(decimals, 18);
 
     // -- call transmit
-    transmit_report(&mut env, 1, 1);
+    transmit_report(&mut env, 1, 1, ANSWER);
 
     let transmitter = Addr::unchecked(env.transmitters.first().cloned().unwrap());
 
@@ -683,7 +699,7 @@ fn set_link_token() {
         .unwrap();
     assert_eq!(data.observations_timestamp, 1633364819);
     assert_eq!(data.transmission_timestamp, 1571797419);
-    assert_eq!(data.answer, 1234567890i128);
+    assert_eq!(data.answer, ANSWER);
 
     let response: LatestTransmissionDetailsResponse = env
         .router
@@ -843,7 +859,7 @@ fn revert_payouts_correctly() {
     assert_eq!(0, available.amount);
 
     // transmit round
-    transmit_report(&mut env, 1, 1);
+    transmit_report(&mut env, 1, 1, ANSWER);
 
     // check owed balance
     let transmitter = Addr::unchecked("transmitter0");
@@ -965,7 +981,7 @@ fn set_billing_payout() {
         .unwrap();
 
     // -- call transmit
-    transmit_report(&mut env, 1, 1);
+    transmit_report(&mut env, 1, 1, ANSWER);
 
     // -- set billing again
     let msg = ExecuteMsg::SetBilling {
