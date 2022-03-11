@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'fs'
 import path from 'path'
 import fetch from 'node-fetch'
 import { DEFAULT_RELEASE_VERSION, DEFAULT_CWPLUS_VERSION } from './constants'
+import { AccAddress } from '@terra-money/terra.js'
 
 export enum CONTRACT_LIST {
   FLAGS = 'flags',
@@ -28,109 +29,164 @@ export type TerraABI = {
   [TERRA_OPERATIONS.QUERY]: JSONSchemaType<any>
 }
 
-export type Contract = {
-  id: CONTRACT_LIST
+export abstract class Contract {
+  // Contract metadata, initialized in constructor
+  readonly id: CONTRACT_LIST
+  readonly defaultVersion: string
+  readonly dirName: string
+  readonly downloadUrl: string
+
+  // Only load bytecode & schema later if needed
   abi: TerraABI
   bytecode: string
-}
+  addresses: AccAddress[] = []
+  address: AccAddress // first address, for convenience
 
-export type Contracts = Record<CONTRACT_LIST, Contract>
+  constructor(id, dirName, defaultVersion) {
+    this.id = id
+    this.defaultVersion = defaultVersion
+    this.dirName = dirName
+  }
 
-export const getContractCode = async (contractId: CONTRACT_LIST, version): Promise<string> => {
-  if (version === 'local') {
+  addInstance(name: string) {
+    const address = process.env[name]
+    if (!address) return this // it's okay if we don't have all the contract addresses, for now
+
+    this.addresses.push(address as AccAddress)
+    this.address = this.addresses[0]
+
+    if (!AccAddress.validate(address))
+      throw new Error(`Read invalid contract address ${address} for ${this.id} contract from env`)
+
+    logger.debug(`Deployed instance of ${this.id}: ${name}=${address}`)
+    return this
+  }
+
+  loadContractCode = async (version: string): Promise<void> => {
+    if (version === 'local') {
+      // Possible paths depending on how/where gauntlet is being executed
+      const possibleContractPaths = [
+        path.join(__dirname, '../../artifacts/bin'),
+        path.join(process.cwd(), './artifacts/bin'),
+        path.join(process.cwd(), './tests/e2e/common_artifacts'),
+        path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts/bin'),
+      ]
+
+      const codes = possibleContractPaths
+        .filter((contractPath) => existsSync(`${contractPath}/${this.id}.wasm`))
+        .map((contractPath) => {
+          const wasm = readFileSync(`${contractPath}/${this.id}.wasm`)
+          return wasm.toString('base64')
+        })
+      this.bytecode = codes[0]
+    } else {
+      const url = `${this.downloadUrl}${version}/${this.id}.wasm`
+      logger.loading(`Fetching ${url}...`)
+      const response = await fetch(url)
+      const body = await response.arrayBuffer()
+      if (body.length == 0) {
+        throw new Error(`Download ${this.id}.wasm failed`)
+      }
+      this.bytecode = Buffer.from(body).toString('base64')
+    }
+  }
+
+  getContract = async (version: string): Promise<Contract> => {
+    // Load contract code & ABI
+    version = version ? version : this.defaultVersion
+    if (!this.abi) {
+      // don't bother reloading if we've already loaded
+      await this.loadContractABI()
+    }
+    if (!this.bytecode) {
+      // don't bother reloading if we've already loaded
+      await this.loadContractCode(version)
+    }
+    return this
+  }
+
+  loadContractABI = async (): Promise<void> => {
     // Possible paths depending on how/where gauntlet is being executed
+    const cwd = process.cwd()
     const possibleContractPaths = [
-      path.join(__dirname, '../../artifacts/bin'),
-      path.join(process.cwd(), './artifacts/bin'),
-      path.join(process.cwd(), './tests/e2e/common_artifacts'),
-      path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts/bin'),
+      path.join(__dirname, './artifacts/contracts'),
+      path.join(cwd, './contracts'),
+      path.join(cwd, '../../contracts'),
+      path.join(cwd, './packages-ts/gauntlet-terra-contracts/artifacts/contracts'),
     ]
 
-    const codes = possibleContractPaths
-      .filter((contractPath) => existsSync(`${contractPath}/${contractId}.wasm`))
+    const abi = possibleContractPaths
+      .filter((path) => existsSync(`${path}/${this.dirName}/schema`))
       .map((contractPath) => {
-        const wasm = readFileSync(`${contractPath}/${contractId}.wasm`)
-        return wasm.toString('base64')
-      })
-    return codes[0]
-  } else {
-    let url
-    switch (contractId) {
-      case CONTRACT_LIST.CW20_BASE:
-      case CONTRACT_LIST.CW4_GROUP:
-      case CONTRACT_LIST.MULTISIG:
-        url = `https://github.com/CosmWasm/cw-plus/releases/download/${version}/${contractId}.wasm`
-        break
-      default:
-        url = `https://github.com/smartcontractkit/chainlink-terra/releases/download/${version}/${contractId}.wasm`
-    }
-    logger.loading(`Fetching ${url}...`)
-    const response = await fetch(url)
-    const body = await response.arrayBuffer()
-    return Buffer.from(body).toString('base64')
-  }
-}
-
-const contractDirName = {
-  [CONTRACT_LIST.FLAGS]: 'flags',
-  [CONTRACT_LIST.DEVIATION_FLAGGING_VALIDATOR]: 'deviation-flagging-validator',
-  [CONTRACT_LIST.OCR_2]: 'ocr2',
-  [CONTRACT_LIST.PROXY_OCR_2]: 'proxy-ocr2',
-  [CONTRACT_LIST.ACCESS_CONTROLLER]: 'access-controller',
-  [CONTRACT_LIST.CW20_BASE]: 'cw20_base',
-  [CONTRACT_LIST.CW4_GROUP]: 'cw4_group',
-  [CONTRACT_LIST.MULTISIG]: 'cw3_flex_multisig',
-}
-
-const defaultContractVersions = {
-  [CONTRACT_LIST.FLAGS]: DEFAULT_RELEASE_VERSION,
-  [CONTRACT_LIST.DEVIATION_FLAGGING_VALIDATOR]: DEFAULT_RELEASE_VERSION,
-  [CONTRACT_LIST.OCR_2]: DEFAULT_RELEASE_VERSION,
-  [CONTRACT_LIST.ACCESS_CONTROLLER]: DEFAULT_RELEASE_VERSION,
-  [CONTRACT_LIST.CW20_BASE]: DEFAULT_CWPLUS_VERSION,
-  [CONTRACT_LIST.CW4_GROUP]: DEFAULT_CWPLUS_VERSION,
-  [CONTRACT_LIST.MULTISIG]: DEFAULT_CWPLUS_VERSION,
-}
-export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
-  // Possible paths depending on how/where gauntlet is being executed
-  const possibleContractPaths = [
-    path.join(__dirname, './artifacts/contracts'),
-    path.join(process.cwd(), './contracts'),
-    path.join(process.cwd(), '../../contracts'),
-    path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts/contracts'),
-  ]
-
-  const toDirName = (contractId: CONTRACT_LIST) => contractDirName[contractId]
-
-  const abi = possibleContractPaths
-    .filter((path) => existsSync(`${path}/${toDirName(contractId)}/schema`))
-    .map((contractPath) => {
-      const toPath = (type) => {
-        if (contractId == CONTRACT_LIST.CW20_BASE && type == 'execute_msg') {
-          return path.join(contractPath, `./${toDirName(contractId)}/schema/cw20_${type}`)
-        } else {
-          return path.join(contractPath, `./${toDirName(contractId)}/schema/${type}`)
+        const toPath = (type) => {
+          if (this.id == CONTRACT_LIST.CW20_BASE && type == 'execute_msg') {
+            return path.join(contractPath, `./${this.dirName}/schema/cw20_${type}`)
+          } else {
+            return path.join(contractPath, `./${this.dirName}/schema/${type}`)
+          }
         }
-      }
-      return {
-        execute: io.readJSON(toPath('execute_msg')),
-        query: io.readJSON(toPath('query_msg')),
-        instantiate: io.readJSON(toPath('instantiate_msg')),
-      }
-    })
-  if (abi.length === 0) {
-    logger.error(`ABI not found for contract ${contractId}`)
-  }
+        return {
+          execute: io.readJSON(toPath('execute_msg')),
+          query: io.readJSON(toPath('query_msg')),
+          instantiate: io.readJSON(toPath('instantiate_msg')),
+        }
+      })
+    if (abi.length === 0) {
+      logger.error(`ABI not found for contract ${this.id}`)
+    }
 
-  return abi[0]
-}
-
-export const getContract = async (id: CONTRACT_LIST, version): Promise<Contract> => {
-  version = version ? version : defaultContractVersions[id]
-  // Preload contracts
-  return {
-    id,
-    abi: getContractABI(id),
-    bytecode: await getContractCode(id, version),
+    this.abi = abi[0]
   }
 }
+
+class ChainlinkContract extends Contract {
+  readonly downloadUrl = `https://github.com/smartcontractkit/chainlink-terra/releases/download/`
+
+  constructor(id, dirName, defaultVersion = DEFAULT_RELEASE_VERSION) {
+    super(id, dirName, defaultVersion)
+  }
+}
+
+class CosmWasmContract extends Contract {
+  readonly downloadUrl = `https://github.com/CosmWasm/cw-plus/releases/download/`
+
+  constructor(id, dirName, defaultVersion = DEFAULT_CWPLUS_VERSION) {
+    super(id, dirName, defaultVersion)
+  }
+}
+
+class Contracts {
+  async getContract(id: CONTRACT_LIST, version: string): Promise<Contract> {
+    if (this[id]) {
+      return await this[id].getContract(version)
+    } else {
+      throw new Error(`Contract ${id} not found!`)
+    }
+  }
+  addChainlink = (id: CONTRACT_LIST, dirName: string) => {
+    this[id] = new ChainlinkContract(id, dirName)
+    return this
+  }
+  addCosmwasm = (id: CONTRACT_LIST, dirName: string) => {
+    this[id] = new CosmWasmContract(id, dirName)
+    return this
+  }
+}
+
+export const contracts = new Contracts()
+  .addChainlink(CONTRACT_LIST.FLAGS, 'flags')
+  .addChainlink(CONTRACT_LIST.DEVIATION_FLAGGING_VALIDATOR, 'deviation-flagging-validator')
+  .addChainlink(CONTRACT_LIST.OCR_2, 'ocr2')
+  .addChainlink(CONTRACT_LIST.PROXY_OCR_2, 'proxy-ocr2')
+  .addChainlink(CONTRACT_LIST.ACCESS_CONTROLLER, 'access-controller')
+  .addCosmwasm(CONTRACT_LIST.CW20_BASE, 'cw20_base')
+  .addCosmwasm(CONTRACT_LIST.CW4_GROUP, 'cw4_group')
+  .addCosmwasm(CONTRACT_LIST.MULTISIG, 'cw3_flex_multisig')
+
+// Addresses of deployed instances read from env vars
+contracts[CONTRACT_LIST.CW20_BASE].addInstance('LINK')
+contracts[CONTRACT_LIST.ACCESS_CONTROLLER]
+  .addInstance('BILLING_ACCESS_CONTROLLER')
+  .addInstance('REQUESTER_ACCESS_CONTROLLER')
+contracts[CONTRACT_LIST.CW4_GROUP].addInstance('CW4_GROUP')
+contracts[CONTRACT_LIST.MULTISIG].addInstance('CW3_FLEX_MULTISIG')

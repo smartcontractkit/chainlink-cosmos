@@ -1,6 +1,6 @@
 import { logger, io, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand } from '@chainlink/gauntlet-terra'
-import { CONTRACT_LIST, getContract } from '../../lib/contracts'
+import { CONTRACT_LIST, contracts } from '../../lib/contracts'
 import { CATEGORIES } from '../../lib/constants'
 import path from 'path'
 export default class UploadContractCode extends TerraCommand {
@@ -51,7 +51,7 @@ export default class UploadContractCode extends TerraCommand {
     const maxRetry = parsedRetryCount ? parsedRetryCount : 5
     for (let contractName of askedContracts) {
       await prompt(`Uploading contract ${contractName}, do you wish to continue?`)
-      const contract = await getContract(contractName, this.flags.version)
+      const contract = await contracts[contractName].getContract(this.flags.version)
       console.log('CONTRACT Bytecode exists:', !!contract.bytecode)
       for (let retry = 0; retry < maxRetry; retry++) {
         try {
