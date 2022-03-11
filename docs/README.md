@@ -12,4 +12,6 @@ This repository is a monorepo of the various components required for Chainlink o
 
 # Local initial setup
 
-    make install
+```bash
+make install
+```

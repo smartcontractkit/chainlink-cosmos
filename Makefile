@@ -36,12 +36,8 @@ ifeq ($(OSFLAG),$(OSX))
 	asdf install
 endif
 ifeq ($(OSFLAG),$(LINUX))
-	# install nix if not running in ci since we use a github action there
-ifneq ($(IS_CI),true)
+	# install nix
 	sh <(curl -L https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install) --daemon --tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve --nix-extra-conf-file ./nix.conf
-endif
-	# pulls the ginkgo version from the .tool-versions asdf file to install so we only have the version in one place
-	nix develop -c go install github.com/onsi/ginkgo/v2/ginkgo@v$(shell cat ./.tool-versions | grep ginkgo | sed -En "s/ginkgo.(.*)/\1/p")
 endif
 
 build_js:
