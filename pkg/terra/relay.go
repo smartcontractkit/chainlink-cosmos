@@ -71,13 +71,18 @@ type OCR2Spec struct {
 type Relayer struct {
 	lggr     Logger
 	chainSet ChainSet
+	ctx      context.Context
+	cancel   func()
 }
 
 // Note: constructed in core
 func NewRelayer(lggr Logger, chainSet ChainSet) *Relayer {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &Relayer{
 		lggr:     lggr,
 		chainSet: chainSet,
+		ctx:      ctx,
+		cancel:   cancel,
 	}
 }
 
@@ -90,6 +95,7 @@ func (r *Relayer) Start(context.Context) error {
 }
 
 func (r *Relayer) Close() error {
+	r.cancel()
 	return nil
 }
 
@@ -109,8 +115,7 @@ func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relay
 		return nil, errors.New("unsuccessful cast to 'terra.OCR2Spec'")
 	}
 
-	// At the time of creating services, we don't have a context, hence using Background context here.
-	chain, err := r.chainSet.Chain(context.Background(), spec.ChainID)
+	chain, err := r.chainSet.Chain(r.ctx, spec.ChainID)
 	if err != nil {
 		return nil, err
 	}
