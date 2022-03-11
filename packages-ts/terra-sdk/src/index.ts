@@ -3,7 +3,7 @@ import { TxLog, Int } from '@terra-money/terra.js';
 
 export interface Round {
     answer: Int;
-    round: number;
+    roundId: number;
     epoch: number;
     aggregatorRoundId: number;
     observationsTS: Date;
@@ -62,7 +62,7 @@ export class OCR2Feed {
         }
         return {
             answer: tryBig(onlyAttr("answer")),
-            round: tryInt(onlyAttr("round")),
+            roundId: tryInt(onlyAttr("round")),
             epoch: tryInt(onlyAttr("epoch")),
             aggregatorRoundId: tryInt(onlyAttr("aggregator_round_id")),
             observationsTS: tryUnixDate(onlyAttr("observations_timestamp")),
