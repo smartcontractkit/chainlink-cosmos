@@ -237,6 +237,7 @@ const instruction: InspectInstruction<any, ContractExpectedInfo> = {
     category: CATEGORIES.OCR,
     contract: CONTRACT_LIST.OCR_2,
     id: 'inspect',
+    examples: ['ocr2:inspect --network=<NETWORK> <CONTRACT_ADDRESS>'],
   },
   instructions: [
     {

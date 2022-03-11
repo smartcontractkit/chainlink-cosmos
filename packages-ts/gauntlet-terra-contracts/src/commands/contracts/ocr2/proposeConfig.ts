@@ -38,7 +38,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 
   return {
     f: aggregator.config.f,
-    proposalId: flags.proposalId,
+    proposalId: flags.proposalId || flags.configProposal, // -configProposal alias requested by eng ops
     signers,
     transmitters,
     payees,
@@ -93,8 +93,8 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   await prompt('Continue?')
 }
 
-// yarn gauntlet ocr2:propose_config --network=bombay-testnet --proposalId=4 --rdd=../reference-data-directory/directory-terra-mainnet.json terra14nrtuhrrhl2ldad7gln5uafgl8s2m25du98hlx
 const instruction: AbstractInstruction<CommandInput, ContractInput> = {
+  examples: ['yarn gauntlet ocr2:propose_config --network=<NETWORK> --configProposal=<PROPOSAL_ID> <CONTRACT_ADDRESS>'],
   instruction: {
     contract: 'ocr2',
     function: 'propose_config',
