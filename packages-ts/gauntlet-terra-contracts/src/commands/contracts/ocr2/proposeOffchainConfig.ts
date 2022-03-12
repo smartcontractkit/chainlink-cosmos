@@ -161,7 +161,7 @@ const afterExecute: AfterExecute<CommandInput, ContractInput> = (context) => asy
     SECRET: ${context.input.randomSecret}`,
   )
   return {
-    randomSecret: context.input.randomSecret,
+    secret: context.input.randomSecret,
   }
 }
 
