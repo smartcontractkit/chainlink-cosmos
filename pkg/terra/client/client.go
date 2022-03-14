@@ -35,6 +35,8 @@ import (
 	"github.com/smartcontractkit/terra.go/tx"
 )
 
+const httpResponseLimit = 10_000_000 // 10MB
+
 var encodingConfig = params.MakeEncodingConfig()
 
 func init() {
@@ -130,8 +132,9 @@ func (rt *responseRoundTripper) RoundTrip(r *http.Request) (resp *http.Response,
 	if err != nil {
 		return
 	}
+	source := http.MaxBytesReader(nil, resp.Body, httpResponseLimit)
 	b, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	source.Close()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read response")
 	}
