@@ -2,14 +2,43 @@ BIN_DIR = bin
 export GOPATH ?= $(shell go env GOPATH)
 export GO111MODULE ?= on
 
+LINUX=LINUX
+OSX=OSX
+WINDOWS=WIN32
+OSFLAG :=
+ifeq ($(OS),Windows_NT)
+	OSFLAG = $(WINDOWS)
+else
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Linux)
+		OSFLAG = $(LINUX)
+	endif
+	ifeq ($(UNAME_S),Darwin)
+		OSFLAG = $(OSX)
+	endif
+endif
+
 download:
 	go mod download
 
 install:
-	go get github.com/onsi/ginkgo/v2/ginkgo/generators@v2.1.2
-	go get github.com/onsi/ginkgo/v2/ginkgo/internal@v2.1.2
-	go get github.com/onsi/ginkgo/v2/ginkgo/labels@v2.1.2
-	go install github.com/onsi/ginkgo/v2/ginkgo
+ifeq ($(OSFLAG),$(WINDOWS))
+	echo "If you are running windows and know how to install what is needed, please contribute by adding it here!"
+	exit 1
+endif
+ifeq ($(OSFLAG),$(OSX))
+	brew install asdf
+	asdf plugin-add nodejs https://github.com/asdf-vm/asdf-nodejs.git || true
+	asdf plugin-add rust https://github.com/code-lever/asdf-rust.git || true
+	asdf plugin-add golang https://github.com/kennyp/asdf-golang.git || true
+	asdf plugin-add ginkgo https://github.com/jimmidyson/asdf-ginkgo.git || true
+	asdf plugin-add pulumi || true
+	asdf install
+endif
+ifeq ($(OSFLAG),$(LINUX))
+	# install nix
+	sh <(curl -L https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install) --daemon --tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve --nix-extra-conf-file ./nix.conf
+endif
 
 build_js:
 	yarn install --frozen-lockfile
