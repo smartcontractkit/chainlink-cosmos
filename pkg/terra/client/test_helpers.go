@@ -144,7 +144,7 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string, strin
 }
 
 // DeployTestContract deploys a test contract.
-func DeployTestContract(t *testing.T, ctx context.Context, tendermintURL string, deployAccount, ownerAccount Account, tc *Client, testdir, wasmTestContractPath string) sdk.AccAddress {
+func DeployTestContract(ctx context.Context, t *testing.T, tendermintURL string, deployAccount, ownerAccount Account, tc *Client, testdir, wasmTestContractPath string) sdk.AccAddress {
 	//nolint:gosec
 	out, err := exec.Command("terrad", "tx", "wasm", "store", wasmTestContractPath, "--node", tendermintURL,
 		"--from", deployAccount.Name, "--gas", "auto", "--fees", "100000uluna", "--chain-id", "42", "--broadcast-mode", "block", "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes").CombinedOutput()
@@ -154,10 +154,10 @@ func DeployTestContract(t *testing.T, ctx context.Context, tendermintURL string,
 	r, err3 := tc.SignAndBroadcast(ctx, []msg.Msg{
 		msg.NewMsgInstantiateContract(ownerAccount.Address, nil, 1, []byte(`{"count":0}`), nil)}, an, sn, minGasPrice, ownerAccount.PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 	require.NoError(t, err3)
-	return GetContractAddr(t, ctx, tc, r.TxResponse.TxHash)
+	return GetContractAddr(ctx, t, tc, r.TxResponse.TxHash)
 }
 
-func GetContractAddr(t *testing.T, ctx context.Context, tc *Client, deploymentHash string) sdk.AccAddress {
+func GetContractAddr(ctx context.Context, t *testing.T, tc *Client, deploymentHash string) sdk.AccAddress {
 	var deploymentTx *txtypes.GetTxResponse
 	var err error
 	for try := 0; try < 5; try++ {

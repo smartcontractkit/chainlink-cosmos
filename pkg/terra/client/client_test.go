@@ -49,7 +49,7 @@ func TestBatchSim(t *testing.T) {
 		lggr)
 	require.NoError(t, err)
 
-	contract := DeployTestContract(t, ctx, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
+	contract := DeployTestContract(ctx, t, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 	var succeed sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), ExecuteMsg: []byte(`{"reset":{"count":5}}`)}
 	var fail sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), ExecuteMsg: []byte(`{"blah":{"count":5}}`)}
 
@@ -137,7 +137,7 @@ func TestTerraClient(t *testing.T) {
 	gpe := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
 		"uluna": sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("0.01")),
 	})
-	contract := DeployTestContract(t, ctx, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
+	contract := DeployTestContract(ctx, t, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 
 	t.Run("send tx between accounts", func(t *testing.T) {
 		// Assert balance before

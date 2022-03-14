@@ -144,6 +144,7 @@ func (rt *responseRoundTripper) RoundTrip(r *http.Request) (resp *http.Response,
 	return
 }
 
+// NewClientWithGRPCTransport build a new collection of clients on top of a gRPC connection.
 func NewClientWithGRPCTransport(
 	chainID string,
 	grpcServerAddr string, // "<host>:<port>"
