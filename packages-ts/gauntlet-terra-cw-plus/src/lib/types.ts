@@ -52,3 +52,7 @@ export type State = {
     approvers: string[]
   }
 }
+
+export type Expiration = {
+  at_time: string // Uint64
+}

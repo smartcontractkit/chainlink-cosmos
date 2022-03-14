@@ -1,10 +1,13 @@
 import { Result } from '@chainlink/gauntlet-core'
-import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { time, logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { AccAddress, MsgExecuteContract, MsgSend } from '@terra-money/terra.js'
 import { isDeepEqual } from '../lib/utils'
 import { fetchProposalState, makeInspectionMessage } from './inspect'
-import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg } from '../lib/types'
+import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg, Expiration } from '../lib/types'
+
+export const DEFAULT_VOTING_PERIOD_IN_SECS = 24 * 60 * 60
+export const MAX_VOTING_PERIOD_IN_SECS = 7 * 24 * 60 * 60
 
 type ProposalAction = (
   signer: AccAddress,
@@ -91,15 +94,38 @@ export const wrapCommand = (command) => {
       }
     }
 
+    parseVotingPeriod(votingPeriod: string): number {
+      try {
+        Number(votingPeriod)
+      } catch {
+        throw new Error(
+          `Invalid --votingPeriod, must be a duration in seconds (default: ${DEFAULT_VOTING_PERIOD_IN_SECS}, max: ${MAX_VOTING_PERIOD_IN_SECS})`,
+        )
+      }
+      const n = Number(votingPeriod)
+      if (n < 0 || n > MAX_VOTING_PERIOD_IN_SECS) {
+        throw new Error(
+          `--votingPeriod out of range (default: ${DEFAULT_VOTING_PERIOD_IN_SECS}, max: ${MAX_VOTING_PERIOD_IN_SECS})`,
+        )
+      }
+      return n
+    }
+
     makeProposeTransaction: ProposalAction = async (signer, _, message) => {
+      // default voting period of 24 hours, if unspecified
+      const votingPeriod: number = this.flags.votingPeriod
+        ? this.parseVotingPeriod(this.flags.votingPeriod)
+        : DEFAULT_VOTING_PERIOD_IN_SECS
+
       logger.info('Generating data for creating new multisig proposal')
+      const expiresAt = (Date.now() + votingPeriod * 1000) * time.Millisecond
+
       const proposeInput = {
         propose: {
           description: command.id,
           msgs: [this.toMsg(message)],
           title: command.id,
-          // TODO: Set expiration time
-          // latest: { at_height: 7970238 },
+          latest: { at_time: expiresAt.toString() },
         },
       }
       return new MsgExecuteContract(signer, this.multisig, proposeInput)
