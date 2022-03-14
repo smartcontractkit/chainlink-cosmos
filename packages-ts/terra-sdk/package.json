@@ -1,32 +1,29 @@
 {
   "name": "@chainlink/terra-sdk",
-  "version": "0.1.0",
+  "version": "0.0.4",
   "repository": "https://github.com/smartcontractkit/chainlink-terra",
   "license": "MIT",
   "engines": {
     "node": ">= 14"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "restricted"
   },
-  "files": [
-    "dist/**/*",
-    "src",
-    "LICENSE",
-    "README.md"
-  ],
   "sideEffects": false,
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
-  "types": "dist/esm/index.d.ts",
-  "exports": {
-    "import": "./dist/esm/index.js",
-    "require": "./dist/cjs/index.js"
-  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
   "scripts": {
-    "build": "tsc && tsc -P tsconfig.cjs.json",
+    "prebuild": "yarn clean",
+    "build": "yarn tsc",
     "clean": "rm -rf dist",
-    "format": "yarn prettier --write ./src"
+    "format": "yarn prettier --write ./src",
+    "prepublish": "yarn build"
+  },
+  "dependencies": {
+    "@terra-money/terra.js": "^3.0.6"
   },
   "devDependencies": {
     "@types/eslint": "^8.2.1",
