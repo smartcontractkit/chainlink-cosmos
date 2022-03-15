@@ -1,6 +1,7 @@
 name: e2e_soak
 on:
-  push:
+  schedule:
+    - cron: '0 */3 * * *'
   workflow_dispatch:
     inputs:
       cl_branch_ref:

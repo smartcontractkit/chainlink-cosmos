@@ -3,11 +3,12 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/neilotoole/errgroup"
 	"math/big"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/neilotoole/errgroup"
 
 	. "github.com/onsi/gomega"
 	"github.com/rs/zerolog/log"
@@ -24,7 +25,9 @@ const (
 	// ContractsStateFile JSON file to store addresses of already deployed contracts
 	ContractsStateFile = "contracts-chaos-state.json"
 	// NewRoundCheckTimeout how long to await a new round
-	NewRoundCheckTimeout = 5 * time.Minute
+	NewRoundCheckTimeout = 3 * time.Minute
+	// NewSoakRoundCheckTimeout  how long to await soak tests results
+	NewSoakRoundCheckTimeout = 3 * time.Hour
 	// NewRoundCheckPollInterval new round check interval
 	NewRoundCheckPollInterval = 1 * time.Second
 	// SourceChangeInterval EA value change interval
@@ -166,7 +169,7 @@ func (m *OCRv2State) DeployContracts(contractsDir string) {
 			flags, err := cd.DeployOCRv2Flags(bac.Address(), rac.Address())
 			Expect(err).ShouldNot(HaveOccurred())
 			validator, err := cd.DeployOCRv2Validator(uint32(80000), flags.Address())
-			Expect(m.Err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 
 			err = ocr2.SetBilling(uint64(2e5), uint64(1), uint64(1), "1", bac.Address())
 			Expect(err).ShouldNot(HaveOccurred())
@@ -303,14 +306,14 @@ type Answer struct {
 	Error     error
 }
 
-func (m *OCRv2State) ValidateAllRounds(startTime time.Time, rounds int, proxy bool) {
+func (m *OCRv2State) ValidateAllRounds(startTime time.Time, timeout time.Duration, rounds int, proxy bool) {
 	m.RoundsFound = 0
 	for _, c := range m.Contracts {
 		m.LastRoundTime[c.OCR2.Address()] = startTime
 	}
 	roundsFound := 0
 	Eventually(func(g Gomega) {
-		answers := make(map[string]*Answer, 0)
+		answers := make(map[string]*Answer)
 		for _, c := range m.Contracts {
 			var answer, timestamp, roundID uint64
 			var err error
@@ -321,17 +324,15 @@ func (m *OCRv2State) ValidateAllRounds(startTime time.Time, rounds int, proxy bo
 			}
 			answers[c.OCR2.Address()] = &Answer{Answer: answer, Timestamp: timestamp, RoundID: roundID, Error: err}
 		}
-		newRounds := make([]bool, 0)
 		for ci, a := range answers {
 			log.Debug().Str("Contract", ci).Interface("Answer", a).Msg("Answer found")
 			answerTime := time.Unix(int64(a.Timestamp), 0)
 			if answerTime.After(m.LastRoundTime[ci]) {
 				m.LastRoundTime[ci] = answerTime
-				newRounds = append(newRounds, true)
 				roundsFound++
 				log.Debug().Int("RoundsFound", roundsFound).Send()
 			}
 		}
 		g.Expect(roundsFound).To(BeNumerically(">=", rounds*len(m.Contracts)))
-	}, NewRoundCheckTimeout, NewRoundCheckPollInterval).Should(Succeed())
+	}, timeout, NewRoundCheckPollInterval).Should(Succeed())
 }

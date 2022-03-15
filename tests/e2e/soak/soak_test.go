@@ -14,7 +14,7 @@ var _ = Describe("Terra OCRv2 soak test @ocr2-soak", func() {
 	var state *tc.OCRv2State
 
 	BeforeEach(func() {
-		state = tc.NewOCRv2State(10)
+		state = tc.NewOCRv2State(30)
 		By("Deploying the cluster", func() {
 			state.DeployCluster(5, common.ChainBlockTimeSoak, false)
 			state.SetAllAdapterResponsesToTheSameValue(2)
@@ -23,7 +23,7 @@ var _ = Describe("Terra OCRv2 soak test @ocr2-soak", func() {
 
 	Describe("with Terra OCR2", func() {
 		It("performs OCR2 round", func() {
-			state.ValidateAllRounds(time.Now(), 50, false)
+			state.ValidateAllRounds(time.Now(), tc.NewSoakRoundCheckTimeout, 300, false)
 		})
 	})
 

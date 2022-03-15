@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"math/big"
 	"net/url"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
@@ -76,24 +77,6 @@ func LoadWallet(mnemonic string) (*TerraWallet, error) {
 		PrivateKey: privKey,
 		AccAddress: accAddr,
 	}, nil
-}
-
-type EphemeralWallets struct {
-	Index   int
-	Wallets []*TerraWallet
-}
-
-func (ew *EphemeralWallets) Add(w *TerraWallet) {
-	ew.Wallets = append(ew.Wallets, w)
-}
-
-func (ew *EphemeralWallets) Next() *TerraWallet {
-	w := ew.Wallets[ew.Index]
-	ew.Index++
-	if ew.Index > len(ew.Wallets) {
-		ew.Index = 0
-	}
-	return w
 }
 
 // TerraLCDClient is terra lite chain client allowing to upload and interact with the contracts
@@ -389,7 +372,7 @@ func (t *TerraLCDClient) SendTX(txOpts client.CreateTxOptions, logMsgs bool) (*t
 			log.Error().Err(err).Msg("Simulate error, retrying")
 			continue
 		}
-		txBlockResp, err := t.Broadcast(context.Background(), txn, t.BroadcastMode)
+		txBlockResp, err = t.Broadcast(context.Background(), txn, t.BroadcastMode)
 		if err != nil {
 			log.Error().Err(err).Msg("Broadcast error, retrying")
 			continue
@@ -405,30 +388,6 @@ func (t *TerraLCDClient) SendTX(txOpts client.CreateTxOptions, logMsgs bool) (*t
 			return txBlockResp, errors.Wrapf(err, "tx failed with code: %d: %s", txBlockResp.Code, txBlockResp.RawLog)
 		}
 	}
-	//err := retry.Do(
-	//	func() error {
-	//		txn, err := t.CreateAndSignTx(context.Background(), txOpts)
-	//		if err != nil {
-	//			return errors.Wrap(err, "simulate error, retrying")
-	//		}
-	//		txBlockResp, err := t.Broadcast(context.Background(), txn, t.BroadcastMode)
-	//		if err != nil {
-	//			return errors.Wrap(err, "broadcast error, retrying")
-	//		}
-	//		log.Info().Interface("Response", txBlockResp).Msg("TX Response")
-	//		switch txBlockResp.Code {
-	//		case 0:
-	//			return nil
-	//		case 32:
-	//			return errors.Wrap(err, "account sequence mismatch, retrying")
-	//		default:
-	//			return errors.Wrapf(err, "tx failed with code: %d: %s", txBlockResp.Code, txBlockResp.RawLog)
-	//		}
-	//	},
-	//	retry.Delay(t.Config.RetryDelay),
-	//	retry.DelayType(retry.FixedDelay),
-	//	retry.Attempts(t.Config.RetryAttempts),
-	//)
 	return txBlockResp, nil
 }
 

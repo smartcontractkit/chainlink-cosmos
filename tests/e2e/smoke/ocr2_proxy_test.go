@@ -35,7 +35,7 @@ var _ = Describe("Terra OCRv2 Proxy @ocr_proxy", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// latestRoundData
-			state.ValidateAllRounds(time.Now(), 10, true)
+			state.ValidateAllRounds(time.Now(), tc.NewRoundCheckTimeout, 10, true)
 
 			// decimals
 			dec, err := ocrProxy.GetDecimals()

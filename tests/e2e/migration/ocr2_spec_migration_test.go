@@ -37,9 +37,9 @@ var _ = Describe("Terra OCRv2 @ocr-spec-migration", func() {
 
 	Describe("with Terra OCR2", func() {
 		It("performs OCR2 round", func() {
-			state.ValidateAllRounds(time.Now(), rounds, false)
+			state.ValidateAllRounds(time.Now(), tc.NewRoundCheckTimeout, rounds, false)
 			state.UpdateChainlinkVersion(migrateToImage, migrateToVersion)
-			state.ValidateAllRounds(time.Now(), rounds, false)
+			state.ValidateAllRounds(time.Now(), tc.NewRoundCheckTimeout, rounds, false)
 		})
 	})
 

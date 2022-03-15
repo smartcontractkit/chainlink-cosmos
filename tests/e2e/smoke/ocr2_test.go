@@ -24,7 +24,7 @@ var _ = Describe("Terra OCRv2 @ocr2", func() {
 
 	Describe("with Terra OCR2", func() {
 		It("performs OCR2 round", func() {
-			state.ValidateAllRounds(time.Now(), 10, false)
+			state.ValidateAllRounds(time.Now(), tc.NewRoundCheckTimeout, 10, false)
 		})
 	})
 
