@@ -19,9 +19,9 @@ type ContractDeployer struct {
 	client *TerraLCDClient
 }
 
-func (t *ContractDeployer) DeployOCRv2Validator(threshold uint32, flags string) (*OCRv2Validator, error) {
+func (t *ContractDeployer) DeployOCRv2Validator(threshold uint32, flags string, contractsDir string) (*OCRv2Validator, error) {
 	contractAddr, err := t.client.Instantiate(
-		filepath.Join(utils.ContractsDir, "deviation_flagging_validator.wasm"),
+		filepath.Join(contractsDir, "deviation_flagging_validator.wasm"),
 		validatortypes.InstantiateMsg{
 			FlaggingThreshold: threshold,
 			Flags:             flags,
@@ -40,9 +40,9 @@ func (t *ContractDeployer) DeployOCRv2Validator(threshold uint32, flags string) 
 	}, nil
 }
 
-func (t *ContractDeployer) DeployOCRv2Proxy(addr string) (*OCRv2Proxy, error) {
+func (t *ContractDeployer) DeployOCRv2Proxy(addr string, contractsDir string) (*OCRv2Proxy, error) {
 	proxyAddr, err := t.client.Instantiate(
-		filepath.Join(utils.ContractsDir, "proxy_ocr2.wasm"),
+		filepath.Join(contractsDir, "proxy_ocr2.wasm"),
 		ocr2proxytypes.InstantiateMsg{ContractAddress: addr},
 	)
 	if err != nil {
@@ -58,9 +58,9 @@ func (t *ContractDeployer) DeployOCRv2Proxy(addr string) (*OCRv2Proxy, error) {
 	}, nil
 }
 
-func (t *ContractDeployer) DeployOCRv2Flags(lowAC string, raiseAC string) (*OCRv2Flags, error) {
+func (t *ContractDeployer) DeployOCRv2Flags(lowAC string, raiseAC string, contractsDir string) (*OCRv2Flags, error) {
 	contractAddr, err := t.client.Instantiate(
-		filepath.Join(utils.ContractsDir, "flags.wasm"),
+		filepath.Join(contractsDir, "flags.wasm"),
 		flagstypes.InstantiateMsg{
 			LoweringAccessController: lowAC,
 			RaisingAccessController:  raiseAC,
@@ -79,9 +79,9 @@ func (t *ContractDeployer) DeployOCRv2Flags(lowAC string, raiseAC string) (*OCRv
 	}, nil
 }
 
-func (t *ContractDeployer) DeployOCRv2ValidatorProxy(addr string) (*OCRv2Proxy, error) {
+func (t *ContractDeployer) DeployOCRv2ValidatorProxy(addr string, contractsDir string) (*OCRv2Proxy, error) {
 	proxyAddr, err := t.client.Instantiate(
-		filepath.Join(utils.ContractsDir, "proxy_validator.wasm"),
+		filepath.Join(contractsDir, "proxy_validator.wasm"),
 		ocr2proxytypes.InstantiateMsg{ContractAddress: addr},
 	)
 	if err != nil {
@@ -130,9 +130,9 @@ func (t *ContractDeployer) DeployLinkTokenContract() (*LinkToken, error) {
 	}, nil
 }
 
-func (t *ContractDeployer) DeployOCRv2(paymentControllerAddr string, requesterControllerAddr string, linkTokenAddr string) (*OCRv2, error) {
+func (t *ContractDeployer) DeployOCRv2(paymentControllerAddr string, requesterControllerAddr string, linkTokenAddr string, contractsDir string) (*OCRv2, error) {
 	ocr2, err := t.client.Instantiate(
-		filepath.Join(utils.ContractsDir, "ocr2.wasm"),
+		filepath.Join(contractsDir, "ocr2.wasm"),
 		ocr2types.OCRv2InstantiateMsg{
 			BillingAccessController:   paymentControllerAddr,
 			RequesterAccessController: requesterControllerAddr,
@@ -155,9 +155,9 @@ func (t *ContractDeployer) DeployOCRv2(paymentControllerAddr string, requesterCo
 	}, nil
 }
 
-func (t *ContractDeployer) DeployOCRv2AccessController() (*AccessController, error) {
+func (t *ContractDeployer) DeployOCRv2AccessController(contractsDir string) (*AccessController, error) {
 	acAddr, err := t.client.Instantiate(
-		filepath.Join(utils.ContractsDir, "access_controller.wasm"),
+		filepath.Join(contractsDir, "access_controller.wasm"),
 		actypes.InstantiateMsg{},
 	)
 	if err != nil {

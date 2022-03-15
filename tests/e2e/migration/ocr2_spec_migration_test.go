@@ -1,6 +1,7 @@
 package migration_test
 
 import (
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 	"os"
 	"time"
 
@@ -28,7 +29,7 @@ var _ = Describe("Terra OCRv2 @ocr-spec-migration", func() {
 			if migrateToVersion == "" {
 				Fail("Provide CHAINLINK_VERSION_TO variable: a version on which we migrate")
 			}
-			state.DeployCluster(nodes, true)
+			state.DeployCluster(nodes, true, utils.ContractsDir)
 			state.SetAllAdapterResponsesToTheSameValue(2)
 		})
 	})
