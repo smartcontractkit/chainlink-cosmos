@@ -162,21 +162,18 @@ func TestEnvelopeSource(t *testing.T) {
 	chainConfig := generateChainConfig()
 	chainReader := new(mocks.ChainReader)
 	chainReader.On("TxsEvents",
-		mock.Anything, // context
 		mock.MatchedBy(func(query []string) bool {
 			return query[0] == fmt.Sprintf(`wasm-set_config.contract_address='%s'`, feedConfig.ContractAddressBech32)
 		}),
 		&cosmosQuery.PageRequest{Limit: 1},
 	).Return(setConfigRes, nil).Once()
 	chainReader.On("TxsEvents",
-		mock.Anything, // context
 		mock.MatchedBy(func(query []string) bool {
 			return query[0] == fmt.Sprintf(`wasm-new_transmission.contract_address='%s'`, feedConfig.ContractAddressBech32)
 		}),
 		&cosmosQuery.PageRequest{Limit: 1},
 	).Return(newTransmissionRes, nil).Once()
 	chainReader.On("ContractStore",
-		mock.Anything, // context
 		chainConfig.LinkTokenAddress,
 		[]byte(fmt.Sprintf(`{"balance":{"address":"%s"}}`, feedConfig.ContractAddressBech32)),
 	).Return(balanceRes, nil).Once()

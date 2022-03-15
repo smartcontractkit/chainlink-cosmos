@@ -132,7 +132,7 @@ func (e *envelopeSource) fetchLatestTransmission(ctx context.Context) (
 	query := []string{
 		fmt.Sprintf(`wasm-new_transmission.contract_address='%s'`, e.terraFeedConfig.ContractAddressBech32),
 	}
-	res, err := e.client.TxsEvents(ctx, query, &cosmosQuery.PageRequest{Limit: 1})
+	res, err := e.client.TxsEvents(query, &cosmosQuery.PageRequest{Limit: 1})
 	if err != nil {
 		return types.ConfigDigest{}, 0, 0, nil, time.Time{}, 0, "", 0, nil,
 			fmt.Errorf("failed to fetch latest 'new_transmission' event: %w", err)
@@ -195,7 +195,7 @@ func (e *envelopeSource) fetchLatestConfig(ctx context.Context) (types.ContractC
 	query := []string{
 		fmt.Sprintf(`wasm-set_config.contract_address='%s'`, e.terraFeedConfig.ContractAddressBech32),
 	}
-	res, err := e.client.TxsEvents(ctx, query, &cosmosQuery.PageRequest{Limit: 1})
+	res, err := e.client.TxsEvents(query, &cosmosQuery.PageRequest{Limit: 1})
 	if err != nil {
 		return types.ContractConfig{}, fmt.Errorf("failed to fetch latest 'set_config' event: %w", err)
 	}
@@ -255,7 +255,6 @@ func (e *envelopeSource) fetchLatestConfig(ctx context.Context) (types.ContractC
 func (e *envelopeSource) fetchLinkBalance(ctx context.Context) (*big.Int, error) {
 	query := fmt.Sprintf(`{"balance":{"address":"%s"}}`, e.terraFeedConfig.ContractAddressBech32)
 	res, err := e.client.ContractStore(
-		ctx,
 		e.terraConfig.LinkTokenAddress,
 		[]byte(query),
 	)

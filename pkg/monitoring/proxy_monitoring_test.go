@@ -41,7 +41,6 @@ func TestProxyMonitoring(t *testing.T) {
 
 		// Setup claims.
 		chainReader.On("ContractStore",
-			mock.Anything, // context
 			feedConfig.ProxyAddress,
 			[]byte(`"latest_round_data"`),
 		).Return(
@@ -49,7 +48,6 @@ func TestProxyMonitoring(t *testing.T) {
 			nil,
 		).Once()
 		chainReader.On("ContractStore",
-			mock.Anything, // context
 			feedConfig.ProxyAddress,
 			[]byte(`"link_available_for_payment"`),
 		).Return(

@@ -103,7 +103,6 @@ type latestRoundDataRes struct {
 
 func (p *proxySource) fetchLatestRoundFromProxy(ctx context.Context) (*big.Int, error) {
 	res, err := p.client.ContractStore(
-		ctx,
 		p.terraFeedConfig.ProxyAddress,
 		[]byte(`"latest_round_data"`),
 	)
@@ -127,7 +126,6 @@ type linkAvailableForPaymentRes struct {
 
 func (p *proxySource) fetchLinkAvailableForPayment(ctx context.Context) (*big.Int, error) {
 	res, err := p.client.ContractStore(
-		ctx,
 		p.terraFeedConfig.ContractAddress,
 		[]byte(`"link_available_for_payment"`),
 	)
