@@ -17,6 +17,9 @@ import {
   Wallet,
   Msg,
   SignerData,
+  MsgMigrateContract,
+  MsgMigrateCode,
+  MsgUpdateContractAdmin,
 } from '@terra-money/terra.js'
 import { TransactionResponse } from '../types'
 import { LedgerKey } from '../ledgerKey'
@@ -31,7 +34,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   public codeIds: CodeIds
 
   abstract execute: () => Promise<Result<TransactionResponse>>
-  abstract makeRawTransaction: (signer: AccAddress) => Promise<MsgExecuteContract | MsgSend>
+  abstract makeRawTransaction: (signer: AccAddress) => Promise<MsgExecuteContract | MsgSend | MsgUpdateContractAdmin>
   // Preferable option to initialize the command instead of new TerraCommand. This should be an static option to construct the command
   buildCommand?: (flags, args) => Promise<TerraCommand>
   beforeExecute: (context?: any) => Promise<void>
@@ -112,10 +115,11 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     return this.wrapResponse(res)
   }
 
-  async deploy(codeId, instantiateMsg, migrationContract = undefined) {
+  async deploy(codeId, instantiateMsg, admin = this.wallet.key.accAddress, definitive = false) {
+    logger.info(`Deploying contract ${definitive ? 'marked as definitive' : 'with admin ' + admin}`)
     const instantiate = new MsgInstantiateContract(
       this.wallet.key.accAddress,
-      migrationContract || this.wallet.key.accAddress,
+      definitive ? undefined : admin,
       codeId,
       instantiateMsg,
     )
@@ -128,6 +132,38 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     })
     logger.loading(`Deploying contract...`)
     const res = await this.provider.tx.broadcast(instantiateTx)
+
+    return this.wrapResponse(res)
+  }
+
+  async migrateContract(contract: AccAddress, newCodeId: number, migrateMsg: any) {
+    logger.info(`Migrating contract ${contract} to new code id ${newCodeId}`)
+    const msg = new MsgMigrateContract(this.wallet.key.accAddress, contract, newCodeId, migrateMsg)
+    const tx = await this.wallet.createAndSignTx({
+      msgs: [msg],
+      memo: `Migrating ${contract} to ${newCodeId}`,
+      ...(this.wallet.key instanceof LedgerKey && {
+        signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
+      }),
+    })
+    logger.loading(`Migrating contract...`)
+    const res = await this.provider.tx.broadcast(tx)
+
+    return this.wrapResponse(res)
+  }
+
+  async migrateCode(codeId: number, newCode: string) {
+    logger.info(`Updating contract code ${codeId}`)
+    const msg = new MsgMigrateCode(this.wallet.key.accAddress, codeId, newCode)
+    const tx = await this.wallet.createAndSignTx({
+      msgs: [msg],
+      memo: `Updating code ${codeId}`,
+      ...(this.wallet.key instanceof LedgerKey && {
+        signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
+      }),
+    })
+    logger.loading(`Updating contract code...`)
+    const res = await this.provider.tx.broadcast(tx)
 
     return this.wrapResponse(res)
   }
@@ -149,7 +185,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     return this.wrapResponse(res)
   }
 
-  async simulate(signer: AccAddress, msgs: (MsgExecuteContract | MsgSend)[]): Promise<Number> {
+  async simulate(signer: AccAddress, msgs: (MsgExecuteContract | MsgSend | MsgUpdateContractAdmin)[]): Promise<Number> {
     const account = await this.provider.auth.accountInfo(signer)
 
     const signerData: SignerData = {

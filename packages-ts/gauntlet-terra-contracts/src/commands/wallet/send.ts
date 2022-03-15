@@ -47,6 +47,8 @@ export default class TransferLuna extends TerraCommand {
   }
 
   execute = async () => {
+    await this.buildCommand(this.flags, this.args)
+
     const message = await this.makeRawTransaction(this.wallet.key.accAddress)
     await this.beforeExecute()
     const tx = await this.signAndSend([message])

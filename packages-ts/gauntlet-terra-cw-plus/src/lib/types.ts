@@ -21,10 +21,19 @@ type Coin = {
 
 export type Cw3WasmMsg = {
   wasm: {
-    execute: {
+    execute?: {
       contract_addr: string
       funds: Coin[]
       msg: string
+    }
+    update_admin?: {
+      admin: string
+      contract_addr: string
+    }
+    migrate?: {
+      contract_addr: string
+      msg: string
+      new_code_id: number
     }
   }
 }

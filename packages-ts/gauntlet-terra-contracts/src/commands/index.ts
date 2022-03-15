@@ -1,5 +1,4 @@
-import Upload from './tooling/upload'
-import Query from './tooling/query'
+import Tooling from './tooling'
 import TransferLink from './contracts/link/transfer'
 import DeployLink from './contracts/link/deploy'
 import OCR2 from './contracts/ocr2'
@@ -12,10 +11,7 @@ import CW4_GROUP from './contracts/cw4_group'
 import Wallet from './wallet'
 
 export default [
-  Upload,
-  Query,
-  DeployLink,
-  TransferLink,
+  ...Tooling,
   ...OCR2,
   ...AccessController,
   ...Flags,
@@ -24,4 +20,6 @@ export default [
   ...Multisig,
   ...CW4_GROUP,
   ...Wallet,
+  DeployLink,
+  TransferLink,
 ]

@@ -1,7 +1,7 @@
 import { Result } from '@chainlink/gauntlet-core'
 import { time, logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
-import { AccAddress, MsgExecuteContract, MsgSend } from '@terra-money/terra.js'
+import { AccAddress, MsgExecuteContract, MsgSend, MsgUpdateContractAdmin } from '@terra-money/terra.js'
 import { isDeepEqual } from '../lib/utils'
 import { fetchProposalState, makeInspectionMessage } from './inspect'
 import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg, Expiration } from '../lib/types'
@@ -11,7 +11,7 @@ export const DEFAULT_VOTING_PERIOD_IN_SECS = 24 * 60 * 60
 type ProposalAction = (
   signer: AccAddress,
   proposalId: number,
-  message: MsgExecuteContract | MsgSend,
+  message: MsgExecuteContract | MsgSend | MsgUpdateContractAdmin,
 ) => Promise<MsgExecuteContract>
 
 export const wrapCommand = (command) => {
@@ -57,17 +57,18 @@ export const wrapCommand = (command) => {
         )
       }
 
-      const proposal_id = Number(this.flags.proposal || this.flags.multisigProposal) // alias requested by eng ops
-      return operations[state.proposal.nextAction](signer, Number(proposal_id), message)
+      const proposalId = Number(this.flags.proposal || this.flags.multisigProposal)
+      return operations[state.proposal.nextAction](signer, proposalId, message)
     }
 
     isSameProposal = (proposalMsgs: (Cw3WasmMsg | Cw3BankMsg)[], generatedMsgs: (Cw3WasmMsg | Cw3BankMsg)[]) => {
       return isDeepEqual(proposalMsgs, generatedMsgs)
     }
 
-    toMsg = (message: MsgSend | MsgExecuteContract): Cw3BankMsg | Cw3WasmMsg => {
+    toMsg = (message: MsgSend | MsgExecuteContract | MsgUpdateContractAdmin): Cw3BankMsg | Cw3WasmMsg => {
       if (message instanceof MsgSend) return this.toBankMsg(message as MsgSend)
       if (message instanceof MsgExecuteContract) return this.toWasmMsg(message as MsgExecuteContract)
+      if (message instanceof MsgUpdateContractAdmin) return this.toWasmMsg(message as MsgUpdateContractAdmin)
     }
 
     toBankMsg = (message: MsgSend): Cw3BankMsg => {
@@ -81,7 +82,17 @@ export const wrapCommand = (command) => {
       }
     }
 
-    toWasmMsg = (message: MsgExecuteContract): Cw3WasmMsg => {
+    toWasmMsg = (message: MsgExecuteContract | MsgUpdateContractAdmin): Cw3WasmMsg => {
+      if (message instanceof MsgUpdateContractAdmin) {
+        return {
+          wasm: {
+            update_admin: {
+              contract_addr: message.contract,
+              admin: message.new_admin,
+            },
+          },
+        }
+      }
       return {
         wasm: {
           execute: {
@@ -175,7 +186,7 @@ export const wrapCommand = (command) => {
       // TODO: Gauntlet core should initialize commands using `buildCommand` instead of new Command
       await this.buildCommand(this.flags, this.args)
 
-      let proposalId = Number(this.flags.proposal || this.flags.multisigProposal) // alias requested by eng ops
+      let proposalId = Number(this.flags.proposal || this.flags.multisigProposal)
       const state = await this.fetchState(proposalId)
       logger.info(makeInspectionMessage(state))
 
