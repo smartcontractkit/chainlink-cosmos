@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,6 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
@@ -151,7 +153,12 @@ func NewClientWithGRPCTransport(
 	grpcAPIKey string,
 	lggr Logger,
 ) (*Client, error) {
-	grpcConn, err := grpc.Dial(grpcServerAddr, grpc.WithInsecure())
+	grpcConn, err := grpc.Dial(
+		grpcServerAddr,
+		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+			InsecureSkipVerify: true,
+		})),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial gRPC endpoint '%s': %w", grpcServerAddr, err)
 	}
@@ -185,8 +192,8 @@ func NewClientWithGRPCTransport(
 }
 
 func (c *Client) maybeAddAPIKey(ctx context.Context) context.Context {
-	if c.grpcAPIKey != "" && ctx.Value("x-api-key") == nil {
-		ctx = metadata.AppendToOutgoingContext(ctx, "x-api-key", c.grpcAPIKey)
+	if c.grpcAPIKey != "" && ctx.Value("apikey") == nil {
+		ctx = metadata.AppendToOutgoingContext(ctx, "apikey", c.grpcAPIKey)
 	}
 	return ctx
 }
