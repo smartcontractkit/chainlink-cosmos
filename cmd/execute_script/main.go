@@ -7,6 +7,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+<<<<<<< HEAD
+<<<<<<< HEAD
+
+=======
+>>>>>>> f65d1d7... Execute script
+=======
+
+>>>>>>> a98b503... lint
 	"github.com/smartcontractkit/terra.go/client"
 	"github.com/smartcontractkit/terra.go/key"
 	"github.com/smartcontractkit/terra.go/msg"
@@ -37,9 +45,21 @@ func main() {
 		// See prices https://fcd.terra.dev/v1/txs/gas_prices
 		// Can use other prices if desired (assuming the wallet holds those funds)
 		msg.NewDecCoinFromDec("uluna", msg.NewDecFromIntWithPrec(msg.NewInt(1133), 5)), // gas price of 0.01133uluna
+<<<<<<< HEAD
+<<<<<<< HEAD
+		msg.NewDecFromIntWithPrec(msg.NewInt(15), 1),                                   // Gas multiplier of 1.5
+		privKey,
+		5*time.Second,
+=======
 		msg.NewDecFromIntWithPrec(msg.NewInt(15), 1), // Gas multiplier of 1.5
 		privKey,
 		5 * time.Second,
+>>>>>>> f65d1d7... Execute script
+=======
+		msg.NewDecFromIntWithPrec(msg.NewInt(15), 1),                                   // Gas multiplier of 1.5
+		privKey,
+		5*time.Second,
+>>>>>>> a98b503... lint
 	)
 
 	// Create tx
@@ -51,7 +71,15 @@ func main() {
 		Msgs: []msg.Msg{
 			execute,
 		},
+<<<<<<< HEAD
+<<<<<<< HEAD
+		Memo: "",
+=======
 		Memo:          "",
+>>>>>>> f65d1d7... Execute script
+=======
+		Memo: "",
+>>>>>>> a98b503... lint
 		// Options Paramters (if empty, load chain info)
 		// AccountNumber: msg.NewInt(33),
 		// Sequence:      msg.NewInt(1),
@@ -67,4 +95,12 @@ func main() {
 	res, err := c.Broadcast(context.Background(), tx, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 	panicErr(err)
 	fmt.Println(res)
+<<<<<<< HEAD
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> f65d1d7... Execute script
+=======
+}
+>>>>>>> a98b503... lint
