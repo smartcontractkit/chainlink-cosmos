@@ -38,9 +38,9 @@ func main() {
 		// See prices https://fcd.terra.dev/v1/txs/gas_prices
 		// Can use other prices if desired (assuming the wallet holds those funds)
 		msg.NewDecCoinFromDec("uluna", msg.NewDecFromIntWithPrec(msg.NewInt(1133), 5)), // gas price of 0.01133uluna
-		msg.NewDecFromIntWithPrec(msg.NewInt(15), 1), // Gas multiplier of 1.5
+		msg.NewDecFromIntWithPrec(msg.NewInt(15), 1),                                   // Gas multiplier of 1.5
 		privKey,
-		5 * time.Second,
+		5*time.Second,
 	)
 
 	// Create tx
