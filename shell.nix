@@ -24,7 +24,6 @@ pkgs.mkShell {
     delve
     golangci-lint
     gotools
-    ginkgo
 
     # NodeJS + TS
     nodePackages.typescript-language-server
