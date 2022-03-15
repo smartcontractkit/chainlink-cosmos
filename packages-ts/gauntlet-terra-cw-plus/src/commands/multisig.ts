@@ -7,7 +7,6 @@ import { fetchProposalState, makeInspectionMessage } from './inspect'
 import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg, Expiration } from '../lib/types'
 
 export const DEFAULT_VOTING_PERIOD_IN_SECS = 24 * 60 * 60
-export const MAX_VOTING_PERIOD_IN_SECS = 7 * 24 * 60 * 60
 
 type ProposalAction = (
   signer: AccAddress,
@@ -95,17 +94,10 @@ export const wrapCommand = (command) => {
     }
 
     parseVotingPeriod(votingPeriod: string): number {
-      try {
-        Number(votingPeriod)
-      } catch {
+      const n = Number.parseInt(votingPeriod)
+      if (isNaN(n) || n < 0) {
         throw new Error(
-          `Invalid --votingPeriod, must be a duration in seconds (default: ${DEFAULT_VOTING_PERIOD_IN_SECS}, max: ${MAX_VOTING_PERIOD_IN_SECS})`,
-        )
-      }
-      const n = Number(votingPeriod)
-      if (n < 0 || n > MAX_VOTING_PERIOD_IN_SECS) {
-        throw new Error(
-          `--votingPeriod out of range (default: ${DEFAULT_VOTING_PERIOD_IN_SECS}, max: ${MAX_VOTING_PERIOD_IN_SECS})`,
+          `Invalid votingPeriod=${votingPeriod}, must be a positive integer number of seconds (default: ${DEFAULT_VOTING_PERIOD_IN_SECS})`,
         )
       }
       return n
@@ -117,15 +109,17 @@ export const wrapCommand = (command) => {
         ? this.parseVotingPeriod(this.flags.votingPeriod)
         : DEFAULT_VOTING_PERIOD_IN_SECS
 
-      logger.info('Generating data for creating new multisig proposal')
-      const expiresAt = (Date.now() + votingPeriod * 1000) * time.Millisecond
+      const msExpiration: number = Date.now() + votingPeriod * 1000 // milliseconds since 1970
+      logger.info(`Generating data for creating new multisig proposal (expires at ${new Date(msExpiration)})`)
+      // Expiration.at_time is a string representation of nanoseconds since 1970
+      const expiration: Expiration = { at_time: (msExpiration * time.Millisecond).toString() }
 
       const proposeInput = {
         propose: {
           description: command.id,
           msgs: [this.toMsg(message)],
           title: command.id,
-          latest: { at_time: expiresAt.toString() },
+          latest: expiration,
         },
       }
       return new MsgExecuteContract(signer, this.multisig, proposeInput)
