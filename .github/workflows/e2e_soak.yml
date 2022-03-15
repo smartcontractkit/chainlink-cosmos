@@ -1,0 +1,128 @@
+name: e2e_soak
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      cl_branch_ref:
+        description: Chainlink repo branch to integrate with
+        required: true
+        default: develop
+        type: string
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: ${{ inputs.repo_name }}
+          ref: ${{ inputs.ref }}
+      - name: Cache cargo registry
+        uses: actions/cache@v2.1.7
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-v2-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v2.1.7
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-v2-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build Artifacts
+        run: |
+          make contracts_compile
+      - uses: actions/upload-artifact@master
+        with:
+          name: artifacts
+          path: artifacts
+  build_custom_cl_image:
+    name: Build custom CL image
+    # target branch can't be set as var, it's from where we getting pipeline code
+    uses: smartcontractkit/chainlink/.github/workflows/build-custom.yml@develop
+    with:
+      cl_repo: smartcontractkit/chainlink
+      # by default we are integrating with develop
+      cl_ref: ${{ github.event.inputs.cl_branch_ref }}
+      # commit of the caller branch
+      dep_terra_sha: ${{ github.sha }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.QA_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.QA_AWS_SECRET_KEY }}
+      AWS_REGION: ${{ secrets.QA_AWS_REGION }}
+      AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
+      QA_KUBECONFIG: ${{ secrets.QA_KUBECONFIG }}
+  smoke:
+    runs-on: ubuntu-latest
+    needs: [build, build_custom_cl_image]
+    env:
+      CGO_ENABLED: 1
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ inputs.repo_name }}
+          ref: ${{ inputs.ref }}
+      - name: Install Nix
+        uses: cachix/install-nix-action@v14
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.QA_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.QA_AWS_SECRET_KEY }}
+          aws-region: ${{ secrets.QA_AWS_REGION }}
+          role-to-assume: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
+          role-duration-seconds: 3600
+      - name: Set Kubernetes Context
+        uses: azure/k8s-set-context@v1
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.QA_KUBECONFIG }}
+      - name: Cache Vendor Packages
+        uses: actions/cache@v2
+        id: cache-packages
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Download Go Vendor Packages
+        if: steps.cache-packages.outputs.cache-hit != 'true'
+        run: nix develop -c make download
+      - uses: actions/download-artifact@master
+        with:
+          name: artifacts
+          path: artifacts
+      - name: Generate gauntlet executable
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm config set -- '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
+          nix develop -c make build_js
+      - name: Run Tests
+        env:
+          SELECTED_NETWORKS: localterra
+          CHAINLINK_IMAGE: 795953128386.dkr.ecr.us-west-2.amazonaws.com/chainlink
+          CHAINLINK_VERSION: custom.${{ github.sha }}
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          cp -r artifacts packages-ts/gauntlet-terra-contracts/artifacts/bin
+          nix develop -c make test_ocr_soak
+      - name: Publish Test Results
+        uses: mikepenz/action-junit-report@v2
+        if: always()
+        with:
+          report_paths: "./tests-smoke-report.xml"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          check_name: Smoke Test Results
+      - name: Publish Artifacts
+        if: failure()
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: test-logs
+          path: /home/runner/work/chainlink-terra/chainlink-terra/tests/e2e/logs
