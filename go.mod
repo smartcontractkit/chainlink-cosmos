@@ -11,7 +11,7 @@ require (
 	github.com/prometheus/client_golang v1.12.1
 	github.com/rs/zerolog v1.26.1
 	github.com/satori/go.uuid v1.2.0
-	github.com/smartcontractkit/chainlink v1.2.1-0.20220308211624-def53d2c8f38
+	github.com/smartcontractkit/chainlink v1.2.1-0.20220315133704-8769e75d54b1
 	github.com/smartcontractkit/chainlink-relay v0.0.0-20220307003623-2fd8786a6e1f
 	github.com/smartcontractkit/helmenv v1.0.36
 	github.com/smartcontractkit/integrations-framework v1.0.50
