@@ -21,6 +21,7 @@ require (
 	github.com/tendermint/tendermint v0.34.15
 	github.com/terra-money/core v0.5.14
 	go.uber.org/multierr v1.7.0
+	go.uber.org/ratelimit v0.2.0
 	golang.org/x/crypto v0.0.0-20211215165025-cf75a172585e
 	gopkg.in/guregu/null.v4 v4.0.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -50,6 +51,7 @@ require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
+	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,6 +15,7 @@ import (
 // TerraConfig contains configuration for connecting to a terra client.
 type TerraConfig struct {
 	TendermintURL    string
+	TendermintURLs   []string
 	FCDURL           string
 	NetworkName      string
 	NetworkID        string
@@ -68,7 +70,9 @@ func ParseTerraConfig() (TerraConfig, error) {
 
 func parseEnvVars(cfg *TerraConfig) error {
 	if value, isPresent := os.LookupEnv("TERRA_TENDERMINT_URL"); isPresent {
-		cfg.TendermintURL = value
+		urls := strings.Split(value, ",")
+		cfg.TendermintURL = urls[0]
+		cfg.TendermintURLs = urls
 	}
 	if value, isPresent := os.LookupEnv("TERRA_FCD_URL"); isPresent {
 		cfg.FCDURL = value
@@ -126,6 +130,12 @@ func validateConfig(cfg TerraConfig) error {
 	} {
 		if _, err := url.ParseRequestURI(currentValue); currentValue != "" && err != nil {
 			return fmt.Errorf("%s='%s' is not a valid URL: %w", envVarName, currentValue, err)
+		}
+	}
+	// Validate the URLs if there are multiple.
+	for _, currentValue := range cfg.TendermintURLs {
+		if _, err := url.ParseRequestURI(currentValue); currentValue != "" && err != nil {
+			return fmt.Errorf("'%s' is not a valid URL: %w", currentValue, err)
 		}
 	}
 	return nil
