@@ -55,7 +55,7 @@ export const parseInstruction = async (instruction: string, inputVersion: string
   if (!command.length || command.length > 2) throw new Error(`Abstract: Instruction ${command.join(':')} not found`)
 
   const id = command[0] as CONTRACT_LIST
-  const contract = await contracts.getContract(id, inputVersion)
+  const contract = await contracts.getContractWithSchemaAndCode(id, inputVersion)
   if (!contract) throw new Error(`Abstract: Contract ${command[0]} not found`)
 
   if (command[1] === 'help') {

@@ -5,6 +5,7 @@ import path from 'path'
 import fetch from 'node-fetch'
 import { DEFAULT_RELEASE_VERSION, DEFAULT_CWPLUS_VERSION } from './constants'
 import { AccAddress } from '@terra-money/terra.js'
+import { assertions } from '@chainlink/gauntlet-core/dist/utils'
 
 export enum CONTRACT_LIST {
   FLAGS = 'flags',
@@ -37,6 +38,7 @@ export abstract class Contract {
   readonly downloadUrl: string
 
   // Only load bytecode & schema later if needed
+  version: string
   abi: TerraABI
   bytecode: string
   addresses: AccAddress[] = []
@@ -63,6 +65,13 @@ export abstract class Contract {
   }
 
   loadContractCode = async (version: string): Promise<void> => {
+    version = version ? version : this.defaultVersion
+    assertions.assert(
+      !this.version || version == this.version,
+      `Loading multiple versions (${this.version} and ${version}) of the same contract is unsupported.`,
+    )
+    this.version = version
+
     if (version === 'local') {
       // Possible paths depending on how/where gauntlet is being executed
       const possibleContractPaths = [
@@ -89,20 +98,6 @@ export abstract class Contract {
       }
       this.bytecode = Buffer.from(body).toString('base64')
     }
-  }
-
-  getContract = async (version: string): Promise<Contract> => {
-    // Load contract code & ABI
-    version = version ? version : this.defaultVersion
-    if (!this.abi) {
-      // don't bother reloading if we've already loaded
-      await this.loadContractABI()
-    }
-    if (!this.bytecode) {
-      // don't bother reloading if we've already loaded
-      await this.loadContractCode(version)
-    }
-    return this
   }
 
   loadContractABI = async (): Promise<void> => {
@@ -156,17 +151,25 @@ class CosmWasmContract extends Contract {
 }
 
 class Contracts {
-  async getContract(id: CONTRACT_LIST, version: string): Promise<Contract> {
-    if (this[id]) {
-      return await this[id].getContract(version)
-    } else {
+  // Retrieves a specific Contract object from the contract index, while loading its abi
+  // and bytecode from disk or network if they haven't been already.
+  async getContractWithSchemaAndCode(id: CONTRACT_LIST, version: string): Promise<Contract> {
+    const contract = this[id]
+    if (!contract) {
       throw new Error(`Contract ${id} not found!`)
     }
+    await Promise.all([
+      contract.abi ? Promise.resolve() : contract.loadContractABI(),
+      contract.bytecode ? Promise.resolve() : contract.loadContractCode(version),
+    ])
+    return contract
   }
+
   addChainlink = (id: CONTRACT_LIST, dirName: string) => {
     this[id] = new ChainlinkContract(id, dirName)
     return this
   }
+
   addCosmwasm = (id: CONTRACT_LIST, dirName: string) => {
     this[id] = new CosmWasmContract(id, dirName)
     return this

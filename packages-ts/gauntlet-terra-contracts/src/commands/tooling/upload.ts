@@ -51,7 +51,7 @@ export default class UploadContractCode extends TerraCommand {
     const maxRetry = parsedRetryCount ? parsedRetryCount : 5
     for (let contractName of askedContracts) {
       await prompt(`Uploading contract ${contractName}, do you wish to continue?`)
-      const contract = await contracts[contractName].getContract(this.flags.version)
+      const contract = await contracts.getContractWithSchemaAndCode(contractName, this.flags.version)
       console.log('CONTRACT Bytecode exists:', !!contract.bytecode)
       for (let retry = 0; retry < maxRetry; retry++) {
         try {
