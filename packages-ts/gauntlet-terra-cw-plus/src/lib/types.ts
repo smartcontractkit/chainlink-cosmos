@@ -42,6 +42,7 @@ export type State = {
   multisig: {
     threshold: number
     owners: AccAddress[]
+    maxVotingPeriod: number
   }
   proposal: {
     id?: number

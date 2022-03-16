@@ -2,6 +2,7 @@ import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { Action, State, Vote } from '../lib/types'
+import { LCDClient } from '@terra-money/terra.js'
 
 export default class Inspect extends TerraCommand {
   static id = 'cw3_flex_multisig:inspect'
@@ -32,12 +33,15 @@ export default class Inspect extends TerraCommand {
   }
 }
 
-export const fetchProposalState = (query: (contractAddress: string, query: any) => Promise<any>) => async (
+export const fetchProposalState = (provider: LCDClient) => async (
   multisig: string,
   proposalId?: number,
 ): Promise<State> => {
-  const _queryMultisig = (params) => () => query(multisig, params)
+  const _queryMultisig = (params) => (): Promise<any> => provider.wasm.contractQuery(multisig, params)
+  const _queryContractInfo = (): Promise<any> => provider.wasm.contractInfo(multisig)
+
   const multisigQueries = [
+    _queryContractInfo,
     _queryMultisig({
       list_voters: {},
     }),
@@ -59,11 +63,12 @@ export const fetchProposalState = (query: (contractAddress: string, query: any) 
   ]
   const queries = !!proposalId ? multisigQueries.concat(proposalQueries) : multisigQueries
 
-  const [groupState, thresholdState, proposalState, votes] = await Promise.all(queries.map((q) => q()))
+  const [contractInfo, groupState, thresholdState, proposalState, votes] = await Promise.all(queries.map((q) => q()))
 
   const multisigState = {
     threshold: thresholdState.absolute_count.weight,
     owners: groupState.voters.map((m) => m.addr),
+    maxVotingPeriod: contractInfo.init_msg.max_voting_period.time,
   }
   if (!proposalId) {
     return {
