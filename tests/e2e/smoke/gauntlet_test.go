@@ -28,8 +28,8 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			gd = &e2e.GauntletDeployer{
 				Version: "local",
 			}
-			state = &tc.OCRv2State{}
-			state.DeployEnv(1, false)
+			state = tc.NewOCRv2State(1)
+			state.DeployEnv(1, common.ChainBlockTime, false)
 			state.SetupClients()
 			if state.Nets.Default.ContractsDeployed() {
 				err := state.LoadContracts()

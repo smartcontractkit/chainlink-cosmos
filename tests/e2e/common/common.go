@@ -23,7 +23,9 @@ import (
 // TODO: those should be moved as a common part of integrations-framework
 
 const (
-	ChainName = "terra"
+	ChainName          = "terra"
+	ChainBlockTime     = "200ms"
+	ChainBlockTimeSoak = "2s"
 )
 
 // Those functions may be common with another chains and should be moved to another lib
@@ -32,6 +34,12 @@ type NodeKeysBundle struct {
 	PeerID  string
 	OCR2Key *client.OCR2Key
 	TXKey   *client.TxKey
+}
+
+type BridgeInfo struct {
+	RelayConfig       map[string]string
+	ObservationSource string
+	JuelsSource       string
 }
 
 // OCR2 keys are in format OCR2<key_type>_<network>_<key>
@@ -160,7 +168,53 @@ func DefaultOffChainConfigParamsFromNodes(nodes []client.Chainlink) (contracts.O
 	}, nkb, nil
 }
 
-func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle, mock *client.MockserverClient) error {
+func CreateBridges(nodes []client.Chainlink, mock *client.MockserverClient) ([]BridgeInfo, error) {
+	relayConfig := map[string]string{
+		"nodeType":      "terra",
+		"tendermintURL": "http://terrad:26657",
+		"fcdURL":        "http://fcd-api:3060",
+		"chainID":       "localterra",
+	}
+	bi := make([]BridgeInfo, 0)
+	for nIdx, n := range nodes {
+		sourceValueBridge := client.BridgeTypeAttributes{
+			Name:        "variable",
+			URL:         fmt.Sprintf("%s/node%d", mock.Config.ClusterURL, nIdx),
+			RequestData: "{}",
+		}
+		observationSource := client.ObservationSourceSpecBridge(sourceValueBridge)
+		err := n.CreateBridge(&sourceValueBridge)
+		if err != nil {
+			return nil, err
+		}
+		juelsBridge := client.BridgeTypeAttributes{
+			Name:        "juels",
+			URL:         fmt.Sprintf("%s/juels", mock.Config.ClusterURL),
+			RequestData: "{}",
+		}
+		juelsSource := client.ObservationSourceSpecBridge(juelsBridge)
+		err = n.CreateBridge(&juelsBridge)
+		if err != nil {
+			return nil, err
+		}
+		_, err = n.CreateTerraChain(&client.TerraChainAttributes{ChainID: "localterra"})
+		if err != nil {
+			return nil, err
+		}
+		if _, err = n.CreateTerraNode(&client.TerraNodeAttributes{
+			Name:          "terra",
+			TerraChainID:  relayConfig["chainID"],
+			TendermintURL: relayConfig["tendermintURL"],
+			FCDURL:        relayConfig["fcdURL"],
+		}); err != nil {
+			return nil, err
+		}
+		bi = append(bi, BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: relayConfig})
+	}
+	return bi, nil
+}
+
+func CreateJobs(ocr2Addr string, bridgesInfo []BridgeInfo, nodes []client.Chainlink, nkb []NodeKeysBundle) error {
 	bootstrapPeers := []client.P2PData{
 		{
 			RemoteIP:   nodes[0].RemoteIP(),
@@ -173,60 +227,21 @@ func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle,
 		if nIdx == 0 {
 			jobType = "bootstrap"
 		}
-		sourceValueBridge := client.BridgeTypeAttributes{
-			Name:        "variable",
-			URL:         fmt.Sprintf("%s/node%d", mock.Config.ClusterURL, nIdx),
-			RequestData: "{}",
-		}
-		observationSource := client.ObservationSourceSpecBridge(sourceValueBridge)
-		err := n.CreateBridge(&sourceValueBridge)
-		if err != nil {
-			return err
-		}
-
-		juelsBridge := client.BridgeTypeAttributes{
-			Name:        "juels",
-			URL:         fmt.Sprintf("%s/juels", mock.Config.ClusterURL),
-			RequestData: "{}",
-		}
-		juelsSource := client.ObservationSourceSpecBridge(juelsBridge)
-		err = n.CreateBridge(&juelsBridge)
-		if err != nil {
-			return err
-		}
-		_, err = n.CreateTerraChain(&client.TerraChainAttributes{ChainID: "localterra"})
-		if err != nil {
-			return err
-		}
-		relayConfig := map[string]string{
-			"nodeType":      "terra",
-			"tendermintURL": "http://terrad:26657",
-			"fcdURL":        "http://fcd-api:3060",
-			"chainID":       "localterra",
-		}
-		if _, err = n.CreateTerraNode(&client.TerraNodeAttributes{
-			Name:          "terra",
-			TerraChainID:  relayConfig["chainID"],
-			TendermintURL: relayConfig["tendermintURL"],
-			FCDURL:        relayConfig["fcdURL"],
-		}); err != nil {
-			return err
-		}
 		jobSpec := &client.OCR2TaskJobSpec{
 			Name:                  fmt.Sprintf("terra-OCRv2-%d-%s", nIdx, uuid.NewV4().String()),
 			JobType:               jobType,
 			ContractID:            ocr2Addr,
 			Relay:                 ChainName,
-			RelayConfig:           relayConfig,
+			RelayConfig:           bridgesInfo[nIdx].RelayConfig,
 			P2PPeerID:             nkb[nIdx].PeerID,
 			PluginType:            "median",
 			P2PBootstrapPeers:     bootstrapPeers,
 			OCRKeyBundleID:        nkb[nIdx].OCR2Key.Data.ID,
 			TransmitterID:         nkb[nIdx].TXKey.Data.ID,
-			ObservationSource:     observationSource,
-			JuelsPerFeeCoinSource: juelsSource,
+			ObservationSource:     bridgesInfo[nIdx].ObservationSource,
+			JuelsPerFeeCoinSource: bridgesInfo[nIdx].JuelsSource,
 		}
-		if _, err = n.CreateJob(jobSpec); err != nil {
+		if _, err := n.CreateJob(jobSpec); err != nil {
 			return err
 		}
 	}

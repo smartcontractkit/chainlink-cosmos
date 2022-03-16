@@ -11,17 +11,17 @@ import (
 )
 
 var _ = Describe("Terra chaos suite", func() {
-	var state = &common.OCRv2State{}
+	var state = common.NewOCRv2State(1)
 	BeforeEach(func() {
 		By("Deploying OCRv2 cluster", func() {
-			state.DeployCluster(5, true, utils.ContractsDir)
+			state.DeployCluster(5, "2s", true, utils.ContractsDir)
 			state.LabelChaosGroups()
 			state.SetAllAdapterResponsesToTheSameValue(2)
 		})
 	})
 	It("Can tolerate chaos experiments", func() {
 		By("Stable and working", func() {
-			state.ValidateRoundsAfter(time.Now(), 10, false)
+			state.ValidateAllRounds(time.Now(), common.NewRoundCheckTimeout, 10, false)
 		})
 		By("Can work with faulty nodes offline", func() {
 			state.CanWorkWithFaultyNodesOffline()

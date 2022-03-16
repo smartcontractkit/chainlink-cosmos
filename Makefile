@@ -87,6 +87,9 @@ test_smoke:
 test_ocr:
 	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo --focus=@ocr2 tests/e2e/smoke
 
+test_ocr_soak:
+	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo --focus=@ocr2-soak tests/e2e/soak
+
 test_ocr_proxy:
 	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo --focus=@ocr_proxy tests/e2e/smoke
 
