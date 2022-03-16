@@ -1,6 +1,7 @@
 package chaos
 
 import (
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -13,7 +14,7 @@ var _ = Describe("Terra chaos suite", func() {
 	var state = &common.OCRv2State{}
 	BeforeEach(func() {
 		By("Deploying OCRv2 cluster", func() {
-			state.DeployCluster(5, true)
+			state.DeployCluster(5, true, utils.ContractsDir)
 			state.LabelChaosGroups()
 			state.SetAllAdapterResponsesToTheSameValue(2)
 		})

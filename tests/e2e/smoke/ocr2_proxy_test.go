@@ -1,6 +1,7 @@
 package smoke_test
 
 import (
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -16,7 +17,7 @@ var _ = Describe("Terra OCRv2 Proxy @ocr_proxy", func() {
 	BeforeEach(func() {
 		state = &tc.OCRv2State{}
 		By("Deploying the cluster", func() {
-			state.DeployCluster(5, false)
+			state.DeployCluster(5, false, utils.ContractsDir)
 			state.SetAllAdapterResponsesToTheSameValue(2)
 		})
 	})
@@ -29,7 +30,7 @@ var _ = Describe("Terra OCRv2 Proxy @ocr_proxy", func() {
 			cd := e2e.NewTerraContractDeployer(state.Nets.Default)
 
 			// deploy the proxy pointing at the ocr2 address
-			state.OCR2Proxy, state.Err = cd.DeployOCRv2Proxy(state.OCR2.Address())
+			state.OCR2Proxy, state.Err = cd.DeployOCRv2Proxy(state.OCR2.Address(), utils.ContractsDir)
 			Expect(state.Err).ShouldNot(HaveOccurred())
 
 			// latestRoundData

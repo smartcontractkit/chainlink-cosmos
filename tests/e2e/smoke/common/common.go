@@ -84,7 +84,7 @@ type ContractsAddresses struct {
 }
 
 // DeployCluster deploys OCR cluster with or without contracts
-func (m *OCRv2State) DeployCluster(nodes int, stateful bool) {
+func (m *OCRv2State) DeployCluster(nodes int, stateful bool, contractsDir string) {
 	m.DeployEnv(nodes, stateful)
 	m.SetupClients()
 	if m.Nets.Default.ContractsDeployed() {
@@ -92,7 +92,7 @@ func (m *OCRv2State) DeployCluster(nodes int, stateful bool) {
 		Expect(err).ShouldNot(HaveOccurred())
 		return
 	}
-	m.DeployContracts()
+	m.DeployContracts(contractsDir)
 	err := m.DumpContracts()
 	Expect(err).ShouldNot(HaveOccurred())
 	m.CreateJobs()
@@ -126,7 +126,7 @@ func (m *OCRv2State) SetupClients() {
 }
 
 // DeployContracts deploys contracts
-func (m *OCRv2State) DeployContracts() {
+func (m *OCRv2State) DeployContracts(contractsDir string) {
 	m.OCConfig, m.NodeKeysBundle, m.Err = common.DefaultOffChainConfigParamsFromNodes(m.Nodes)
 	Expect(m.Err).ShouldNot(HaveOccurred())
 	cd := e2e.NewTerraContractDeployer(m.Nets.Default)
@@ -137,15 +137,15 @@ func (m *OCRv2State) DeployContracts() {
 	m.Err = common.FundOracles(m.Nets.Default, m.NodeKeysBundle, big.NewFloat(5e12))
 	Expect(m.Err).ShouldNot(HaveOccurred())
 
-	m.BAC, m.Err = cd.DeployOCRv2AccessController()
+	m.BAC, m.Err = cd.DeployOCRv2AccessController(contractsDir)
 	Expect(m.Err).ShouldNot(HaveOccurred())
-	m.RAC, m.Err = cd.DeployOCRv2AccessController()
+	m.RAC, m.Err = cd.DeployOCRv2AccessController(contractsDir)
 	Expect(m.Err).ShouldNot(HaveOccurred())
-	m.OCR2, m.Err = cd.DeployOCRv2(m.BAC.Address(), m.RAC.Address(), m.LinkToken.Address())
+	m.OCR2, m.Err = cd.DeployOCRv2(m.BAC.Address(), m.RAC.Address(), m.LinkToken.Address(), contractsDir)
 	Expect(m.Err).ShouldNot(HaveOccurred())
-	m.Flags, m.Err = cd.DeployOCRv2Flags(m.BAC.Address(), m.RAC.Address())
+	m.Flags, m.Err = cd.DeployOCRv2Flags(m.BAC.Address(), m.RAC.Address(), contractsDir)
 	Expect(m.Err).ShouldNot(HaveOccurred())
-	m.Validator, m.Err = cd.DeployOCRv2Validator(uint32(80000), m.Flags.Address())
+	m.Validator, m.Err = cd.DeployOCRv2Validator(uint32(80000), m.Flags.Address(), contractsDir)
 	Expect(m.Err).ShouldNot(HaveOccurred())
 
 	m.Err = m.OCR2.SetBilling(uint64(2e5), uint64(1), uint64(1), "1", m.BAC.Address())
@@ -154,9 +154,9 @@ func (m *OCRv2State) DeployContracts() {
 	Expect(m.Err).ShouldNot(HaveOccurred())
 	m.Err = m.OCR2.SetValidatorConfig(uint64(2e18), m.Validator.Address())
 	Expect(m.Err).ShouldNot(HaveOccurred())
-	m.OCR2Proxy, m.Err = cd.DeployOCRv2Proxy(m.OCR2.Address())
+	m.OCR2Proxy, m.Err = cd.DeployOCRv2Proxy(m.OCR2.Address(), contractsDir)
 	Expect(m.Err).ShouldNot(HaveOccurred())
-	m.ValidatorProxy, m.Err = cd.DeployOCRv2Proxy(m.Validator.Address())
+	m.ValidatorProxy, m.Err = cd.DeployOCRv2Proxy(m.Validator.Address(), contractsDir)
 	Expect(m.Err).ShouldNot(HaveOccurred())
 }
 
