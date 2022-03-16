@@ -2,6 +2,7 @@ import { WebSocketClient } from '@terra-money/terra.js'
 import { TxLog, Int } from '@terra-money/terra.js'
 
 export interface Round {
+  contract: string
   answer: Int
   roundId: number
   epoch: number
@@ -31,7 +32,9 @@ export class OCR2Feed {
       },
       async (data) => {
         const txRes = data.value.TxResult.result
-        OCR2Feed.parseLog(txRes.log).forEach(callback)
+        OCR2Feed.parseLog(txRes.log)
+          .filter((r) => r.contract == contract)
+          .forEach(callback)
       },
     )
   }
@@ -65,6 +68,7 @@ export class OCR2Feed {
       return new Date(unixTS * 1000)
     }
     return {
+      contract: onlyAttr('contract_address'),
       answer: tryBig(onlyAttr('answer')),
       roundId: tryInt(onlyAttr('round')),
       epoch: tryInt(onlyAttr('epoch')),
