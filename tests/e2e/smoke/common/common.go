@@ -103,7 +103,7 @@ type OCRv2State struct {
 }
 
 // DeployCluster deploys OCR cluster with or without contracts
-func (m *OCRv2State) DeployCluster(nodes int, blockTime string, stateful bool, , contractsDir string) {
+func (m *OCRv2State) DeployCluster(nodes int, blockTime string, stateful bool, contractsDir string) {
 	m.DeployEnv(nodes, blockTime, stateful)
 	m.SetupClients()
 	if m.Nets.Default.ContractsDeployed() {
@@ -160,15 +160,15 @@ func (m *OCRv2State) DeployContracts(contractsDir string) {
 			lt, err := cd.DeployLinkTokenContract()
 			Expect(err).ShouldNot(HaveOccurred())
 
-			bac, err := cd.DeployOCRv2AccessController()
+			bac, err := cd.DeployOCRv2AccessController(contractsDir)
 			Expect(err).ShouldNot(HaveOccurred())
-			rac, err := cd.DeployOCRv2AccessController()
+			rac, err := cd.DeployOCRv2AccessController(contractsDir)
 			Expect(err).ShouldNot(HaveOccurred())
-			ocr2, err := cd.DeployOCRv2(bac.Address(), rac.Address(), lt.Address())
+			ocr2, err := cd.DeployOCRv2(bac.Address(), rac.Address(), lt.Address(), contractsDir)
 			Expect(err).ShouldNot(HaveOccurred())
-			flags, err := cd.DeployOCRv2Flags(bac.Address(), rac.Address())
+			flags, err := cd.DeployOCRv2Flags(bac.Address(), rac.Address(), contractsDir)
 			Expect(err).ShouldNot(HaveOccurred())
-			validator, err := cd.DeployOCRv2Validator(uint32(80000), flags.Address())
+			validator, err := cd.DeployOCRv2Validator(uint32(80000), flags.Address(), contractsDir)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			err = ocr2.SetBilling(uint64(2e5), uint64(1), uint64(1), "1", bac.Address())
@@ -177,9 +177,9 @@ func (m *OCRv2State) DeployContracts(contractsDir string) {
 			Expect(err).ShouldNot(HaveOccurred())
 			err = ocr2.SetValidatorConfig(uint64(2e18), validator.Address())
 			Expect(err).ShouldNot(HaveOccurred())
-			ocrProxy, err := cd.DeployOCRv2Proxy(ocr2.Address())
+			ocrProxy, err := cd.DeployOCRv2Proxy(ocr2.Address(), contractsDir)
 			Expect(err).ShouldNot(HaveOccurred())
-			validatorProxy, err := cd.DeployOCRv2Proxy(validator.Address())
+			validatorProxy, err := cd.DeployOCRv2Proxy(validator.Address(), contractsDir)
 			Expect(err).ShouldNot(HaveOccurred())
 			m.Mu.Lock()
 			m.Contracts = append(m.Contracts, Contracts{

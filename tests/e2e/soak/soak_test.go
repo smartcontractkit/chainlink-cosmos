@@ -2,6 +2,7 @@ package soak_test
 
 import (
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -16,7 +17,7 @@ var _ = Describe("Terra OCRv2 soak test @ocr2-soak", func() {
 	BeforeEach(func() {
 		state = tc.NewOCRv2State(30)
 		By("Deploying the cluster", func() {
-			state.DeployCluster(5, common.ChainBlockTimeSoak, false)
+			state.DeployCluster(5, common.ChainBlockTimeSoak, false, utils.ContractsDir)
 			state.SetAllAdapterResponsesToTheSameValue(2)
 		})
 	})
