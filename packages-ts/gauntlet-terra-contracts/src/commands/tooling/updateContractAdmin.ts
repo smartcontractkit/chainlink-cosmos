@@ -1,5 +1,5 @@
 import { Result } from '@chainlink/gauntlet-core'
-import { prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { AccAddress, MsgUpdateContractAdmin } from '@terra-money/terra.js'
 import { CATEGORIES } from '../../lib/constants'
@@ -7,6 +7,7 @@ import { CATEGORIES } from '../../lib/constants'
 type CommandInput = {
   newAdmin: string
   contract: string
+  forceNewAdmin?: boolean
 }
 
 export default class UpdateContractAdmin extends TerraCommand {
@@ -26,6 +27,7 @@ export default class UpdateContractAdmin extends TerraCommand {
 
   buildCommand = async (flags, args): Promise<TerraCommand> => {
     this.input = this.makeInput(flags, args)
+    this.validateInput(this.input)
     return this
   }
 
@@ -33,16 +35,28 @@ export default class UpdateContractAdmin extends TerraCommand {
     await prompt(`Continue transferring contract ${this.input.contract} to new admin ${this.input.newAdmin}?`)
   }
 
-  makeInput = (flags, _) => {
+  makeInput = (flags, args): CommandInput => {
     return {
       newAdmin: flags.to,
-      contract: this.args[0],
+      contract: args[0],
+      forceNewAdmin: !!flags.forceNewAdmin,
     }
   }
 
-  makeRawTransaction = async (signer: AccAddress) => {
+  validateInput = (input: CommandInput): boolean => {
+    if (input.forceNewAdmin) {
+      logger.warn(`New admin "${input.newAdmin}" might not be a multisig wallet`)
+      return true
+    }
+    // TODO: Update when Contracts expose its addresses
+    if (input.newAdmin !== process.env.CW3_FLEX_MULTISIG)
+      throw new Error(`Proposed New admin "${input.newAdmin}"" is not a known multisig wallet`)
     if (!AccAddress.validate(this.input.newAdmin)) throw new Error('Invalid new admin address')
     if (!AccAddress.validate(this.input.contract)) throw new Error('Invalid contract address')
+    return true
+  }
+
+  makeRawTransaction = async (signer: AccAddress) => {
     return new MsgUpdateContractAdmin(signer, this.input.newAdmin, this.input.contract)
   }
 
