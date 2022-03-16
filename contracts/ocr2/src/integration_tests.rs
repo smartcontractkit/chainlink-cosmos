@@ -5,9 +5,9 @@ use crate::msg::{
     ExecuteMsg, InstantiateMsg, LatestConfigDetailsResponse, LatestTransmissionDetailsResponse,
     LinkAvailableForPaymentResponse, QueryMsg,
 };
-use anyhow::Result as AnyResult;
 use crate::state::{Billing, Round, Validator};
 use crate::Decimal;
+use anyhow::Result as AnyResult;
 use cosmwasm_std::{to_binary, Addr, Binary, Empty, Uint128};
 use cw20::Cw20Coin;
 use cw_multi_test::{App, AppBuilder, AppResponse, Contract, ContractWrapper, Executor};
@@ -136,7 +136,7 @@ fn transmit_report(
             result.extend_from_slice(&pk_bytes);
             if valid_sig {
                 result.extend_from_slice(&sig_bytes);
-            } else{
+            } else {
                 result.extend_from_slice(&[0u8; 64]);
             }
             Binary(result)
@@ -150,8 +150,7 @@ fn transmit_report(
         signatures,
     };
 
-    env
-        .router
+    env.router
         .execute_contract(transmitter.clone(), env.ocr2_addr.clone(), &msg, &[])
 }
 
@@ -416,7 +415,7 @@ fn transmit_happy_path() {
     assert_eq!(decimals, 18);
 
     // Should revert
-    let res = transmit_report(&mut env, 1, 1, ANSWER,  false);
+    let res = transmit_report(&mut env, 1, 1, ANSWER, false);
     assert!(res.is_err());
     assert_eq!(res.err().unwrap().to_string(), "invalid signature");
 
