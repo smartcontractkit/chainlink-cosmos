@@ -2,22 +2,30 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"log"
 
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
+	"github.com/smartcontractkit/chainlink/core/logger"
+
 	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring"
 	pkgClient "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
-	"github.com/smartcontractkit/chainlink/core/logger"
 )
 
 func main() {
 	ctx := context.Background()
 
-	coreLog := logger.NewLogger()
-	log := logWrapper{coreLog}
+	coreLog, closeLggr := logger.NewLogger()
+	defer func() {
+		if err := closeLggr(); err != nil {
+			log.Println(fmt.Sprintf("Error while closing Logger: %v", err))
+		}
+	}()
+	l := logWrapper{coreLog}
 
 	terraConfig, err := monitoring.ParseTerraConfig()
 	if err != nil {
-		log.Fatalw("failed to parse terra specific configuration", "error", err)
+		l.Fatalw("failed to parse terra specific configuration", "error", err)
 		return
 	}
 
@@ -28,49 +36,49 @@ func main() {
 		coreLog,
 	)
 	if err != nil {
-		log.Fatalw("failed to create a terra client", "error", err)
+		l.Fatalw("failed to create a terra client", "error", err)
 		return
 	}
 	chainReader := monitoring.NewChainReader(client)
 
 	envelopeSourceFactory := monitoring.NewEnvelopeSourceFactory(
 		chainReader,
-		log.With("component", "source-envelope"),
+		l.With("component", "source-envelope"),
 	)
 	txResultsFactory := monitoring.NewTxResultsSourceFactory(
-		log.With("component", "source-txresults"),
+		l.With("component", "source-txresults"),
 	)
 
 	entrypoint, err := relayMonitoring.NewEntrypoint(
 		ctx,
-		log,
+		l,
 		terraConfig,
 		envelopeSourceFactory,
 		txResultsFactory,
 		monitoring.TerraFeedParser,
 	)
 	if err != nil {
-		log.Fatalw("failed to build entrypoint", "error", err)
+		l.Fatalw("failed to build entrypoint", "error", err)
 		return
 	}
 
 	proxySourceFactory := monitoring.NewProxySourceFactory(
 		chainReader,
-		log.With("component", "source-proxy"),
+		l.With("component", "source-proxy"),
 	)
 	if entrypoint.Config.Feature.TestOnlyFakeReaders {
-		proxySourceFactory = monitoring.NewFakeProxySourceFactory(log.With("component", "fake-proxy-source"))
+		proxySourceFactory = monitoring.NewFakeProxySourceFactory(l.With("component", "fake-proxy-source"))
 	}
 	entrypoint.SourceFactories = append(entrypoint.SourceFactories, proxySourceFactory)
 
 	prometheusExporterFactory := monitoring.NewPrometheusExporterFactory(
-		log.With("component", "terra-prometheus-exporter"),
-		monitoring.NewMetrics(log.With("component", "terra-metrics")),
+		l.With("component", "terra-prometheus-exporter"),
+		monitoring.NewMetrics(l.With("component", "terra-metrics")),
 	)
 	entrypoint.ExporterFactories = append(entrypoint.ExporterFactories, prometheusExporterFactory)
 
 	entrypoint.Run()
-	log.Info("monitor stopped")
+	l.Info("monitor stopped")
 }
 
 // adapt core/logger.Logger to monitoring logger.
