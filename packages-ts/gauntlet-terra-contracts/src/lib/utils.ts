@@ -25,6 +25,14 @@ enum MODE {
   DEBUG,
 }
 
+// fmtAddress:  Automatically format terra addresses depending on contract type.
+//
+// Use ${fmtAddress(address)} instead of ${address} in strings sent to console or log.
+//  - If it matches the multisig address read from environment, the address will show up
+//    as brown and labelled "multisig".
+//  - If it matches a known contract address read from the environemnt (LINK, BILLING_ACCESS_CONTROLLER,... ),
+//    the address will be blue and labelled with the contract name.
+//  - Unknown addresses will show up as yellow.
 export const fmtAddress = (address: AccAddress, mode = MODE.DEBUG): string => {
   const modePrefix = {
     [MODE.COLORIZED]: '[',
@@ -50,20 +58,11 @@ export const fmtAddress = (address: AccAddress, mode = MODE.DEBUG): string => {
     .split(',')
 
   if (address == contracts[CONTRACT_LIST.MULTISIG].address) {
-    // Example output: ( MODE.COLORIZED will look right only in a color terminal )
-    //   MODE.COLORIZED: [[2;31mmultisig🧳[2;33mterra1dure7emfpkk68f5pgur7rnajfhhsppkextrr9u[0;0m]
-    //   MODE.PLAIN: [multisig🧳terra1dure7emfpkk68f5pgur7rnajfhhsppkextrr9u]
     return `[${brown}multisig🧳${dimYellow}${address}${reset}]`
   } else if (contractAddresses.includes(address)) {
     const id = contractIds.filter((id) => contracts[id].address == address)[0] as CONTRACT_LIST
     return `[${blue}${id}📜${dimBlue}${address} ${reset}]`
-    // Example output:
-    //   MODE.COLORIZED: [[0;34maccess_controller📜[2;34mterra15x04wcmgu2wl76vrprxhrrlszvqnywxhkemgxh[0;0m]
-    //   MODE.PLAIN: [access_controller📜terra15x04wcmgu2wl76vrprxhrrlszvqnywxhkemgxh]
   } else {
-    // Example output:
-    //   MODE.COLORIZED: [[0;33m👝terra1tsxn3zzp09kvwpx03gzwquhc6nn794vvznuhzr[0;0m]
-    //   MODE.PLAIN: [👝terra1tsxn3zzp09kvwpx03gzwquhc6nn794vvznuhzr]
     return `[${yellow}👝${address} ${reset}]`
   }
 }

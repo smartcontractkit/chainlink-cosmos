@@ -52,6 +52,7 @@ export abstract class Contract {
 
   addInstance(name: string) {
     const address = process.env[name]
+    console.warn('${name} not set in environment--ignoring')
     if (!address) return this // it's okay if we don't have all the contract addresses, for now
 
     this.addresses.push(address as AccAddress)
