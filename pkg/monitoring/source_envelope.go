@@ -285,7 +285,7 @@ func (e *envelopeSource) extractDataFromTxResponse(
 	if len(res.TxResponses) == 0 ||
 		len(res.TxResponses[0].Logs) == 0 ||
 		len(res.TxResponses[0].Logs[0].Events) == 0 {
-		return fmt.Errorf("%d events found in response", len(res.TxResponses[0].Logs[0].Events))
+		return fmt.Errorf("0 events found in response")
 	}
 	// Extract matching events
 	events := extractMatchingEvents(res.TxResponses[0].Logs[0].Events, eventType, contractAddressBech32)
