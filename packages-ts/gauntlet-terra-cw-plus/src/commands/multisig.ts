@@ -93,11 +93,13 @@ export const wrapCommand = (command) => {
       }
     }
 
-    parseVotingPeriod(votingPeriod: string): number {
+    async parseVotingPeriod(votingPeriod: string): Promise<number> {
+      const state = await this.fetchState()
       const n = Number.parseInt(votingPeriod)
-      if (isNaN(n) || n < 0) {
+      if (isNaN(n) || n < 0 || n > state.multisig.maxVotingPeriod) {
         throw new Error(
-          `Invalid votingPeriod=${votingPeriod}, must be a positive integer number of seconds (default: ${DEFAULT_VOTING_PERIOD_IN_SECS})`,
+          `votingPeriod=${votingPeriod}: must be a valid duration in seconds, ` +
+            `(range: [0-${state.multisig.maxVotingPeriod}], default: ${DEFAULT_VOTING_PERIOD_IN_SECS})`,
         )
       }
       return n
@@ -106,7 +108,7 @@ export const wrapCommand = (command) => {
     makeProposeTransaction: ProposalAction = async (signer, _, message) => {
       // default voting period of 24 hours, if unspecified
       const votingPeriod: number = this.flags.votingPeriod
-        ? this.parseVotingPeriod(this.flags.votingPeriod)
+        ? await this.parseVotingPeriod(this.flags.votingPeriod)
         : DEFAULT_VOTING_PERIOD_IN_SECS
 
       const msExpiration: number = Date.now() + votingPeriod * 1000 // milliseconds since 1970
@@ -147,8 +149,7 @@ export const wrapCommand = (command) => {
     }
 
     fetchState = async (proposalId?: number): Promise<State> => {
-      const query = this.provider.wasm.contractQuery.bind(this.provider.wasm)
-      return fetchProposalState(query)(this.multisig, proposalId)
+      return fetchProposalState(this.provider)(this.multisig, proposalId)
     }
 
     printPostInstructions = async (proposalId: number) => {
