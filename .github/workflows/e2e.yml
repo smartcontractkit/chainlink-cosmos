@@ -1,4 +1,4 @@
-name: e2e_tests
+name: E2E External tests flow
 on:
   workflow_call:
     inputs:

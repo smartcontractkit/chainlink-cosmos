@@ -1,4 +1,4 @@
-name: chaos
+name: E2E Chaos Tests
 on:
   schedule:
     - cron: '0 */3 * * *'
