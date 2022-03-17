@@ -325,6 +325,7 @@ func extractMatchingEvents(events cosmosTypes.StringEvents, eventType, contractA
 		for _, attribute := range event.Attributes {
 			if attribute.Key == "contract_address" && attribute.Value == contractAddressBech32 {
 				isMatchingContractAddress = true
+				break
 			}
 		}
 		if isMatchingContractAddress {
