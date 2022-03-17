@@ -81,11 +81,20 @@ func TestMedianFromOnChainReport(t *testing.T) {
 }
 
 func TestMedianFromReport(t *testing.T) {
+	cdc := ReportCodec{}
+	// Requires at least one obs
+	_, err := cdc.BuildReport(nil)
+	require.Error(t, err)
 	var tt = []struct{
 		name string
 		obs []*big.Int
 		expectedMedian *big.Int
 	}{
+		{
+			name: "2 positive one zero",
+			obs: []*big.Int{big.NewInt(0), big.NewInt(10), big.NewInt(20)},
+			expectedMedian: big.NewInt(10),
+		},
 		{
 			name: "2 positive one zero",
 			obs: []*big.Int{big.NewInt(0), big.NewInt(10), big.NewInt(20)},
@@ -122,7 +131,6 @@ func TestMedianFromReport(t *testing.T) {
 	}
 	for _, tc := range tt {
 		tc := tc
-		cdc := ReportCodec{}
 		t.Run(tc.name, func(t *testing.T) {
 			var pos []median.ParsedAttributedObservation
 			for i, obs := range tc.obs {
