@@ -4,7 +4,6 @@ import { CATEGORIES, ULUNA_DECIMALS } from '../../lib/constants'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 import { fmtAddress } from '../../lib/utils'
-import { setContractInstances } from '../../lib/contracts'
 
 type CommandInput = {
   destination: string
@@ -26,7 +25,6 @@ export default class TransferLuna extends TerraCommand {
   }
 
   buildCommand = async (flags, args): Promise<TerraCommand> => {
-    setContractInstances()
     this.input = this.makeInput(flags, args)
     return this
   }

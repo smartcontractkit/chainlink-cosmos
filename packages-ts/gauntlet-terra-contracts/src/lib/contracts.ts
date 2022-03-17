@@ -41,15 +41,11 @@ export abstract class Contract {
   version: string
   abi: TerraABI
   bytecode: string
-  addresses: AccAddress[] = []
-  address: AccAddress // first address, for convenience
-  instances: Map<AccAddress, string> // address => instance name
 
   constructor(id, dirName, defaultVersion) {
     this.id = id
     this.defaultVersion = defaultVersion
     this.dirName = dirName
-    this.instances = new Map<AccAddress, string>()
   }
 
   addInstance(envVar: string, name: string = this.id) {
@@ -58,8 +54,6 @@ export abstract class Contract {
       console.warn(`${envVar} not set in environment--ignoring`)
       return this // it's okay if we don't have all the contract addresses, for now
     }
-
-    this.instances[address as AccAddress] = name
 
     if (!AccAddress.validate(address))
       throw new Error(`Read invalid contract address ${address} for ${this.id} contract from env`)
@@ -190,15 +184,37 @@ export const contracts = new Contracts()
   .addCosmwasm(CONTRACT_LIST.CW4_GROUP, 'cw4_group')
   .addCosmwasm(CONTRACT_LIST.MULTISIG, 'cw3_flex_multisig')
 
-// This should be called from buildCommand(), after network env file has been sourced,
-// but before any address information is logged.  It will set the instance addresses and
-// names on the corresponding contracts, for later use with fmtAddress() or elsewhere
-export const setContractInstances = () => {
-  // Addresses of deployed instances read from env vars
-  contracts[CONTRACT_LIST.CW20_BASE].addInstance('LINK', 'link')
-  contracts[CONTRACT_LIST.ACCESS_CONTROLLER]
-    .addInstance('BILLING_ACCESS_CONTROLLER', 'billing_access')
-    .addInstance('REQUESTER_ACCESS_CONTROLLER', 'requester_access')
-  contracts[CONTRACT_LIST.CW4_GROUP].addInstance('CW4_GROUP')
-  contracts[CONTRACT_LIST.MULTISIG].addInstance('CW3_FLEX_MULTISIG', 'multisig')
+type Instance = {
+  name: string
+  contractId: CONTRACT_LIST
 }
+
+class AddressBook {
+  operator: AccAddress
+  instances: Map<AccAddress, Instance> // address => instance name
+
+  constructor() {
+    this.instances = new Map<AccAddress, Instance>()
+  }
+
+  addOperator(address: AccAddress) {
+    this.operator = address
+  }
+  addInstance(contractId: CONTRACT_LIST, envVar: string, name?: string) {
+    const address = process.env[envVar]
+    if (!address) {
+      console.warn(`${envVar} not set in environment--ignoring`)
+      return this // it's okay if we don't have all the contract addresses, for now
+    }
+
+    this.instances[address as AccAddress] = { name, contractId } as Instance
+
+    if (!AccAddress.validate(address))
+      throw new Error(`Read invalid contract address ${address} for ${contractId} contract from env`)
+
+    logger.debug(`Using deployed instance of ${contractId}: ${name}=${address}`)
+    return this
+  }
+}
+
+export const addressBook = new AddressBook()

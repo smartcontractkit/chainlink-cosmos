@@ -1,6 +1,10 @@
 import { bech32 } from 'bech32'
-import { CONTRACT_LIST, contracts } from './contracts'
+import { CONTRACT_LIST, addressBook } from './contracts'
 import { AccAddress } from '@terra-money/terra.js'
+import logger from '@chainlink/gauntlet-core/dist/utils/logger'
+import { TerraCommand } from '@chainlink/gauntlet-terra'
+import { assert } from '@chainlink/gauntlet-core/dist/utils/assertions'
+import { utils } from '@chainlink/gauntlet-terra-cw-plus/dist/commands/inspect'
 
 // https://docs.terra.money/docs/develop/sdks/terra-js/common-examples.html
 export function isValidAddress(address) {
@@ -27,39 +31,75 @@ enum MODE {
 
 // fmtAddress:  Automatically format terra addresses depending on contract type.
 //
-// Use ${fmtAddress(address)} instead of ${address} in strings sent to console or log.
-//  - If it matches the multisig address read from environment, the address will show up
-//    as brown and labelled "multisig".
-//  - If it matches a known contract address read from the environemnt (LINK, BILLING_ACCESS_CONTROLLER,... ),
-//    the address will be blue and labelled with the contract name.
-//  - Unknown addresses will show up as yellow.
-export const fmtAddress = (address: AccAddress, mode = MODE.DEBUG): string => {
+// Note:
+//  use(withAddressBook) middleware must be enabled for any commands calling this
+//
+// Then
+//  Use ${fmtAddress(address)} instead of ${address} in strings sent to console or log.
+//   - If it matches the multisig address read from environment, the address will show up
+//     as brown and labelled "multisig".
+//   - If it matches a known contract address read from the environemnt (LINK, BILLING_ACCESS_CONTROLLER,... ),
+//     the address will be blue and labelled with the contract name.
+//   - Unknown addresses will show up as yellow.
+export const fmtAddress = (address: AccAddress, mode = MODE.COLORIZED): string => {
+  assert(!!addressBook.operator, `fmtAddress called on Command without "use withAddressBook"`)
+
   const modePrefix = {
     [MODE.COLORIZED]: '[',
     [MODE.PLAIN]: '',
-    [MODE.DEBUG]: '[', // show generated ansi codes
   }
 
-  const defColor = (color) => (mode == MODE.PLAIN ? '' : color)
-  const esc = modePrefix[mode]
+  type COLOR = 'red' | 'blue' | 'yellow' | 'green'
+  type INTENSITY = 'dim' | 'bright'
+  type Style = COLOR | INTENSITY
+  type Styles = {
+    [key: string]: Style[]
+  }
+  const styles = {
+    MULTISIG_LABEL: ['red', 'dim'],
+    MULTISIG_ADDRESS: ['yellow', 'dim'],
+    CONTRACT_LABEL: ['blue', 'bright'],
+    CONTRACT_ADDRESS: ['blue', 'dim'],
+    OPERATOR_LABEL: ['green', 'bright'],
+    OPERATOR_ADDRESS: ['green', 'dim'],
+    UNKNOWN_ADDRESS: ['yellow', 'bright'],
+  } as Styles
 
-  const brown = defColor(`${esc}2;31m`)
-  const dimYellow = defColor(`${esc}2;33m`)
-  const blue = defColor(`${esc}0;34m`)
-  const dimBlue = defColor(`${esc}2;34m`)
-  const yellow = defColor(`${esc}0;33m`)
-  const reset = defColor(`${esc}0;0m`)
+  const formatMultisig = (address: AccAddress, label: string) =>
+    `[${logger.style(label, ...styles.MULTISIG_LABEL)}🧳${logger.style(address, ...styles.MULTISIG_ADDRESS)}]`
 
-  const contractIds = Object.values(CONTRACT_LIST)
-  const instances = [].concat
-    .apply(contractIds.map((id) => contracts[id].instances))
-    .reduce((prev, next) => Object.assign(prev, next))
+  const formatContract = (address: AccAddress, label: string) =>
+    `[👝${logger.style(label, ...styles.CONTRACT_LABEL)}📜$${logger.style(address, ...styles.CONTRACT_ADDRESS)}]`
 
-  if (address in contracts[CONTRACT_LIST.MULTISIG].instances) {
-    return `[${brown}multisig🧳${dimYellow}${address}${reset}]`
-  } else if (address in instances) {
-    return `[${blue}${instances[address]}📜${dimBlue}${address} ${reset}]`
+  // Shows up in terminal as single emoji (astronaut), but two emojis (adult + rocket) in some editors.
+  // TODO: check portability, possibly just use adult emoji?
+  //  https://emojiterra.com/astronaut-medium-skin-tone/  🧑🏽‍🚀
+  //  https://emojipedia.org/pilot-medium-skin-tone  🧑🏽‍✈️
+
+  const astronaut = '\uD83E\uDDD1\uD83C\uDFFD\u200D\uD83D\uDE80'
+  //const pilot = '\uD83E\uDDD1\uD83C\uDFFD\u200D\u2708\uFE0F'
+
+  const formatOperator = (address: AccAddress) =>
+    `[${logger.style('operator', ...styles.CONTRACT_LABEL)}${astronaut}${logger.style(
+      address,
+      ...styles.CONTRACT_ADDRESS,
+    )}]`
+
+  const formatUnknown = (address: AccAddress) => `[👝${logger.style(address, ...styles.UNKNOWN_ADDRESS)}]`
+
+  const instances = addressBook.instances
+
+  if (address in instances) {
+    if (instances[address].contractId == CONTRACT_LIST.MULTISIG) {
+      return formatMultisig(address, instances[address].name)
+    } else {
+      return formatContract(address, instances[address].name)
+    }
+  } else if (address == addressBook.operator) {
+    return formatOperator(address)
   } else {
-    return `[${yellow}👝${address} ${reset}]`
+    return formatUnknown(address)
   }
 }
+
+utils.fmtAddress = fmtAddress

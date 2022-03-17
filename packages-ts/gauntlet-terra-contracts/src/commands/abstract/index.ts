@@ -5,6 +5,7 @@ import { TransactionResponse, TerraCommand } from '@chainlink/gauntlet-terra'
 import { Contract, CONTRACT_LIST, contracts, TerraABI, TERRA_OPERATIONS } from '../../lib/contracts'
 import { DEFAULT_RELEASE_VERSION } from '../../lib/constants'
 import schema from '../../lib/schema'
+import { withAddressBook } from '../../lib/middlewares'
 
 export interface AbstractOpts {
   contract: Contract
@@ -114,7 +115,7 @@ export default class AbstractCommand extends TerraCommand {
 
   constructor(flags, args, opts, params) {
     super(flags, args)
-
+    this.use(withAddressBook)
     this.opts = opts
     this.params = params
 
