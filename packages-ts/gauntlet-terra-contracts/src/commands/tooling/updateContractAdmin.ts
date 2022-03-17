@@ -7,18 +7,18 @@ import { CATEGORIES } from '../../lib/constants'
 type CommandInput = {
   newAdmin: string
   contract: string
-  forceNewAdmin?: boolean
+  force?: boolean
 }
 
 export default class UpdateContractAdmin extends TerraCommand {
   input: CommandInput
 
-  static description = 'Updates contract admin'
+  static description = 'Updates contract admin. Admin role can migrate the contract to a new Code ID'
   static examples = [
-    `yarn gauntlet tooling:transfer_contract_admin --network=bombay-testnet --to=<NEW_ADMIN> <CONTRACT_ADDRESS>`,
+    `yarn gauntlet tooling:update_contract_admin --network=bombay-testnet --to=<NEW_ADMIN> <CONTRACT_ADDRESS>`,
   ]
 
-  static id = 'tooling:transfer_contract_admin'
+  static id = 'tooling:update_contract_admin'
   static category = CATEGORIES.TOOLING
 
   constructor(flags, args: string[]) {
@@ -39,20 +39,24 @@ export default class UpdateContractAdmin extends TerraCommand {
     return {
       newAdmin: flags.to,
       contract: args[0],
-      forceNewAdmin: !!flags.forceNewAdmin,
+      force: !!flags.force,
     }
   }
 
   validateInput = (input: CommandInput): boolean => {
-    if (input.forceNewAdmin) {
-      logger.warn(`New admin "${input.newAdmin}" might not be a multisig wallet`)
+    if (!AccAddress.validate(this.input.newAdmin)) throw new Error('Invalid new admin address')
+    if (!AccAddress.validate(this.input.contract)) throw new Error('Invalid contract address')
+    const knownMultisig = input.newAdmin === process.env.CW3_FLEX_MULTISIG
+    if (input.force) {
+      if (!knownMultisig) logger.warn(`New admin "${input.newAdmin}" might not be a multisig wallet`)
+      else logger.success(`Proposed new admin is a known multisig wallet`)
+
       return true
     }
     // TODO: Update when Contracts expose its addresses
-    if (input.newAdmin !== process.env.CW3_FLEX_MULTISIG)
-      throw new Error(`Proposed New admin "${input.newAdmin}"" is not a known multisig wallet`)
-    if (!AccAddress.validate(this.input.newAdmin)) throw new Error('Invalid new admin address')
-    if (!AccAddress.validate(this.input.contract)) throw new Error('Invalid contract address')
+    if (!knownMultisig) throw new Error(`Proposed New admin "${input.newAdmin}"" is not a known multisig wallet`)
+    else logger.success(`Proposed new admin is a known multisig wallet`)
+
     return true
   }
 

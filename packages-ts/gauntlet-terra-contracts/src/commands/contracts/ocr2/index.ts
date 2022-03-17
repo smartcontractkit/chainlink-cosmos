@@ -7,6 +7,7 @@ import ProposeOffchainConfig from './proposeOffchainConfig'
 import Inspect from './inspection/inspect'
 import Responses from './inspection/responses'
 import ProposalCommands from './proposal'
+import Migrate from './migrate'
 import { makeTransferOwnershipCommand, makeAcceptOwnershipCommand } from '../ownership'
 import { CONTRACT_LIST } from '../../../lib/contracts'
 
@@ -19,6 +20,7 @@ export default [
   OCR2InitializeFlow,
   Inspect,
   Responses,
+  Migrate,
   ...ProposalCommands,
   makeTransferOwnershipCommand(CONTRACT_LIST.OCR_2),
   makeAcceptOwnershipCommand(CONTRACT_LIST.OCR_2),

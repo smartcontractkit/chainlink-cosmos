@@ -134,8 +134,9 @@ export default class AbstractCommand extends TerraCommand {
   abstractDeploy: AbstractExecute = async (params: any) => {
     logger.loading(`Deploying contract ${this.opts.contract.id}`)
     const codeId = this.codeIds[this.opts.contract.id]
+    const finalDeployment = !!this.flags.final
     this.require(!!codeId, `Code Id for contract ${this.opts.contract.id} not found`)
-    const deploy = await this.deploy(codeId, params)
+    const deploy = await this.deploy(codeId, params, this.wallet.key.accAddress, finalDeployment)
     logger.success(`Deployed ${this.opts.contract.id} to ${deploy.address}`)
     return {
       responses: [

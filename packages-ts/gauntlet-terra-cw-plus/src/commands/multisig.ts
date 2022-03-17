@@ -1,18 +1,21 @@
 import { Result } from '@chainlink/gauntlet-core'
 import { time, logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
-import { AccAddress, MsgExecuteContract, MsgSend, MsgUpdateContractAdmin } from '@terra-money/terra.js'
+import {
+  AccAddress,
+  MsgExecuteContract,
+  MsgSend,
+  MsgUpdateContractAdmin,
+  MsgMigrateContract,
+} from '@terra-money/terra.js'
 import { isDeepEqual } from '../lib/utils'
 import { fetchProposalState, makeInspectionMessage } from './inspect'
 import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg, Expiration } from '../lib/types'
 
 export const DEFAULT_VOTING_PERIOD_IN_SECS = 24 * 60 * 60
 
-type ProposalAction = (
-  signer: AccAddress,
-  proposalId: number,
-  message: MsgExecuteContract | MsgSend | MsgUpdateContractAdmin,
-) => Promise<MsgExecuteContract>
+type TerraMessage = MsgExecuteContract | MsgSend | MsgUpdateContractAdmin | MsgMigrateContract
+type ProposalAction = (signer: AccAddress, proposalId: number, message: TerraMessage) => Promise<MsgExecuteContract>
 
 export const wrapCommand = (command) => {
   return class Multisig extends TerraCommand {
@@ -65,10 +68,11 @@ export const wrapCommand = (command) => {
       return isDeepEqual(proposalMsgs, generatedMsgs)
     }
 
-    toMsg = (message: MsgSend | MsgExecuteContract | MsgUpdateContractAdmin): Cw3BankMsg | Cw3WasmMsg => {
+    toMsg = (message: TerraMessage): Cw3BankMsg | Cw3WasmMsg => {
       if (message instanceof MsgSend) return this.toBankMsg(message as MsgSend)
       if (message instanceof MsgExecuteContract) return this.toWasmMsg(message as MsgExecuteContract)
       if (message instanceof MsgUpdateContractAdmin) return this.toWasmMsg(message as MsgUpdateContractAdmin)
+      if (message instanceof MsgMigrateContract) return this.toWasmMsg(message as MsgMigrateContract)
     }
 
     toBankMsg = (message: MsgSend): Cw3BankMsg => {
@@ -82,7 +86,8 @@ export const wrapCommand = (command) => {
       }
     }
 
-    toWasmMsg = (message: MsgExecuteContract | MsgUpdateContractAdmin): Cw3WasmMsg => {
+    toWasmMsg = (message: MsgExecuteContract | MsgUpdateContractAdmin | MsgMigrateContract): Cw3WasmMsg => {
+      const _msgToBase64 = (msg: any) => Buffer.from(JSON.stringify(msg)).toString('base64')
       if (message instanceof MsgUpdateContractAdmin) {
         return {
           wasm: {
@@ -93,12 +98,23 @@ export const wrapCommand = (command) => {
           },
         }
       }
+      if (message instanceof MsgMigrateContract) {
+        return {
+          wasm: {
+            migrate: {
+              contract_addr: message.contract,
+              msg: _msgToBase64(message.migrate_msg),
+              new_code_id: message.new_code_id,
+            },
+          },
+        }
+      }
       return {
         wasm: {
           execute: {
             contract_addr: message.contract,
             funds: message.coins.toArray().map((c) => c.toData()),
-            msg: Buffer.from(JSON.stringify(message.execute_msg)).toString('base64'),
+            msg: _msgToBase64(message.execute_msg),
           },
         },
       }

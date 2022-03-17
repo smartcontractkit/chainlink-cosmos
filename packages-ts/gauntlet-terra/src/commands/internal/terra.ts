@@ -25,6 +25,7 @@ import { TransactionResponse } from '../types'
 import { LedgerKey } from '../ledgerKey'
 
 type CodeIds = Record<string, number>
+type TerraMessage = MsgExecuteContract | MsgSend | MsgUpdateContractAdmin | MsgMigrateContract
 
 export default abstract class TerraCommand extends WriteCommand<TransactionResponse> {
   wallet: Wallet
@@ -34,7 +35,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   public codeIds: CodeIds
 
   abstract execute: () => Promise<Result<TransactionResponse>>
-  abstract makeRawTransaction: (signer: AccAddress) => Promise<MsgExecuteContract | MsgSend | MsgUpdateContractAdmin>
+  abstract makeRawTransaction: (signer: AccAddress) => Promise<TerraMessage>
   // Preferable option to initialize the command instead of new TerraCommand. This should be an static option to construct the command
   buildCommand?: (flags, args) => Promise<TerraCommand>
   beforeExecute: (context?: any) => Promise<void>
@@ -115,11 +116,11 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     return this.wrapResponse(res)
   }
 
-  async deploy(codeId, instantiateMsg, admin = this.wallet.key.accAddress, definitive = false) {
-    logger.info(`Deploying contract ${definitive ? 'marked as definitive' : 'with admin ' + admin}`)
+  async deploy(codeId, instantiateMsg, admin = this.wallet.key.accAddress, final = false) {
+    logger.info(`Deploying contract ${final ? 'marked as final' : 'with admin ' + admin}`)
     const instantiate = new MsgInstantiateContract(
       this.wallet.key.accAddress,
-      definitive ? undefined : admin,
+      final ? undefined : admin,
       codeId,
       instantiateMsg,
     )
@@ -185,7 +186,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     return this.wrapResponse(res)
   }
 
-  async simulate(signer: AccAddress, msgs: (MsgExecuteContract | MsgSend | MsgUpdateContractAdmin)[]): Promise<Number> {
+  async simulate(signer: AccAddress, msgs: TerraMessage[]): Promise<Number> {
     const account = await this.provider.auth.accountInfo(signer)
 
     const signerData: SignerData = {
