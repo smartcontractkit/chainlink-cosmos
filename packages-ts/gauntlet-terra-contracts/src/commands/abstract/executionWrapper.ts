@@ -3,6 +3,7 @@ import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { AccAddress, LCDClient } from '@terra-money/terra.js'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { setContractInstances } from '../../lib/contracts'
 
 export type ExecutionContext<Input, ContractInput> = {
   input: Input
@@ -58,6 +59,7 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
     }
 
     buildCommand = async (flags, args): Promise<TerraCommand> => {
+      setContractInstances()
       const input = await instruction.makeInput(flags, args)
       if (!instruction.validateInput(input)) {
         throw new Error(`Invalid input params:  ${JSON.stringify(input)}`)

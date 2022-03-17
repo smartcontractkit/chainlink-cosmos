@@ -43,25 +43,28 @@ export abstract class Contract {
   bytecode: string
   addresses: AccAddress[] = []
   address: AccAddress // first address, for convenience
+  instances: Map<AccAddress, string> // address => instance name
 
   constructor(id, dirName, defaultVersion) {
     this.id = id
     this.defaultVersion = defaultVersion
     this.dirName = dirName
+    this.instances = new Map<AccAddress, string>()
   }
 
-  addInstance(name: string) {
-    const address = process.env[name]
-    console.warn('${name} not set in environment--ignoring')
-    if (!address) return this // it's okay if we don't have all the contract addresses, for now
+  addInstance(envVar: string, name: string = this.id) {
+    const address = process.env[envVar]
+    if (!address) {
+      console.warn(`${envVar} not set in environment--ignoring`)
+      return this // it's okay if we don't have all the contract addresses, for now
+    }
 
-    this.addresses.push(address as AccAddress)
-    this.address = this.addresses[0]
+    this.instances[address as AccAddress] = name
 
     if (!AccAddress.validate(address))
       throw new Error(`Read invalid contract address ${address} for ${this.id} contract from env`)
 
-    logger.debug(`Deployed instance of ${this.id}: ${name}=${address}`)
+    logger.debug(`Using deployed instance of ${this.id}: ${name}=${address}`)
     return this
   }
 
@@ -187,10 +190,15 @@ export const contracts = new Contracts()
   .addCosmwasm(CONTRACT_LIST.CW4_GROUP, 'cw4_group')
   .addCosmwasm(CONTRACT_LIST.MULTISIG, 'cw3_flex_multisig')
 
-// Addresses of deployed instances read from env vars
-contracts[CONTRACT_LIST.CW20_BASE].addInstance('LINK')
-contracts[CONTRACT_LIST.ACCESS_CONTROLLER]
-  .addInstance('BILLING_ACCESS_CONTROLLER')
-  .addInstance('REQUESTER_ACCESS_CONTROLLER')
-contracts[CONTRACT_LIST.CW4_GROUP].addInstance('CW4_GROUP')
-contracts[CONTRACT_LIST.MULTISIG].addInstance('CW3_FLEX_MULTISIG')
+// This should be called from buildCommand(), after network env file has been sourced,
+// but before any address information is logged.  It will set the instance addresses and
+// names on the corresponding contracts, for later use with fmtAddress() or elsewhere
+export const setContractInstances = () => {
+  // Addresses of deployed instances read from env vars
+  contracts[CONTRACT_LIST.CW20_BASE].addInstance('LINK', 'link')
+  contracts[CONTRACT_LIST.ACCESS_CONTROLLER]
+    .addInstance('BILLING_ACCESS_CONTROLLER', 'billing_access')
+    .addInstance('REQUESTER_ACCESS_CONTROLLER', 'requester_access')
+  contracts[CONTRACT_LIST.CW4_GROUP].addInstance('CW4_GROUP')
+  contracts[CONTRACT_LIST.MULTISIG].addInstance('CW3_FLEX_MULTISIG', 'multisig')
+}

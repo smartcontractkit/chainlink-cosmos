@@ -51,17 +51,14 @@ export const fmtAddress = (address: AccAddress, mode = MODE.DEBUG): string => {
   const reset = defColor(`${esc}0;0m`)
 
   const contractIds = Object.values(CONTRACT_LIST)
-  const contractAddresses = contractIds
-    .map((id) => contracts[id].addresses)
-    .filter((aList) => aList.length > 0)
-    .join()
-    .split(',')
+  const instances = [].concat
+    .apply(contractIds.map((id) => contracts[id].instances))
+    .reduce((prev, next) => Object.assign(prev, next))
 
-  if (address == contracts[CONTRACT_LIST.MULTISIG].address) {
+  if (address in contracts[CONTRACT_LIST.MULTISIG].instances) {
     return `[${brown}multisig🧳${dimYellow}${address}${reset}]`
-  } else if (contractAddresses.includes(address)) {
-    const id = contractIds.filter((id) => contracts[id].address == address)[0] as CONTRACT_LIST
-    return `[${blue}${id}📜${dimBlue}${address} ${reset}]`
+  } else if (address in instances) {
+    return `[${blue}${instances[address]}📜${dimBlue}${address} ${reset}]`
   } else {
     return `[${yellow}👝${address} ${reset}]`
   }
