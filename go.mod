@@ -13,7 +13,7 @@ require (
 	github.com/rs/zerolog v1.26.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/smartcontractkit/chainlink v1.2.1-0.20220315133704-8769e75d54b1
-	github.com/smartcontractkit/chainlink-relay v0.0.0-20220307003623-2fd8786a6e1f
+	github.com/smartcontractkit/chainlink-relay v0.0.0-20220317101556-ad02f88fa139
 	github.com/smartcontractkit/helmenv v1.0.40
 	github.com/smartcontractkit/integrations-framework v1.0.51
 	github.com/smartcontractkit/libocr v0.0.0-20220217180537-449836e6cfec
