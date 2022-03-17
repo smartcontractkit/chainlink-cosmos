@@ -1,4 +1,4 @@
-name: e2e_soak
+name: E2E Soak test
 on:
   schedule:
     - cron: '0 */3 * * *'
@@ -50,7 +50,7 @@ jobs:
       AWS_REGION: ${{ secrets.QA_AWS_REGION }}
       AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
       QA_KUBECONFIG: ${{ secrets.QA_KUBECONFIG }}
-  smoke:
+  soak:
     runs-on: ubuntu-latest
     needs: [build, build_custom_cl_image]
     env:
@@ -115,9 +115,9 @@ jobs:
         uses: mikepenz/action-junit-report@v2
         if: always()
         with:
-          report_paths: "./tests-smoke-report.xml"
+          report_paths: "./tests-soak-report.xml"
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          check_name: Smoke Test Results
+          check_name: Soak Test Results
       - name: Publish Artifacts
         if: failure()
         uses: actions/upload-artifact@v2.2.4
