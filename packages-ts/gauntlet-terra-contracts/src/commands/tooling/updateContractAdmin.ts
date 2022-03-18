@@ -1,6 +1,6 @@
 import { Result } from '@chainlink/gauntlet-core'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
+import { RDD, TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { AccAddress, MsgUpdateContractAdmin } from '@terra-money/terra.js'
 import { CATEGORIES } from '../../lib/constants'
 
@@ -32,6 +32,22 @@ export default class UpdateContractAdmin extends TerraCommand {
   }
 
   beforeExecute = async () => {
+    const knownMultisig = this.input.newAdmin === process.env.CW3_FLEX_MULTISIG
+    if (!knownMultisig) logger.warn(`New admin "${this.input.newAdmin}" might not be a multisig wallet`)
+    else logger.success(`Proposed new admin is a known multisig wallet`)
+
+    if (this.flags.rdd) {
+      const info = await this.provider.wasm.contractInfo(this.input.contract)
+      const contract = RDD.getContractFromRDD(RDD.getRDD(this.flags.rdd), this.input.contract)
+      logger.info(`Transferring admin of contract of type "${contract.type}":
+        - Contract: ${contract.address} ${contract.description ? '- ' + contract.description : ''}
+        - Current Admin: ${info.admin}
+        - Next Admin: ${this.input.newAdmin}
+      `)
+      await prompt('Continue?')
+      return
+    }
+    logger.warn('No RDD Flag provided. Contract information could not be inspected')
     await prompt(`Continue transferring contract ${this.input.contract} to new admin ${this.input.newAdmin}?`)
   }
 
@@ -46,16 +62,11 @@ export default class UpdateContractAdmin extends TerraCommand {
   validateInput = (input: CommandInput): boolean => {
     if (!AccAddress.validate(this.input.newAdmin)) throw new Error('Invalid new admin address')
     if (!AccAddress.validate(this.input.contract)) throw new Error('Invalid contract address')
-    const knownMultisig = input.newAdmin === process.env.CW3_FLEX_MULTISIG
-    if (input.force) {
-      if (!knownMultisig) logger.warn(`New admin "${input.newAdmin}" might not be a multisig wallet`)
-      else logger.success(`Proposed new admin is a known multisig wallet`)
 
-      return true
-    }
+    if (this.input.force) return true
     // TODO: Update when Contracts expose its addresses
-    if (!knownMultisig) throw new Error(`Proposed New admin "${input.newAdmin}"" is not a known multisig wallet`)
-    else logger.success(`Proposed new admin is a known multisig wallet`)
+    if (this.input.newAdmin !== process.env.CW3_FLEX_MULTISIG)
+      throw new Error(`Proposed New admin "${input.newAdmin}" is not a known multisig wallet`)
 
     return true
   }

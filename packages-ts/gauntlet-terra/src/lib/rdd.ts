@@ -1,3 +1,4 @@
+import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 
@@ -43,7 +44,7 @@ export type RDDContract = {
 }
 
 export const getContractFromRDD = (rdd: any, address: string): RDDContract => {
-  return Object.values(CONTRACT_TYPES).reduce((agg, type) => {
+  const contract = Object.values(CONTRACT_TYPES).reduce((agg, type) => {
     const content = rdd[type]?.[address]
     if (content) {
       return {
@@ -55,4 +56,6 @@ export const getContractFromRDD = (rdd: any, address: string): RDDContract => {
     }
     return agg
   }, {} as RDDContract)
+  if (!contract.address) logger.warn(`RDD: Contract with address ${address} not found in RDD`)
+  return contract
 }
