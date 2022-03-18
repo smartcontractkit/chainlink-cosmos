@@ -35,7 +35,7 @@ export default class TransferLuna extends TerraCommand {
   makeInput = (flags, _) => {
     return {
       destination: flags.to,
-      amount: (new BN(flags.amount).mul(new BN(10).pow(new BN(ULUNA_DECIMALS)))).toString(),
+      amount: new BN(flags.amount).mul(new BN(10).pow(new BN(ULUNA_DECIMALS))).toString(),
     } as CommandInput
   }
 
