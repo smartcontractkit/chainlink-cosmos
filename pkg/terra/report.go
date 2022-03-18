@@ -128,13 +128,3 @@ func (c ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
 	// is the length of the list) observation from the report.
 	return observations[n/2], nil
 }
-
-func FuzzMedianFromReport(report []byte) int {
-	cdc := ReportCodec{}
-	_, err := cdc.MedianFromReport(report)
-	if err != nil {
-		return 0
-	}
-	return 1
-}
-
