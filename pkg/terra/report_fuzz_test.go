@@ -4,9 +4,9 @@
 package terra
 
 import (
+	"math/big"
 	"testing"
 	"time"
-	"math/big"
 
 	"github.com/stretchr/testify/require"
 
@@ -16,7 +16,7 @@ import (
 // go test -tags=go1.18 -fuzz ./...
 func FuzzMedianFromReport(f *testing.F) {
 	cdc := ReportCodec{}
-	report, err	:= cdc.BuildReport([]median.ParsedAttributedObservation{
+	report, err := cdc.BuildReport([]median.ParsedAttributedObservation{
 		{Timestamp: uint32(time.Now().Unix()), Value: big.NewInt(10), JuelsPerFeeCoin: big.NewInt(100000)},
 		{Timestamp: uint32(time.Now().Unix()), Value: big.NewInt(10), JuelsPerFeeCoin: big.NewInt(200000)},
 		{Timestamp: uint32(time.Now().Unix()), Value: big.NewInt(11), JuelsPerFeeCoin: big.NewInt(300000)}})
