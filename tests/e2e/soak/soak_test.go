@@ -15,7 +15,7 @@ var _ = Describe("Terra OCRv2 soak test @ocr2-soak", func() {
 	var state *tc.OCRv2State
 
 	BeforeEach(func() {
-		state = tc.NewOCRv2State(30)
+		state = tc.NewOCRv2State(100)
 		By("Deploying the cluster", func() {
 			state.DeployCluster(5, common.ChainBlockTimeSoak, false, utils.ContractsDir)
 			state.SetAllAdapterResponsesToTheSameValue(2)
