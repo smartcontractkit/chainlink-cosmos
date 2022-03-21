@@ -95,11 +95,6 @@ func TestMedianFromReport(t *testing.T) {
 			expectedMedian: big.NewInt(10),
 		},
 		{
-			name:           "2 positive one zero",
-			obs:            []*big.Int{big.NewInt(0), big.NewInt(10), big.NewInt(20)},
-			expectedMedian: big.NewInt(10),
-		},
-		{
 			name:           "one zero",
 			obs:            []*big.Int{big.NewInt(0)},
 			expectedMedian: big.NewInt(0),
