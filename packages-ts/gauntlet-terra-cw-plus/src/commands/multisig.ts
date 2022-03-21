@@ -208,7 +208,7 @@ export const wrapCommand = (command) => {
       // TODO: Gauntlet core should initialize commands using `buildCommand` instead of new Command
       await this.buildCommand(this.flags, this.args)
 
-      let proposalId = Number(this.flags.proposal || this.flags.multisigProposal)
+      let proposalId = Number(this.flags.proposal || this.flags.multisigProposal) // alias requested by eng ops
       const state = await this.fetchState(proposalId)
       logger.info(makeInspectionMessage(state))
 
