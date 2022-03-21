@@ -7,7 +7,7 @@ import { addressBook, CONTRACT_LIST } from './contracts'
 // TerraCommand. These are used by fmtAddress in utils.ts to
 // properly label addresses when displayed.
 export const withAddressBook: Middleware = (c: TerraCommand, next: Next) => {
-  addressBook.addOperator(c.wallet.key.accAddress)
+  addressBook.setOperator(c.wallet.key.accAddress)
 
   // Addresses of deployed instances read from env vars
   addressBook.addInstance(CONTRACT_LIST.CW20_BASE, 'LINK', 'link')

@@ -197,7 +197,7 @@ class AddressBook {
     this.instances = new Map<AccAddress, Instance>()
   }
 
-  addOperator(address: AccAddress) {
+  setOperator(address: AccAddress) {
     this.operator = address
   }
   addInstance(contractId: CONTRACT_LIST, envVar: string, name?: string) {
