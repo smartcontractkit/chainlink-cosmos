@@ -7,6 +7,7 @@ import {
   MsgSend,
   MsgUpdateContractAdmin,
   MsgMigrateContract,
+  Msg,
 } from '@terra-money/terra.js'
 import { isDeepEqual } from '../lib/utils'
 import { fetchProposalState, makeInspectionMessage } from './inspect'
@@ -14,8 +15,11 @@ import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg, Expiration } from '../lib/
 
 export const DEFAULT_VOTING_PERIOD_IN_SECS = 24 * 60 * 60
 
-type TerraMessage = MsgExecuteContract | MsgSend | MsgUpdateContractAdmin | MsgMigrateContract
-type ProposalAction = (signer: AccAddress, proposalId: number, message: TerraMessage) => Promise<MsgExecuteContract>
+type ProposalAction = (
+  signer: AccAddress,
+  proposalId: number,
+  message: Cw3BankMsg | Cw3WasmMsg,
+) => Promise<MsgExecuteContract>
 
 export const wrapCommand = (command) => {
   return class Multisig extends TerraCommand {
@@ -53,26 +57,28 @@ export const wrapCommand = (command) => {
         },
       }
 
+      const cw3Message = this.toMsg(message)
       if (state.proposal.nextAction !== Action.CREATE) {
         this.require(
-          await this.isSameProposal(state.proposal.data, [this.toMsg(message)]),
+          await this.isSameProposal(state.proposal.data, [cw3Message]),
           'The transaction generated is different from the proposal provided',
         )
       }
 
       const proposalId = Number(this.flags.proposal || this.flags.multisigProposal)
-      return operations[state.proposal.nextAction](signer, proposalId, message)
+      return operations[state.proposal.nextAction](signer, proposalId, cw3Message)
     }
 
     isSameProposal = (proposalMsgs: (Cw3WasmMsg | Cw3BankMsg)[], generatedMsgs: (Cw3WasmMsg | Cw3BankMsg)[]) => {
       return isDeepEqual(proposalMsgs, generatedMsgs)
     }
 
-    toMsg = (message: TerraMessage): Cw3BankMsg | Cw3WasmMsg => {
+    toMsg = (message: Msg): Cw3BankMsg | Cw3WasmMsg => {
       if (message instanceof MsgSend) return this.toBankMsg(message as MsgSend)
       if (message instanceof MsgExecuteContract) return this.toWasmMsg(message as MsgExecuteContract)
       if (message instanceof MsgUpdateContractAdmin) return this.toWasmMsg(message as MsgUpdateContractAdmin)
       if (message instanceof MsgMigrateContract) return this.toWasmMsg(message as MsgMigrateContract)
+      throw new Error('Message type not supported')
     }
 
     toBankMsg = (message: MsgSend): Cw3BankMsg => {
@@ -146,7 +152,7 @@ export const wrapCommand = (command) => {
       const proposeInput = {
         propose: {
           description: command.id,
-          msgs: [this.toMsg(message)],
+          msgs: [message],
           title: command.id,
           latest: expiration,
         },

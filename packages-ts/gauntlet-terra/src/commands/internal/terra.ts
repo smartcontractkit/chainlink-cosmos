@@ -8,7 +8,6 @@ import {
   MsgStoreCode,
   AccAddress,
   TxLog,
-  MsgSend,
   BlockTxBroadcastResult,
   LCDClient,
   MsgExecuteContract,
@@ -17,14 +16,11 @@ import {
   Wallet,
   Msg,
   SignerData,
-  MsgMigrateContract,
-  MsgUpdateContractAdmin,
 } from '@terra-money/terra.js'
 import { TransactionResponse } from '../types'
 import { LedgerKey } from '../ledgerKey'
 
 type CodeIds = Record<string, number>
-type TerraMessage = MsgExecuteContract | MsgSend | MsgUpdateContractAdmin | MsgMigrateContract
 
 export default abstract class TerraCommand extends WriteCommand<TransactionResponse> {
   wallet: Wallet
@@ -34,7 +30,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   public codeIds: CodeIds
 
   abstract execute: () => Promise<Result<TransactionResponse>>
-  abstract makeRawTransaction: (signer: AccAddress) => Promise<TerraMessage>
+  abstract makeRawTransaction: (signer: AccAddress) => Promise<Msg>
   // Preferable option to initialize the command instead of new TerraCommand. This should be an static option to construct the command
   buildCommand?: (flags, args) => Promise<TerraCommand>
   beforeExecute: (context?: any) => Promise<void>
@@ -153,7 +149,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     return this.wrapResponse(res)
   }
 
-  async simulate(signer: AccAddress, msgs: TerraMessage[]): Promise<Number> {
+  async simulate(signer: AccAddress, msgs: Msg[]): Promise<Number> {
     const account = await this.provider.auth.accountInfo(signer)
 
     const signerData: SignerData = {
