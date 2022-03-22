@@ -179,6 +179,9 @@ func CreateBridges(contracts []string, nodes []client.Chainlink, mock *client.Mo
 	for _, contract := range contracts {
 		for _, n := range nodes {
 			nodeContractPairID, err := BuildNodeContractPairID(n, contract)
+			if err != nil {
+				return nil, err
+			}
 			sourceValueBridge := client.BridgeTypeAttributes{
 				Name:        "variable",
 				URL:         fmt.Sprintf("%s/%s", mock.Config.ClusterURL, nodeContractPairID),
@@ -252,11 +255,11 @@ func CreateJobs(ocr2Addr string, bridgesInfo []BridgeInfo, nodes []client.Chainl
 }
 
 func BuildNodeContractPairID(node client.Chainlink, ocr2Addr string) (string, error) {
-	nodeAddress, err := node.PrimaryEthAddress()
+	csaKeys, err := node.ReadCSAKeys()
 	if err != nil {
 		return "", err
 	}
-	shortNodeAddr := nodeAddress[2:12]
+	shortNodeAddr := csaKeys.Data[0].Attributes.PublicKey[2:12]
 	shortOCRAddr := ocr2Addr[2:12]
 	return strings.ToLower(fmt.Sprintf("node_%s_contract_%s", shortNodeAddr, shortOCRAddr)), nil
 }
