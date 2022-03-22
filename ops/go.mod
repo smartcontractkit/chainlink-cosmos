@@ -6,8 +6,8 @@ require (
 	github.com/cosmos/cosmos-sdk v0.44.5
 	github.com/pkg/errors v0.9.1
 	github.com/pulumi/pulumi/sdk/v3 v3.17.0
-	github.com/smartcontractkit/chainlink-relay/ops v0.0.0-20220214171410-7680e9f35f09
-	github.com/smartcontractkit/integrations-framework v1.0.48
+	github.com/smartcontractkit/chainlink-relay/ops v0.0.0-20220318225854-968fe6a058ca
+	github.com/smartcontractkit/integrations-framework v1.0.52-0.20220318155657-306acd34b9c6
 	github.com/smartcontractkit/libocr v0.0.0-20220125200954-5b957c834276
 )
 
@@ -150,7 +150,7 @@ require (
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.12.0 // indirect
+	github.com/prometheus/client_golang v1.12.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect

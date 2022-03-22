@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"time"
 
 	common "github.com/smartcontractkit/chainlink-terra/ops/deployer/common"
@@ -44,41 +43,10 @@ type GauntlerDeployer struct {
 }
 
 func New(ctx *pulumi.Context) (GauntlerDeployer, error) {
-	// check if terrad is installed (needed to fund)
-	_, err := exec.LookPath("terrad")
-	if err != nil {
-		return GauntlerDeployer{}, errors.New("'terrad' is not installed")
-	}
-
-	// check if yarn is installed
-	yarn, err := exec.LookPath("yarn")
-	if err != nil {
-		return GauntlerDeployer{}, errors.New("'yarn' is not installed")
-	}
-	fmt.Printf("yarn is available at %s\n", yarn)
-
-	// Change path to root directory
-	cwd, _ := os.Getwd()
-	os.Chdir(filepath.Join(cwd, "../"))
-
-	fmt.Println("Installing dependencies")
-	if _, err = exec.Command(yarn).Output(); err != nil {
-		return GauntlerDeployer{}, errors.New("error install dependencies")
-	}
-
-	// Generate Gauntlet Binary
-	fmt.Println("Generating Gauntlet binary...")
-	_, err = exec.Command(yarn, "bundle").Output()
-	if err != nil {
-		return GauntlerDeployer{}, errors.New("error generating gauntlet binary")
-	}
-
 	os.Setenv("SKIP_PROMPTS", "true")
 
 	// Check gauntlet works
-	os.Chdir(cwd) // move back into ops folder
-	gauntletBin := filepath.Join(cwd, "../")
-	gauntlet, err := relayUtils.NewGauntlet(gauntletBin)
+	gauntlet, err := relayUtils.NewGauntlet("../")
 
 	if err != nil {
 		return GauntlerDeployer{}, err
