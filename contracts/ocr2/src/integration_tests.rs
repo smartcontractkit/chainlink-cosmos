@@ -724,7 +724,7 @@ fn set_link_token() {
     assert_eq!(decimals, 18);
 
     // -- call transmit
-    transmit_report(&mut env, 1, 1, ANSWER, true);
+    transmit_report(&mut env, 1, 1, ANSWER, true).unwrap();
 
     let transmitter = Addr::unchecked(env.transmitters.first().cloned().unwrap());
 
@@ -895,7 +895,7 @@ fn revert_payouts_correctly() {
     assert_eq!(0, available.amount);
 
     // transmit round
-    transmit_report(&mut env, 1, 1, ANSWER, true);
+    transmit_report(&mut env, 1, 1, ANSWER, true).unwrap();
 
     // check owed balance
     let transmitter = Addr::unchecked("transmitter0");
@@ -1061,7 +1061,7 @@ fn transmit_failing_validation() {
         .unwrap();
 
     // -- call transmit
-    transmit_report(&mut env, 1, 1, 1, true);
+    transmit_report(&mut env, 1, 1, 1, true).unwrap();
 
     // check validator didn't flag
     let flagged: bool = env
@@ -1078,7 +1078,7 @@ fn transmit_failing_validation() {
 
     // this should be out of threshold
     assert!(!validator::contract::is_valid(1, 1, 1000).unwrap());
-    transmit_report(&mut env, 1, 2, 1000, true);
+    transmit_report(&mut env, 1, 2, 1000, true).unwrap();
 
     // check validator flagged
     let flagged: bool = env
@@ -1126,7 +1126,7 @@ fn set_billing_payout() {
         .unwrap();
 
     // -- call transmit
-    transmit_report(&mut env, 1, 1, ANSWER, true);
+    transmit_report(&mut env, 1, 1, ANSWER, true).unwrap();
 
     // -- set billing again
     let msg = ExecuteMsg::SetBilling {
