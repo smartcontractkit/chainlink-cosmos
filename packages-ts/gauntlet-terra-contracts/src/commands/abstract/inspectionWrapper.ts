@@ -23,7 +23,7 @@ export interface InspectInstruction<CommandInput, ContractExpectedInfo> {
   command: {
     category: CATEGORIES
     contract: CONTRACT_LIST
-    id: 'inspect'
+    id: string
     examples: string[]
   }
   instructions: {

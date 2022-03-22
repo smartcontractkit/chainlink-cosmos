@@ -5,6 +5,7 @@ import { CATEGORIES } from '../../../../lib/constants'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { dateFromUnix } from '../../../../lib/utils'
 import { LCDClient } from '@terra-money/terra.js'
+import { RoundData } from '../../../../lib/inspection'
 
 type CommandInput = {
   aggregator: string
@@ -20,13 +21,6 @@ type ContractExpectedInfo = {
   phaseId?: number
   owner?: string
   latestRoundData?: RoundData
-}
-
-type RoundData = {
-  roundId: number
-  answer: string
-  observationsTimestamp: number
-  transmissionTimestamp: number
 }
 
 const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
