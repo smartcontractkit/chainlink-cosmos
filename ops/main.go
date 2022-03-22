@@ -11,7 +11,7 @@ import (
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
-		// initiate `terrad` usage
+		// initiate `gauntlet` usage
 		terra, err := gauntlet.New(ctx)
 		if err != nil {
 			return err
