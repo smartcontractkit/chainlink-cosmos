@@ -1,8 +1,8 @@
 mod integration_tests;
 
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, Deps, DepsMut, Env, Event, MessageInfo, QueryResponse, Response,
-    StdError,
+    entry_point, to_binary, Addr, Deps, DepsMut, Empty, Env, Event, MessageInfo, QueryResponse,
+    Response, StdError,
 };
 
 use cw_storage_plus::{Item, Map, U16Key};
@@ -267,6 +267,21 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
         }
         QueryMsg::Owner => Ok(to_binary(&OWNER.query_owner(deps)?)?),
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: Empty) -> Result<Response, ContractError> {
+    let ver = cw2::get_contract_version(deps.storage)?;
+
+    // ensure we are migrating from an allowed contract
+    if ver.contract != CONTRACT_NAME {
+        return Err(cosmwasm_std::StdError::generic_err("Can only upgrade from same type").into());
+    }
+
+    // Update the contract version
+    cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    Ok(Response::new())
 }
 
 const PHASE_OFFSET: u32 = 32;

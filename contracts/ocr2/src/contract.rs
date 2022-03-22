@@ -1,10 +1,9 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order, Reply, Response,
-    StdResult, SubMsg, Uint128, WasmMsg,
+    attr, to_binary, Addr, Binary, Deps, DepsMut, Empty, Env, Event, MessageInfo, Order, Reply,
+    Response, StdResult, SubMsg, Uint128, WasmMsg,
 };
-use cw2::set_contract_version;
 use cw20::{Cw20Contract, Cw20ReceiveMsg};
 
 use crate::error::ContractError;
@@ -86,7 +85,7 @@ pub fn instantiate(
         },
         validator: None,
     };
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     CONFIG.save(deps.storage, &config)?;
     NEXT_PROPOSAL_ID.save(deps.storage, &Uint128::new(0))?;
 
@@ -257,6 +256,32 @@ pub fn reply(_deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, Contract
         // There are no other submessages in use
         id => Err(ContractError::UnknownReplyId { id }),
     }
+}
+
+// Migrate contract if version is lower than current version
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: Empty) -> Result<Response, ContractError> {
+    let ver = cw2::get_contract_version(deps.storage)?;
+
+    // ensure we are migrating from an allowed contract
+    if ver.contract != CONTRACT_NAME {
+        return Err(cosmwasm_std::StdError::generic_err("Can only upgrade from same type").into());
+    }
+
+    // TODO: could use semver to only allow upgrades:
+    // let version: Version = CONTRACT_VERSION.parse()?;
+    // let storage_version: Version = get_contract_version(deps.storage)?.version.parse()?;
+    //
+    // if storage_version < version {
+    //
+    //     // If state structure changed in any contract version in the way migration is needed, it
+    //     // should occur here
+    // }
+
+    // Update the contract version
+    cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    Ok(Response::new())
 }
 
 pub fn execute_receive(
