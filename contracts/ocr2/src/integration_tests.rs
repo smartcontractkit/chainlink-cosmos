@@ -1,6 +1,5 @@
 #![cfg(test)]
 #![cfg(not(tarpaulin_include))]
-use crate::contract::{execute, instantiate, query, reply};
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, LatestConfigDetailsResponse, LatestTransmissionDetailsResponse,
     LinkAvailableForPaymentResponse, QueryMsg,
@@ -24,7 +23,10 @@ fn mock_app() -> App {
 }
 
 pub fn contract_ocr2() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(execute, instantiate, query).with_reply(reply);
+    use crate::contract::{execute, instantiate, migrate, query, reply};
+    let contract = ContractWrapper::new(execute, instantiate, query)
+        .with_reply(reply)
+        .with_migrate(migrate);
     Box::new(contract)
 }
 
@@ -69,6 +71,7 @@ struct Env {
     router: App,
     owner: Addr,
     link_token_id: u64,
+    ocr2_id: u64,
     billing_access_controller_addr: Addr,
     requester_access_controller_addr: Addr,
     link_token_addr: Addr,
@@ -175,7 +178,7 @@ fn setup() -> Env {
             &access_controller::msg::InstantiateMsg {},
             &[],
             "billing_access_controller",
-            None,
+            Some(owner.to_string()),
         )
         .unwrap();
 
@@ -186,7 +189,7 @@ fn setup() -> Env {
             &access_controller::msg::InstantiateMsg {},
             &[],
             "requester_access_controller",
-            None,
+            Some(owner.to_string()),
         )
         .unwrap();
 
@@ -204,7 +207,7 @@ fn setup() -> Env {
             },
             &[],
             "LINK",
-            None,
+            Some(owner.to_string()),
         )
         .unwrap();
 
@@ -223,7 +226,7 @@ fn setup() -> Env {
             },
             &[],
             "OCR2",
-            None,
+            Some(owner.to_string()),
         )
         .unwrap();
 
@@ -352,6 +355,7 @@ fn setup() -> Env {
         router,
         owner,
         link_token_id,
+        ocr2_id,
         billing_access_controller_addr,
         requester_access_controller_addr,
         link_token_addr,
@@ -360,6 +364,18 @@ fn setup() -> Env {
         transmitters,
         config_digest,
     }
+}
+
+#[test]
+fn migrate() {
+    let mut env = setup();
+
+    let migrate_msg = Empty {};
+
+    // Migrate should succeed
+    env.router
+        .migrate_contract(env.owner, env.ocr2_addr.clone(), &migrate_msg, env.ocr2_id)
+        .unwrap();
 }
 
 #[test]
