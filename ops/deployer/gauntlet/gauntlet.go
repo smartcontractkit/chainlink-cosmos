@@ -124,9 +124,7 @@ func (t *GauntlerDeployer) DeployLINK() error {
 	}
 
 	report, err := t.gauntlet.ReadCommandReport()
-	fmt.Println(report)
 	if err != nil {
-		fmt.Println(err)
 		return errors.New("report not available")
 	}
 
