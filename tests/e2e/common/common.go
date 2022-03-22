@@ -168,50 +168,53 @@ func DefaultOffChainConfigParamsFromNodes(nodes []client.Chainlink) (contracts.O
 	}, nkb, nil
 }
 
-func CreateBridges(nodes []client.Chainlink, mock *client.MockserverClient) ([]BridgeInfo, error) {
+func CreateBridges(contracts []string, nodes []client.Chainlink, mock *client.MockserverClient) (map[string][]BridgeInfo, error) {
 	relayConfig := map[string]string{
 		"nodeType":      "terra",
 		"tendermintURL": "http://terrad:26657",
 		"fcdURL":        "http://fcd-api:3060",
 		"chainID":       "localterra",
 	}
-	bi := make([]BridgeInfo, 0)
-	for nIdx, n := range nodes {
-		sourceValueBridge := client.BridgeTypeAttributes{
-			Name:        "variable",
-			URL:         fmt.Sprintf("%s/node%d", mock.Config.ClusterURL, nIdx),
-			RequestData: "{}",
+	biMap := make(map[string][]BridgeInfo)
+	for _, contract := range contracts {
+		for _, n := range nodes {
+			nodeContractPairID, err := BuildNodeContractPairID(n, contract)
+			sourceValueBridge := client.BridgeTypeAttributes{
+				Name:        "variable",
+				URL:         fmt.Sprintf("%s/%s", mock.Config.ClusterURL, nodeContractPairID),
+				RequestData: "{}",
+			}
+			observationSource := client.ObservationSourceSpecBridge(sourceValueBridge)
+			err = n.CreateBridge(&sourceValueBridge)
+			if err != nil {
+				return nil, err
+			}
+			juelsBridge := client.BridgeTypeAttributes{
+				Name:        "juels",
+				URL:         fmt.Sprintf("%s/juels", mock.Config.ClusterURL),
+				RequestData: "{}",
+			}
+			juelsSource := client.ObservationSourceSpecBridge(juelsBridge)
+			err = n.CreateBridge(&juelsBridge)
+			if err != nil {
+				return nil, err
+			}
+			_, err = n.CreateTerraChain(&client.TerraChainAttributes{ChainID: "localterra"})
+			if err != nil {
+				return nil, err
+			}
+			if _, err = n.CreateTerraNode(&client.TerraNodeAttributes{
+				Name:          "terra",
+				TerraChainID:  relayConfig["chainID"],
+				TendermintURL: relayConfig["tendermintURL"],
+				FCDURL:        relayConfig["fcdURL"],
+			}); err != nil {
+				return nil, err
+			}
+			biMap[contract] = append(biMap[contract], BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: relayConfig})
 		}
-		observationSource := client.ObservationSourceSpecBridge(sourceValueBridge)
-		err := n.CreateBridge(&sourceValueBridge)
-		if err != nil {
-			return nil, err
-		}
-		juelsBridge := client.BridgeTypeAttributes{
-			Name:        "juels",
-			URL:         fmt.Sprintf("%s/juels", mock.Config.ClusterURL),
-			RequestData: "{}",
-		}
-		juelsSource := client.ObservationSourceSpecBridge(juelsBridge)
-		err = n.CreateBridge(&juelsBridge)
-		if err != nil {
-			return nil, err
-		}
-		_, err = n.CreateTerraChain(&client.TerraChainAttributes{ChainID: "localterra"})
-		if err != nil {
-			return nil, err
-		}
-		if _, err = n.CreateTerraNode(&client.TerraNodeAttributes{
-			Name:          "terra",
-			TerraChainID:  relayConfig["chainID"],
-			TendermintURL: relayConfig["tendermintURL"],
-			FCDURL:        relayConfig["fcdURL"],
-		}); err != nil {
-			return nil, err
-		}
-		bi = append(bi, BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: relayConfig})
 	}
-	return bi, nil
+	return biMap, nil
 }
 
 func CreateJobs(ocr2Addr string, bridgesInfo []BridgeInfo, nodes []client.Chainlink, nkb []NodeKeysBundle) error {
@@ -246,4 +249,14 @@ func CreateJobs(ocr2Addr string, bridgesInfo []BridgeInfo, nodes []client.Chainl
 		}
 	}
 	return nil
+}
+
+func BuildNodeContractPairID(node client.Chainlink, ocr2Addr string) (string, error) {
+	nodeAddress, err := node.PrimaryEthAddress()
+	if err != nil {
+		return "", err
+	}
+	shortNodeAddr := nodeAddress[2:12]
+	shortOCRAddr := ocr2Addr[2:12]
+	return strings.ToLower(fmt.Sprintf("node_%s_contract_%s", shortNodeAddr, shortOCRAddr)), nil
 }
