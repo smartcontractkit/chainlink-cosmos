@@ -4,5 +4,6 @@ import { TransactionResponse } from './commands/types'
 import * as constants from './lib/constants'
 import * as providerUtils from './lib/provider'
 import * as RDD from './lib/rdd'
+import addressBook from './commands/addressBook'
 
-export { TerraCommand, waitExecute, TransactionResponse, constants, providerUtils, RDD }
+export { TerraCommand, waitExecute, TransactionResponse, constants, providerUtils, RDD, addressBook }

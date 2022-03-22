@@ -6,10 +6,6 @@ import { io } from '@chainlink/gauntlet-core/dist/utils'
 import Terra from './commands'
 import { makeAbstractCommand } from './commands/abstract'
 import { defaultFlags } from './lib/args'
-import { fmtAddress } from './lib/utils'
-import { utils } from '@chainlink/gauntlet-terra-cw-plus/dist/commands/inspect'
-
-utils.fmtAddress = fmtAddress
 
 const commands = {
   custom: [...Terra, ...Terra.map(multisigWrapCommand), ...CWPlusCommands],

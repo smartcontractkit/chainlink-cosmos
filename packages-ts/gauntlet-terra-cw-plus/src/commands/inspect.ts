@@ -1,13 +1,8 @@
-import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
+import { TerraCommand, TransactionResponse, addressBook } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { Action, State, Vote } from '../lib/types'
 import { LCDClient, AccAddress } from '@terra-money/terra.js'
-
-export let utils = {
-  // implementation in @chainlink/terra-gauntlet-contracts
-  fmtAddress: (address: AccAddress): string => undefined,
-}
 
 export default class Inspect extends TerraCommand {
   static id = 'cw3_flex_multisig:inspect'
@@ -107,7 +102,7 @@ export const fetchProposalState = (provider: LCDClient) => async (
 export const makeInspectionMessage = (state: State): string => {
   const newline = `\n`
   const indent = '  '.repeat(2)
-  const ownersList = state.multisig.owners.map((o) => `\n${indent.repeat(2)} - ${utils.fmtAddress(o)}`).join('')
+  const ownersList = state.multisig.owners.map((o) => `\n${indent.repeat(2)} - ${addressBook.format(o)}`).join('')
   const multisigMessage = `Multisig State:
     - Threshold: ${state.multisig.threshold}
     - Total Owners: ${state.multisig.owners.length}
@@ -118,7 +113,7 @@ export const makeInspectionMessage = (state: State): string => {
 
   if (!state.proposal.id) return multisigMessage.concat(newline)
 
-  const approversList = state.proposal.approvers.map((a) => `\n${indent.repeat(2)} - ${utils.fmtAddress(a)}`).join('')
+  const approversList = state.proposal.approvers.map((a) => `\n${indent.repeat(2)} - ${addressBook.format(a)}`).join('')
   proposalMessage = proposalMessage.concat(`
     - Multisig Proposal ID: ${state.proposal.id}
     - Total Approvers: ${state.proposal.approvers.length}

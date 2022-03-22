@@ -7,16 +7,17 @@ import { DEFAULT_RELEASE_VERSION, DEFAULT_CWPLUS_VERSION } from './constants'
 import { AccAddress } from '@terra-money/terra.js'
 import { assertions } from '@chainlink/gauntlet-core/dist/utils'
 
-export enum CONTRACT_LIST {
-  FLAGS = 'flags',
-  DEVIATION_FLAGGING_VALIDATOR = 'deviation_flagging_validator',
-  OCR_2 = 'ocr2',
-  PROXY_OCR_2 = 'proxy_ocr2',
-  ACCESS_CONTROLLER = 'access_controller',
-  CW20_BASE = 'cw20_base',
-  MULTISIG = 'cw3_flex_multisig',
-  CW4_GROUP = 'cw4_group',
-}
+export type CONTRACT_LIST = typeof CONTRACT_LIST[keyof typeof CONTRACT_LIST]
+export const CONTRACT_LIST = {
+  FLAGS: 'flags',
+  DEVIATION_FLAGGING_VALIDATOR: 'deviation_flagging_validator',
+  OCR_2: 'ocr2',
+  PROXY_OCR_2: 'proxy_ocr2',
+  ACCESS_CONTROLLER: 'access_controller',
+  CW20_BASE: 'cw20_base',
+  MULTISIG: 'cw3_flex_multisig',
+  CW4_GROUP: 'cw4_group',
+} as const
 
 export enum TERRA_OPERATIONS {
   DEPLOY = 'instantiate',
@@ -46,20 +47,6 @@ export abstract class Contract {
     this.id = id
     this.defaultVersion = defaultVersion
     this.dirName = dirName
-  }
-
-  addInstance(envVar: string, name: string = this.id) {
-    const address = process.env[envVar]
-    if (!address) {
-      console.warn(`${envVar} not set in environment--ignoring`)
-      return this // it's okay if we don't have all the contract addresses, for now
-    }
-
-    if (!AccAddress.validate(address))
-      throw new Error(`Read invalid contract address ${address} for ${this.id} contract from env`)
-
-    logger.debug(`Using deployed instance of ${this.id}: ${name}=${address}`)
-    return this
   }
 
   loadContractCode = async (version: string): Promise<void> => {
@@ -183,38 +170,3 @@ export const contracts = new Contracts()
   .addCosmwasm(CONTRACT_LIST.CW20_BASE, 'cw20_base')
   .addCosmwasm(CONTRACT_LIST.CW4_GROUP, 'cw4_group')
   .addCosmwasm(CONTRACT_LIST.MULTISIG, 'cw3_flex_multisig')
-
-type Instance = {
-  name: string
-  contractId: CONTRACT_LIST
-}
-
-class AddressBook {
-  operator: AccAddress
-  instances: Map<AccAddress, Instance> // address => instance name
-
-  constructor() {
-    this.instances = new Map<AccAddress, Instance>()
-  }
-
-  setOperator(address: AccAddress) {
-    this.operator = address
-  }
-  addInstance(contractId: CONTRACT_LIST, envVar: string, name?: string) {
-    const address = process.env[envVar]
-    if (!address) {
-      console.warn(`${envVar} not set in environment--ignoring`)
-      return this // it's okay if we don't have all the contract addresses, for now
-    }
-
-    this.instances[address as AccAddress] = { name, contractId } as Instance
-
-    if (!AccAddress.validate(address))
-      throw new Error(`Read invalid contract address ${address} for ${contractId} contract from env`)
-
-    logger.debug(`Using deployed instance of ${contractId}: ${name}=${address}`)
-    return this
-  }
-}
-
-export const addressBook = new AddressBook()

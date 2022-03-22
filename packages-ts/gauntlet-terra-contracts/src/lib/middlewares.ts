@@ -1,6 +1,7 @@
-import { TerraCommand } from '@chainlink/gauntlet-terra'
+import { TerraCommand, addressBook } from '@chainlink/gauntlet-terra'
 import { Middleware, Next } from '@chainlink/gauntlet-core'
-import { addressBook, CONTRACT_LIST } from './contracts'
+import { CONTRACT_LIST } from './contracts'
+import { AccAddress } from '@terra-money/terra.js'
 
 // Loads known addresses for deployed addressBook from environment
 // and local operator's wallet from previous middleware in same
@@ -9,12 +10,22 @@ import { addressBook, CONTRACT_LIST } from './contracts'
 export const withAddressBook: Middleware = (c: TerraCommand, next: Next) => {
   addressBook.setOperator(c.wallet.key.accAddress)
 
+  const tryAddInstance = (id: CONTRACT_LIST, address: string | undefined, name?: string) => {
+    if (!address) {
+      console.warn(`${address} not set in environment`)
+    } else if (!AccAddress.validate(address)) {
+      throw new Error(`Read invalid contract address ${address} for ${id} contract from env`)
+    } else {
+      addressBook.addInstance(id, address, name)
+    }
+  }
+
   // Addresses of deployed instances read from env vars
-  addressBook.addInstance(CONTRACT_LIST.CW20_BASE, 'LINK', 'link')
-  addressBook.addInstance(CONTRACT_LIST.ACCESS_CONTROLLER, 'BILLING_ACCESS_CONTROLLER', 'billing_access')
-  addressBook.addInstance(CONTRACT_LIST.ACCESS_CONTROLLER, 'REQUESTER_ACCESS_CONTROLLER', 'requester_access')
-  addressBook.addInstance(CONTRACT_LIST.CW4_GROUP, 'CW4_GROUP')
-  addressBook.addInstance(CONTRACT_LIST.MULTISIG, 'CW3_FLEX_MULTISIG', 'multisig')
+  tryAddInstance(CONTRACT_LIST.CW20_BASE, process.env['LINK'], 'link')
+  tryAddInstance(CONTRACT_LIST.ACCESS_CONTROLLER, process.env['BILLING_ACCESS_CONTROLLER'], 'billing_access')
+  tryAddInstance(CONTRACT_LIST.ACCESS_CONTROLLER, process.env['REQUESTER_ACCESS_CONTROLLER'], 'requester_access')
+  tryAddInstance(CONTRACT_LIST.CW4_GROUP, process.env['CW4_GROUP'])
+  tryAddInstance(CONTRACT_LIST.MULTISIG, process.env['CW3_FLEX_MULTISIG'], 'multisig')
 
   return next()
 }

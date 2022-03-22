@@ -1,10 +1,9 @@
 import { AccAddress } from '@terra-money/terra.js'
-import { RDD } from '@chainlink/gauntlet-terra'
+import { RDD, addressBook } from '@chainlink/gauntlet-terra'
 import { AbstractInstruction, BeforeExecute } from '../../abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { fmtAddress } from '../../../lib/utils'
 
 type CommandInput = {
   to: string
@@ -39,8 +38,8 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const contract = RDD.getContractFromRDD(RDD.getRDD(context.flags.rdd), context.contract)
   logger.info(`Proposing Ownership Transfer of contract of type "${contract.type}":
     - Contract: ${contract.address} ${contract.description ? '- ' + contract.description : ''}
-    - Current Owner: ${fmtAddress(currentOwner)}
-    - Next Owner: ${fmtAddress(context.contractInput.to)}
+    - Current Owner: ${addressBook.format(currentOwner)}
+    - Next Owner: ${addressBook.format(context.contractInput.to)}
   `)
   await prompt('Continue?')
 }
