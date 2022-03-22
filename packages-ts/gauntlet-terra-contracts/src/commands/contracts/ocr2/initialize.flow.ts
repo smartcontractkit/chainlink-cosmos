@@ -51,7 +51,7 @@ export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse>
         name: 'Propose Config',
         command: ProposeConfig,
         flags: {
-          proposalId: this.getReportStepDataById(FlowCommand.ID.data(this.stepIds.BEGIN_PROPOSAL, 'proposalId')),
+          proposalId: FlowCommand.ID.data(this.stepIds.BEGIN_PROPOSAL, 'proposalId'),
         },
         args: [this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))],
       },
@@ -59,7 +59,7 @@ export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse>
         name: 'Propose Offchain Config',
         command: ProposeOffchainConfig,
         flags: {
-          proposalId: this.getReportStepDataById(FlowCommand.ID.data(this.stepIds.BEGIN_PROPOSAL, 'proposalId')),
+          proposalId: FlowCommand.ID.data(this.stepIds.BEGIN_PROPOSAL, 'proposalId'),
         },
         args: [this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))],
       },
@@ -68,7 +68,7 @@ export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse>
         name: 'Finalize Proposal',
         command: FinalizeProposal,
         flags: {
-          proposalId: this.getReportStepDataById(FlowCommand.ID.data(this.stepIds.BEGIN_PROPOSAL, 'proposalId')),
+          proposalId: FlowCommand.ID.data(this.stepIds.BEGIN_PROPOSAL, 'proposalId'),
         },
         args: [this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))],
       },
@@ -76,8 +76,8 @@ export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse>
         name: 'Accept Proposal',
         command: AcceptProposal,
         flags: {
-          proposalId: this.getReportStepDataById(FlowCommand.ID.data(this.stepIds.BEGIN_PROPOSAL, 'proposalId')),
-          digest: this.getReportStepDataById(FlowCommand.ID.data(this.stepIds.FINALIZE_PROPOSAL, 'digest')),
+          proposalId: FlowCommand.ID.data(this.stepIds.BEGIN_PROPOSAL, 'proposalId'),
+          digest: FlowCommand.ID.data(this.stepIds.FINALIZE_PROPOSAL, 'digest'),
         },
         args: [this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))],
       },

@@ -1,6 +1,8 @@
 package monitoring
 
 import (
+	"context"
+	cryptoRand "crypto/rand"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -30,6 +32,7 @@ func generateFeedConfig() TerraFeedConfig {
 	coins := []string{"btc", "eth", "matic", "link", "avax", "ftt", "srm", "usdc", "sol", "ray"}
 	coin := coins[rand.Intn(len(coins))]
 	address, _ := msg.AccAddressFromBech32("terra106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
+	proxyAddress, _ := msg.AccAddressFromBech32("terra106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
 	return TerraFeedConfig{
 		Name:           fmt.Sprintf("%s / usd", coin),
 		Path:           fmt.Sprintf("%s-usd", coin),
@@ -39,9 +42,60 @@ func generateFeedConfig() TerraFeedConfig {
 		ContractStatus: "status",
 		Multiply:       big.NewInt(1000),
 
-		ContractAddressBech32: "terra106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2",
+		ContractAddressBech32: address.String(),
 		ContractAddress:       address,
+		ProxyAddressBech32:    proxyAddress.String(),
+		ProxyAddress:          proxyAddress,
 	}
+}
+
+func generateBigInt(bitSize uint8) *big.Int {
+	maxBigInt := new(big.Int)
+	maxBigInt.Exp(big.NewInt(2), big.NewInt(int64(bitSize)), nil).Sub(maxBigInt, big.NewInt(1))
+
+	//Generate cryptographically strong pseudo-random between 0 - max
+	num, err := cryptoRand.Int(cryptoRand.Reader, maxBigInt)
+	if err != nil {
+		panic(fmt.Sprintf("failed to generate a really big number: %v", err))
+	}
+	return num
+}
+
+func generateProxyData() ProxyData {
+	return ProxyData{
+		Answer:                  generateBigInt(128),
+		LinkAvailableForPayment: generateBigInt(160),
+	}
+}
+
+// Sources
+
+// NewFakeProxySourceFactory makes a source that generates random proxy data.
+func NewFakeProxySourceFactory(log relayMonitoring.Logger) relayMonitoring.SourceFactory {
+	return &fakeProxySourceFactory{log}
+}
+
+type fakeProxySourceFactory struct {
+	log relayMonitoring.Logger
+}
+
+func (f *fakeProxySourceFactory) NewSource(
+	_ relayMonitoring.ChainConfig,
+	_ relayMonitoring.FeedConfig,
+) (relayMonitoring.Source, error) {
+	return &fakeProxySource{f.log}, nil
+}
+
+func (f *fakeProxySourceFactory) GetType() string {
+	return "fake-proxy"
+}
+
+type fakeProxySource struct {
+	log relayMonitoring.Logger
+}
+
+func (f *fakeProxySource) Fetch(ctx context.Context) (interface{}, error) {
+	return generateProxyData(), nil
 }
 
 // Logger

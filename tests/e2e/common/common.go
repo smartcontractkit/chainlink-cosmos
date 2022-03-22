@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -24,7 +23,9 @@ import (
 // TODO: those should be moved as a common part of integrations-framework
 
 const (
-	ChainName = "terra"
+	ChainName          = "terra"
+	ChainBlockTime     = "200ms"
+	ChainBlockTimeSoak = "2s"
 )
 
 // Those functions may be common with another chains and should be moved to another lib
@@ -33,6 +34,12 @@ type NodeKeysBundle struct {
 	PeerID  string
 	OCR2Key *client.OCR2Key
 	TXKey   *client.TxKey
+}
+
+type BridgeInfo struct {
+	RelayConfig       map[string]string
+	ObservationSource string
+	JuelsSource       string
 }
 
 // OCR2 keys are in format OCR2<key_type>_<network>_<key>
@@ -73,10 +80,12 @@ func createNodeKeys(nodes []client.Chainlink) ([]NodeKeysBundle, error) {
 func createOracleIdentities(nkb []NodeKeysBundle) ([]confighelper.OracleIdentityExtra, error) {
 	oracleIdentities := make([]confighelper.OracleIdentityExtra, 0)
 	for _, nodeKeys := range nkb {
-		offChainPubKey, err := hex.DecodeString(stripKeyPrefix(nodeKeys.OCR2Key.Data.Attributes.OffChainPublicKey))
+		offChainPubKeyRaw, err := hex.DecodeString(stripKeyPrefix(nodeKeys.OCR2Key.Data.Attributes.OffChainPublicKey))
 		if err != nil {
 			return nil, err
 		}
+		var offChainPubKey types.OffchainPublicKey
+		copy(offChainPubKey[:], offChainPubKeyRaw)
 		onChainPubKey, err := hex.DecodeString(stripKeyPrefix(nodeKeys.OCR2Key.Data.Attributes.OnChainPublicKey))
 		if err != nil {
 			return nil, err
@@ -159,18 +168,53 @@ func DefaultOffChainConfigParamsFromNodes(nodes []client.Chainlink) (contracts.O
 	}, nkb, nil
 }
 
-func ImitateSource(mockServer *client.MockserverClient, changeInterval time.Duration, min int, max int) {
-	go func() {
-		for {
-			_ = mockServer.SetValuePath("/variable", min)
-			time.Sleep(changeInterval)
-			_ = mockServer.SetValuePath("/variable", max)
-			time.Sleep(changeInterval)
+func CreateBridges(nodes []client.Chainlink, mock *client.MockserverClient) ([]BridgeInfo, error) {
+	relayConfig := map[string]string{
+		"nodeType":      "terra",
+		"tendermintURL": "http://terrad:26657",
+		"fcdURL":        "http://fcd-api:3060",
+		"chainID":       "localterra",
+	}
+	bi := make([]BridgeInfo, 0)
+	for nIdx, n := range nodes {
+		sourceValueBridge := client.BridgeTypeAttributes{
+			Name:        "variable",
+			URL:         fmt.Sprintf("%s/node%d", mock.Config.ClusterURL, nIdx),
+			RequestData: "{}",
 		}
-	}()
+		observationSource := client.ObservationSourceSpecBridge(sourceValueBridge)
+		err := n.CreateBridge(&sourceValueBridge)
+		if err != nil {
+			return nil, err
+		}
+		juelsBridge := client.BridgeTypeAttributes{
+			Name:        "juels",
+			URL:         fmt.Sprintf("%s/juels", mock.Config.ClusterURL),
+			RequestData: "{}",
+		}
+		juelsSource := client.ObservationSourceSpecBridge(juelsBridge)
+		err = n.CreateBridge(&juelsBridge)
+		if err != nil {
+			return nil, err
+		}
+		_, err = n.CreateTerraChain(&client.TerraChainAttributes{ChainID: "localterra"})
+		if err != nil {
+			return nil, err
+		}
+		if _, err = n.CreateTerraNode(&client.TerraNodeAttributes{
+			Name:          "terra",
+			TerraChainID:  relayConfig["chainID"],
+			TendermintURL: relayConfig["tendermintURL"],
+			FCDURL:        relayConfig["fcdURL"],
+		}); err != nil {
+			return nil, err
+		}
+		bi = append(bi, BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: relayConfig})
+	}
+	return bi, nil
 }
 
-func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle, mock *client.MockserverClient) error {
+func CreateJobs(ocr2Addr string, bridgesInfo []BridgeInfo, nodes []client.Chainlink, nkb []NodeKeysBundle) error {
 	bootstrapPeers := []client.P2PData{
 		{
 			RemoteIP:   nodes[0].RemoteIP(),
@@ -183,75 +227,23 @@ func CreateJobs(ocr2Addr string, nodes []client.Chainlink, nkb []NodeKeysBundle,
 		if nIdx == 0 {
 			jobType = "bootstrap"
 		}
-		sourceValueBridge := client.BridgeTypeAttributes{
-			Name:        "variable",
-			URL:         fmt.Sprintf("%s/variable", mock.Config.ClusterURL),
-			RequestData: "{}",
-		}
-		observationSource := client.ObservationSourceSpecBridge(sourceValueBridge)
-		err := n.CreateBridge(&sourceValueBridge)
-		if err != nil {
-			return err
-		}
-
-		juelsBridge := client.BridgeTypeAttributes{
-			Name:        "juels",
-			URL:         fmt.Sprintf("%s/juels", mock.Config.ClusterURL),
-			RequestData: "{}",
-		}
-		juelsSource := client.ObservationSourceSpecBridge(juelsBridge)
-		err = n.CreateBridge(&juelsBridge)
-		if err != nil {
-			return err
-		}
-		_, err = n.CreateTerraChain(&client.TerraChainAttributes{ChainID: "localterra"})
-		if err != nil {
-			return err
-		}
-		relayConfig := map[string]string{
-			"nodeType":      "terra",
-			"tendermintURL": "http://terrad:26657",
-			"fcdURL":        "http://fcd-api:3060",
-			"chainID":       "localterra",
-		}
-		if _, err = n.CreateTerraNode(&client.TerraNodeAttributes{
-			Name:          "terra",
-			TerraChainID:  relayConfig["chainID"],
-			TendermintURL: relayConfig["tendermintURL"],
-			FCDURL:        relayConfig["fcdURL"],
-		}); err != nil {
-			return err
-		}
 		jobSpec := &client.OCR2TaskJobSpec{
 			Name:                  fmt.Sprintf("terra-OCRv2-%d-%s", nIdx, uuid.NewV4().String()),
 			JobType:               jobType,
 			ContractID:            ocr2Addr,
 			Relay:                 ChainName,
-			RelayConfig:           relayConfig,
+			RelayConfig:           bridgesInfo[nIdx].RelayConfig,
 			P2PPeerID:             nkb[nIdx].PeerID,
+			PluginType:            "median",
 			P2PBootstrapPeers:     bootstrapPeers,
 			OCRKeyBundleID:        nkb[nIdx].OCR2Key.Data.ID,
 			TransmitterID:         nkb[nIdx].TXKey.Data.ID,
-			ObservationSource:     observationSource,
-			JuelsPerFeeCoinSource: juelsSource,
+			ObservationSource:     bridgesInfo[nIdx].ObservationSource,
+			JuelsPerFeeCoinSource: bridgesInfo[nIdx].JuelsSource,
 		}
-		if _, err = n.CreateJob(jobSpec); err != nil {
+		if _, err := n.CreateJob(jobSpec); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-// GetDefaultGauntletConfig gets  the default config gauntlet will need to start making commands
-// 	against the environment
-func GetDefaultGauntletConfig(nodeUrl *url.URL) map[string]string {
-	networkConfig := map[string]string{
-		"NETWORK":           "localterra",
-		"NODE_URL":          nodeUrl.String(),
-		"CHAIN_ID":          "localterra",
-		"DEFAULT_GAS_PRICE": "1",
-		"MNEMONIC":          "satisfy adjust timber high purchase tuition stool faith fine install that you unaware feed domain license impose boss human eager hat rent enjoy dawn",
-	}
-
-	return networkConfig
 }

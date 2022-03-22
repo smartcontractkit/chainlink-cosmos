@@ -21,7 +21,7 @@ export const makeAbstractCommand = async (
   flags: any,
   args: string[],
   input?: any,
-): Promise<TerraCommand> => {
+): Promise<AbstractCommand> => {
   const commandOpts = await parseInstruction(instruction, flags.version)
   const params = parseParams(commandOpts, input || flags)
   return new AbstractCommand(flags, args, commandOpts, params)
@@ -153,11 +153,9 @@ export default class AbstractCommand extends TerraCommand {
   }
 
   abstractExecute: AbstractExecute = async (params: any, address: string) => {
-    logger.loading(`Executing ${this.opts.function} from contract ${this.opts.contract.id} at ${address}`)
-    logger.log('Input Params:', params)
-    await prompt(`Continue?`)
+    logger.debug(`Executing ${this.opts.function} from contract ${this.opts.contract.id} at ${address}`)
     const tx = await this.call(address, params)
-    logger.success(`Execution finished at tx ${tx.hash}`)
+    logger.debug(`Execution finished at tx ${tx.hash}`)
     return {
       responses: [
         {
@@ -169,9 +167,9 @@ export default class AbstractCommand extends TerraCommand {
   }
 
   abstractQuery: AbstractExecute = async (params: any, address: string) => {
-    logger.loading(`Calling ${this.opts.function} from contract ${this.opts.contract.id} at ${address}`)
+    logger.debug(`Calling ${this.opts.function} from contract ${this.opts.contract.id} at ${address}`)
     const result = await this.query(address, params)
-    logger.info(`Query finished with result: ${JSON.stringify(result)}`)
+    logger.debug(`Query finished with result: ${JSON.stringify(result)}`)
     return {
       data: result,
       responses: [
@@ -190,6 +188,23 @@ export default class AbstractCommand extends TerraCommand {
     return {
       responses: [],
     }
+  }
+
+  simulateExecute = async () => {
+    if (this.opts.action !== TERRA_OPERATIONS.EXECUTE) {
+      logger.info('Skipping tx simulation for non-execute operation')
+      return
+    }
+
+    const signer = this.wallet.key.accAddress // signer is the default loaded wallet
+    const contractAddress = this.args[0]
+    const input = this.params
+    const msg = new MsgExecuteContract(signer, contractAddress, input)
+    logger.loading(`Executing tx simulation for ${this.opts.contract.id}:${this.opts.function} at ${contractAddress}`)
+
+    const estimatedGas = await this.simulate(signer, [msg])
+    logger.info(`Tx simulation successful: estimated gas usage is ${estimatedGas}`)
+    return estimatedGas
   }
 
   execute = async () => {

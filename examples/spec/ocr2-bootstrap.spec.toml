@@ -1,12 +1,9 @@
-type            = "offchainreporting2"
+type            = "bootstrap"
 schemaVersion   = 1
 relay           = "terra"
 name            = "<insert job name here>"
 contractID      = "<insert terra ocr2 contract ID/address>"
-isBootstrapPeer = true
 p2pPeerID       = "<insert p2p id>"                   # optional, overrides P2P_PEER_ID
-ocrKeyBundleID  = "<insert terra ocr2 key bundle id>" # optional, overrides OCR2_KEY_BUNDLE_ID
-transmitterID   = "<insert terra transmitter key id>"
 
 [relayConfig]
 chainID  = "bombay-12"

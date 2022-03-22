@@ -1,16 +1,16 @@
 #![cfg(test)]
 #![cfg(not(tarpaulin_include))]
-use crate::contract::tests::REPORT;
-use crate::contract::{execute, instantiate, query};
+use crate::contract::{execute, instantiate, query, reply};
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, LatestConfigDetailsResponse, LatestTransmissionDetailsResponse,
     LinkAvailableForPaymentResponse, QueryMsg,
 };
-use crate::state::{Billing, Round};
+use crate::state::{Billing, Round, Validator};
 use crate::Decimal;
 use cosmwasm_std::{to_binary, Addr, Binary, Empty, Uint128};
 use cw20::Cw20Coin;
 use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
+use deviation_flagging_validator as validator;
 use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes};
 use rand::thread_rng;
 use std::convert::TryFrom;
@@ -23,7 +23,7 @@ fn mock_app() -> App {
 }
 
 pub fn contract_ocr2() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(execute, instantiate, query);
+    let contract = ContractWrapper::new(execute, instantiate, query).with_reply(reply);
     Box::new(contract)
 }
 
@@ -45,6 +45,24 @@ pub fn contract_access_controller() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
+pub fn contract_validator() -> Box<dyn Contract<Empty>> {
+    let contract = ContractWrapper::new(
+        validator::contract::execute,
+        validator::contract::instantiate,
+        validator::contract::query,
+    );
+    Box::new(contract)
+}
+
+pub fn contract_flags() -> Box<dyn Contract<Empty>> {
+    let contract = ContractWrapper::new(
+        flags::contract::execute,
+        flags::contract::instantiate,
+        flags::contract::query,
+    );
+    Box::new(contract)
+}
+
 #[allow(unused)]
 struct Env {
     router: App,
@@ -59,17 +77,39 @@ struct Env {
     config_digest: [u8; 32],
 }
 
-fn transmit_report(env: &mut Env, epoch: u32, round: u8) {
-    let report = REPORT.to_vec();
+const ANSWER: i128 = 1234567890;
 
+fn transmit_report(
+    env: &mut Env,
+    epoch: u32,
+    round: u8,
+    answer: i128,
+) -> cw_multi_test::AppResponse {
+    // Build a report
+    let len: u8 = 4;
+    let mut report = Vec::new();
+    report.extend_from_slice(&[97, 91, 43, 83]); // observations_timestamp
+    let mut observers = [0; 32];
+    for i in 0..len {
+        observers[i as usize] = i;
+    }
+    report.extend_from_slice(&observers); // observers
+    report.extend_from_slice(&[len]); // len
+    let bytes = answer.to_be_bytes();
+    for _ in 0..len {
+        report.extend_from_slice(&bytes); // observation
+    }
+    report.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0]); // juels per luna (1 with 18 decimal places)
+
+    // Generate report context
     let mut report_context = vec![0; 96];
     let (cfg_digest, ctx) = report_context.split_at_mut(32);
     let (epoch_and_round, _context) = ctx.split_at_mut(32);
     cfg_digest.copy_from_slice(&env.config_digest);
 
-    // epoch 1
+    // epoch
     epoch_and_round[27..27 + 4].clone_from_slice(&epoch.to_be_bytes());
-    // round 1
+    // round
     epoch_and_round[31] = round;
 
     // determine hash to sign
@@ -103,9 +143,12 @@ fn transmit_report(env: &mut Env, epoch: u32, round: u8) {
         report: Binary(report),
         signatures,
     };
-    env.router
+
+    let response = env
+        .router
         .execute_contract(transmitter.clone(), env.ocr2_addr.clone(), &msg, &[])
         .unwrap();
+    response
 }
 
 fn setup() -> Env {
@@ -369,7 +412,7 @@ fn transmit_happy_path() {
     assert_eq!(decimals, 18);
 
     // -- call transmit
-    transmit_report(&mut env, 1, 1);
+    transmit_report(&mut env, 1, 1, ANSWER);
 
     let transmitter = Addr::unchecked(env.transmitters.first().cloned().unwrap());
 
@@ -380,7 +423,7 @@ fn transmit_happy_path() {
         .unwrap();
     assert_eq!(data.observations_timestamp, 1633364819);
     assert_eq!(data.transmission_timestamp, 1571797419);
-    assert_eq!(data.answer, 1234567890i128);
+    assert_eq!(data.answer, ANSWER);
 
     let response: LatestTransmissionDetailsResponse = env
         .router
@@ -672,7 +715,7 @@ fn set_link_token() {
     assert_eq!(decimals, 18);
 
     // -- call transmit
-    transmit_report(&mut env, 1, 1);
+    transmit_report(&mut env, 1, 1, ANSWER);
 
     let transmitter = Addr::unchecked(env.transmitters.first().cloned().unwrap());
 
@@ -683,7 +726,7 @@ fn set_link_token() {
         .unwrap();
     assert_eq!(data.observations_timestamp, 1633364819);
     assert_eq!(data.transmission_timestamp, 1571797419);
-    assert_eq!(data.answer, 1234567890i128);
+    assert_eq!(data.answer, ANSWER);
 
     let response: LatestTransmissionDetailsResponse = env
         .router
@@ -800,4 +843,317 @@ fn set_link_token() {
         .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkToken)
         .unwrap();
     assert_eq!(token_addr, new_link_token);
+}
+
+#[test]
+fn revert_payouts_correctly() {
+    let mut env = setup();
+
+    // set billing
+    let observation_payment = Uint128::from(5 * GIGA);
+    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
+    let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
+    let msg = ExecuteMsg::SetBilling {
+        config: Billing {
+            recommended_gas_price_micro: recommended_gas_price,
+            observation_payment_gjuels: 5,
+            transmission_payment_gjuels: 0,
+            ..Default::default()
+        },
+    };
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    // withdraw all LINK
+    let available: LinkAvailableForPaymentResponse = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkAvailableForPayment)
+        .unwrap();
+    let msg = ExecuteMsg::WithdrawFunds {
+        recipient: env.owner.to_string(),
+        amount: Uint128::from(available.amount as u128),
+    };
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+    let available: LinkAvailableForPaymentResponse = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkAvailableForPayment)
+        .unwrap();
+    assert_eq!(0, available.amount);
+
+    // transmit round
+    transmit_report(&mut env, 1, 1, ANSWER);
+
+    // check owed balance
+    let transmitter = Addr::unchecked("transmitter0");
+    let payee = Addr::unchecked("payee0");
+
+    let owed: Uint128 = env
+        .router
+        .wrap()
+        .query_wasm_smart(
+            &env.ocr2_addr,
+            &QueryMsg::OwedPayment {
+                transmitter: transmitter.to_string(),
+            },
+        )
+        .unwrap();
+    assert_eq!(reimbursement + observation_payment, owed);
+
+    // attempt to withdraw should fail without LINK token balance
+    // tests the underlying `pay_oracle` function
+    let msg = ExecuteMsg::WithdrawPayment {
+        transmitter: transmitter.to_string(),
+    };
+    assert!(env
+        .router
+        .execute_contract(payee.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .is_err());
+
+    // owed balance should not have changed
+    let owed_new: Uint128 = env
+        .router
+        .wrap()
+        .query_wasm_smart(
+            &env.ocr2_addr,
+            &QueryMsg::OwedPayment {
+                transmitter: transmitter.to_string(),
+            },
+        )
+        .unwrap();
+    assert_eq!(owed, owed_new);
+
+    // attempt to change LINK token to trigger paying all oracles
+    // tests the underlying `pay_oracles` function
+    let new_link_token = env
+        .router
+        .instantiate_contract(
+            env.link_token_id,
+            env.owner.clone(),
+            &cw20_base::msg::InstantiateMsg {
+                name: String::from("Chainlink"),
+                symbol: String::from("LINK"),
+                decimals: 18,
+                initial_balances: vec![Cw20Coin {
+                    address: env.owner.to_string(),
+                    amount: Uint128::from(1_000_000_000_u128),
+                }],
+                mint: None,
+                marketing: None,
+            },
+            &[],
+            "LINK2",
+            None,
+        )
+        .unwrap();
+    let msg = ExecuteMsg::SetLinkToken {
+        link_token: new_link_token.to_string(),
+        recipient: env.owner.to_string(),
+    };
+    assert!(env
+        .router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .is_err());
+
+    // oracles owed balance should not have changed
+    for transmitter in env
+        .transmitters
+        .iter()
+        .enumerate()
+        .map(|(i, _)| Addr::unchecked(format!("transmitter{}", i)))
+    {
+        let balance: Uint128 = env
+            .router
+            .wrap()
+            .query_wasm_smart(
+                &env.ocr2_addr,
+                &QueryMsg::OwedPayment {
+                    transmitter: transmitter.to_string(),
+                },
+            )
+            .unwrap();
+
+        if transmitter == "transmitter0" {
+            assert_eq!(balance, observation_payment + reimbursement);
+        } else {
+            assert_eq!(balance, observation_payment);
+        }
+    }
+}
+
+#[test]
+fn transmit_failing_validation() {
+    let mut env = setup();
+
+    let flags_id = env.router.store_code(contract_flags());
+    let validator_id = env.router.store_code(contract_validator());
+
+    // setup flags
+
+    let flags_addr = env
+        .router
+        .instantiate_contract(
+            flags_id,
+            env.owner.clone(),
+            &flags::msg::InstantiateMsg {
+                lowering_access_controller: env.billing_access_controller_addr.to_string(),
+                raising_access_controller: env.billing_access_controller_addr.to_string(),
+            },
+            &[],
+            "flags",
+            None,
+        )
+        .unwrap();
+
+    let validator_addr = env
+        .router
+        .instantiate_contract(
+            validator_id,
+            env.owner.clone(),
+            &validator::msg::InstantiateMsg {
+                flags: flags_addr.to_string(),
+                flagging_threshold: 1, // 1%?
+            },
+            &[],
+            "validator",
+            None,
+        )
+        .unwrap();
+
+    // Add validator to the flags access controller list
+    env.router
+        .execute_contract(
+            env.owner.clone(),
+            env.billing_access_controller_addr.clone(),
+            &access_controller::msg::ExecuteMsg::AddAccess {
+                address: validator_addr.to_string(),
+            },
+            &[],
+        )
+        .unwrap();
+
+    // Configure the aggregator to use the validator
+    env.router
+        .execute_contract(
+            env.owner.clone(),
+            env.ocr2_addr.clone(),
+            &ExecuteMsg::SetValidatorConfig {
+                config: Some(Validator {
+                    address: validator_addr.clone(),
+                    gas_limit: u64::MAX,
+                }),
+            },
+            &[],
+        )
+        .unwrap();
+
+    // -- call transmit
+    transmit_report(&mut env, 1, 1, 1);
+
+    // check validator didn't flag
+    let flagged: bool = env
+        .router
+        .wrap()
+        .query_wasm_smart(
+            &flags_addr,
+            &flags::msg::QueryMsg::Flag {
+                subject: env.ocr2_addr.to_string(),
+            },
+        )
+        .unwrap();
+    assert!(!flagged);
+
+    // this should be out of threshold
+    assert!(!validator::contract::is_valid(1, 1, 1000).unwrap());
+    transmit_report(&mut env, 1, 2, 1000);
+
+    // check validator flagged
+    let flagged: bool = env
+        .router
+        .wrap()
+        .query_wasm_smart(
+            &flags_addr,
+            &flags::msg::QueryMsg::Flag {
+                subject: env.ocr2_addr.to_string(),
+            },
+        )
+        .unwrap();
+    assert!(flagged);
+
+    // read latest value to be -1
+    let round: Round = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestRoundData)
+        .unwrap();
+    assert_eq!(round.round_id, 2);
+    assert_eq!(round.answer, 1000);
+}
+
+#[test]
+fn set_billing_payout() {
+    let mut env = setup();
+    // expected in juels
+    let observation_payment = Uint128::from(5 * GIGA);
+    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
+
+    // -- set billing
+    // price in uLUNA
+    let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
+    let msg = ExecuteMsg::SetBilling {
+        config: Billing {
+            recommended_gas_price_micro: recommended_gas_price,
+            observation_payment_gjuels: 5,
+            transmission_payment_gjuels: 0,
+            ..Default::default()
+        },
+    };
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    // -- call transmit
+    transmit_report(&mut env, 1, 1, ANSWER);
+
+    // -- set billing again
+    let msg = ExecuteMsg::SetBilling {
+        config: Billing {
+            recommended_gas_price_micro: recommended_gas_price,
+            observation_payment_gjuels: 1,
+            transmission_payment_gjuels: 1,
+            ..Default::default()
+        },
+    };
+    env.router
+        .execute_contract(env.owner.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .unwrap();
+
+    // oracles should be paid out (same as changing LINK token)
+    for payee in env
+        .transmitters
+        .iter()
+        .enumerate()
+        .map(|(i, _)| Addr::unchecked(format!("payee{}", i)))
+    {
+        let cw20::BalanceResponse { balance } = env
+            .router
+            .wrap()
+            .query_wasm_smart(
+                env.link_token_addr.to_string(),
+                &cw20::Cw20QueryMsg::Balance {
+                    address: payee.to_string(),
+                },
+            )
+            .unwrap();
+
+        if payee == "payee0" {
+            assert_eq!(balance, observation_payment + reimbursement);
+        } else {
+            assert_eq!(balance, observation_payment);
+        }
+    }
 }

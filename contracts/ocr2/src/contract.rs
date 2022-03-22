@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order, Response,
+    attr, to_binary, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order, Reply, Response,
     StdResult, SubMsg, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
@@ -33,6 +33,9 @@ const GIGA: u128 = 10u128.pow(9);
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:ocr2";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+// ID used by the reply call for validator::validate
+const REPLY_VALIDATOR_VALIDATE: u64 = 1;
 
 // Converts a raw Map key back into Addr. Works around a cw-storage-plus limitation
 fn to_addr(raw_key: Vec<u8>) -> Addr {
@@ -238,6 +241,24 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(_deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+    match msg.id {
+        REPLY_VALIDATOR_VALIDATE => {
+            // The docs are unclear, but apparently we need an empty error handler to not revert the whole tx
+            // if validation fails.
+            //
+            // SEMANTICS.md
+            // > The error may then be intercepted by the calling contract (for ReplyOn::Always and ReplyOn::Error).
+            // > In this case, the messages error doesn't abort the whole transaction
+
+            Ok(Response::default())
+        }
+        // There are no other submessages in use
+        id => Err(ContractError::UnknownReplyId { id }),
+    }
+}
+
 pub fn execute_receive(
     deps: DepsMut,
     _env: Env,
@@ -358,7 +379,7 @@ pub fn execute_accept_proposal(
 
     let proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
 
-    let response = Response::new().add_attribute("method", "propose_config");
+    let response = Response::new().add_attribute("method", "accept_proposal");
 
     // Only approve proposal if finalized
     require!(proposal.finalized, InvalidInput);
@@ -451,6 +472,11 @@ pub fn execute_accept_proposal(
         .iter()
         .map(|(_, transmitter, _)| attr("transmitters", transmitter));
 
+    let payees = proposal
+        .oracles
+        .iter()
+        .map(|(_, _, payee)| attr("payees", payee));
+
     response = response.add_event(
         Event::new("set_config")
             .add_attribute(
@@ -464,6 +490,7 @@ pub fn execute_accept_proposal(
             .add_attribute("config_count", config.config_count.to_string())
             .add_attributes(signers)
             .add_attributes(transmitters)
+            .add_attributes(payees)
             .add_attribute("f", proposal.f.to_string())
             .add_attribute("onchain_config", Binary(onchain_config).to_base64())
             .add_attribute(
@@ -505,6 +532,9 @@ pub fn execute_propose_config(
     // validate new config
     require!(f != 0, InvalidInput);
     require!(signers_len <= MAX_ORACLES, TooManySigners);
+    // See corresponding comment https://github.com/smartcontractkit/chainlink-terra/blob/5c229358eea2633922de615be509eb47c5bcb998/pkg/terra/config_digester.go#L30
+    // If this requirement of len(transmitters) == len(signers) is removed, we'll need
+    // to update the config digester to include a length prefix on transmitters.
     require!(transmitters.len() == signers.len(), InvalidInput);
     require!(payees.len() == signers.len(), InvalidInput);
     require!(3 * (usize::from(f)) < signers_len, InvalidInput);
@@ -626,18 +656,23 @@ fn validate_answer(deps: Deps, config: &Config, round_id: u32, answer: i128) -> 
         .answer;
 
     Some(
-        SubMsg::new(WasmMsg::Execute {
-            contract_addr: validator.address.to_string(),
-            msg: to_binary(&ValidatorMsg::Validate {
-                previous_round_id,
-                previous_answer,
-                round_id,
-                answer,
-            })
-            .ok()
-            .unwrap(), // maybe use Result<Option<SubMsg> _> so we can return the error from here
-            funds: vec![],
-        })
+        // Validation happens in a submessage, which will "will revert any partial state changes due to this message,
+        // but not revert any state changes in the calling contract." This way the validator going over the gas limit
+        // or failing validation won't block publishing to the feed.
+        SubMsg::reply_on_error(
+            WasmMsg::Execute {
+                contract_addr: validator.address.to_string(),
+                msg: to_binary(&ValidatorMsg::Validate {
+                    previous_round_id,
+                    previous_answer,
+                    round_id,
+                    answer,
+                })
+                .unwrap(), // maybe use Result<Option<SubMsg> _> so we can return the error from here
+                funds: vec![],
+            },
+            REPLY_VALIDATOR_VALIDATE,
+        )
         .with_gas_limit(validator.gas_limit),
     )
 }
@@ -1129,7 +1164,7 @@ pub fn execute_set_billing_access_controller(
 // ---
 
 pub fn execute_set_billing(
-    deps: DepsMut,
+    mut deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     billing_config: Billing,
@@ -1145,10 +1180,17 @@ pub fn execute_set_billing(
         Unauthorized
     );
 
+    // payout oracles
+    let (_total, response) = pay_oracles(
+        &mut deps,
+        &config,
+        Response::new().add_attribute("method", "set_billing"),
+    )?;
+
     config.billing = billing_config;
     CONFIG.save(deps.storage, &config)?;
 
-    Ok(Response::default().add_event(
+    Ok(response.add_event(
         Event::new("set_billing")
             .add_attribute(
                 "recommended_gas_price_micro",
@@ -1522,6 +1564,7 @@ pub fn execute_accept_payeeship(
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+    use crate::Decimal;
     use cosmwasm_std::testing::{
         mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage,
     };
@@ -1697,5 +1740,29 @@ pub(crate) mod tests {
         };
         let execute_info = mock_info("payee2", &[]);
         execute(deps.as_mut(), mock_env(), execute_info, msg).unwrap();
+    }
+
+    #[test]
+    fn test_calculate_reimbursement() {
+        use std::str::FromStr;
+        let recommended_gas_price = Decimal::from_str("0.011000").unwrap();
+        let juels_per_fee_coin = u128::from_str("6000000000000000000").unwrap(); // 6e18 juels in 1 luna (i.e. 6 link)
+
+        // Sanity check
+        let r = calculate_reimbursement(
+            &Billing {
+                recommended_gas_price_micro: recommended_gas_price,
+                observation_payment_gjuels: 0,
+                transmission_payment_gjuels: 0,
+                gas_base: Some(84_000),
+                gas_per_signature: Some(17_000),
+                gas_adjustment: Some(140),
+            },
+            juels_per_fee_coin,
+            1,
+        );
+        // juels = ((gas_per_sig*sigcount + gas_base)*gas_price_uluna/1e6)*juels_per_fee_coin
+        // juels = ((1 * 17000 + 84000)*1.4*0.011/1e6)*6e18 = 9332400000000000
+        assert_eq!(Uint128::from_str("9332400000000000").unwrap(), r);
     }
 }

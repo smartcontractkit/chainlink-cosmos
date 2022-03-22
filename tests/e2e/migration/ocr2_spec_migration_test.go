@@ -1,12 +1,13 @@
 package migration_test
 
 import (
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
 	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
 	tc "github.com/smartcontractkit/chainlink-terra/tests/e2e/smoke/common"
 	"github.com/smartcontractkit/integrations-framework/actions"
 )
@@ -19,8 +20,8 @@ var _ = Describe("Terra OCRv2 @ocr-spec-migration", func() {
 	var migrateToVersion string
 
 	BeforeEach(func() {
-		state = &tc.OCRv2State{}
-		By("Deoloying the cluster", func() {
+		state = tc.NewOCRv2State(1)
+		By("Deploying the cluster", func() {
 			migrateToImage = os.Getenv("CHAINLINK_IMAGE_TO")
 			if migrateToImage == "" {
 				Fail("Provide CHAINLINK_IMAGE_TO variable: an image on which we migrate")
@@ -29,16 +30,16 @@ var _ = Describe("Terra OCRv2 @ocr-spec-migration", func() {
 			if migrateToVersion == "" {
 				Fail("Provide CHAINLINK_VERSION_TO variable: a version on which we migrate")
 			}
-			state.DeployCluster(nodes, true)
-			common.ImitateSource(state.MockServer, 1*time.Second, 2, 10)
+			state.DeployCluster(nodes, common.ChainBlockTime, true)
+			state.SetAllAdapterResponsesToTheSameValue(2)
 		})
 	})
 
 	Describe("with Terra OCR2", func() {
 		It("performs OCR2 round", func() {
-			state.ValidateRoundsAfter(time.Now(), rounds)
+			state.ValidateAllRounds(time.Now(), tc.NewRoundCheckTimeout, rounds, false)
 			state.UpdateChainlinkVersion(migrateToImage, migrateToVersion)
-			state.ValidateRoundsAfter(time.Now(), rounds)
+			state.ValidateAllRounds(time.Now(), tc.NewRoundCheckTimeout, rounds, false)
 		})
 	})
 

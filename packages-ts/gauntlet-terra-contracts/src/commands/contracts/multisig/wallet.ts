@@ -1,18 +1,20 @@
+import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { CATEGORIES } from '../../../lib/constants'
 import { isValidAddress } from '../../../lib/utils'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
+// 24 hours
+const DEFAULT_MULTISIG_EXPIRATION_TIME_IN_SECS = 24 * 60 * 60
+
 type Duration = {
-  height?: number // block height
-  time?: number // length of time in seconds
+  time: number // length of time in seconds
 }
 
 type CommandInput = {
   group: string
   threshold: number
-  votingPeriod?: {
-    height?: number
-    time?: number
+  votingPeriod: {
+    time: number
   }
 }
 
@@ -41,15 +43,18 @@ const makeCommandInput = async (flags: any): Promise<CommandInput> => {
     group: flags.group,
     threshold: Number(flags.threshold),
     votingPeriod: {
-      height: flags.height,
-      time: flags.time,
+      time: Number(flags.time) || DEFAULT_MULTISIG_EXPIRATION_TIME_IN_SECS,
     },
   }
 }
 
 const validateInput = (input: CommandInput): boolean => {
   // TODO: Add time validation
-  const isValidTime = (a: any) => true
+  const isValidTime = (a: any) => {
+    if (!a) return false
+    if (Number(a) <= 0) return false
+    return true
+  }
   if (!isValidAddress(input.group)) {
     throw new Error(`group ${input.group} is not a valid terra address`)
   }
@@ -58,12 +63,8 @@ const validateInput = (input: CommandInput): boolean => {
     throw new Error(`Threshold ${input.threshold} is invalid. Should be higher than zero`)
   }
 
-  if (input.votingPeriod?.height && isNaN(input.votingPeriod?.height)) {
-    throw new Error(`Voting period height ${input.votingPeriod.height} is not a valid Block`)
-  }
-
-  if (input.votingPeriod?.time && !isValidTime(input.votingPeriod?.time)) {
-    throw new Error(`Voting period time ${input.votingPeriod?.time} is not a valid time`)
+  if (!isValidTime(input.votingPeriod.time)) {
+    throw new Error(`Voting period time ${input.votingPeriod.time} is not a valid time`)
   }
 
   return true
@@ -73,8 +74,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   return {
     group_addr: input.group,
     max_voting_period: {
-      ...(input.votingPeriod?.height && { height: Number(input.votingPeriod?.height) }),
-      ...(input.votingPeriod?.time && { time: Number(input.votingPeriod?.time) }),
+      time: input.votingPeriod.time,
     },
     threshold: {
       absolute_count: {
@@ -84,9 +84,10 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   }
 }
 
-// Creates a multisig wallet backed by a previously created cw4_group
-// yarn gauntlet cw3_flex_multisig:deploy --network=bombay-testnet --group=<GROUP_ADDRESS> --threshold=<THRESHOLD> --height=10000100
 const createWalletInstruction: AbstractInstruction<CommandInput, ContractInput> = {
+  examples: [
+    'yarn gauntlet cw3_flex_multisig:deploy --network=bombay-testnet --group=<GROUP_ADDRESS> --threshold=<THRESHOLD> (--time=<EXPIRATION_TIME_IN_SECS>)',
+  ],
   instruction: {
     category: CATEGORIES.MULTISIG,
     contract: 'cw3_flex_multisig',

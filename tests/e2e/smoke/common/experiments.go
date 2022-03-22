@@ -45,7 +45,7 @@ func (m *OCRv2State) CanRecoverAllNodesValidatorConnectionLoss() {
 	time.Sleep(ChaosAwaitingApply)
 	err = m.Env.ClearAllChaosExperiments()
 	Expect(err).ShouldNot(HaveOccurred())
-	m.ValidateRoundsAfter(time.Now(), 10)
+	m.ValidateAllRounds(time.Now(), NewRoundCheckTimeout, 10, false)
 }
 
 func (m *OCRv2State) CanWorkYellowGroupNoValidatorConnection() {
@@ -63,7 +63,7 @@ func (m *OCRv2State) CanWorkYellowGroupNoValidatorConnection() {
 	)
 	Expect(err).ShouldNot(HaveOccurred())
 	time.Sleep(ChaosAwaitingApply)
-	m.ValidateRoundsAfter(time.Now(), 10)
+	m.ValidateAllRounds(time.Now(), NewRoundCheckTimeout, 10, false)
 }
 
 func (m *OCRv2State) CantWorkWithFaultyNodesFailed() {
@@ -97,7 +97,7 @@ func (m *OCRv2State) CanWorkWithFaultyNodesOffline() {
 	)
 	Expect(err).ShouldNot(HaveOccurred())
 	time.Sleep(ChaosAwaitingApply)
-	m.ValidateRoundsAfter(time.Now(), 10)
+	m.ValidateAllRounds(time.Now(), NewRoundCheckTimeout, 10, false)
 }
 
 func (m *OCRv2State) CantWorkWithMoreThanFaultyNodesOffline() {
@@ -115,7 +115,7 @@ func (m *OCRv2State) CantWorkWithMoreThanFaultyNodesOffline() {
 	)
 	Expect(err).ShouldNot(HaveOccurred())
 	time.Sleep(ChaosAwaitingApply)
-	m.ValidateRoundsAfter(time.Now(), 10)
+	m.ValidateAllRounds(time.Now(), NewRoundCheckTimeout, 10, false)
 }
 
 func (m *OCRv2State) NetworkCorrupt(group string, corrupt int, rounds int) {
@@ -133,7 +133,7 @@ func (m *OCRv2State) NetworkCorrupt(group string, corrupt int, rounds int) {
 	)
 	Expect(err).ShouldNot(HaveOccurred())
 	time.Sleep(ChaosAwaitingApply)
-	m.ValidateRoundsAfter(time.Now(), rounds)
+	m.ValidateAllRounds(time.Now(), NewRoundCheckTimeout, rounds, false)
 }
 
 func (m *OCRv2State) CanWorkAfterAllOraclesIPChange() {
@@ -148,7 +148,7 @@ func (m *OCRv2State) CanWorkAfterAllOraclesIPChange() {
 	)
 	Expect(err).ShouldNot(HaveOccurred())
 	time.Sleep(ChaosAwaitingApply)
-	m.ValidateRoundsAfter(time.Now(), 10)
+	m.ValidateAllRounds(time.Now(), NewRoundCheckTimeout, 10, false)
 }
 
 func (m *OCRv2State) CanMigrateBootstrap() {
@@ -164,7 +164,7 @@ func (m *OCRv2State) CanMigrateBootstrap() {
 	)
 	Expect(err).ShouldNot(HaveOccurred())
 	time.Sleep(ChaosAwaitingApply)
-	m.ValidateRoundsAfter(time.Now(), 10)
+	m.ValidateAllRounds(time.Now(), NewRoundCheckTimeout, 10, false)
 	// now we working without bootstrap, killing all oracles except one, remaining one must bootstrap
 	_, err = m.Env.ApplyChaosExperiment(
 		&experiments.PodKill{
@@ -175,7 +175,7 @@ func (m *OCRv2State) CanMigrateBootstrap() {
 	)
 	Expect(err).ShouldNot(HaveOccurred())
 	time.Sleep(ChaosAwaitingApply)
-	m.ValidateRoundsAfter(time.Now(), 10)
+	m.ValidateAllRounds(time.Now(), NewRoundCheckTimeout, 10, false)
 }
 
 func (m *OCRv2State) RestoredAfterNetworkSplit() {
@@ -205,7 +205,7 @@ func (m *OCRv2State) RestoredAfterNetworkSplit() {
 	m.ValidateNoRoundsAfter(time.Now())
 	err = m.Env.ClearAllChaosExperiments()
 	Expect(err).ShouldNot(HaveOccurred())
-	m.ValidateRoundsAfter(time.Now(), 10)
+	m.ValidateAllRounds(time.Now(), NewRoundCheckTimeout, 10, false)
 }
 
 func (m *OCRv2State) CanWorkWithTimeSkewYellowGroup() {
@@ -223,5 +223,5 @@ func (m *OCRv2State) CanWorkWithTimeSkewYellowGroup() {
 	)
 	Expect(err).ShouldNot(HaveOccurred())
 	time.Sleep(ChaosAwaitingApply)
-	m.ValidateRoundsAfter(time.Now(), 10)
+	m.ValidateAllRounds(time.Now(), NewRoundCheckTimeout, 10, false)
 }

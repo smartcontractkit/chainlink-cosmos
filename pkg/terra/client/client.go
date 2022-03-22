@@ -35,6 +35,8 @@ import (
 	"github.com/smartcontractkit/terra.go/tx"
 )
 
+const httpResponseLimit = 10_000_000 // 10MB
+
 var encodingConfig = params.MakeEncodingConfig()
 
 func init() {
@@ -130,8 +132,9 @@ func (rt *responseRoundTripper) RoundTrip(r *http.Request) (resp *http.Response,
 	if err != nil {
 		return
 	}
+	source := http.MaxBytesReader(nil, resp.Body, httpResponseLimit)
 	b, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	source.Close()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read response")
 	}
@@ -325,7 +328,7 @@ type BatchSimResults struct {
 	Succeeded SimMsgs
 }
 
-var failedMsgIndexRe = regexp.MustCompile(`^.*failed to execute message; message index: (?P<Index>\d{1}):.*$`)
+var failedMsgIndexRe = regexp.MustCompile(`^.*failed to execute message; message index: (?P<Index>\d+):.*$`)
 
 func (c *Client) failedMsgIndex(err error) (bool, int) {
 	if err == nil {

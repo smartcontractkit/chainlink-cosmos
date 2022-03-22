@@ -1,27 +1,27 @@
 package chaos
 
 import (
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	tc "github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/smoke/common"
 	"github.com/smartcontractkit/integrations-framework/actions"
 )
 
-var _ = Describe("Solana chaos suite", func() {
-	var state = &common.OCRv2State{}
+var _ = Describe("Terra chaos suite", func() {
+	var state = common.NewOCRv2State(1)
 	BeforeEach(func() {
 		By("Deploying OCRv2 cluster", func() {
-			state.DeployCluster(5, true)
+			state.DeployCluster(5, "2s", true, utils.ContractsDir)
 			state.LabelChaosGroups()
-			tc.ImitateSource(state.MockServer, common.SourceChangeInterval, 2, 10)
+			state.SetAllAdapterResponsesToTheSameValue(2)
 		})
 	})
 	It("Can tolerate chaos experiments", func() {
 		By("Stable and working", func() {
-			state.ValidateRoundsAfter(time.Now(), 10)
+			state.ValidateAllRounds(time.Now(), common.NewRoundCheckTimeout, 10, false)
 		})
 		By("Can work with faulty nodes offline", func() {
 			state.CanWorkWithFaultyNodesOffline()

@@ -39,7 +39,7 @@ func TestBuildReport(t *testing.T) {
 	assert.NoError(t, err)
 
 	// validate length
-	totalLen := PrefixLen + MedianLen*n + JuelsLen
+	totalLen := prefixSizeBytes + observationSizeBytes*n + juelsPerFeeCoinSizeBytes
 	assert.Equal(t, totalLen, len(report), "validate length")
 
 	// validate timestamp
@@ -54,12 +54,12 @@ func TestBuildReport(t *testing.T) {
 
 	// validate observations
 	for i := 0; i < n; i++ {
-		index := PrefixLen + MedianLen*i
-		assert.Equal(t, oo[0].Value.FillBytes(make([]byte, MedianLen)), []byte(report[index:index+MedianLen]), fmt.Sprintf("validate median observation #%d", i))
+		index := prefixSizeBytes + observationSizeBytes*i
+		assert.Equal(t, oo[0].Value.FillBytes(make([]byte, observationSizeBytes)), []byte(report[index:index+observationSizeBytes]), fmt.Sprintf("validate median observation #%d", i))
 	}
 
 	// validate juelsToEth
-	assert.Equal(t, v.FillBytes(make([]byte, JuelsLen)), []byte(report[totalLen-JuelsLen:totalLen]), "validate juelsToEth")
+	assert.Equal(t, v.FillBytes(make([]byte, juelsPerFeeCoinSizeBytes)), []byte(report[totalLen-juelsPerFeeCoinSizeBytes:totalLen]), "validate juelsToEth")
 }
 
 func TestMedianFromReport(t *testing.T) {

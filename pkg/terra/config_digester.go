@@ -3,7 +3,9 @@ package terra
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
+	"math"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
@@ -31,6 +33,14 @@ func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.C
 	digest := types.ConfigDigest{}
 	buf := bytes.NewBuffer([]byte{})
 
+	if len(cd.chainID) > math.MaxUint8 {
+		return digest, errors.New("chainID exceeds max uint8 length")
+	}
+
+	if err := binary.Write(buf, binary.BigEndian, uint8(len(cd.chainID))); err != nil {
+		return digest, err
+	}
+
 	if _, err := buf.Write([]byte(cd.chainID)); err != nil {
 		return digest, err
 	}
@@ -53,6 +63,11 @@ func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.C
 		}
 	}
 
+	// NOTE: We assume that signers and transmitters have the same length, currently
+	// enforced onchain https://github.com/smartcontractkit/chainlink-terra/blob/9465a4ace6954b8647869d279363a25d1ae1b934/contracts/ocr2/src/contract.rs#L508
+	// and that they have fixed sizes, thus we don't need a transmitter length prefix
+	// here to avoid config digest collisions. Should that enforcement change
+	// we'll need to add a length prefix here.
 	for _, transmitter := range cfg.Transmitters {
 		if _, err := buf.Write([]byte(transmitter)); err != nil {
 			return digest, err

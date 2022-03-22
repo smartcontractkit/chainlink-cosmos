@@ -40,7 +40,7 @@ func (t *AccessController) AddAccess(addr string) error {
 }
 
 func (t *AccessController) RemoveAccess(addr string) error {
-	fromAddr, _ := msg.AccAddressFromHex(t.client.DefaultWallet.Address.String())
+	fromAddr := t.client.DefaultWallet.AccAddress
 	toAddr, _ := msg.AccAddressFromHex(addr)
 	executeMsg := actypes.ExecuteRemoveAccessMsg{
 		RemoveAccess: actypes.ExecuteRemoveAccessTypeMsg{

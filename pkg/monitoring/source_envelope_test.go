@@ -103,54 +103,81 @@ func TestEnvelopeSource(t *testing.T) {
 					types.ABCIMessageLog{
 						Events: types.StringEvents{
 							types.StringEvent{Type: "execute_contract", Attributes: []types.Attribute{
-								types.Attribute{Key: "sender", Value: "terra16vueyxmul8kczd0nxvw0ge7kzfzpmtsgqc9tup"},
-								types.Attribute{Key: "contract_address", Value: "terra13vgemxvpdshmhvwcz2nnr239948dxa2kz4glg8"},
+								{Key: "sender", Value: "terra16vueyxmul8kczd0nxvw0ge7kzfzpmtsgqc9tup"},
+								{Key: "contract_address", Value: "terra13vgemxvpdshmhvwcz2nnr239948dxa2kz4glg8"},
 							}},
 							types.StringEvent{Type: "from_contract", Attributes: []types.Attribute{
-								types.Attribute{Key: "contract_address", Value: "terra13vgemxvpdshmhvwcz2nnr239948dxa2kz4glg8"},
-								types.Attribute{Key: "method", Value: "transmit"},
-								types.Attribute{Key: "method", Value: "transmit"},
+								{Key: "contract_address", Value: "terra13vgemxvpdshmhvwcz2nnr239948dxa2kz4glg8"},
+								{Key: "method", Value: "transmit"},
+								{Key: "method", Value: "transmit"},
 							}},
 							types.StringEvent{Type: "message", Attributes: []types.Attribute{
-								types.Attribute{Key: "action", Value: "/terra.wasm.v1beta1.MsgExecuteContract"},
-								types.Attribute{Key: "module", Value: "wasm"},
-								types.Attribute{Key: "sender", Value: "terra16vueyxmul8kczd0nxvw0ge7kzfzpmtsgqc9tup"},
+								{Key: "action", Value: "/terra.wasm.v1beta1.MsgExecuteContract"},
+								{Key: "module", Value: "wasm"},
+								{Key: "sender", Value: "terra16vueyxmul8kczd0nxvw0ge7kzfzpmtsgqc9tup"},
 							}},
 							types.StringEvent{Type: "wasm", Attributes: []types.Attribute{
-								types.Attribute{Key: "contract_address", Value: "terra13vgemxvpdshmhvwcz2nnr239948dxa2kz4glg8"},
-								types.Attribute{Key: "method", Value: "transmit"},
-								types.Attribute{Key: "method", Value: "transmit"},
+								{Key: "contract_address", Value: "terra13vgemxvpdshmhvwcz2nnr239948dxa2kz4glg8"},
+								{Key: "method", Value: "transmit"},
+								{Key: "method", Value: "transmit"},
 							}},
 							types.StringEvent{Type: "wasm-new_transmission", Attributes: []types.Attribute{
-								types.Attribute{Key: "contract_address", Value: "terra13vgemxvpdshmhvwcz2nnr239948dxa2kz4glg8"},
-								types.Attribute{Key: "aggregator_round_id", Value: "452"},
-								types.Attribute{Key: "answer", Value: "2727000000"},
-								types.Attribute{Key: "transmitter", Value: "terra16vueyxmul8kczd0nxvw0ge7kzfzpmtsgqc9tup"},
-								types.Attribute{Key: "observations_timestamp", Value: "1645206820"},
-								types.Attribute{Key: "observers", Value: "0c0a080403090d070b060e0000000000000000000000000000000000000000"},
-								types.Attribute{Key: "juels_per_fee_coin", Value: "302815889"},
-								types.Attribute{Key: "config_digest", Value: "0002c245d0b4575d38cb5bb8b7b34d4b58a8b8cf9c6d4d925c15542c4ce062ac"},
-								types.Attribute{Key: "epoch", Value: "1732"},
-								types.Attribute{Key: "round", Value: "6"},
-								types.Attribute{Key: "reimbursement", Value: "893407"},
-								types.Attribute{Key: "observations", Value: "2724000000"},
-								types.Attribute{Key: "observations", Value: "2726325800"},
-								types.Attribute{Key: "observations", Value: "2726700000"},
-								types.Attribute{Key: "observations", Value: "2726973503"},
-								types.Attribute{Key: "observations", Value: "2726973503"},
-								types.Attribute{Key: "observations", Value: "2726986751"},
-								types.Attribute{Key: "observations", Value: "2727000000"},
-								types.Attribute{Key: "observations", Value: "2727000000"},
-								types.Attribute{Key: "observations", Value: "2727000000"},
-								types.Attribute{Key: "observations", Value: "2727000000"},
-								types.Attribute{Key: "observations", Value: "2727162900"},
-								types.Attribute{Key: "observations", Value: "2727300000"}},
+								{Key: "contract_address", Value: "terra13vgemxvpdshmhvwcz2nnr239948dxa2kz4glg8"},
+								{Key: "aggregator_round_id", Value: "452"},
+								{Key: "answer", Value: "2727000000"},
+								{Key: "transmitter", Value: "terra16vueyxmul8kczd0nxvw0ge7kzfzpmtsgqc9tup"},
+								{Key: "observations_timestamp", Value: "1645206820"},
+								{Key: "observers", Value: "0c0a080403090d070b060e0000000000000000000000000000000000000000"},
+								{Key: "juels_per_fee_coin", Value: "302815889"},
+								{Key: "config_digest", Value: "0002c245d0b4575d38cb5bb8b7b34d4b58a8b8cf9c6d4d925c15542c4ce062ac"},
+								{Key: "epoch", Value: "1732"},
+								{Key: "round", Value: "6"},
+								{Key: "reimbursement", Value: "893407"},
+								{Key: "observations", Value: "2724000000"},
+								{Key: "observations", Value: "2726325800"},
+								{Key: "observations", Value: "2726700000"},
+								{Key: "observations", Value: "2726973503"},
+								{Key: "observations", Value: "2726973503"},
+								{Key: "observations", Value: "2726986751"},
+								{Key: "observations", Value: "2727000000"},
+								{Key: "observations", Value: "2727000000"},
+								{Key: "observations", Value: "2727000000"},
+								{Key: "observations", Value: "2727000000"},
+								{Key: "observations", Value: "2727162900"},
+								{Key: "observations", Value: "2727300000"}},
 							},
 							types.StringEvent{Type: "wasm-transmitted", Attributes: []types.Attribute{
-								types.Attribute{Key: "contract_address", Value: "terra13vgemxvpdshmhvwcz2nnr239948dxa2kz4glg8"},
-								types.Attribute{Key: "config_digest", Value: "0002c245d0b4575d38cb5bb8b7b34d4b58a8b8cf9c6d4d925c15542c4ce062ac"},
-								types.Attribute{Key: "epoch", Value: "1732"},
+								{Key: "contract_address", Value: "terra13vgemxvpdshmhvwcz2nnr239948dxa2kz4glg8"},
+								{Key: "config_digest", Value: "0002c245d0b4575d38cb5bb8b7b34d4b58a8b8cf9c6d4d925c15542c4ce062ac"},
+								{Key: "epoch", Value: "1732"},
 							}},
+							// NOTE This is an extra new_transmission event but for a different contract_address, config_digest, answer, etc.
+							// This event should be ignored by the Source under test!
+							types.StringEvent{Type: "wasm-new_transmission", Attributes: []types.Attribute{
+								{Key: "contract_address", Value: "terra16vueyxmul8kczd1nxvw0ge7kzfzpmtsgqc82ac"},
+								{Key: "aggregator_round_id", Value: "999"},
+								{Key: "answer", Value: "9999000000"},
+								{Key: "transmitter", Value: "terra1h0ygh9tr8t8sc97ntq5tnams9vprchxmgl9ame"},
+								{Key: "observations_timestamp", Value: "1645209999"},
+								{Key: "observers", Value: "0c0a080403090d070b060e0000000000000000000000000000000000000000"},
+								{Key: "juels_per_fee_coin", Value: "302899999"},
+								{Key: "config_digest", Value: "0003d956d0b4575d38cb5bb8b7b34d4b58a8b8cf9c6d4d925c15542c4ce135bd"},
+								{Key: "epoch", Value: "9999"},
+								{Key: "round", Value: "9"},
+								{Key: "reimbursement", Value: "899999"},
+								{Key: "observations", Value: "2724009999"},
+								{Key: "observations", Value: "2726329999"},
+								{Key: "observations", Value: "2726709999"},
+								{Key: "observations", Value: "2726979999"},
+								{Key: "observations", Value: "2726979999"},
+								{Key: "observations", Value: "2726989999"},
+								{Key: "observations", Value: "2727009999"},
+								{Key: "observations", Value: "2727009999"},
+								{Key: "observations", Value: "2727009999"},
+								{Key: "observations", Value: "2727009999"},
+								{Key: "observations", Value: "2727169999"},
+								{Key: "observations", Value: "2727309999"}},
+							},
 						},
 					},
 				},
@@ -159,24 +186,28 @@ func TestEnvelopeSource(t *testing.T) {
 	}
 	// Setup mocks.
 	feedConfig := generateFeedConfig()
+	feedConfig.ContractAddressBech32 = "terra13vgemxvpdshmhvwcz2nnr239948dxa2kz4glg8"
 	chainConfig := generateChainConfig()
 	chainReader := new(mocks.ChainReader)
 	chainReader.On("TxsEvents",
+		mock.Anything, // context
 		mock.MatchedBy(func(query []string) bool {
 			return query[0] == fmt.Sprintf(`wasm-set_config.contract_address='%s'`, feedConfig.ContractAddressBech32)
 		}),
 		&cosmosQuery.PageRequest{Limit: 1},
-	).Return(setConfigRes, nil)
+	).Return(setConfigRes, nil).Once()
 	chainReader.On("TxsEvents",
+		mock.Anything, // context
 		mock.MatchedBy(func(query []string) bool {
 			return query[0] == fmt.Sprintf(`wasm-new_transmission.contract_address='%s'`, feedConfig.ContractAddressBech32)
 		}),
 		&cosmosQuery.PageRequest{Limit: 1},
-	).Return(newTransmissionRes, nil)
+	).Return(newTransmissionRes, nil).Once()
 	chainReader.On("ContractStore",
+		mock.Anything, // context
 		chainConfig.LinkTokenAddress,
 		[]byte(fmt.Sprintf(`{"balance":{"address":"%s"}}`, feedConfig.ContractAddressBech32)),
-	).Once().Return(balanceRes, nil)
+	).Return(balanceRes, nil).Once()
 	// Execute Fetch()
 	factory := NewEnvelopeSourceFactory(chainReader, newNullLogger())
 	source, err := factory.NewSource(chainConfig, feedConfig)
