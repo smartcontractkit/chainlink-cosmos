@@ -193,7 +193,7 @@ func CreateBridges(contracts []string, nodes []client.Chainlink, mock *client.Mo
 				return nil, err
 			}
 			juelsBridge := client.BridgeTypeAttributes{
-				Name:        "juels",
+				Name:        nodeContractPairID + "juels",
 				URL:         fmt.Sprintf("%s/juels", mock.Config.ClusterURL),
 				RequestData: "{}",
 			}
