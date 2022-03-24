@@ -7,14 +7,13 @@ import { LCDClient } from '@terra-money/terra.js'
 
 type CommandInput = {
   aggregator: string
-  version: string
   description: string
 }
 
 type ContractExpectedInfo = {
   aggregator: string
-  version: string
   description: string
+  version?: string
   phaseId?: number
   decimals?: string | number
   owner?: string
@@ -29,7 +28,6 @@ const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
 
   return {
     aggregator: info.aggregator,
-    version: info.contractVersion,
     description: info.name,
   }
 }
@@ -37,7 +35,6 @@ const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
 const makeInspectionData = () => async (input: CommandInput): Promise<ContractExpectedInfo> => {
   return {
     aggregator: input.aggregator,
-    version: input.version,
     description: input.description,
   }
 }
@@ -69,7 +66,6 @@ const makeOnchainData = (provider: LCDClient) => async (
 const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedInfo): boolean => {
   let inspections: inspection.Inspection[] = [
     inspection.makeInspection(onchainData.aggregator, expected.aggregator, 'Aggregator'),
-    inspection.makeInspection(onchainData.version, expected.version, 'Version'),
     inspection.makeInspection(onchainData.description, expected.description, 'Description'),
   ]
 
