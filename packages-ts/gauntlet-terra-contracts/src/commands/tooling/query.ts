@@ -1,6 +1,7 @@
 import { assertions, logger } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../lib/constants'
+
 export default class QueryContractCode extends TerraCommand {
   static description = 'Query deployed contracts'
   static examples = [`yarn gauntlet query --network=[NETWORK] --msg='QUERY' [CONTRACT_ADDRESS]`]
