@@ -9,14 +9,15 @@ import { LCDClient } from '@terra-money/terra.js'
 type CommandInput = {
   aggregator: string
   description: string
+  decimals: string | number
 }
 
 type ContractExpectedInfo = {
   aggregator: string
   description: string
+  decimals: string | number
   version?: string
   phaseId?: number
-  decimals?: string | number
   owner?: string
   latestRoundData?: RoundData
 }
@@ -33,10 +34,12 @@ const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   const rdd = RDD.getRDD(flags.rdd)
   const contract = args[0]
   const info = rdd.proxies[contract]
+  const decimals = rdd.contracts[rdd.proxies[contract].aggregator].decimals
 
   return {
     aggregator: info.aggregator,
     description: info.name,
+    decimals,
   }
 }
 
@@ -44,6 +47,7 @@ const makeInspectionData = () => async (input: CommandInput): Promise<ContractEx
   return {
     aggregator: input.aggregator,
     description: input.description,
+    decimals: input.decimals,
   }
 }
 
@@ -80,6 +84,7 @@ const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedIn
   let inspections: inspection.Inspection[] = [
     inspection.makeInspection(onchainData.aggregator, expected.aggregator, 'Aggregator'),
     inspection.makeInspection(onchainData.description, expected.description, 'Description'),
+    inspection.makeInspection(onchainData.decimals, expected.decimals, 'Decimals'),
   ]
 
   logger.line()
