@@ -3,6 +3,7 @@ import { InspectInstruction, instructionToInspectCommand } from '../../../abstra
 import { RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
+import { dateFromUnix } from '../../../../lib/utils'
 import { LCDClient } from '@terra-money/terra.js'
 
 type CommandInput = {
@@ -17,7 +18,14 @@ type ContractExpectedInfo = {
   phaseId?: number
   decimals?: string | number
   owner?: string
-  latestRoundData?: object
+  latestRoundData?: RoundData
+}
+
+type RoundData = {
+  roundId: number
+  answer: string
+  observationsTimestamp: number
+  transmissionTimestamp: number
 }
 
 const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
@@ -59,7 +67,12 @@ const makeOnchainData = (provider: LCDClient) => async (
     phaseId,
     decimals,
     owner,
-    latestRoundData,
+    latestRoundData: {
+      roundId: latestRoundData.round_id,
+      answer: latestRoundData.answer,
+      observationsTimestamp: latestRoundData.observations_timestamp,
+      transmissionTimestamp: latestRoundData.transmission_timestamp,
+    },
   }
 }
 
@@ -95,9 +108,14 @@ const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedIn
     - Owner: ${onchainData.owner}
   `)
 
-  logger.info(`Last Round Data:
-    - Data: ${JSON.stringify(onchainData.latestRoundData)}
-  `)
+  if (onchainData.latestRoundData) {
+    logger.info(`Latest Round Data:
+      - Round ID: ${onchainData.latestRoundData.roundId}
+      - Answer: ${Number(onchainData.latestRoundData.answer) / 10 ** Number(onchainData.decimals)}
+      - Transmission at: ${dateFromUnix(onchainData.latestRoundData.transmissionTimestamp)}
+      - Observation at: ${dateFromUnix(onchainData.latestRoundData.observationsTimestamp)}
+    `)
+  }
 
   const result = inspection.inspect(inspections)
   logger.line()

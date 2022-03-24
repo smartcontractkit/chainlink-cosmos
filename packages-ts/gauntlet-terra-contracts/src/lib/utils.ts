@@ -11,3 +11,8 @@ export function isValidAddress(address) {
     return false
   }
 }
+
+// TODO: This function should be transfered to gauntlet-core repo.
+export function dateFromUnix(unixTimestamp: number): Date {
+  return new Date(unixTimestamp * 1000)
+}
