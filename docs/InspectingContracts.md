@@ -148,8 +148,8 @@ Note that *%7B%22round_data%22:%7B%22round_id%22:4294968601%7D%7D* is the URL en
 You can also use [Gauntlet Terra](../packages-ts/gauntlet-terra-contracts/) to query smart contracts. To query a smart contract using Gauntlet, clone the [Chainlink-Terra](https://github.com/smartcontractkit/chainlink-terra) repository and run the following command.
 
 ```bash
-yarn gauntlet query --network=[NETWORK_NAME] --msg=[QUERY] [CONTRACT_ADDRESS]
-yarn gauntlet query --network=testnet-bombay-internal --msg='{"owed_payment":{"transmitter": "terra1myd0kxk3fqaz9zl47gm2uvxjm0zn3lczrtvljz"}}' terra14mf0qcjpduhcs8p6289pjnwn8skhgk5aus3yxg
+yarn gauntlet tooling:query --network=[NETWORK_NAME] --msg=[QUERY] [CONTRACT_ADDRESS]
+yarn gauntlet tooling:query --network=testnet-bombay-internal --msg='{"owed_payment":{"transmitter": "terra1myd0kxk3fqaz9zl47gm2uvxjm0zn3lczrtvljz"}}' terra14mf0qcjpduhcs8p6289pjnwn8skhgk5aus3yxg
 ```
 
 The response of the above command can be found below.
@@ -163,7 +163,5 @@ $ tsc -b --clean ./tsconfig.json
 ℹ️   Query finished with result: "3515090726000000000"
 ✨  Done in 9.59s.
 ```
-
-The network name must be selected from the [networks](../packages-ts/gauntlet-terra-contracts/networks/) folder. To add a new network configuration, simply add a new file to this folder (.env.YOUR_NETWORK_NAME). Additionally, you must have a .env file in the root of [Chainlink-Terra](https://github.com/smartcontractkit/chainlink-terra) that sets MNEMONIC equal to the mnemonic associated with your Terra wallet.
 
 ### Gauntlet Inspect

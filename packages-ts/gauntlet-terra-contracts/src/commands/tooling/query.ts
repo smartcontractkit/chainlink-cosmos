@@ -4,9 +4,9 @@ import { CATEGORIES } from '../../lib/constants'
 
 export default class QueryContractCode extends TerraCommand {
   static description = 'Query deployed contracts'
-  static examples = [`yarn gauntlet query --network=[NETWORK] --msg='QUERY' [CONTRACT_ADDRESS]`]
+  static examples = [`yarn gauntlet tooling:query --network=[NETWORK] --msg='QUERY' [CONTRACT_ADDRESS]`]
 
-  static id = 'query'
+  static id = 'tooling:query'
   static category = CATEGORIES.TOOLING
 
   static flags = {}
