@@ -92,7 +92,7 @@ export abstract class Contract {
       path.join(cwd, './contracts'),
       path.join(cwd, '../../contracts'),
       path.join(cwd, './packages-ts/gauntlet-terra-contracts/artifacts/contracts'),
-      path.join(cwd, './packages-ts/gauntlet-terra-cwplus/artifacts/contracts'),
+      path.join(cwd, './packages-ts/gauntlet-terra-cw-plus/artifacts/contracts'),
     ]
 
     const abi = possibleContractPaths
