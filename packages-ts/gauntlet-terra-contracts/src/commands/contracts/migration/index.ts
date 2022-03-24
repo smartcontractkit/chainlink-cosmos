@@ -2,29 +2,28 @@ import { Result } from '@chainlink/gauntlet-core'
 import { prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { AccAddress, MsgMigrateContract } from '@terra-money/terra.js'
-import { CONTRACT_LIST } from '../../../lib/contracts'
 
-type CommandInput<MigrationMessage> = {
+type CommandInput<MsgMigrate> = {
   contract: string
   newCodeId: number
-  migrationMsg: MigrationMessage
+  migrationMsg: MsgMigrate
 }
 
-export type MigrationMessageMaker<MigrationMessage> = (flags, args) => MigrationMessage
+export type MigrationMessageMaker<MsgMigrate> = (flags, args) => MsgMigrate
 
-export abstract class MigrateContract<MigrationMessage> extends TerraCommand {
+export abstract class MigrateContract<MsgMigrate> extends TerraCommand {
   static makeDescription = (contract) =>
     `(NOT TESTED!) Upgrades a contract ${contract} instance to use a new Code ID. This new Code ID must expose a "migrate" function to migrate the contract state`
   static makeExamples = (contract) => [
-    `yarn gauntlet ${contract}:migrate_contract --network=bombay-testnet --newCodeId=<CODE_ID_NUMBER> <CONTRACT_ADDRESS>`,
-    `yarn gauntlet ${contract}:migrate_contract --network=bombay-testnet --newCodeId=2012 terra167ccv2h0z7k0p8j6qpuzwsgu5au5qvfwgmkjsl`,
+    `yarn gauntlet ${contract}:migrate_contract --network=<NETWORK> --newCodeId=<CODE_ID_NUMBER> <CONTRACT_ADDRESS>`,
+    `yarn gauntlet ${contract}:migrate_contract --network=mainnet --newCodeId=2012 terra167ccv2h0z7k0p8j6qpuzwsgu5au5qvfwgmkjsl`,
   ]
 
   static makeId = (contract) => `${contract}:migrate_contract`
   static makeCategory = (contract) => contract
 
-  abstract makeMigrationMessage: MigrationMessageMaker<MigrationMessage>
-  input: CommandInput<MigrationMessage>
+  abstract makeMigrationMessage: MigrationMessageMaker<MsgMigrate>
+  input: CommandInput<MsgMigrate>
 
   constructor(flags, args: string[]) {
     super(flags, args)
@@ -40,7 +39,7 @@ export abstract class MigrateContract<MigrationMessage> extends TerraCommand {
     await prompt(`Continue upgrading contract ${this.input.contract} to new Code ID ${this.input.newCodeId}?`)
   }
 
-  makeInput = (flags, args): CommandInput<MigrationMessage> => {
+  makeInput = (flags, args): CommandInput<MsgMigrate> => {
     return {
       newCodeId: Number(flags.newCodeId),
       contract: args[0],
@@ -48,7 +47,7 @@ export abstract class MigrateContract<MigrationMessage> extends TerraCommand {
     }
   }
 
-  validateInput = (input: CommandInput<MigrationMessage>): boolean => {
+  validateInput = (input: CommandInput<MsgMigrate>): boolean => {
     if (isNaN(input.newCodeId)) throw new Error(`Invalid Code ID: ${input.newCodeId}`)
     if (!AccAddress.validate(input.contract)) throw new Error('Invalid contract address')
     return true

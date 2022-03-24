@@ -15,7 +15,7 @@ export default class UpdateContractAdmin extends TerraCommand {
 
   static description = 'Updates contract admin. Admin role can migrate the contract to a new Code ID'
   static examples = [
-    `yarn gauntlet tooling:update_contract_admin --network=bombay-testnet --to=<NEW_ADMIN> <CONTRACT_ADDRESS>`,
+    `yarn gauntlet tooling:update_contract_admin --network=<NETWORK> --to=<NEW_ADMIN> <CONTRACT_ADDRESS>`,
   ]
 
   static id = 'tooling:update_contract_admin'

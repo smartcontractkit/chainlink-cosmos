@@ -1,21 +1,15 @@
 import { CONTRACT_LIST } from '../../../lib/contracts'
-import { MigrateContract, MigrationMessageMaker } from '../migration'
+import { MigrateContract } from '../migration'
 
-// TODO: Pending of migrate function on the contract. Serve this as an example of implementation
-type OCR2MigrateMessage = any
+// Notice: Msg used to migrate OCR2 from v0.1.5 to v1.0.0
+type MsgMigrate_1_0_0 = any
 
-const makeMigrationMessage: MigrationMessageMaker<OCR2MigrateMessage> = (flags, args) => {
-  return {}
-}
-
-// export default makeMigrationCommand(CONTRACT_LIST.OCR_2, makeMigrateMessage)
-
-export default class OCRMigrateCommand extends MigrateContract<OCR2MigrateMessage> {
+export default class MigrateCommand extends MigrateContract<MsgMigrate_1_0_0> {
   static description = MigrateContract.makeDescription(CONTRACT_LIST.OCR_2)
   static examples = MigrateContract.makeExamples(CONTRACT_LIST.OCR_2)
 
   static id = MigrateContract.makeId(CONTRACT_LIST.OCR_2)
   static category = MigrateContract.makeCategory(CONTRACT_LIST.OCR_2)
 
-  makeMigrationMessage = makeMigrationMessage
+  makeMigrationMessage = (flags, args) => ({})
 }
