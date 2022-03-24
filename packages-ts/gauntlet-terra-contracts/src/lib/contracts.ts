@@ -49,8 +49,7 @@ export abstract class Contract {
     this.dirName = dirName
   }
 
-  loadContractCode = async (version: string): Promise<void> => {
-    version = version ? version : this.defaultVersion
+  loadContractCode = async (version = this.defaultVersion): Promise<void> => {
     assertions.assert(
       !this.version || version == this.version,
       `Loading multiple versions (${this.version} and ${version}) of the same contract is unsupported.`,
@@ -93,6 +92,7 @@ export abstract class Contract {
       path.join(cwd, './contracts'),
       path.join(cwd, '../../contracts'),
       path.join(cwd, './packages-ts/gauntlet-terra-contracts/artifacts/contracts'),
+      path.join(cwd, './packages-ts/gauntlet-terra-cwplus/artifacts/contracts'),
     ]
 
     const abi = possibleContractPaths
@@ -136,10 +136,16 @@ class CosmWasmContract extends Contract {
 }
 
 class Contracts {
+  contracts: Map<CONTRACT_LIST, Contract>
+
+  constructor() {
+    this.contracts = new Map<CONTRACT_LIST, Contract>()
+  }
+
   // Retrieves a specific Contract object from the contract index, while loading its abi
   // and bytecode from disk or network if they haven't been already.
   async getContractWithSchemaAndCode(id: CONTRACT_LIST, version: string): Promise<Contract> {
-    const contract = this[id]
+    const contract = this.contracts[id]
     if (!contract) {
       throw new Error(`Contract ${id} not found!`)
     }
@@ -151,12 +157,12 @@ class Contracts {
   }
 
   addChainlink = (id: CONTRACT_LIST, dirName: string) => {
-    this[id] = new ChainlinkContract(id, dirName)
+    this.contracts[id] = new ChainlinkContract(id, dirName)
     return this
   }
 
   addCosmwasm = (id: CONTRACT_LIST, dirName: string) => {
-    this[id] = new CosmWasmContract(id, dirName)
+    this.contracts[id] = new CosmWasmContract(id, dirName)
     return this
   }
 }
