@@ -85,26 +85,11 @@ const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedIn
   logger.line()
   logger.info('Inspection results:')
   logger.info(`Aggregator: 
-    - Aggregator: ${onchainData.aggregator}
-  `)
-
-  logger.info(`Version: 
+    - Address: ${onchainData.aggregator}
     - Version: ${onchainData.version}
-  `)
-
-  logger.info(`Description: 
     - Description: ${onchainData.description}
-  `)
-
-  logger.info(`PhaseID: 
     - PhaseID: ${onchainData.phaseId}
-  `)
-
-  logger.info(`Decimals: 
     - Decimals: ${onchainData.decimals}
-  `)
-
-  logger.info(`Owner: 
     - Owner: ${onchainData.owner}
   `)
 
