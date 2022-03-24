@@ -105,8 +105,6 @@ func (t *GauntlerDeployer) DeployLINK() error {
 }
 
 func (t *GauntlerDeployer) DeployOCR() error {
-	msg := utils.LogStatus("Deployed OCR contract")
-
 	fmt.Println("Deploying OCR Feed:")
 	fmt.Println("Step 1: Init Requester Access Controller")
 	err := t.gauntlet.ExecCommand(
@@ -160,6 +158,8 @@ func (t *GauntlerDeployer) DeployOCR() error {
 	if err != nil {
 		return errors.New("feed initialization failed")
 	}
+
+	msg := utils.LogStatus("Deployed OCR contract")
 
 	report, err = t.gauntlet.ReadCommandReport()
 	if err != nil {

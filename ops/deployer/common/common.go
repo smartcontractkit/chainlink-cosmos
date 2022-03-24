@@ -57,9 +57,6 @@ type OffchainConfigDetails struct {
 	MaxDurationShouldTransmitAcceptedReportNanoseconds time.Duration         `json:"maxDurationShouldTransmitAcceptedReportNanoseconds"`
 	ConfigPublicKeys                                   []string              `json:"configPublicKeys"`
 }
-type AcceptProposal struct {
-	AcceptProposal AcceptProposalDetails `json:"accept_proposal"`
-}
 
 type AcceptProposalDetails struct {
 	ID     string `json:"proposalId"`
