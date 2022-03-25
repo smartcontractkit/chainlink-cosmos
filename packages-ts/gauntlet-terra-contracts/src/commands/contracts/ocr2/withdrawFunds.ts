@@ -63,6 +63,10 @@ const withdrawFundsInstruction: AbstractInstruction<CommandInput, ContractInput>
     contract: 'ocr2',
     function: 'withdraw_funds',
   },
+  examples: [
+    'yarn gauntlet ocr2:withdraw_funds --network=<NETWORK> --all <CONTRACT_ADDRESS>',
+    'yarn gauntlet ocr2:withdraw_funds --network=<NETWORK> --amount=<AMOUNT> <CONTRACT_ADDRESS>',
+  ],
   makeInput: makeCommandInput,
   validateInput,
   makeContractInput,
