@@ -20,12 +20,10 @@ git clone https://github.com/smartcontractkit/chainlink-terra.git
 
 ### 2. Set up `nvm` and install dependencies
 
-Install [Node Version Manager](https://github.com/nvm-sh/nvm) to help you manage multiple Node.js versions if you haven't already. Then, run the following commands.
+Install [Node Version Manager](https://github.com/nvm-sh/nvm) to help you manage multiple Node.js versions if you haven't already. Then, run the following command.
 
 ```bash
-cd chainlink-terra
-nvm use
-yarn
+make install
 ```
 
 ### 3. Configure environment
@@ -36,7 +34,7 @@ Create a `.env` file in the root directory of `chainlink-terra` and add the foll
 MNEMONIC=replace with your mnemonic
 ```
 
-MNEMONIC must be set equal to the mnemonic associated with your Terra wallet.
+A deterministic Terra wallet key will be generated from the defined mnemonic phrase.
 
 ### 4. Run Gauntlet
 
