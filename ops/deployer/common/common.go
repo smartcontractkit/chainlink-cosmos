@@ -61,6 +61,7 @@ type OffchainConfigDetails struct {
 type AcceptProposalDetails struct {
 	ID     string `json:"proposalId"`
 	Digest string `json:"digest"`
+	Secret string `json:"secret"`
 }
 
 type balance struct {

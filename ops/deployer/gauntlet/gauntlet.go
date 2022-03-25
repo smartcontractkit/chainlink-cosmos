@@ -17,11 +17,11 @@ import (
 	"github.com/smartcontractkit/chainlink-relay/ops/utils"
 	relayUtils "github.com/smartcontractkit/chainlink-relay/ops/utils"
 	"github.com/smartcontractkit/libocr/offchainreporting2/confighelper"
-	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
 const (
+	CONTRACTS_VERSION = "v0.1.5"
 	// uploaded code IDs
 	CW20_ID = iota
 	OCR2_ID
@@ -70,6 +70,7 @@ func (t *GauntlerDeployer) Load() error {
 	err := t.gauntlet.ExecCommand(
 		"upload",
 		t.gauntlet.Flag("network", t.network),
+		t.gauntlet.Flag("version", CONTRACTS_VERSION),
 		"link",
 		"ocr2",
 		"access_controller",
@@ -94,6 +95,10 @@ func (t *GauntlerDeployer) DeployLINK() error {
 	report, err := t.gauntlet.ReadCommandReport()
 	if err != nil {
 		return errors.New("report not available")
+	}
+
+	if err == nil && len(report.Data) == 0 {
+		err = errors.New("deploy link produced no logs")
 	}
 
 	linkAddress := report.Responses[0].Contract
@@ -159,14 +164,13 @@ func (t *GauntlerDeployer) DeployOCR() error {
 		return errors.New("feed initialization failed")
 	}
 
-	msg := utils.LogStatus("Deployed OCR contract")
-
 	report, err = t.gauntlet.ReadCommandReport()
 	if err != nil {
 		return err
 	}
 
 	t.Account[OCR2] = report.Responses[0].Contract
+	msg := utils.LogStatus("Deployed OCR contract")
 	fmt.Printf(" - %s", report.Data["state"])
 	return msg.Check(nil)
 }
@@ -179,7 +183,6 @@ func (t GauntlerDeployer) TransferLINK() error {
 		t.gauntlet.Flag("network", t.network),
 		t.gauntlet.Flag("to", t.Account[OCR2]),
 		t.gauntlet.Flag("amount", "1000000000"),
-		t.gauntlet.Flag("link", t.Account[LINK]),
 		t.Account[LINK],
 	)
 	if err != nil {
@@ -230,37 +233,37 @@ func (t GauntlerDeployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	}
 
 	status := utils.LogStatus("InitOCR: set config test args")
-	alphaPPB := uint64(1000000)
-	_, _, f, onchainConfig, offchainConfigVersion, _, err := confighelper.ContractSetConfigArgsForTests(
-		2*time.Second,        // deltaProgress time.Duration,
-		5*time.Second,        // deltaResend time.Duration,
-		1*time.Second,        // deltaRound time.Duration,
-		500*time.Millisecond, // deltaGrace time.Duration,
-		10*time.Second,       // deltaStage time.Duration,
-		3,                    // rMax uint8,
-		S,                    // s []int,
-		helperOracles,        // oracles []OracleIdentityExtra,
-		median.OffchainConfig{
-			false,
-			alphaPPB,
-			false,
-			alphaPPB,
-			15 * time.Second,
-		}.Encode(), //reportingPluginConfig []byte,
-		500*time.Millisecond, // maxDurationQuery time.Duration,
-		500*time.Millisecond, // maxDurationObservation time.Duration,
-		500*time.Millisecond, // maxDurationReport time.Duration,
-		2*time.Second,        // maxDurationShouldAcceptFinalizedReport time.Duration,
-		2*time.Second,        // maxDurationShouldTransmitAcceptedReport time.Duration,
-		1,                    // f int,
-		[]byte{},             // onchainConfig []byte (calculated by the contract)
-	)
-	if status.Check(err) != nil {
-		return err
+	var f uint8 = 1
+	var offchainConfigVersion uint64 = 2
+	onchainConfig := []byte{}
+
+	offchainConfig := common.OffchainConfigDetails{
+		DeltaProgressNanoseconds: 2 * time.Second,        // pacemaker (timeout rotating leaders, can't be too short)
+		DeltaResendNanoseconds:   5 * time.Second,        // resending epoch (help nodes rejoin system)
+		DeltaRoundNanoseconds:    1 * time.Second,        // round time (polling data source)
+		DeltaGraceNanoseconds:    400 * time.Millisecond, // timeout for waiting observations beyond minimum
+		DeltaStageNanoseconds:    5 * time.Second,        // transmission schedule (just for calling transmit)
+		RMax:                     3,                      // max rounds prior to rotating leader (longer could be more reliable with good leader)
+		S:                        S,
+		OffchainPublicKeys:       offChainPublicKeys,
+		PeerIDs:                  peerIDs,
+		ReportingPluginConfig: common.ReportingPluginConfig{
+			AlphaReportInfinite: false,
+			AlphaReportPpb:      uint64(0), // always send report
+			AlphaAcceptInfinite: false,
+			AlphaAcceptPpb:      uint64(0),       // accept all reports (if deviation matches number)
+			DeltaCNanoseconds:   0 * time.Second, // heartbeat
+		},
+		MaxDurationQueryNanoseconds:                        0 * time.Millisecond,
+		MaxDurationObservationNanoseconds:                  300 * time.Millisecond,
+		MaxDurationReportNanoseconds:                       300 * time.Millisecond,
+		MaxDurationShouldAcceptFinalizedReportNanoseconds:  1 * time.Second,
+		MaxDurationShouldTransmitAcceptedReportNanoseconds: 1 * time.Second,
+		ConfigPublicKeys:                                   configPublicKeys,
 	}
 
 	status = utils.LogStatus("InitOCR: begin proposal")
-	err = t.gauntlet.ExecCommand(
+	err := t.gauntlet.ExecCommand(
 		"ocr2:begin_proposal",
 		t.gauntlet.Flag("network", t.network),
 		t.Account[OCR2],
@@ -324,31 +327,6 @@ func (t GauntlerDeployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		return err
 	}
 
-	offchainConfig := common.OffchainConfigDetails{
-		DeltaProgressNanoseconds: 2 * time.Second,        // pacemaker (timeout rotating leaders, can't be too short)
-		DeltaResendNanoseconds:   5 * time.Second,        // resending epoch (help nodes rejoin system)
-		DeltaRoundNanoseconds:    1 * time.Second,        // round time (polling data source)
-		DeltaGraceNanoseconds:    400 * time.Millisecond, // timeout for waiting observations beyond minimum
-		DeltaStageNanoseconds:    5 * time.Second,        // transmission schedule (just for calling transmit)
-		RMax:                     3,                      // max rounds prior to rotating leader (longer could be more reliable with good leader)
-		S:                        S,
-		OffchainPublicKeys:       offChainPublicKeys,
-		PeerIDs:                  peerIDs,
-		ReportingPluginConfig: common.ReportingPluginConfig{
-			AlphaReportInfinite: false,
-			AlphaReportPpb:      uint64(0), // always send report
-			AlphaAcceptInfinite: false,
-			AlphaAcceptPpb:      uint64(0),       // accept all reports (if deviation matches number)
-			DeltaCNanoseconds:   0 * time.Second, // heartbeat
-		},
-		MaxDurationQueryNanoseconds:                        0 * time.Millisecond,
-		MaxDurationObservationNanoseconds:                  300 * time.Millisecond,
-		MaxDurationReportNanoseconds:                       300 * time.Millisecond,
-		MaxDurationShouldAcceptFinalizedReportNanoseconds:  1 * time.Second,
-		MaxDurationShouldTransmitAcceptedReportNanoseconds: 1 * time.Second,
-		ConfigPublicKeys:                                   configPublicKeys,
-	}
-
 	jsonInput, err = json.Marshal(
 		common.ProposeOffchainConfigDetails{
 			ID:                    id,
@@ -369,6 +347,21 @@ func (t GauntlerDeployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	if status.Check(err) != nil {
 		return err
 	}
+
+	report, err = t.gauntlet.ReadCommandReport()
+	if err != nil {
+		return err
+	}
+	if err == nil && len(report.Data) == 0 {
+		err = errors.New("propose offchain config produced no logs")
+	}
+
+	if status.Check(err) != nil {
+		return err
+	}
+
+	fmt.Println(report.Data)
+	var secret string = report.Data["secret"]
 
 	status = utils.LogStatus("InitOCR: finalize proposal")
 	err = t.gauntlet.ExecCommand(
@@ -400,6 +393,7 @@ func (t GauntlerDeployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	input := common.AcceptProposalDetails{
 		ID:     id,
 		Digest: digest,
+		Secret: secret,
 	}
 	jsonInput, err = json.Marshal(input)
 	if err != nil {
