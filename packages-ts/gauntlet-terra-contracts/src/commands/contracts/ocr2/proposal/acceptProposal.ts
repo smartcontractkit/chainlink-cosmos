@@ -43,8 +43,8 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   }
 }
 
-const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
-  const { proposalId, randomSecret, offchainConfig: offchainLocalConfig } = context.input
+const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inputContext) => async () => {
+  const { proposalId, randomSecret, offchainConfig: offchainLocalConfig } = inputContext.input
 
   const { offchainConfig } = await serializeOffchainConfig(offchainLocalConfig, process.env.SECRET!, randomSecret)
   const localConfig = offchainConfig.toString('base64')

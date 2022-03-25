@@ -10,6 +10,7 @@ import WithdrawPayment from './withdrawPayment'
 import ProposalCommands from './proposal'
 import { makeTransferOwnershipCommand, makeAcceptOwnershipCommand } from '../ownership'
 import { CONTRACT_LIST } from '../../../lib/contracts'
+import WithdrawFunds from './withdrawFunds'
 
 export default [
   SetupFlow,
@@ -21,6 +22,7 @@ export default [
   WithdrawPayment,
   Inspect,
   Responses,
+  WithdrawFunds,
   ...ProposalCommands,
   makeTransferOwnershipCommand(CONTRACT_LIST.OCR_2),
   makeAcceptOwnershipCommand(CONTRACT_LIST.OCR_2),

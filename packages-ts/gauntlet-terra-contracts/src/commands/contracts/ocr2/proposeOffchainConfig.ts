@@ -117,7 +117,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   }
 }
 
-const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
+const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inputContext) => async () => {
   // Config in contract
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
   const offchainConfigInContract = event?.offchain_config
@@ -126,7 +126,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, { f: event?.f })
 
   // Proposed config
-  const proposedOffchainConfig = deserializeConfig(Buffer.from(context.contractInput.offchain_config, 'base64'))
+  const proposedOffchainConfig = deserializeConfig(Buffer.from(inputContext.contractInput.offchain_config, 'base64'))
   const proposedConfig = prepareOffchainConfigForDiff(proposedOffchainConfig)
 
   logger.info('Review the proposed changes below: green - added, red - deleted.')
@@ -134,7 +134,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
 
   logger.info(
     `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
-    SECRET: ${context.input.randomSecret}`,
+    SECRET: ${inputContext.input.randomSecret}`,
   )
 
   await prompt('Continue?')
@@ -154,14 +154,14 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   }
 }
 
-const afterExecute: AfterExecute<CommandInput, ContractInput> = (context) => async (result): Promise<any> => {
+const afterExecute: AfterExecute<CommandInput, ContractInput> = (_, inputContext) => async (result): Promise<any> => {
   logger.success(`Tx succeded at ${result.responses[0].tx.hash}`)
   logger.info(
     `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
-    SECRET: ${context.input.randomSecret}`,
+    SECRET: ${inputContext.input.randomSecret}`,
   )
   return {
-    secret: context.input.randomSecret,
+    secret: inputContext.input.randomSecret,
   }
 }
 
