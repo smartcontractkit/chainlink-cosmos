@@ -68,7 +68,10 @@ var (
 	// Confirmed means we're able to retrieve the txhash of the tx which broadcasted the msg.
 	// Valid next states: none, terminal state
 	Confirmed State = "confirmed"
-	// Errored means the msg reverted in simulation OR the tx containing the message timed out waiting to be confirmed
+	// Errored means the msg:
+	//  - reverted in simulation
+	//  - the tx containing the message timed out waiting to be confirmed
+	//  - the msg was cancelled
 	// TODO: when we add gas bumping, we'll address that timeout case
 	// Valid next states, none, terminal state
 	Errored State = "errored"
