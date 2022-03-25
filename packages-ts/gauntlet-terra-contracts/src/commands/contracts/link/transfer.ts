@@ -1,8 +1,8 @@
-import { BN, logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { BN, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { logger } from '@chainlink/gauntlet-terra'
 import { CATEGORIES, TOKEN_DECIMALS } from '../../../lib/constants'
 import { AbstractInstruction, ExecutionContext, instructionToCommand } from '../../abstract/executionWrapper'
 import { AccAddress } from '@terra-money/terra.js'
-import { addressBook } from '@chainlink/gauntlet-terra'
 
 type CommandInput = {
   to: string
@@ -39,7 +39,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
 
 const beforeExecute = (context: ExecutionContext<CommandInput, ContractInput>) => async (): Promise<void> => {
   logger.info(
-    `Transferring ${context.contractInput.amount} (${context.input.amount}) Tokens to ${addressBook.format(
+    `Transferring ${context.contractInput.amount} (${context.input.amount}) Tokens to ${logger.styleAddress(
       context.contractInput.recipient,
     )}`,
   )

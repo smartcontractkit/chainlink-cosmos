@@ -1,7 +1,7 @@
 import { BN, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress, MsgSend } from '@terra-money/terra.js'
 import { CATEGORIES, ULUNA_DECIMALS } from '../../lib/constants'
-import { TerraCommand, TransactionResponse, addressBook } from '@chainlink/gauntlet-terra'
+import { TerraCommand, TransactionResponse, logger } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 
 type CommandInput = {
@@ -29,7 +29,7 @@ export default class TransferLuna extends TerraCommand {
   }
 
   beforeExecute = async () => {
-    await prompt(`Continue sending ${this.input.amount} uLUNA to ${addressBook.format(this.input.destination)}?`)
+    await prompt(`Continue sending ${this.input.amount} uLUNA to ${logger.styleAddress(this.input.destination)}?`)
   }
 
   makeInput = (flags, _) => {

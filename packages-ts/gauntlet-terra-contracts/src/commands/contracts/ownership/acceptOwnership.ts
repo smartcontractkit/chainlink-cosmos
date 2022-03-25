@@ -1,8 +1,8 @@
 import { AbstractInstruction, BeforeExecute } from '../../abstract/executionWrapper'
-import { RDD, addressBook } from '@chainlink/gauntlet-terra'
+import { RDD, logger } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'
-import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress } from '@terra-money/terra.js'
 
 type CommandInput = {}
@@ -17,9 +17,9 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const currentOwner: AccAddress = await context.provider.wasm.contractQuery(context.contract, 'owner' as any)
   const contract = RDD.getContractFromRDD(RDD.getRDD(context.flags.rdd), context.contract)
   logger.info(`Accepting Ownership Transfer of contract of type "${contract.type}":
-    - Contract: ${contract.address} ${contract.description ? '- ' + contract.description : ''}
-    - Current Owner: ${addressBook.format(currentOwner)}
-    - Next Owner (Current signer): ${addressBook.format(signer)}
+    - Contract: ${logger.styleAddress(contract.address)} ${contract.description ? '- ' + contract.description : ''}
+    - Current Owner: ${logger.styleAddress(currentOwner)}
+    - Next Owner (Current signer): ${logger.styleAddress(signer)}
   `)
   await prompt('Continue?')
 }

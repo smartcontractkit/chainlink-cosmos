@@ -1,14 +1,15 @@
-import { TerraCommand, addressBook } from '@chainlink/gauntlet-terra'
+import { TerraCommand, AddressBook, logger } from '@chainlink/gauntlet-terra'
 import { Middleware, Next } from '@chainlink/gauntlet-core'
 import { CONTRACT_LIST } from './contracts'
 import { AccAddress } from '@terra-money/terra.js'
 
-// Loads known addresses for deployed addressBook from environment
+// Loads known addresses for deployed contracts from environment
 // and local operator's wallet from previous middleware in same
-// TerraCommand. These are used by fmtAddress in utils.ts to
-// properly label addresses when displayed.
+// TerraCommand. These are used by logger.styleAddress() to properly
+// label addresses when displayed.
 export const withAddressBook: Middleware = (c: TerraCommand, next: Next) => {
-  addressBook.setOperator(c.wallet.key.accAddress)
+  c.addressBook = new AddressBook()
+  c.addressBook.setOperator(c.wallet.key.accAddress)
 
   const tryAddInstance = (id: CONTRACT_LIST, address: string | undefined, name?: string) => {
     if (!address) {
@@ -16,7 +17,7 @@ export const withAddressBook: Middleware = (c: TerraCommand, next: Next) => {
     } else if (!AccAddress.validate(address)) {
       throw new Error(`Read invalid contract address ${address} for ${id} contract from env`)
     } else {
-      addressBook.addInstance(id, address, name)
+      c.addressBook.addInstance(id, address, name)
     }
   }
 
@@ -26,6 +27,8 @@ export const withAddressBook: Middleware = (c: TerraCommand, next: Next) => {
   tryAddInstance(CONTRACT_LIST.ACCESS_CONTROLLER, process.env['REQUESTER_ACCESS_CONTROLLER'], 'requester_access')
   tryAddInstance(CONTRACT_LIST.CW4_GROUP, process.env['CW4_GROUP'])
   tryAddInstance(CONTRACT_LIST.MULTISIG, process.env['CW3_FLEX_MULTISIG'], 'multisig')
+
+  logger.withAddressBook(c.addressBook)
 
   return next()
 }
