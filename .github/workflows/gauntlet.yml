@@ -2,12 +2,10 @@ name: Gauntlet
 
 on:
   push:
-    branches:
-      - develop
-  pull_request:
 
 jobs:
-  build:
+  Gauntlet_Build:
+    name: Guantlet Build
     env:
       CI: true
     runs-on: ubuntu-latest
@@ -26,9 +24,10 @@ jobs:
           nix develop -c yarn install --frozen-lockfile
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - run: ${{ matrix.env }} nix develop -c yarn build
+      - run: nix develop -c yarn build
 
-  format:
+  Gauntlet_Format:
+    name: Gauntlet Format
     env:
       CI: true
     runs-on: ubuntu-latest
@@ -47,9 +46,10 @@ jobs:
           nix develop -c yarn install --frozen-lockfile
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - run: ${{ matrix.env }} nix develop -c yarn lint:format
+      - run: nix develop -c yarn lint:format
 
-  test:
+  Gauntlet_Run_Tests:
+    name: Gauntlet Run Tests
     env:
       CI: true
     runs-on: ubuntu-latest
@@ -68,4 +68,4 @@ jobs:
           nix develop -c yarn install --frozen-lockfile
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - run: ${{ matrix.env }} nix develop -c yarn test:ci
+      - run: nix develop -c yarn test:ci

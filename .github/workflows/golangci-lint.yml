@@ -3,14 +3,16 @@ name: golangci-lint
 on:
   push:
     branches:
-      - auto
-      - try
-      - rollup
+      - develop
+      - main
+    paths:
+      - '**.go'
   pull_request:
-
+    paths:
+      - '**.go'
 jobs:
-  golangci:
-    name: lint
+  Golang_Lint:
+    name: Golang Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

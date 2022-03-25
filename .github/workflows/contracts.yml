@@ -4,18 +4,16 @@ on:
   push:
     branches:
       - develop
+      - main
   pull_request:
 
 name: Contracts
 
 jobs:
 
-  test:
-    name: Test Suite
+  Contracts_Unit_Tests:
+    name: Contract Unit Testing
     runs-on: ubuntu-latest
-    # defaults:
-    #   run:
-    #     working-directory: ./contracts
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
@@ -42,12 +40,9 @@ jobs:
         env:
           RUSTFLAGS: "-C link-arg=-s"
 
-  lints:
-    name: Lints
+  Contracts_Lint:
+    name: Contracts Lint
     runs-on: ubuntu-latest
-    # defaults:
-    #   run:
-    #     working-directory: ./contracts
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2

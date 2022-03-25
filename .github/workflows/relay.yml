@@ -1,13 +1,11 @@
-name: relay
+name: Relay
 
 on:
   push:
-    branches:
-      - develop
-  pull_request:
 
 jobs:
-  test:
+  Relay_Run_Unit_Tests:
+    name: Relay Run Unit Tests
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgres://postgres@localhost:5432/postgres?sslmode=disable
