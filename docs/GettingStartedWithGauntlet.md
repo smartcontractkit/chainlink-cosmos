@@ -18,9 +18,9 @@
 git clone https://github.com/smartcontractkit/chainlink-terra.git
 ```
 
-### 2. Set up `nvm` and install dependencies
+### 2. Install dependencies
 
-Install [Node Version Manager](https://github.com/nvm-sh/nvm) to help you manage multiple Node.js versions if you haven't already. Then, run the following command.
+Run the following command.
 
 ```bash
 make install
