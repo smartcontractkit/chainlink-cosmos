@@ -73,6 +73,15 @@ export class TerraLogger {
   }
 }
 
+// TODO:
+// Ideally, the instantiation of all objects should be in terra-gauntlet-contracts,
+//  but moving it there would not allow other packages such as gauntlet-terra-cwplus
+//  to import it directly to use for stylizing addresses... which is important for
+//  multisig-wrapped commands.  We should look for a clean way to be able to call
+//  logger.styleAddress() from gauntlet-terra-cwplus without using "import { logger }"
+//  from there. (Presumably, it will need to call styleAddress() on some other object
+//  that's injected to it from terra-gauntlet-contracts, which will call the instantiated
+//  TerraLogger)
 const terraLogger = new TerraLogger()
 
 export default {
