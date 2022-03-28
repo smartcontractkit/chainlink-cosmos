@@ -168,6 +168,30 @@ func DefaultOffChainConfigParamsFromNodes(nodes []client.Chainlink) (contracts.O
 	}, nkb, nil
 }
 
+func CreateTerraChainAndNode(nodes []client.Chainlink) error {
+	relayConfig := map[string]string{
+		"nodeType":      "terra",
+		"tendermintURL": "http://terrad:26657",
+		"fcdURL":        "http://fcd-api:3060",
+		"chainID":       "localterra",
+	}
+	for _, n := range nodes {
+		_, err := n.CreateTerraChain(&client.TerraChainAttributes{ChainID: "localterra"})
+		if err != nil {
+			return err
+		}
+		if _, err = n.CreateTerraNode(&client.TerraNodeAttributes{
+			Name:          "terra",
+			TerraChainID:  relayConfig["chainID"],
+			TendermintURL: relayConfig["tendermintURL"],
+			FCDURL:        relayConfig["fcdURL"],
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func CreateBridges(contracts []string, nodes []client.Chainlink, mock *client.MockserverClient) (map[string][]BridgeInfo, error) {
 	relayConfig := map[string]string{
 		"nodeType":      "terra",
@@ -200,18 +224,6 @@ func CreateBridges(contracts []string, nodes []client.Chainlink, mock *client.Mo
 			juelsSource := client.ObservationSourceSpecBridge(juelsBridge)
 			err = n.CreateBridge(&juelsBridge)
 			if err != nil {
-				return nil, err
-			}
-			_, err = n.CreateTerraChain(&client.TerraChainAttributes{ChainID: "localterra"})
-			if err != nil {
-				return nil, err
-			}
-			if _, err = n.CreateTerraNode(&client.TerraNodeAttributes{
-				Name:          "terra",
-				TerraChainID:  relayConfig["chainID"],
-				TendermintURL: relayConfig["tendermintURL"],
-				FCDURL:        relayConfig["fcdURL"],
-			}); err != nil {
 				return nil, err
 			}
 			biMap[contract] = append(biMap[contract], BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: relayConfig})

@@ -232,6 +232,8 @@ func (m *OCRv2State) CreateJobs() {
 	for _, contract := range m.Contracts {
 		ocr2Contracts = append(ocr2Contracts, contract.OCR2.Address())
 	}
+	err = common.CreateTerraChainAndNode(m.Nodes)
+	Expect(err).ShouldNot(HaveOccurred())
 	biMap, err := common.CreateBridges(ocr2Contracts, m.Nodes, m.MockServer)
 	Expect(err).ShouldNot(HaveOccurred())
 	g := errgroup.Group{}
