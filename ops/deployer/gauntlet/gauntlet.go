@@ -3,7 +3,6 @@ package gauntlet
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -77,7 +76,7 @@ func (t *GauntlerDeployer) Load() error {
 	)
 
 	if err != nil {
-		return errors.New("Uploading contracts failed")
+		return fmt.Errorf("Uploading contracts failed %s", err.Error())
 	}
 	return msg.Check(nil)
 }
@@ -89,16 +88,16 @@ func (t *GauntlerDeployer) DeployLINK() error {
 		t.gauntlet.Flag("network", t.network),
 	)
 	if err != nil {
-		return errors.New("LINK contract deployment failed")
+		return fmt.Errorf("LINK contract deployment failed: %s", err.Error())
 	}
 
 	report, err := t.gauntlet.ReadCommandReport()
 	if err != nil {
-		return errors.New("report not available")
+		return fmt.Errorf("No command report available: %s", err.Error())
 	}
 
 	if err == nil && len(report.Data) == 0 {
-		err = errors.New("deploy link produced no logs")
+		err = fmt.Errorf("deploy link produced no logs: %s", err.Error())
 	}
 
 	linkAddress := report.Responses[0].Contract
@@ -117,7 +116,7 @@ func (t *GauntlerDeployer) DeployOCR() error {
 		t.gauntlet.Flag("network", t.network),
 	)
 	if err != nil {
-		return errors.New("Request AC initialization failed")
+		return fmt.Errorf("Request AC initialization failed: %s", err.Error())
 	}
 	report, err := t.gauntlet.ReadCommandReport()
 	if err != nil {
@@ -131,7 +130,7 @@ func (t *GauntlerDeployer) DeployOCR() error {
 		t.gauntlet.Flag("network", t.network),
 	)
 	if err != nil {
-		return errors.New("Billing AC initialization failed")
+		return fmt.Errorf("Billing AC initialization failed: %s", err.Error())
 	}
 	report, err = t.gauntlet.ReadCommandReport()
 	if err != nil {
@@ -161,7 +160,7 @@ func (t *GauntlerDeployer) DeployOCR() error {
 		t.gauntlet.Flag("input", string(jsonInput)),
 	)
 	if err != nil {
-		return errors.New("feed initialization failed")
+		return fmt.Errorf("feed initialization failed: %s", err.Error())
 	}
 
 	report, err = t.gauntlet.ReadCommandReport()
@@ -186,7 +185,7 @@ func (t GauntlerDeployer) TransferLINK() error {
 		t.Account[LINK],
 	)
 	if err != nil {
-		return errors.New("LINK transfer failed")
+		return fmt.Errorf("LINK transfer failed: %s", err.Error())
 	}
 
 	return msg.Check(err)
@@ -274,7 +273,7 @@ func (t GauntlerDeployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		return err
 	}
 	if err == nil && len(report.Data) == 0 {
-		err = errors.New("begin proposal produced no logs")
+		err = fmt.Errorf("begin proposal produced no logs: %s", err.Error())
 	}
 
 	if status.Check(err) != nil {
@@ -353,7 +352,7 @@ func (t GauntlerDeployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		return err
 	}
 	if err == nil && len(report.Data) == 0 {
-		err = errors.New("propose offchain config produced no logs")
+		err = fmt.Errorf("propose offchain config produced no logs: %s", err.Error())
 	}
 
 	if status.Check(err) != nil {
@@ -380,7 +379,7 @@ func (t GauntlerDeployer) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		return err
 	}
 	if err == nil && len(report.Data) == 0 {
-		err = errors.New("finalize proposal produced no logs")
+		err = fmt.Errorf("finalize proposal produced no logs: %s", err.Error())
 	}
 
 	if status.Check(err) != nil {
