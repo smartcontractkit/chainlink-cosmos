@@ -176,7 +176,10 @@ func CreateTerraChainAndNode(nodes []client.Chainlink) error {
 		"chainID":       "localterra",
 	}
 	for _, n := range nodes {
-		_, err := n.CreateTerraChain(&client.TerraChainAttributes{ChainID: "localterra"})
+		_, err := n.CreateTerraChain(&client.TerraChainAttributes{
+			ChainID: "localterra",
+			FCDURL:  relayConfig["fcdURL"],
+		})
 		if err != nil {
 			return err
 		}
@@ -184,7 +187,6 @@ func CreateTerraChainAndNode(nodes []client.Chainlink) error {
 			Name:          "terra",
 			TerraChainID:  relayConfig["chainID"],
 			TendermintURL: relayConfig["tendermintURL"],
-			FCDURL:        relayConfig["fcdURL"],
 		}); err != nil {
 			return err
 		}
