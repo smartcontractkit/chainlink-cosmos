@@ -145,4 +145,23 @@ Note that *%7B%22round_data%22:%7B%22round_id%22:4294968601%7D%7D* is the URL en
 
 ### Queries Via Gauntlet
 
+You can also use [Gauntlet Terra](../packages-ts/gauntlet-terra-contracts/) to query smart contracts. To query a smart contract using Gauntlet, run the following command:
+
+```bash
+yarn gauntlet tooling:query --network=[NETWORK_NAME] --msg=[QUERY] [CONTRACT_ADDRESS]
+yarn gauntlet tooling:query --network=testnet-bombay-internal --msg='{"owed_payment":{"transmitter": "terra1myd0kxk3fqaz9zl47gm2uvxjm0zn3lczrtvljz"}}' terra14mf0qcjpduhcs8p6289pjnwn8skhgk5aus3yxg
+```
+
+The response of the above command can be found below.
+
+```bash
+yarn run v1.22.17
+$ yarn build && node ./packages-ts/gauntlet-terra-contracts/dist/index.js query --network=testnet-bombay-internal '--msg={"owed_payment":{"transmitter": "terra1myd0kxk3fqaz9zl47gm2uvxjm0zn3lczrtvljz"}}' terra14mf0qcjpduhcs8p6289pjnwn8skhgk5aus3yxg
+$ yarn clean && tsc -b ./tsconfig.json
+$ tsc -b --clean ./tsconfig.json
+🧤  gauntlet 0.0.7
+ℹ️   Query finished with result: "3515090726000000000"
+✨  Done in 9.59s.
+```
+
 ### Gauntlet Inspect
