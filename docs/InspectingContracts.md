@@ -145,7 +145,7 @@ Note that *%7B%22round_data%22:%7B%22round_id%22:4294968601%7D%7D* is the URL en
 
 ### Queries Via Gauntlet
 
-You can also use [Gauntlet Terra](../packages-ts/gauntlet-terra-contracts/) to query smart contracts. To query a smart contract using Gauntlet, clone the [Chainlink-Terra](https://github.com/smartcontractkit/chainlink-terra) repository and run the following command.
+You can also use [Gauntlet Terra](../packages-ts/gauntlet-terra-contracts/) to query smart contracts. To query a smart contract using Gauntlet, run the following command:
 
 ```bash
 yarn gauntlet tooling:query --network=[NETWORK_NAME] --msg=[QUERY] [CONTRACT_ADDRESS]
