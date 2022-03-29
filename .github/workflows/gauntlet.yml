@@ -1,10 +1,10 @@
-name: Gauntlet
+name: gauntlet
 
 on:
   push:
 
 jobs:
-  Gauntlet_Build:
+  gauntlet_build:
     name: Guantlet Build
     env:
       CI: true
@@ -26,7 +26,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run: nix develop -c yarn build
 
-  Gauntlet_Format:
+  gauntlet_format:
     name: Gauntlet Format
     env:
       CI: true
@@ -48,7 +48,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run: nix develop -c yarn lint:format
 
-  Gauntlet_Run_Tests:
+  gauntlet_run_tests:
     name: Gauntlet Run Tests
     env:
       CI: true

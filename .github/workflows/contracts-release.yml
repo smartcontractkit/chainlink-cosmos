@@ -1,4 +1,4 @@
-name: Release Artifacts
+name: release_contracts
 on:
   push:
     tags:
@@ -6,7 +6,7 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+-rc*" # Push events to matching v*, i.e. v1.0-rc1, v20.15.10-rc5
   
 jobs:
-  release-contracts:
+  release_contracts:
     name: Release Contracts
     runs-on: ubuntu-latest
     steps:

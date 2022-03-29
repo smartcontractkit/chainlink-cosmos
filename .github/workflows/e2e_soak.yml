@@ -1,4 +1,4 @@
-name: E2E Soak Tests
+name: e2e_soak_tests
 on:
   schedule:
     - cron: '0 */3 * * *'
@@ -9,8 +9,9 @@ on:
         required: true
         default: develop
         type: string
+        
 jobs:
-  E2E_Soak_Test_Build:
+  e2e_soak_test_build:
     name: E2E Soak Test Build
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +37,7 @@ jobs:
         with:
           name: artifacts
           path: artifacts
-  E2E_Soak_Test_Build_Custom_Chainlink_Image:
+  e2e_soak_test_build_custom_chainlink_image:
     name: Build Soak Test Custom CL Image
     # target branch can't be set as var, it's from where we getting pipeline code
     uses: smartcontractkit/chainlink/.github/workflows/build-custom.yml@develop
@@ -52,10 +53,10 @@ jobs:
       AWS_REGION: ${{ secrets.QA_AWS_REGION }}
       AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
       QA_KUBECONFIG: ${{ secrets.QA_KUBECONFIG }}
-  E2E_Run_Soak_Tests:
+  e2e_run_soak_tests:
     name: E2E Run Soak Tests
     runs-on: ubuntu-latest
-    needs: [E2E_Soak_Test_Build, E2E_Soak_Test_Build_Custom_Chainlink_Image]
+    needs: [e2e_soak_test_build, e2e_soak_test_build_custom_chainlink_image]
     env:
       CGO_ENABLED: 1
     steps:
