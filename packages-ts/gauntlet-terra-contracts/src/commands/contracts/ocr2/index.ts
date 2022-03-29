@@ -8,6 +8,7 @@ import Inspect from './inspection/inspect'
 import Responses from './inspection/responses'
 import WithdrawPayment from './withdrawPayment'
 import ProposalCommands from './proposal'
+import CloseCommands from './close'
 import { makeTransferOwnershipCommand, makeAcceptOwnershipCommand } from '../ownership'
 import { CONTRACT_LIST } from '../../../lib/contracts'
 import WithdrawFunds from './withdrawFunds'
@@ -24,6 +25,7 @@ export default [
   Responses,
   WithdrawFunds,
   ...ProposalCommands,
+  ...CloseCommands,
   makeTransferOwnershipCommand(CONTRACT_LIST.OCR_2),
   makeAcceptOwnershipCommand(CONTRACT_LIST.OCR_2),
 ]

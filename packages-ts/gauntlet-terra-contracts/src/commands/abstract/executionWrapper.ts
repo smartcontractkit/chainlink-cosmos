@@ -33,6 +33,7 @@ export interface AbstractInstruction<Input, ContractInput> {
     category: string
     contract: string
     function: string
+    subInstruction?: string
   }
   makeInput: (flags: any, args: string[]) => Promise<Input>
   validateInput: (input: Input) => boolean
@@ -52,11 +53,12 @@ const defaultBeforeExecute = <Input, ContractInput>(
 
 export const instructionToCommand = <Input, ContractInput>(instruction: AbstractInstruction<Input, ContractInput>) => {
   const id = `${instruction.instruction.contract}:${instruction.instruction.function}`
+  const commandId = instruction.instruction.subInstruction ? `${id}:${instruction.instruction.subInstruction}` : id
   const category = `${instruction.instruction.category}`
   const examples = instruction.examples || []
 
   return class Command extends TerraCommand {
-    static id = id
+    static id = commandId
     static category = category
     static examples = examples
 

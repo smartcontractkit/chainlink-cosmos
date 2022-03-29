@@ -14,7 +14,7 @@ type CommandInput = {
   randomSecret?: string
 }
 
-type ContractInput = {
+export type ContractInput = {
   id: string
   offchain_config_version: number
   offchain_config: string

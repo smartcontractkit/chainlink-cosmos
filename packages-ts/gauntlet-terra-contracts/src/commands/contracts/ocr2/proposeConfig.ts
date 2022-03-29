@@ -14,7 +14,7 @@ type CommandInput = {
   onchainConfig: OnchainConfig
 }
 
-type ContractInput = {
+export type ContractInput = {
   f: number
   id: number
   onchain_config: string
