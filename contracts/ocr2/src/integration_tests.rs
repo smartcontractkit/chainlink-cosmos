@@ -44,7 +44,8 @@ pub fn contract_access_controller() -> Box<dyn Contract<Empty>> {
         access_controller::contract::execute,
         access_controller::contract::instantiate,
         access_controller::contract::query,
-    );
+    )
+    .with_migrate(access_controller::contract::migrate);
     Box::new(contract)
 }
 
@@ -72,6 +73,7 @@ struct Env {
     owner: Addr,
     link_token_id: u64,
     ocr2_id: u64,
+    access_controller_id: u64,
     billing_access_controller_addr: Addr,
     requester_access_controller_addr: Addr,
     link_token_addr: Addr,
@@ -356,6 +358,7 @@ fn setup() -> Env {
         owner,
         link_token_id,
         ocr2_id,
+        access_controller_id,
         billing_access_controller_addr,
         requester_access_controller_addr,
         link_token_addr,
@@ -374,8 +377,23 @@ fn migrate() {
 
     // Migrate should succeed
     env.router
-        .migrate_contract(env.owner, env.ocr2_addr.clone(), &migrate_msg, env.ocr2_id)
+        .migrate_contract(
+            env.owner.clone(),
+            env.ocr2_addr.clone(),
+            &migrate_msg,
+            env.ocr2_id,
+        )
         .unwrap();
+
+    // Migrate should fail if the contract type doesn't match
+    env.router
+        .migrate_contract(
+            env.owner,
+            env.ocr2_addr.clone(),
+            &migrate_msg,
+            env.access_controller_id,
+        )
+        .unwrap_err();
 }
 
 #[test]
