@@ -1,8 +1,8 @@
 import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
-import { getLatestOCRConfigEvent, printDiff } from '../../../lib/inspection'
+import { getLatestOCRConfigEvent } from '../../../lib/inspection'
 import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../abstract/executionWrapper'
-import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { logger, prompt, diff } from '@chainlink/gauntlet-core/dist/utils'
 
 type OnchainConfig = any
 type CommandInput = {
@@ -89,7 +89,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   }
 
   logger.info('Review the proposed changes below: green - added, red - deleted.')
-  printDiff(contractConfig, proposedConfig)
+  diff.printDiff(contractConfig, proposedConfig)
   await prompt('Continue?')
 }
 

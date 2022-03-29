@@ -1,11 +1,11 @@
 import { Result } from '@chainlink/gauntlet-core'
-import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { logger, prompt, diff } from '@chainlink/gauntlet-core/dist/utils'
 import { TransactionResponse, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
 import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../../abstract/executionWrapper'
 import { serializeOffchainConfig, deserializeConfig } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig, prepareOffchainConfigForDiff } from '../proposeOffchainConfig'
-import { getLatestOCRConfigEvent, longsInObjToNumbers, printDiff } from '../../../../lib/inspection'
+import { getLatestOCRConfigEvent } from '../../../../lib/inspection'
 import assert from 'assert'
 
 type CommandInput = {
@@ -74,7 +74,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, { f: event?.f[0] })
 
   logger.info('Review the configuration difference from contract and proposal: green - added, red - deleted.')
-  printDiff(configInContract, configInProposal)
+  diff.printDiff(configInContract, configInProposal)
   await prompt('Continue?')
 }
 

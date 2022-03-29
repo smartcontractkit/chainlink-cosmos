@@ -164,11 +164,11 @@ func NewClient(chainID string,
 					ID json.RawMessage `json:"id"`
 				}{}
 				if err := json.Unmarshal(b, &jsonRPC); err != nil {
-					lggr.Errorf("Response is not a JSON object: %s: %v", string(b), err)
+					lggr.Warnf("Response is not a JSON object: %s: %v", string(b), err)
 					return
 				}
 				if len(jsonRPC.ID) == 0 || string(jsonRPC.ID) == "null" {
-					lggr.Errorf("Response is missing JSONRPC ID: %s", string(b))
+					lggr.Warnf("Response is missing JSONRPC ID: %s", string(b))
 					return
 				}
 			},
