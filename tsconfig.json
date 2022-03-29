@@ -11,6 +11,9 @@
     },
     {
       "path": "./packages-ts/gauntlet-terra-contracts"
+    },
+    {
+      "path": "./packages-ts/terra-sdk"
     }
   ]  
 }

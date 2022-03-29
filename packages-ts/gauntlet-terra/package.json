@@ -1,6 +1,11 @@
 {
   "name": "@chainlink/gauntlet-terra",
   "version": "0.0.1",
+  "repository": "https://github.com/smartcontractkit/chainlink-terra",
+  "license": "MIT",
+  "engines": {
+    "node": ">= 14"
+  },
   "description": "Gauntlet Terra",
   "keywords": [
     "typescript",
