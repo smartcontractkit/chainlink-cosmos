@@ -1,6 +1,8 @@
 package smoke_test
 
 import (
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -13,16 +15,16 @@ var _ = Describe("Terra OCRv2 @ocr2", func() {
 	var state *tc.OCRv2State
 
 	BeforeEach(func() {
-		state = &tc.OCRv2State{}
+		state = tc.NewOCRv2State(1)
 		By("Deploying the cluster", func() {
-			state.DeployCluster(5, false)
+			state.DeployCluster(5, common.ChainBlockTime, false, utils.ContractsDir)
 			state.SetAllAdapterResponsesToTheSameValue(2)
 		})
 	})
 
 	Describe("with Terra OCR2", func() {
 		It("performs OCR2 round", func() {
-			state.ValidateRoundsAfter(time.Now(), 10, false)
+			state.ValidateAllRounds(time.Now(), tc.NewRoundCheckTimeout, 10, false)
 		})
 	})
 
@@ -33,3 +35,4 @@ var _ = Describe("Terra OCRv2 @ocr2", func() {
 		})
 	})
 })
+

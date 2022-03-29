@@ -315,7 +315,7 @@ func (gd *GauntletDeployer) ProposeOffchainConfig(ocr, proposalId, rddPath strin
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to propose offchain config")
 	offchainProposalReport, err := LoadReportJson(reportName + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
-	return offchainProposalReport["data"].(map[string]interface{})["randomSecret"].(string)
+	return offchainProposalReport["data"].(map[string]interface{})["secret"].(string)
 }
 
 // FinalizeProposal finalizes the proposal

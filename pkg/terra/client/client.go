@@ -35,6 +35,8 @@ import (
 	"github.com/smartcontractkit/terra.go/tx"
 )
 
+const httpResponseLimit = 10_000_000 // 10MB
+
 var encodingConfig = params.MakeEncodingConfig()
 
 func init() {
@@ -130,8 +132,9 @@ func (rt *responseRoundTripper) RoundTrip(r *http.Request) (resp *http.Response,
 	if err != nil {
 		return
 	}
+	source := http.MaxBytesReader(nil, resp.Body, httpResponseLimit)
 	b, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	source.Close()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read response")
 	}
@@ -161,11 +164,11 @@ func NewClient(chainID string,
 					ID json.RawMessage `json:"id"`
 				}{}
 				if err := json.Unmarshal(b, &jsonRPC); err != nil {
-					lggr.Errorf("Response is not a JSON object: %s: %v", string(b), err)
+					lggr.Warnf("Response is not a JSON object: %s: %v", string(b), err)
 					return
 				}
 				if len(jsonRPC.ID) == 0 || string(jsonRPC.ID) == "null" {
-					lggr.Errorf("Response is missing JSONRPC ID: %s", string(b))
+					lggr.Warnf("Response is missing JSONRPC ID: %s", string(b))
 					return
 				}
 			},

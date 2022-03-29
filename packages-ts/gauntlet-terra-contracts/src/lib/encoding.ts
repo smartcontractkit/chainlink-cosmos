@@ -54,7 +54,7 @@ export const generateSecretWords = async (): Promise<string> => {
 }
 
 export const deserializeConfig = (buffer: Buffer): OffchainConfig => {
-  const proto = new Proto.Protobuf({ descriptor: descriptor })
+  const proto = new Proto.Protobuf({ descriptor })
   const offchain = proto.decode('offchainreporting2_config.OffchainConfigProto', buffer)
   const reportingPluginConfig = proto.decode(
     'offchainreporting2_config.ReportingPluginConfig',

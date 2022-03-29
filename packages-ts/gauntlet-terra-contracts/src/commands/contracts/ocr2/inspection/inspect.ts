@@ -1,11 +1,11 @@
-import { BN, inspection, logger } from '@chainlink/gauntlet-core/dist/utils'
+import { BN, inspection, logger, longs } from '@chainlink/gauntlet-core/dist/utils'
 import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { CATEGORIES, TOKEN_UNIT } from '../../../../lib/constants'
 import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
 import { deserializeConfig } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
-import { toComparableNumber, getLatestOCRConfigEvent } from '../../../../lib/inspection'
+import { getLatestOCRConfigEvent } from '../../../../lib/inspection'
 import { LCDClient } from '@terra-money/terra.js'
 
 // Command input and expected info is the same here
@@ -149,8 +149,8 @@ const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedIn
         'Offchain Config "peerIds"',
       ),
       inspection.makeInspection(
-        toComparableNumber(onchainData.offchainConfig.rMax),
-        toComparableNumber(expected.offchainConfig.rMax),
+        longs.toComparableNumber(onchainData.offchainConfig.rMax),
+        longs.toComparableNumber(expected.offchainConfig.rMax),
         'Offchain Config "rMax"',
       ),
       inspection.makeInspection(
@@ -169,18 +169,18 @@ const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedIn
         'Offchain Config "reportingPluginConfig.alphaAcceptInfinite"',
       ),
       inspection.makeInspection(
-        toComparableNumber(onchainData.offchainConfig.reportingPluginConfig.alphaReportPpb),
-        toComparableNumber(expected.offchainConfig.reportingPluginConfig.alphaReportPpb),
+        longs.toComparableNumber(onchainData.offchainConfig.reportingPluginConfig.alphaReportPpb),
+        longs.toComparableNumber(expected.offchainConfig.reportingPluginConfig.alphaReportPpb),
         `Offchain Config "reportingPluginConfig.alphaReportPpb"`,
       ),
       inspection.makeInspection(
-        toComparableNumber(onchainData.offchainConfig.reportingPluginConfig.alphaAcceptPpb),
-        toComparableNumber(expected.offchainConfig.reportingPluginConfig.alphaAcceptPpb),
+        longs.toComparableNumber(onchainData.offchainConfig.reportingPluginConfig.alphaAcceptPpb),
+        longs.toComparableNumber(expected.offchainConfig.reportingPluginConfig.alphaAcceptPpb),
         `Offchain Config "reportingPluginConfig.alphaAcceptPpb"`,
       ),
       inspection.makeInspection(
-        toComparableNumber(onchainData.offchainConfig.reportingPluginConfig.deltaCNanoseconds),
-        toComparableNumber(expected.offchainConfig.reportingPluginConfig.deltaCNanoseconds),
+        longs.toComparableNumber(onchainData.offchainConfig.reportingPluginConfig.deltaCNanoseconds),
+        longs.toComparableNumber(expected.offchainConfig.reportingPluginConfig.deltaCNanoseconds),
         `Offchain Config "reportingPluginConfig.deltaCNanoseconds"`,
       ),
     ]
@@ -198,8 +198,8 @@ const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedIn
       'maxDurationShouldTransmitAcceptedReportNanoseconds',
     ].map((prop) =>
       inspection.makeInspection(
-        toComparableNumber(onchainData.offchainConfig[prop]),
-        toComparableNumber(expected.offchainConfig[prop]),
+        longs.toComparableNumber(onchainData.offchainConfig[prop]),
+        longs.toComparableNumber(expected.offchainConfig[prop]),
         `Offchain Config "${prop}"`,
       ),
     )
@@ -219,7 +219,7 @@ const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedIn
     - Total LINK Owed: ${onchainData.totalOwed}
   `)
 
-  const owedDiff = new BN(onchainData.linkAvailable).sub(new BN(onchainData.totalOwed)).div(new BN(TOKEN_UNIT))
+  const owedDiff = new BN(onchainData.linkAvailable!).sub(new BN(onchainData.totalOwed!)).div(new BN(TOKEN_UNIT))
   if (owedDiff.lt(new BN(0))) {
     logger.warn(`Total LINK Owed is higher than balance. Amount to fund: ${owedDiff.mul(new BN(-1)).toString()}`)
   } else {
@@ -237,6 +237,7 @@ const instruction: InspectInstruction<any, ContractExpectedInfo> = {
     category: CATEGORIES.OCR,
     contract: CONTRACT_LIST.OCR_2,
     id: 'inspect',
+    examples: ['ocr2:inspect --network=<NETWORK> <CONTRACT_ADDRESS>'],
   },
   instructions: [
     {

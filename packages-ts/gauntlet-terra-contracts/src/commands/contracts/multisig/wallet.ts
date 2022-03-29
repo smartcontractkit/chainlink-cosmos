@@ -3,8 +3,9 @@ import { CATEGORIES } from '../../../lib/constants'
 import { isValidAddress } from '../../../lib/utils'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
-// 24 hours
-const DEFAULT_MULTISIG_EXPIRATION_TIME_IN_SECS = 24 * 60 * 60
+// Limit the voting period you can set while creating a proposal to
+// a maximum of 7 days
+const MAX_VOTING_PERIOD_IN_SECS = 7 * 24 * 60 * 60
 
 type Duration = {
   time: number // length of time in seconds
@@ -13,7 +14,7 @@ type Duration = {
 type CommandInput = {
   group: string
   threshold: number
-  votingPeriod: {
+  maxVotingPeriod: {
     time: number
   }
 }
@@ -42,15 +43,14 @@ const makeCommandInput = async (flags: any): Promise<CommandInput> => {
   return {
     group: flags.group,
     threshold: Number(flags.threshold),
-    votingPeriod: {
-      time: Number(flags.time) || DEFAULT_MULTISIG_EXPIRATION_TIME_IN_SECS,
+    maxVotingPeriod: {
+      time: Number(flags.time) || MAX_VOTING_PERIOD_IN_SECS,
     },
   }
 }
 
 const validateInput = (input: CommandInput): boolean => {
-  // TODO: Add time validation
-  const isValidTime = (a: any) => {
+  const isValidDuration = (a: any) => {
     if (!a) return false
     if (Number(a) <= 0) return false
     return true
@@ -63,8 +63,8 @@ const validateInput = (input: CommandInput): boolean => {
     throw new Error(`Threshold ${input.threshold} is invalid. Should be higher than zero`)
   }
 
-  if (!isValidTime(input.votingPeriod.time)) {
-    throw new Error(`Voting period time ${input.votingPeriod.time} is not a valid time`)
+  if (!isValidDuration(input.maxVotingPeriod.time)) {
+    throw new Error(`Voting period time ${input.maxVotingPeriod.time} is not a valid time`)
   }
 
   return true
@@ -74,7 +74,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   return {
     group_addr: input.group,
     max_voting_period: {
-      time: input.votingPeriod.time,
+      time: input.maxVotingPeriod.time,
     },
     threshold: {
       absolute_count: {

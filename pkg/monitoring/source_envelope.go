@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	cosmosTypes "github.com/cosmos/cosmos-sdk/types"
 	cosmosQuery "github.com/cosmos/cosmos-sdk/types/query"
 	cosmosTx "github.com/cosmos/cosmos-sdk/types/tx"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
@@ -137,7 +138,7 @@ func (e *envelopeSource) fetchLatestTransmission(ctx context.Context) (
 		return types.ConfigDigest{}, 0, 0, nil, time.Time{}, 0, "", 0, nil,
 			fmt.Errorf("failed to fetch latest 'new_transmission' event: %w", err)
 	}
-	err = extractDataFromTxResponse("wasm-new_transmission", res, map[string]func(string) error{
+	err = e.extractDataFromTxResponse("wasm-new_transmission", e.terraFeedConfig.ContractAddressBech32, res, map[string]func(string) error{
 		"config_digest": func(value string) error {
 			return pkgTerra.HexToConfigDigest(value, &configDigest)
 		},
@@ -200,7 +201,7 @@ func (e *envelopeSource) fetchLatestConfig(ctx context.Context) (types.ContractC
 		return types.ContractConfig{}, fmt.Errorf("failed to fetch latest 'set_config' event: %w", err)
 	}
 	output := types.ContractConfig{}
-	err = extractDataFromTxResponse("wasm-set_config", res, map[string]func(string) error{
+	err = e.extractDataFromTxResponse("wasm-set_config", e.terraFeedConfig.ContractAddressBech32, res, map[string]func(string) error{
 		"latest_config_digest": func(value string) error {
 			// parse byte array encoded as hex string
 			return pkgTerra.HexToConfigDigest(value, &output.ConfigDigest)
@@ -275,35 +276,82 @@ func (e *envelopeSource) fetchLinkBalance(ctx context.Context) (*big.Int, error)
 
 // Helpers
 
-func extractDataFromTxResponse(eventType string, res *cosmosTx.GetTxsEventResponse, extractors map[string]func(string) error) error {
+func (e *envelopeSource) extractDataFromTxResponse(
+	eventType string,
+	contractAddressBech32 string,
+	res *cosmosTx.GetTxsEventResponse,
+	extractors map[string]func(string) error,
+) error {
 	if len(res.TxResponses) == 0 ||
 		len(res.TxResponses[0].Logs) == 0 ||
 		len(res.TxResponses[0].Logs[0].Events) == 0 {
-		return fmt.Errorf("no events found of event type '%s'", eventType)
+		return fmt.Errorf("0 events found in response")
 	}
-	extracted := map[string]bool{}
-	for key := range extractors {
-		extracted[key] = false
+	// Extract matching events
+	events := extractMatchingEvents(res.TxResponses[0].Logs[0].Events, eventType, contractAddressBech32)
+	if len(events) == 0 {
+		return fmt.Errorf("no event found with type='%s' and contract_address='%s'", eventType, contractAddressBech32)
 	}
-	for _, event := range res.TxResponses[0].Logs[0].Events {
+	if len(events) != 1 {
+		e.log.Infow("multiple matching events found, selecting the last one", "type", eventType, "contract_address", contractAddressBech32)
+	}
+	event := events[len(events)-1]
+	if err := checkEventAttributes(event, extractors); err != nil {
+		return fmt.Errorf("received incorrect event with type='%s' and contract_address='%s': %w", eventType, contractAddressBech32, err)
+	}
+	// Apply extractors.
+	// Note! If multiple attributes with the same key are present, the corresponding
+	// extractor fn will be called for each of them.
+	for _, attribute := range event.Attributes {
+		key, value := attribute.Key, attribute.Value
+		extractor, found := extractors[key]
+		if !found {
+			continue
+		}
+		if err := extractor(value); err != nil {
+			return fmt.Errorf("failed to extract '%s' from raw value '%s': %w", key, value, err)
+		}
+	}
+	return nil
+}
+
+func extractMatchingEvents(events cosmosTypes.StringEvents, eventType, contractAddressBech32 string) []cosmosTypes.StringEvent {
+	out := []cosmosTypes.StringEvent{}
+	for _, event := range events {
 		if event.Type != eventType {
 			continue
 		}
+		isMatchingContractAddress := false
 		for _, attribute := range event.Attributes {
-			key, value := attribute.Key, attribute.Value
-			extractor, found := extractors[key]
-			if !found {
-				continue
+			if attribute.Key == "contract_address" && attribute.Value == contractAddressBech32 {
+				isMatchingContractAddress = true
+				break
 			}
-			if err := extractor(value); err != nil {
-				return fmt.Errorf("failed to extract '%s' from raw value '%s': %w", key, value, err)
-			}
-			extracted[key] = true
+		}
+		if isMatchingContractAddress {
+			out = append(out, event)
 		}
 	}
-	for key, wasExtracted := range extracted {
-		if !wasExtracted {
-			return fmt.Errorf("failed to extract key '%s' TxEventResponse", key)
+	return out
+}
+
+func checkEventAttributes(
+	event cosmosTypes.StringEvent,
+	extractors map[string]func(string) error,
+) error {
+	// The event should have at least one attribute with the Key in the extractors map.
+	isPresent := map[string]bool{}
+	for key := range extractors {
+		isPresent[key] = false
+	}
+	for _, attribute := range event.Attributes {
+		if _, found := extractors[attribute.Key]; found {
+			isPresent[attribute.Key] = true
+		}
+	}
+	for key, found := range isPresent {
+		if !found {
+			return fmt.Errorf("failed to extract key '%s' from event", key)
 		}
 	}
 	return nil

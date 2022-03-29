@@ -1,8 +1,8 @@
 import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
-import { getLatestOCRConfigEvent, printDiff } from '../../../lib/inspection'
+import { getLatestOCRConfigEvent } from '../../../lib/inspection'
 import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../abstract/executionWrapper'
-import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { logger, prompt, diff } from '@chainlink/gauntlet-core/dist/utils'
 
 type OnchainConfig = any
 type CommandInput = {
@@ -28,10 +28,6 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 
   const { rdd: rddPath } = flags
 
-  if (!rddPath) {
-    throw new Error('No RDD flag provided!')
-  }
-
   const rdd = RDD.getRDD(rddPath)
   const contract = args[0]
   const aggregator = rdd.contracts[contract]
@@ -42,7 +38,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 
   return {
     f: aggregator.config.f,
-    proposalId: flags.proposalId,
+    proposalId: flags.proposalId || flags.configProposal, // -configProposal alias requested by eng ops
     signers,
     transmitters,
     payees,
@@ -82,8 +78,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     f: event?.f[0],
     transmitters: event?.transmitters,
     signers: event?.signers.map((s) => Buffer.from(s, 'hex').toString('base64')),
-    onchain_config: event?.onchain_config[0],
-    // todo: add payees to set_config event (https://github.com/smartcontractkit/chainlink-terra/issues/180)
+    payees: event?.payees,
   }
 
   const proposedConfig = {
@@ -91,16 +86,15 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     transmitters: context.contractInput.transmitters,
     signers: context.contractInput.signers,
     payees: context.contractInput.payees,
-    onchain_config: context.contractInput.onchain_config,
   }
 
   logger.info('Review the proposed changes below: green - added, red - deleted.')
-  printDiff(contractConfig, proposedConfig)
+  diff.printDiff(contractConfig, proposedConfig)
   await prompt('Continue?')
 }
 
-// yarn gauntlet ocr2:propose_config --network=bombay-testnet --proposalId=4 --rdd=../reference-data-directory/directory-terra-mainnet.json terra14nrtuhrrhl2ldad7gln5uafgl8s2m25du98hlx
 const instruction: AbstractInstruction<CommandInput, ContractInput> = {
+  examples: ['yarn gauntlet ocr2:propose_config --network=<NETWORK> --configProposal=<PROPOSAL_ID> <CONTRACT_ADDRESS>'],
   instruction: {
     contract: 'ocr2',
     function: 'propose_config',

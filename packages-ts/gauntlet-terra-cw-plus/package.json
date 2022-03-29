@@ -31,7 +31,7 @@
     "bundle": "yarn build && pkg ."
   },
   "dependencies": {
-    "@chainlink/gauntlet-core": "0.0.7",
+    "@chainlink/gauntlet-core": "0.1.2",
     "@chainlink/gauntlet-terra": "*"
   }
 }

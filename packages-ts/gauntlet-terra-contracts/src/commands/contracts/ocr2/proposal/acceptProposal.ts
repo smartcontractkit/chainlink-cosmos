@@ -1,11 +1,11 @@
 import { Result } from '@chainlink/gauntlet-core'
-import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { logger, prompt, diff } from '@chainlink/gauntlet-core/dist/utils'
 import { TransactionResponse, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
 import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../../abstract/executionWrapper'
 import { serializeOffchainConfig, deserializeConfig } from '../../../../lib/encoding'
-import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
-import { getLatestOCRConfigEvent, longsInObjToNumbers, printDiff } from '../../../../lib/inspection'
+import { getOffchainConfigInput, OffchainConfig, prepareOffchainConfigForDiff } from '../proposeOffchainConfig'
+import { getLatestOCRConfigEvent } from '../../../../lib/inspection'
 import assert from 'assert'
 
 type CommandInput = {
@@ -24,13 +24,19 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   if (flags.input) return flags.input as CommandInput
   const { rdd: rddPath, secret } = flags
 
-  if (!rddPath) throw new Error('RDD flag is required. Provide it with --rdd flag')
+  if (!secret) {
+    throw new Error('--secret flag is required.')
+  }
+
+  if (!process.env.SECRET) {
+    throw new Error('SECRET is not set in env!')
+  }
 
   const rdd = RDD.getRDD(rddPath)
   const contract = args[0]
 
   return {
-    proposalId: flags.proposalId,
+    proposalId: flags.proposalId || flags.configProposal, // --configProposal alias requested by eng ops
     digest: flags.digest,
     offchainConfig: getOffchainConfigInput(rdd, contract),
     randomSecret: secret,
@@ -52,31 +58,23 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   try {
     assert.equal(localConfig, proposal.offchain_config)
   } catch (err) {
-    throw new Error(`RDD configuration does not correspond the proposal configuration. Error: ${err.message}`)
+    throw new Error(`RDD configuration does not correspond to the proposal configuration. Error: ${err.message}`)
   }
   logger.success('RDD Generated configuration matches with onchain proposal configuration')
 
   // Config in Proposal
-  const offchainConfigInProposal = await deserializeConfig(Buffer.from(proposal.offchain_config, 'base64'))
-  const configInProposal = longsInObjToNumbers({
-    ...offchainConfigInProposal,
-    offchainPublicKeys: offchainConfigInProposal.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
-    f: proposal.f,
-  })
+  const offchainConfigInProposal = deserializeConfig(Buffer.from(proposal.offchain_config, 'base64'))
+  const configInProposal = prepareOffchainConfigForDiff(offchainConfigInProposal, { f: proposal.f })
 
   // Config in contract
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
   const offchainConfigInContract = event?.offchain_config
-    ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
+    ? deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
     : ({} as OffchainConfig)
-  const configInContract = longsInObjToNumbers({
-    ...offchainConfigInContract,
-    offchainPublicKeys: offchainConfigInContract.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
-    f: event?.f[0],
-  })
+  const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, { f: event?.f[0] })
 
   logger.info('Review the configuration difference from contract and proposal: green - added, red - deleted.')
-  printDiff(configInContract, configInProposal)
+  diff.printDiff(configInContract, configInProposal)
   await prompt('Continue?')
 }
 
@@ -88,14 +86,14 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
 }
 
 const validateInput = (input: CommandInput): boolean => {
-  if (!input.proposalId) throw new Error('A proposal ID is required. Provide it with --proposalId flag')
+  if (!input.proposalId) throw new Error('A Config Proposal ID is required. Provide it with --configProposal flag')
   if (!input.randomSecret)
     throw new Error('Secret generated at proposing offchain config is required. Provide it with --secret flag')
   return true
 }
 
 const afterExecute = () => async (response: Result<TransactionResponse>) => {
-  logger.success(`Proposal accepted on tx ${response.responses[0].tx.hash}`)
+  logger.success(`Config Proposal accepted on tx ${response.responses[0].tx.hash}`)
   const events = response.responses[0].tx.events
   if (!events) {
     logger.error('Could not retrieve events from tx')
@@ -107,8 +105,10 @@ const afterExecute = () => async (response: Result<TransactionResponse>) => {
   }
 }
 
-// yarn gauntlet ocr2:accept_proposal --network=bombay-testnet --id=4 --digest=71e6969c14c3e0cd47d75da229dbd2f76fd0f3c17e05635f78ac755a99897a2f terra14nrtuhrrhl2ldad7gln5uafgl8s2m25du98hlx
 const instruction: AbstractInstruction<CommandInput, ContractInput> = {
+  examples: [
+    'yarn gauntlet ocr2:accept_proposal --network=<NETWORK> --configProposal=<PROPOSAL_ID> --digest=<DIGEST> <CONTRACT_ADDRESS>',
+  ],
   instruction: {
     contract: 'ocr2',
     function: 'accept_proposal',

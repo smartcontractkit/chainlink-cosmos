@@ -81,6 +81,7 @@ pub fn execute_raise_flag(
     subject: String,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
+
     check_access(deps.as_ref(), info, &config.raising_access_controller)?;
     let subject = deps.api.addr_validate(&subject)?;
 

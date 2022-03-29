@@ -1,6 +1,8 @@
 package smoke_test
 
 import (
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -14,9 +16,9 @@ var _ = Describe("Terra OCRv2 Proxy @ocr_proxy", func() {
 	var state *tc.OCRv2State
 
 	BeforeEach(func() {
-		state = &tc.OCRv2State{}
+		state = tc.NewOCRv2State(1)
 		By("Deploying the cluster", func() {
-			state.DeployCluster(5, false)
+			state.DeployCluster(5, common.ChainBlockTime, false, utils.ContractsDir)
 			state.SetAllAdapterResponsesToTheSameValue(2)
 		})
 	})
@@ -29,19 +31,19 @@ var _ = Describe("Terra OCRv2 Proxy @ocr_proxy", func() {
 			cd := e2e.NewTerraContractDeployer(state.Nets.Default)
 
 			// deploy the proxy pointing at the ocr2 address
-			state.OCR2Proxy, state.Err = cd.DeployOCRv2Proxy(state.OCR2.Address())
-			Expect(state.Err).ShouldNot(HaveOccurred())
+			ocrProxy, err := cd.DeployOCRv2Proxy(state.Contracts[0].OCR2.Address(), utils.ContractsDir)
+			Expect(err).ShouldNot(HaveOccurred())
 
 			// latestRoundData
-			state.ValidateRoundsAfter(time.Now(), 10, true)
+			state.ValidateAllRounds(time.Now(), tc.NewRoundCheckTimeout, 10, true)
 
 			// decimals
-			dec, err := state.OCR2Proxy.GetDecimals()
+			dec, err := ocrProxy.GetDecimals()
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(dec).Should(Equal(expectedDecimals))
 
 			// description
-			desc, err := state.OCR2Proxy.GetDescription()
+			desc, err := ocrProxy.GetDescription()
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(desc).Should(Equal(expectedDescription))
 		})

@@ -1,16 +1,19 @@
 package terra
 
 import (
+	"context"
+
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 )
 
 type ChainSet interface {
-	Service
-	Chain(id string) (Chain, error)
+	ServiceCtx
+	// Chain returns chain for the given id.
+	Chain(ctx context.Context, id string) (Chain, error)
 }
 
 type Chain interface {
-	Service
+	ServiceCtx
 
 	ID() string
 	Config() Config
@@ -19,8 +22,10 @@ type Chain interface {
 	Reader(nodeName string) (client.Reader, error)
 }
 
-type Service interface {
-	Start() error
+// ServiceCtx replaces Service interface due to new Start(ctx) method signature.
+type ServiceCtx interface {
+	// Start starts the service, context can be cancelled to abort Start routine.
+	Start(context.Context) error
 	Close() error
 	Ready() error
 	Healthy() error

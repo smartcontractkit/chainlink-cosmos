@@ -161,7 +161,7 @@ pub fn execute_set_flagging_threshold(
     Ok(response)
 }
 
-fn is_valid(flagging_threshold: u32, previous_answer: i128, answer: i128) -> StdResult<bool> {
+pub fn is_valid(flagging_threshold: u32, previous_answer: i128, answer: i128) -> StdResult<bool> {
     if previous_answer == 0i128 {
         return Ok(true);
     }

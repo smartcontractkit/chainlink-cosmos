@@ -25,23 +25,24 @@ const afterExecute = () => async (
 ): Promise<{ proposalId: string } | undefined> => {
   const events = response.responses[0].tx.events
   if (!events) {
-    logger.error('No events found. Proposal ID could not be retrieved')
+    logger.error('No events found. Config Proposal ID could not be retrieved')
     return
   }
 
   try {
     const proposalId = events[0].wasm.proposal_id[0]
-    logger.success(`New config proposal created with Proposal ID: ${proposalId}`)
+    logger.success(`New config proposal created with Config Proposal ID: ${proposalId}`)
     return {
       proposalId,
     }
   } catch (e) {
-    logger.error('Proposal ID not found inside events')
+    logger.error('Config Proposal ID not found inside events')
     return
   }
 }
 
 const instruction: AbstractInstruction<CommandInput, ContractInput> = {
+  examples: ['yarn ocr2:begin_proposal --network=<NETWORK> <CONTRACT_ADDRESS>'],
   instruction: {
     contract: 'ocr2',
     function: 'begin_proposal',

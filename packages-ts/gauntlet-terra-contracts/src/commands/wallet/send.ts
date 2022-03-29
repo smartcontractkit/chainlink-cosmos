@@ -35,13 +35,13 @@ export default class TransferLuna extends TerraCommand {
   makeInput = (flags, _) => {
     return {
       destination: flags.to,
-      amount: new BN(flags.amount).mul(new BN(10).pow(new BN(ULUNA_DECIMALS))),
-    }
+      amount: new BN(flags.amount).mul(new BN(10).pow(new BN(ULUNA_DECIMALS))).toString(),
+    } as CommandInput
   }
 
   makeRawTransaction = async (signer: AccAddress) => {
     if (!AccAddress.validate(this.input.destination)) throw new Error('Invalid destination address')
-    return new MsgSend(signer, this.input.destination, `${this.input.amount.toString()}uluna`)
+    return new MsgSend(signer, this.input.destination, `${this.input.amount}uluna`)
   }
 
   execute = async () => {

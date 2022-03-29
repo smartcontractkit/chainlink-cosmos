@@ -2,9 +2,13 @@ import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { Action, State, Vote } from '../lib/types'
+import { LCDClient } from '@terra-money/terra.js'
 
 export default class Inspect extends TerraCommand {
   static id = 'cw3_flex_multisig:inspect'
+  static examples = [
+    'cw3_flex_multisig:inspect --network=<NETWORK> --multisigProposal=<PROPOSAL_ID> <CW3_FLEX_MULTISIG_ADDRESS>',
+  ]
 
   constructor(flags, args: string[]) {
     super(flags, args)
@@ -21,7 +25,7 @@ export default class Inspect extends TerraCommand {
 
   execute = async () => {
     const msig = this.args[0] || process.env.CW3_FLEX_MULTISIG
-    const proposalId = Number(this.flags.proposal)
+    const proposalId = Number(this.flags.proposal || this.flags.multisigProposal) // alias requested by eng ops
     const state = await this.fetchState(msig, proposalId)
 
     logger.info(makeInspectionMessage(state))
@@ -29,12 +33,15 @@ export default class Inspect extends TerraCommand {
   }
 }
 
-export const fetchProposalState = (query: (contractAddress: string, query: any) => Promise<any>) => async (
+export const fetchProposalState = (provider: LCDClient) => async (
   multisig: string,
   proposalId?: number,
 ): Promise<State> => {
-  const _queryMultisig = (params) => () => query(multisig, params)
+  const _queryMultisig = (params) => (): Promise<any> => provider.wasm.contractQuery(multisig, params)
+  const _queryContractInfo = (): Promise<any> => provider.wasm.contractInfo(multisig)
+
   const multisigQueries = [
+    _queryContractInfo,
     _queryMultisig({
       list_voters: {},
     }),
@@ -56,11 +63,12 @@ export const fetchProposalState = (query: (contractAddress: string, query: any) 
   ]
   const queries = !!proposalId ? multisigQueries.concat(proposalQueries) : multisigQueries
 
-  const [groupState, thresholdState, proposalState, votes] = await Promise.all(queries.map((q) => q()))
+  const [contractInfo, groupState, thresholdState, proposalState, votes] = await Promise.all(queries.map((q) => q()))
 
   const multisigState = {
     threshold: thresholdState.absolute_count.weight,
     owners: groupState.voters.map((m) => m.addr),
+    maxVotingPeriod: contractInfo.init_msg.max_voting_period.time,
   }
   if (!proposalId) {
     return {
@@ -107,7 +115,7 @@ export const makeInspectionMessage = (state: State): string => {
 
   const approversList = state.proposal.approvers.map((a) => `\n${indent.repeat(2)} - ${a}`).join('')
   proposalMessage = proposalMessage.concat(`
-    - Proposal ID: ${state.proposal.id}
+    - Multisig Proposal ID: ${state.proposal.id}
     - Total Approvers: ${state.proposal.approvers.length}
     - Approvers List: ${approversList}
     `)
