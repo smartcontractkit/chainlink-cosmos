@@ -27,6 +27,9 @@ pub enum ContractError {
 
     #[error("Invalid")]
     Invalid,
+
+    #[error("Cannot migrate from different contract type: {previous_contract}")]
+    CannotMigrate { previous_contract: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -271,11 +274,13 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: Empty) -> Result<Response, ContractError> {
-    let ver = cw2::get_contract_version(deps.storage)?;
+    let stored = cw2::get_contract_version(deps.storage)?;
 
     // ensure we are migrating from an allowed contract
-    if ver.contract != CONTRACT_NAME {
-        return Err(cosmwasm_std::StdError::generic_err("Can only upgrade from same type").into());
+    if stored.contract != CONTRACT_NAME {
+        return Err(ContractError::CannotMigrate {
+            previous_contract: stored.contract,
+        });
     }
 
     // Update the contract version
