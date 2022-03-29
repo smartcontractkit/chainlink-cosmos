@@ -15,7 +15,7 @@ require (
 	github.com/smartcontractkit/chainlink v1.2.1-0.20220315133704-8769e75d54b1
 	github.com/smartcontractkit/chainlink-relay v0.0.0-20220317101556-ad02f88fa139
 	github.com/smartcontractkit/helmenv v1.0.40
-	github.com/smartcontractkit/integrations-framework v1.0.51
+	github.com/smartcontractkit/integrations-framework v1.0.53-0.20220328121026-0a15bb496493
 	github.com/smartcontractkit/libocr v0.0.0-20220217180537-449836e6cfec
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	github.com/stretchr/testify v1.7.0
