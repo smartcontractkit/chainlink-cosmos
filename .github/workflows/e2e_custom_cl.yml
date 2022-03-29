@@ -8,7 +8,7 @@ on:
         required: true
         default: develop
         type: string
-        
+
 jobs:
   e2e_custom_build_artifacts:
     name: E2E Custom Build Artifacts
@@ -99,19 +99,14 @@ jobs:
         if: steps.cache-packages.outputs.cache-hit != 'true'
         run: nix develop -c make download
       - name: Install Ginkgo CLI
-        run: |
-          nix develop -c make install
+        run: nix develop -c make install
       - name: Download Artifacts
         uses: actions/download-artifact@master
         with:
           name: artifacts
           path: artifacts
       - name: Generate gauntlet executable
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          npm config set -- '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-          nix develop -c make build_js
+        run: nix develop -c make build_js
       - name: Run Tests
         env:
           SELECTED_NETWORKS: localterra
