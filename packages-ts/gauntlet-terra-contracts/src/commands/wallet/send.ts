@@ -3,6 +3,7 @@ import { AccAddress, MsgSend } from '@terra-money/terra.js'
 import { CATEGORIES, ULUNA_DECIMALS } from '../../lib/constants'
 import { TerraCommand, TransactionResponse, logger } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
+import { withAddressBook } from '../../lib/middlewares'
 
 type CommandInput = {
   destination: string
@@ -21,6 +22,7 @@ export default class TransferLuna extends TerraCommand {
 
   constructor(flags, args: string[]) {
     super(flags, args)
+    this.use(withAddressBook)
   }
 
   buildCommand = async (flags, args): Promise<TerraCommand> => {
