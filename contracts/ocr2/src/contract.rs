@@ -1499,8 +1499,8 @@ fn calculate_reimbursement(
     signature_count: usize,
 ) -> Uint128 {
     let signature_count = signature_count as u64;
-    let gas_per_signature = config.gas_per_signature.unwrap_or(17_000);
-    let gas_base = config.gas_base.unwrap_or(84_000);
+    let gas_per_signature = config.gas_per_signature.unwrap_or(4_096);
+    let gas_base = config.gas_base.unwrap_or(146_000);
     let gas_adjustment = Decimal::percent(u64::from(config.gas_adjustment.unwrap_or(140)));
 
     let micro = Decimal::from_ratio(1u128, 10u128.pow(6));

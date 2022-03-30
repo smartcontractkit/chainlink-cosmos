@@ -403,7 +403,7 @@ fn transmit_happy_path() {
     let deposit = Decimal::from_str("1000").unwrap().0;
     // expected in juels
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
 
     // -- set billing
 
@@ -711,7 +711,7 @@ fn set_link_token() {
     let deposit = Decimal::from_str("1000").unwrap().0;
     // expected in juels
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
 
     // -- set billing
 
@@ -894,7 +894,7 @@ fn revert_payouts_correctly() {
 
     // set billing
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
     let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
@@ -1142,7 +1142,7 @@ fn set_billing_payout() {
     let mut env = setup();
     // expected in juels
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
 
     // -- set billing
     // price in uLUNA
