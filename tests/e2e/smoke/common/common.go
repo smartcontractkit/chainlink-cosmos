@@ -102,7 +102,6 @@ func NewOCRv2StateForSmoke(contracts int, nodes int) *OCRv2State {
 		for n := 1; n < nodes; n++ {
 			state.ContractsIdxMapToContractsNodeInfo[i].NodesIdx = append(state.ContractsIdxMapToContractsNodeInfo[i].NodesIdx, n)
 		}
-		log.Info().Interface("ContractsIdxMapToContractsNodeInfo[i].NodesIdx", state.ContractsIdxMapToContractsNodeInfo[i].NodesIdx).Msg("ContractsIdxMapToContractsNodeInfo[i].NodesIdx")
 	}
 	return state
 }
@@ -226,11 +225,10 @@ func (m *OCRv2State) DeployContracts2(contractsDir string) {
 			// The 0 index node is part of the nodes of all contracts
 			nodes = append(nodes, m.Nodes[0])
 			nodeKeysBundles = append(nodeKeysBundles, m.NodeKeysBundle[0])
-			for nodeIndex := range nodeIndexes {
+			for _, nodeIndex := range nodeIndexes {
 				nodes = append(nodes, m.Nodes[nodeIndex])
 				nodeKeysBundles = append(nodeKeysBundles, m.NodeKeysBundle[nodeIndex])
 			}
-			log.Info().Interface("nodeIndexes", nodeIndexes).Msg("nodeIndexes")
 			OCConfig, err := common.OffChainConfigParamsFromNodes(nodes, nodeKeysBundles)
 			Expect(err).ShouldNot(HaveOccurred())
 
