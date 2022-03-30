@@ -84,6 +84,28 @@ func NewOCRv2State(contracts int) *OCRv2State {
 	}
 }
 
+func NewOCRv2StateForSmoke(contracts int, nodes int) *OCRv2State {
+	state := &OCRv2State{
+		Mu:                                 &sync.Mutex{},
+		ContractsNum:                       contracts,
+		LastRoundTime:                      make(map[string]time.Time),
+		ContractsIdxMapToContractsNodeInfo: map[int]*common.ContractNodeInfo{},
+	}
+	for i := 0; i < contracts; i++ {
+		state.ContractsIdxMapToContractsNodeInfo[i] = &common.ContractNodeInfo{
+			OCR2Address:    "",
+			NodesIdx:       []int{},
+			Nodes:          []client.Chainlink{},
+			NodeKeysBundle: []common.NodeKeysBundle{},
+			BridgeInfos:    []common.BridgeInfo{},
+		}
+		for n := 1; n < nodes; n++ {
+			state.ContractsIdxMapToContractsNodeInfo[i].NodesIdx = append(state.ContractsIdxMapToContractsNodeInfo[i].NodesIdx, n)
+		}
+	}
+	return state
+}
+
 // OCRv2State OCR test state
 type OCRv2State struct {
 	Mu             *sync.Mutex
@@ -100,6 +122,8 @@ type OCRv2State struct {
 	RoundsFound    int
 	LastRoundTime  map[string]time.Time
 	Err            error
+
+	ContractsIdxMapToContractsNodeInfo map[int]*common.ContractNodeInfo
 }
 
 // DeployCluster deploys OCR cluster with or without contracts
@@ -115,6 +139,21 @@ func (m *OCRv2State) DeployCluster(nodes int, blockTime string, stateful bool, c
 	err := m.DumpContracts()
 	Expect(err).ShouldNot(HaveOccurred())
 	m.CreateJobs()
+}
+
+// DeployCluster2 deploys OCR cluster with or without contracts
+func (m *OCRv2State) DeployCluster2(nodes int, blockTime string, stateful bool, contractsDir string) {
+	m.DeployEnv(nodes, blockTime, stateful)
+	m.SetupClients()
+	if m.Nets.Default.ContractsDeployed() {
+		err := m.LoadContracts()
+		Expect(err).ShouldNot(HaveOccurred())
+		return
+	}
+	m.DeployContracts2(contractsDir)
+	err := m.DumpContracts()
+	Expect(err).ShouldNot(HaveOccurred())
+	m.CreateJobs2()
 }
 
 // DeployEnv deploys and connects OCR environment
@@ -142,6 +181,87 @@ func (m *OCRv2State) SetupClients() {
 	Expect(m.Err).ShouldNot(HaveOccurred())
 	m.Nodes, m.Err = client.ConnectChainlinkNodes(m.Env)
 	Expect(m.Err).ShouldNot(HaveOccurred())
+}
+
+// DeployContracts2 deploys contracts
+func (m *OCRv2State) DeployContracts2(contractsDir string) {
+	defaultNetwork := m.Nets.Default
+
+	m.NodeKeysBundle, m.Err = common.CreateNodeKeysBundle(m.Nodes)
+	Expect(m.Err).ShouldNot(HaveOccurred())
+
+	m.Err = common.FundOracles(defaultNetwork, m.NodeKeysBundle, big.NewFloat(5e8))
+	Expect(m.Err).ShouldNot(HaveOccurred())
+
+	c := defaultNetwork.GetClients()[0]
+	cd := e2e.NewTerraContractDeployer(c)
+	lt, err := cd.DeployLinkTokenContract()
+	Expect(err).ShouldNot(HaveOccurred())
+
+	g := errgroup.Group{}
+	for i := 0; i < m.ContractsNum; i++ {
+		i := i
+		g.Go(func() error {
+			c := defaultNetwork.GetClients()[i]
+			cd := e2e.NewTerraContractDeployer(c)
+
+			bac, err := cd.DeployOCRv2AccessController(contractsDir)
+			Expect(err).ShouldNot(HaveOccurred())
+			rac, err := cd.DeployOCRv2AccessController(contractsDir)
+			Expect(err).ShouldNot(HaveOccurred())
+			ocr2, err := cd.DeployOCRv2(bac.Address(), rac.Address(), lt.Address(), contractsDir)
+			Expect(err).ShouldNot(HaveOccurred())
+			flags, err := cd.DeployOCRv2Flags(bac.Address(), rac.Address(), contractsDir)
+			Expect(err).ShouldNot(HaveOccurred())
+			validator, err := cd.DeployOCRv2Validator(uint32(80000), flags.Address(), contractsDir)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			err = ocr2.SetBilling(uint64(2e5), uint64(1), uint64(1), "1", bac.Address())
+			Expect(err).ShouldNot(HaveOccurred())
+
+			nodeIndexesForThisContract := m.ContractsIdxMapToContractsNodeInfo[i].NodesIdx
+			nodesForThisContract := []client.Chainlink{}
+			nkbForThisContract := []common.NodeKeysBundle{}
+			// The 0 index node is part of the nodes of all contracts
+			nodesForThisContract = append(nodesForThisContract, m.Nodes[0])
+			nkbForThisContract = append(nkbForThisContract, m.NodeKeysBundle[0])
+			for nodeIndex := range nodeIndexesForThisContract {
+				nodesForThisContract = append(nodesForThisContract, m.Nodes[nodeIndex])
+				nkbForThisContract = append(nkbForThisContract, m.NodeKeysBundle[nodeIndex])
+			}
+			OCConfig, err := common.OffChainConfigParamsFromNodes(nodesForThisContract, nkbForThisContract)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			m.Transmitters, err = ocr2.SetOffChainConfig(OCConfig)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			err = ocr2.SetValidatorConfig(uint64(2e18), validator.Address())
+			Expect(err).ShouldNot(HaveOccurred())
+			ocrProxy, err := cd.DeployOCRv2Proxy(ocr2.Address(), contractsDir)
+			Expect(err).ShouldNot(HaveOccurred())
+			validatorProxy, err := cd.DeployOCRv2Proxy(validator.Address(), contractsDir)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			m.ContractsIdxMapToContractsNodeInfo[i].OCR2Address = ocr2.Address()
+			m.ContractsIdxMapToContractsNodeInfo[i].Nodes = nodesForThisContract
+			m.ContractsIdxMapToContractsNodeInfo[i].NodeKeysBundle = nkbForThisContract
+
+			m.Mu.Lock()
+			m.Contracts = append(m.Contracts, Contracts{
+				LinkToken:      lt,
+				BAC:            bac,
+				RAC:            rac,
+				Flags:          flags,
+				OCR2:           ocr2,
+				Validator:      validator,
+				OCR2Proxy:      ocrProxy,
+				ValidatorProxy: validatorProxy,
+			})
+			m.Mu.Unlock()
+			return nil
+		})
+	}
+	Expect(g.Wait()).ShouldNot(HaveOccurred())
 }
 
 // DeployContracts deploys contracts
@@ -242,6 +362,28 @@ func (m *OCRv2State) CreateJobs() {
 		i := i
 		g.Go(func() error {
 			m.Err = common.CreateJobs(m.Contracts[i].OCR2.Address(), biMap[m.Contracts[i].OCR2.Address()], m.Nodes, m.NodeKeysBundle)
+			Expect(m.Err).ShouldNot(HaveOccurred())
+			return nil
+		})
+	}
+	Expect(g.Wait()).ShouldNot(HaveOccurred())
+}
+
+// CreateJobs2 creating OCR jobs and EA stubs
+func (m *OCRv2State) CreateJobs2() {
+	m.SetAllAdapterResponsesToTheSameValue(5)
+	err := m.MockServer.SetValuePath("/juels", 1)
+	Expect(err).ShouldNot(HaveOccurred())
+	err = common.CreateTerraChainAndNode(m.Nodes)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	err = common.CreateBridges2(m.ContractsIdxMapToContractsNodeInfo, m.MockServer)
+	Expect(err).ShouldNot(HaveOccurred())
+	g := errgroup.Group{}
+	for i := 0; i < m.ContractsNum; i++ {
+		i := i
+		g.Go(func() error {
+			m.Err = common.CreateJobs2(m.ContractsIdxMapToContractsNodeInfo[i])
 			Expect(m.Err).ShouldNot(HaveOccurred())
 			return nil
 		})

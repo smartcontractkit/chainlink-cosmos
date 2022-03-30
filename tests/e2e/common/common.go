@@ -30,6 +30,22 @@ const (
 
 // Those functions may be common with another chains and should be moved to another lib
 
+var RelayConfig = map[string]string{
+	"nodeType":      "terra",
+	"tendermintURL": "http://terrad:26657",
+	"fcdURL":        "http://fcd-api:3060",
+	"chainID":       "localterra",
+}
+
+// ContractNodeInfo contains the indexes of the nodes, bridges, NodeKeyBundles and nodes relevant to an OCR2 Contract
+type ContractNodeInfo struct {
+	OCR2Address    string
+	NodesIdx       []int
+	Nodes          []client.Chainlink
+	NodeKeysBundle []NodeKeysBundle
+	BridgeInfos    []BridgeInfo
+}
+
 type NodeKeysBundle struct {
 	PeerID  string
 	OCR2Key *client.OCR2Key
@@ -52,6 +68,32 @@ func stripKeyPrefix(key string) string {
 }
 
 func createNodeKeys(nodes []client.Chainlink) ([]NodeKeysBundle, error) {
+	nkb := make([]NodeKeysBundle, 0)
+	for _, n := range nodes {
+		p2pkeys, err := n.ReadP2PKeys()
+		if err != nil {
+			return nil, err
+		}
+
+		peerID := p2pkeys.Data[0].Attributes.PeerID
+		txKey, err := n.CreateTxKey(ChainName)
+		if err != nil {
+			return nil, err
+		}
+		ocrKey, err := n.CreateOCR2Key(ChainName)
+		if err != nil {
+			return nil, err
+		}
+		nkb = append(nkb, NodeKeysBundle{
+			PeerID:  peerID,
+			OCR2Key: ocrKey,
+			TXKey:   txKey,
+		})
+	}
+	return nkb, nil
+}
+
+func CreateNodeKeysBundle(nodes []client.Chainlink) ([]NodeKeysBundle, error) {
 	nkb := make([]NodeKeysBundle, 0)
 	for _, n := range nodes {
 		p2pkeys, err := n.ReadP2PKeys()
@@ -168,25 +210,60 @@ func DefaultOffChainConfigParamsFromNodes(nodes []client.Chainlink) (contracts.O
 	}, nkb, nil
 }
 
-func CreateTerraChainAndNode(nodes []client.Chainlink) error {
-	relayConfig := map[string]string{
-		"nodeType":      "terra",
-		"tendermintURL": "http://terrad:26657",
-		"fcdURL":        "http://fcd-api:3060",
-		"chainID":       "localterra",
+// OffChainConfigParamsFromNodes creates contracts.OffChainAggregatorV2Config
+func OffChainConfigParamsFromNodes(nodes []client.Chainlink, nkb []NodeKeysBundle) (contracts.OffChainAggregatorV2Config, error) {
+	oi, err := createOracleIdentities(nkb[1:])
+	if err != nil {
+		return contracts.OffChainAggregatorV2Config{}, err
 	}
+	s := make([]int, 0)
+	for range nodes[1:] {
+		s = append(s, 1)
+	}
+	faultyNodes := 0
+	if len(nodes[1:]) > 1 {
+		faultyNodes = len(nodes[1:])/3 - 1
+	}
+	if faultyNodes == 0 {
+		faultyNodes = 1
+	}
+	log.Warn().Int("Nodes", faultyNodes).Msg("Faulty nodes")
+	return contracts.OffChainAggregatorV2Config{
+		DeltaProgress: 2 * time.Second,
+		DeltaResend:   5 * time.Second,
+		DeltaRound:    1 * time.Second,
+		DeltaGrace:    500 * time.Millisecond,
+		DeltaStage:    10 * time.Second,
+		RMax:          3,
+		S:             s,
+		Oracles:       oi,
+		ReportingPluginConfig: median.OffchainConfig{
+			AlphaReportPPB: uint64(0),
+			AlphaAcceptPPB: uint64(0),
+		}.Encode(),
+		MaxDurationQuery:                        0,
+		MaxDurationObservation:                  500 * time.Millisecond,
+		MaxDurationReport:                       500 * time.Millisecond,
+		MaxDurationShouldAcceptFinalizedReport:  500 * time.Millisecond,
+		MaxDurationShouldTransmitAcceptedReport: 500 * time.Millisecond,
+		F:                                       faultyNodes,
+		OnchainConfig:                           []byte{},
+	}, nil
+}
+
+func CreateTerraChainAndNode(nodes []client.Chainlink) error {
 	for _, n := range nodes {
 		_, err := n.CreateTerraChain(&client.TerraChainAttributes{
 			ChainID: "localterra",
-			FCDURL:  relayConfig["fcdURL"],
+			FCDURL:  RelayConfig["fcdURL"],
 		})
 		if err != nil {
 			return err
 		}
 		if _, err = n.CreateTerraNode(&client.TerraNodeAttributes{
 			Name:          "terra",
-			TerraChainID:  relayConfig["chainID"],
-			TendermintURL: relayConfig["tendermintURL"],
+			TerraChainID:  RelayConfig["chainID"],
+			TendermintURL: RelayConfig["tendermintURL"],
 		}); err != nil {
 			return err
 		}
@@ -195,12 +272,6 @@ func CreateTerraChainAndNode(nodes []client.Chainlink) error {
 }
 
 func CreateBridges(contracts []string, nodes []client.Chainlink, mock *client.MockserverClient) (map[string][]BridgeInfo, error) {
-	relayConfig := map[string]string{
-		"nodeType":      "terra",
-		"tendermintURL": "http://terrad:26657",
-		"fcdURL":        "http://fcd-api:3060",
-		"chainID":       "localterra",
-	}
 	biMap := make(map[string][]BridgeInfo)
 	for _, contract := range contracts {
 		for _, n := range nodes {
@@ -228,10 +299,47 @@ func CreateBridges(contracts []string, nodes []client.Chainlink, mock *client.Mo
 			if err != nil {
 				return nil, err
 			}
-			biMap[contract] = append(biMap[contract], BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: relayConfig})
+			biMap[contract] = append(biMap[contract], BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: RelayConfig})
 		}
 	}
 	return biMap, nil
+}
+
+func CreateBridges2(ContractsIdxMapToContractsNodeInfo map[int]*ContractNodeInfo, mock *client.MockserverClient) error {
+	biMap := make(map[string][]BridgeInfo)
+
+	for i, nodesInfo := range ContractsIdxMapToContractsNodeInfo {
+		for _, node := range nodesInfo.Nodes {
+			nodeContractPairID, err := BuildNodeContractPairID(node, nodesInfo.OCR2Address)
+			if err != nil {
+				return err
+			}
+			sourceValueBridge := client.BridgeTypeAttributes{
+				Name:        nodeContractPairID,
+				URL:         fmt.Sprintf("%s/%s", mock.Config.ClusterURL, nodeContractPairID),
+				RequestData: "{}",
+			}
+			observationSource := client.ObservationSourceSpecBridge(sourceValueBridge)
+			err = node.CreateBridge(&sourceValueBridge)
+			if err != nil {
+				return err
+			}
+			juelsBridge := client.BridgeTypeAttributes{
+				Name:        nodeContractPairID + "juels",
+				URL:         fmt.Sprintf("%s/juels", mock.Config.ClusterURL),
+				RequestData: "{}",
+			}
+			juelsSource := client.ObservationSourceSpecBridge(juelsBridge)
+			err = node.CreateBridge(&juelsBridge)
+			if err != nil {
+				return err
+			}
+			ContractsIdxMapToContractsNodeInfo[i].BridgeInfos = append(ContractsIdxMapToContractsNodeInfo[i].BridgeInfos, BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: RelayConfig})
+			biMap[nodesInfo.OCR2Address] = append(biMap[nodesInfo.OCR2Address], BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: RelayConfig})
+		}
+	}
+
+	return nil
 }
 
 func CreateJobs(ocr2Addr string, bridgesInfo []BridgeInfo, nodes []client.Chainlink, nkb []NodeKeysBundle) error {
@@ -260,6 +368,40 @@ func CreateJobs(ocr2Addr string, bridgesInfo []BridgeInfo, nodes []client.Chainl
 			TransmitterID:         nkb[nIdx].TXKey.Data.ID,
 			ObservationSource:     bridgesInfo[nIdx].ObservationSource,
 			JuelsPerFeeCoinSource: bridgesInfo[nIdx].JuelsSource,
+		}
+		if _, err := n.CreateJob(jobSpec); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func CreateJobs2(contractNodeInfo *ContractNodeInfo) error {
+	bootstrapPeers := []client.P2PData{
+		{
+			RemoteIP:   contractNodeInfo.Nodes[0].RemoteIP(),
+			RemotePort: "6690",
+			PeerID:     contractNodeInfo.NodeKeysBundle[0].PeerID,
+		},
+	}
+	for nIdx, n := range contractNodeInfo.Nodes {
+		jobType := "offchainreporting2"
+		if nIdx == 0 {
+			jobType = "bootstrap"
+		}
+		jobSpec := &client.OCR2TaskJobSpec{
+			Name:                  fmt.Sprintf("terra-OCRv2-%d-%s", nIdx, uuid.NewV4().String()),
+			JobType:               jobType,
+			ContractID:            contractNodeInfo.OCR2Address,
+			Relay:                 ChainName,
+			RelayConfig:           contractNodeInfo.BridgeInfos[nIdx].RelayConfig,
+			P2PPeerID:             contractNodeInfo.NodeKeysBundle[nIdx].PeerID,
+			PluginType:            "median",
+			P2PBootstrapPeers:     bootstrapPeers,
+			OCRKeyBundleID:        contractNodeInfo.NodeKeysBundle[nIdx].OCR2Key.Data.ID,
+			TransmitterID:         contractNodeInfo.NodeKeysBundle[nIdx].TXKey.Data.ID,
+			ObservationSource:     contractNodeInfo.BridgeInfos[nIdx].ObservationSource,
+			JuelsPerFeeCoinSource: contractNodeInfo.BridgeInfos[nIdx].JuelsSource,
 		}
 		if _, err := n.CreateJob(jobSpec); err != nil {
 			return err
