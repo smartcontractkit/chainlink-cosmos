@@ -11,7 +11,7 @@ import (
 )
 
 var _ = Describe("Terra chaos suite", func() {
-	var state = common.NewOCRv2State(1)
+	var state = common.NewOCRv2State(1, 5)
 	BeforeEach(func() {
 		By("Deploying OCRv2 cluster", func() {
 			state.DeployCluster(5, "2s", true, utils.ContractsDir)
