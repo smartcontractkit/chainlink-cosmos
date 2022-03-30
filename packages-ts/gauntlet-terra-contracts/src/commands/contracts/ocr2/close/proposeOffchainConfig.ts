@@ -4,7 +4,7 @@ import { CATEGORIES } from '../../../../lib/constants'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { ContractInput } from '../proposeOffchainConfig'
 
-export const EMPTY_CONFIG = Buffer.from([1, 2]).toString('base64')
+export const EMPTY_CONFIG = Buffer.from([]).toString('base64')
 
 type CommandInput = {
   proposalId: string
