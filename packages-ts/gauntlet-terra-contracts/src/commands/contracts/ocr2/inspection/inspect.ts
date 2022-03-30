@@ -54,8 +54,6 @@ const makeInput = async (flags: any, args: string[]): Promise<ContractExpectedIn
   }
 }
 
-const makeInspectionData = () => async (input: ContractExpectedInfo): Promise<ContractExpectedInfo> => input
-
 const makeOnchainData = (provider: LCDClient) => async (
   instructionsData: any[],
   input: ContractExpectedInfo,
@@ -282,7 +280,6 @@ const instruction: InspectInstruction<any, ContractExpectedInfo> = {
     },
   ],
   makeInput,
-  makeInspectionData,
   makeOnchainData,
   inspect,
 }

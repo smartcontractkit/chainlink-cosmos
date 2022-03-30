@@ -30,5 +30,5 @@ export const getLatestOCRNewTransmissionEvent = async (provider: LCDClient, cont
   return setNewTransmissionTx?.logs?.[0].eventsByType['wasm-new_transmission']
 }
 
-export const parseObservers = (observers: string, observersNumber: number): number[] =>
+export const parseObserversByLength = (observers: string, observersNumber: number): number[] =>
   (observers.substring(0, observersNumber * 2).match(/.{2}/g) || []).map((s) => parseInt(s, 16))

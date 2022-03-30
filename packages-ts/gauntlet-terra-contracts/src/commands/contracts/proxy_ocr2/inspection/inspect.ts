@@ -37,14 +37,6 @@ const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   }
 }
 
-const makeInspectionData = () => async (input: CommandInput): Promise<ContractExpectedInfo> => {
-  return {
-    aggregator: input.aggregator,
-    description: input.description,
-    decimals: input.decimals,
-  }
-}
-
 const makeOnchainData = (provider: LCDClient) => async (
   instructionsData: any[],
   input: CommandInput,
@@ -74,7 +66,7 @@ const makeOnchainData = (provider: LCDClient) => async (
   }
 }
 
-const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedInfo): boolean => {
+const inspect = (expected: CommandInput, onchainData: ContractExpectedInfo): boolean => {
   let inspections: inspection.Inspection[] = [
     inspection.makeInspection(onchainData.aggregator, expected.aggregator, 'Aggregator'),
     inspection.makeInspection(onchainData.description, expected.description, 'Description'),
@@ -145,7 +137,6 @@ const instruction: InspectInstruction<CommandInput, ContractExpectedInfo> = {
     },
   ],
   makeInput,
-  makeInspectionData,
   makeOnchainData,
   inspect,
 }
