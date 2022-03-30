@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "access-controller"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -557,7 +557,7 @@ dependencies = [
 
 [[package]]
 name = "deviation-flagging-validator"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -743,7 +743,7 @@ dependencies = [
 
 [[package]]
 name = "flags"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "access-controller",
  "cosmwasm-schema",
@@ -1085,7 +1085,7 @@ dependencies = [
 
 [[package]]
 name = "ocr2"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "access-controller",
  "anyhow",
@@ -1124,7 +1124,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "owned"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "cosmwasm-std",
  "cw-storage-plus",
@@ -1219,7 +1219,7 @@ dependencies = [
 
 [[package]]
 name = "proxy-ocr2"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
