@@ -1501,6 +1501,8 @@ fn calculate_reimbursement(
     let signature_count = signature_count as u64;
     let gas_per_signature = config.gas_per_signature.unwrap_or(4_096);
     let gas_base = config.gas_base.unwrap_or(146_000);
+    // The relay uses a 1.5x factor, but the simulation seems to slightly underestimate gas
+    // so the actual transaction uses more. Gas allocated ends up being almost exactly 1.4x of gas used.
     let gas_adjustment = Decimal::percent(u64::from(config.gas_adjustment.unwrap_or(140)));
 
     let micro = Decimal::from_ratio(1u128, 10u128.pow(6));
