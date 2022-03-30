@@ -5,15 +5,11 @@ import { AccAddress } from '@terra-money/terra.js'
 
 const addressBooks = new Map<string, AddressBook>()
 
-// Loads known addresses for deployed contracts from environment
-// and local operator's wallet from previous middleware in same
-// TerraCommand.
+// Loads known addresses for deployed contracts from environment & wallet
 //
-// There is one addressBook for each network. Each addressBook is
-// populated only once, but each TerraCommand on the same network is
-// given a reference to it.  The logger is also given a copy of the
-// addressBook, and used by logger.styleAddress() to label and stylize
-// addresses by contract type.
+// Commands on the same network share the same addressBook
+// The logger also needs a reference to addressBook for logger.styleAddress(),
+// but currently supports only one network
 //
 export const withAddressBook: Middleware = (c: TerraCommand, next: Next) => {
   const chainId = c.provider.config.chainID
@@ -39,19 +35,7 @@ export const withAddressBook: Middleware = (c: TerraCommand, next: Next) => {
     tryAddInstance(CONTRACT_LIST.CW4_GROUP, process.env['CW4_GROUP'])
     tryAddInstance(CONTRACT_LIST.MULTISIG, process.env['CW3_FLEX_MULTISIG'], 'multisig')
 
-    // TODO: currently the logger itself only supports one network at a time.
-    // To fully support multichain, we could have either:
-    //   1. the logger store a collection of address books by network, where
-    //      logger.withAddressBook(addressBook) becomes logger.addAddressBook(addressBook) and
-    //      logger.styleAddress(address) becomes logger.styleAddress(chainId, address).
-    //  or
-    //   2. multiple logger instances, also segmented by network, in which case it would
-    //      need to be called as this.logger(address) from each command.
-    //
-    //  Both of these seem a bit awkward, but I think the only other option would be to move
-    //  styleAddress from the TerraLogger back into AddressBook.  Leaving this decision
-    //  for the future when/if the rest of gauntlet is adapted for multichain
-
+    // TODO: extend logger for multi-chain
     logger.withAddressBook(addressBooks[chainId])
   }
 

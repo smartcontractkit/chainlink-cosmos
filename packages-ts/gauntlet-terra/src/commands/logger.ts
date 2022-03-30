@@ -2,35 +2,29 @@ import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { AddressBook } from './addressBook'
 import { assertions } from '@chainlink/gauntlet-core/dist/utils'
 
-type COLOR = 'red' | 'blue' | 'yellow' | 'green'
+type COLOR = 'red' | 'green' | 'blue' | 'yellow' | 'cyan' | 'magenta'
 type INTENSITY = 'dim' | 'bright'
 type Style = COLOR | INTENSITY
 type Styles = { [id: string]: [color: COLOR, intensity: INTENSITY] }
 const styles = {
-  MULTISIG_LABEL: ['yellow', 'bright'],
-  MULTISIG_ADDRESS: ['yellow', 'dim'],
+  MULTISIG_LABEL: ['cyan', 'bright'],
+  MULTISIG_ADDRESS: ['cyan', 'dim'],
   CONTRACT_LABEL: ['blue', 'bright'],
   CONTRACT_ADDRESS: ['blue', 'dim'],
   OPERATOR_LABEL: ['green', 'bright'],
   OPERATOR_ADDRESS: ['green', 'dim'],
 } as Styles
 
-// Shows up in terminal as single emoji (astronaut), but two emojis (adult + rocket) in some editors.
-// TODO: check portability, possibly just use adult emoji?
-//  https://emojiterra.com/astronaut-medium-skin-tone/  🧑🏽‍🚀
 const astronaut = '\uD83E\uDDD1\uD83C\uDFFD\u200D\uD83D\uDE80'
 
 const formatMultisig = (address: string, label: string): string =>
-  `[${logger.style(label, ...styles.MULTISIG_LABEL)}🧳${logger.style(address, ...styles.MULTISIG_ADDRESS)}]`
+  `🧳 ${logger.style(label, ...styles.MULTISIG_LABEL)}: ${logger.style(address, ...styles.MULTISIG_ADDRESS)}`
 
 const formatContract = (address: string, label: string): string =>
-  `[👝${logger.style(label, ...styles.CONTRACT_LABEL)}📜$${logger.style(address, ...styles.CONTRACT_ADDRESS)}]`
+  `📜 ${logger.style(label, ...styles.CONTRACT_LABEL)}: ${logger.style(address, ...styles.CONTRACT_ADDRESS)}`
 
 const formatOperator = (address: string): string =>
-  `[${logger.style('operator', ...styles.OPERATOR_LABEL)}${astronaut}${logger.style(
-    address,
-    ...styles.OPERATOR_ADDRESS,
-  )}]`
+  `🧑🏽 ${logger.style('operator', ...styles.OPERATOR_LABEL)}: ${logger.style(address, ...styles.OPERATOR_ADDRESS)}`
 
 export class TerraLogger {
   addressBook: AddressBook
@@ -39,19 +33,7 @@ export class TerraLogger {
     this.addressBook = addressBook
   }
 
-  // logger.styleAddress():  Format a terra addresses depending on contract type.
-  // Usage:
-  //
-  // 1. Call logger.withAddressBook(addressBook) in middleware
-  //
-  // 2. import { logger } from '@gauntlet-terra/dist/commands/logger'
-  //
-  // 3. Use ${logger.styleAddress(address)} instead of ${address} in strings sent to console or log.
-  //   - If it matches the address added with name='multisig', the address will show up
-  //     as yellow and labelled "multisig".
-  //   - If it matches a known contract address read from the environemnt (LINK, BILLING_ACCESS_CONTROLLER,... ),
-  //     the address will be blue and labelled with the contract name( or "name" if specified )
-  //   - Unknown addresses will remain unformmated
+  // Example:  logger.info(`Destination address is ${logger.styleAddress(address)}`)
   styleAddress(address: string): string {
     if (!this.addressBook) {
       logger.warn(`TerraLogger: styleAddress called before calling withAddressBook!`)
@@ -73,29 +55,11 @@ export class TerraLogger {
   }
 }
 
-// TODO:
-// Ideally, the instantiation of all objects should be in terra-gauntlet-contracts,
-//  but moving it there would not allow other packages such as gauntlet-terra-cwplus
-//  to import it directly to use for stylizing addresses... which is important for
-//  multisig-wrapped commands.  We should look for a clean way to be able to call
-//  logger.styleAddress() from gauntlet-terra-cwplus without using "import { logger }"
-//  from there. (Presumably, it will need to call styleAddress() on some other object
-//  that's injected to it from terra-gauntlet-contracts, which will call the instantiated
-//  TerraLogger)
+// TODO: instatntiate in terra-gauntlet-contracts instead of here?
 const terraLogger = new TerraLogger()
 
 export default {
-  table: logger.table,
-  log: logger.log,
-  info: logger.info,
-  warn: logger.warn,
-  success: logger.success,
-  error: logger.error,
-  loading: logger.loading,
-  line: logger.line,
-  debug: logger.debug,
-  time: logger.time,
-  style: logger.style,
   styleAddress: (address: string) => terraLogger.styleAddress(address),
   withAddressBook: (addressBook: AddressBook) => terraLogger.withAddressBook(addressBook),
+  ...logger,
 }
