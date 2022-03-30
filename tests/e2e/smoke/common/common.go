@@ -89,7 +89,7 @@ func NewOCRv2StateForSmoke(contracts int, nodes int) *OCRv2State {
 		Mu:                                 &sync.Mutex{},
 		ContractsNum:                       contracts,
 		LastRoundTime:                      make(map[string]time.Time),
-		ContractsIdxMapToContractsNodeInfo: map[int]*common.ContractNodeInfo{},
+		ContractsIdxMapToContractsNodeInfo: make(map[int]*common.ContractNodeInfo),
 	}
 	for i := 0; i < contracts; i++ {
 		state.ContractsIdxMapToContractsNodeInfo[i] = &common.ContractNodeInfo{
@@ -102,6 +102,7 @@ func NewOCRv2StateForSmoke(contracts int, nodes int) *OCRv2State {
 		for n := 1; n < nodes; n++ {
 			state.ContractsIdxMapToContractsNodeInfo[i].NodesIdx = append(state.ContractsIdxMapToContractsNodeInfo[i].NodesIdx, n)
 		}
+		log.Info().Interface("ContractsIdxMapToContractsNodeInfo[i].NodesIdx", state.ContractsIdxMapToContractsNodeInfo[i].NodesIdx).Msg("ContractsIdxMapToContractsNodeInfo[i].NodesIdx")
 	}
 	return state
 }
@@ -219,17 +220,18 @@ func (m *OCRv2State) DeployContracts2(contractsDir string) {
 			err = ocr2.SetBilling(uint64(2e5), uint64(1), uint64(1), "1", bac.Address())
 			Expect(err).ShouldNot(HaveOccurred())
 
-			nodeIndexesForThisContract := m.ContractsIdxMapToContractsNodeInfo[i].NodesIdx
-			nodesForThisContract := []client.Chainlink{}
-			nkbForThisContract := []common.NodeKeysBundle{}
+			nodeIndexes := m.ContractsIdxMapToContractsNodeInfo[i].NodesIdx
+			nodes := []client.Chainlink{}
+			nodeKeysBundles := []common.NodeKeysBundle{}
 			// The 0 index node is part of the nodes of all contracts
-			nodesForThisContract = append(nodesForThisContract, m.Nodes[0])
-			nkbForThisContract = append(nkbForThisContract, m.NodeKeysBundle[0])
-			for nodeIndex := range nodeIndexesForThisContract {
-				nodesForThisContract = append(nodesForThisContract, m.Nodes[nodeIndex])
-				nkbForThisContract = append(nkbForThisContract, m.NodeKeysBundle[nodeIndex])
+			nodes = append(nodes, m.Nodes[0])
+			nodeKeysBundles = append(nodeKeysBundles, m.NodeKeysBundle[0])
+			for nodeIndex := range nodeIndexes {
+				nodes = append(nodes, m.Nodes[nodeIndex])
+				nodeKeysBundles = append(nodeKeysBundles, m.NodeKeysBundle[nodeIndex])
 			}
-			OCConfig, err := common.OffChainConfigParamsFromNodes(nodesForThisContract, nkbForThisContract)
+			log.Info().Interface("nodeIndexes", nodeIndexes).Msg("nodeIndexes")
+			OCConfig, err := common.OffChainConfigParamsFromNodes(nodes, nodeKeysBundles)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			m.Transmitters, err = ocr2.SetOffChainConfig(OCConfig)
@@ -243,8 +245,8 @@ func (m *OCRv2State) DeployContracts2(contractsDir string) {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			m.ContractsIdxMapToContractsNodeInfo[i].OCR2Address = ocr2.Address()
-			m.ContractsIdxMapToContractsNodeInfo[i].Nodes = nodesForThisContract
-			m.ContractsIdxMapToContractsNodeInfo[i].NodeKeysBundle = nkbForThisContract
+			m.ContractsIdxMapToContractsNodeInfo[i].Nodes = nodes
+			m.ContractsIdxMapToContractsNodeInfo[i].NodeKeysBundle = nodeKeysBundles
 
 			m.Mu.Lock()
 			m.Contracts = append(m.Contracts, Contracts{

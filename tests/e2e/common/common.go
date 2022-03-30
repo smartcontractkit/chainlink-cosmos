@@ -306,8 +306,6 @@ func CreateBridges(contracts []string, nodes []client.Chainlink, mock *client.Mo
 }
 
 func CreateBridges2(ContractsIdxMapToContractsNodeInfo map[int]*ContractNodeInfo, mock *client.MockserverClient) error {
-	biMap := make(map[string][]BridgeInfo)
-
 	for i, nodesInfo := range ContractsIdxMapToContractsNodeInfo {
 		for _, node := range nodesInfo.Nodes {
 			nodeContractPairID, err := BuildNodeContractPairID(node, nodesInfo.OCR2Address)
@@ -335,7 +333,6 @@ func CreateBridges2(ContractsIdxMapToContractsNodeInfo map[int]*ContractNodeInfo
 				return err
 			}
 			ContractsIdxMapToContractsNodeInfo[i].BridgeInfos = append(ContractsIdxMapToContractsNodeInfo[i].BridgeInfos, BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: RelayConfig})
-			biMap[nodesInfo.OCR2Address] = append(biMap[nodesInfo.OCR2Address], BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: RelayConfig})
 		}
 	}
 
