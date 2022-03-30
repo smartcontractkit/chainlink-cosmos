@@ -19,7 +19,7 @@ export class AddressBook {
     this.operator = address
   }
   addInstance(contractId: ContractId, address: string, name?: string) {
-    this.instances.set(address, { name, contractId } as Instance)
+    this.instances.set(address, { name: name || contractId, contractId } as Instance)
     logger.debug(`Using deployed instance of ${contractId}: ${name}=${address}`)
     return this
   }
