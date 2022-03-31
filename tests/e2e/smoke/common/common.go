@@ -27,7 +27,7 @@ const (
 	// NewRoundCheckTimeout how long to await a new round
 	NewRoundCheckTimeout = 3 * time.Minute
 	// NewSoakRoundCheckTimeout  how long to await soak tests results
-	NewSoakRoundCheckTimeout = 3 * time.Hour
+	NewSoakRoundCheckTimeout = 12 * time.Hour
 	// NewRoundCheckPollInterval new round check interval
 	NewRoundCheckPollInterval = 1 * time.Second
 	// SourceChangeInterval EA value change interval
