@@ -242,9 +242,9 @@ func (m *OCRv2State) DeployContracts(contractsDir string) {
 }
 
 func (m *OCRv2State) SetAllAdapterResponsesToTheSameValue(response int) {
-	for _, contract := range m.Contracts {
-		for _, node := range m.Nodes {
-			nodeContractPairID, err := common.BuildNodeContractPairID(node, contract.OCR2.Address())
+	for _, contractNodeInfo := range m.ContractsNodeSetup {
+		for _, node := range contractNodeInfo.Nodes {
+			nodeContractPairID, err := common.BuildNodeContractPairID(node, contractNodeInfo.OCR2Address)
 			Expect(err).ShouldNot(HaveOccurred())
 			path := fmt.Sprintf("/%s", nodeContractPairID)
 			m.Err = m.MockServer.SetValuePath(path, response)
