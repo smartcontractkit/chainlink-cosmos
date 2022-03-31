@@ -26,9 +26,9 @@ export const wrapCommand = (command) => {
     }
 
     buildCommand = async (flags, args): Promise<TerraCommand> => {
-      if (!AccAddress.validate(process.env.CW3_FLEX_MULTISIG)) throw new Error(`Invalid Multisig wallet address`)
-      if (!AccAddress.validate(process.env.CW4_GROUP)) throw new Error(`Invalid Multisig group address`)
       this.multisig = process.env.CW3_FLEX_MULTISIG as AccAddress
+      if (!AccAddress.validate(this.multisig)) throw new Error(`Invalid Multisig wallet address`)
+      if (!AccAddress.validate(process.env.CW4_GROUP)) throw new Error(`Invalid Multisig group address`)
 
       const c = new command(flags, args) as TerraCommand
       await c.invokeMiddlewares(c, c.middlewares)

@@ -5,6 +5,7 @@ import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { CATEGORIES } from '../../lib/constants'
 import { CONTRACT_LIST } from '../../lib/contracts'
 import { LCDClient } from '@terra-money/terra.js'
+import { withAddressBook } from '../../lib/middlewares'
 
 /**
  * Inspection commands need to match this interface
@@ -47,6 +48,7 @@ export const instructionToInspectCommand = <CommandInput, Expected>(
 
     constructor(flags, args) {
       super(flags, args)
+      this.use(withAddressBook)
     }
 
     makeRawTransaction = () => {
