@@ -208,6 +208,11 @@ func TestEnvelopeSource(t *testing.T) {
 		chainConfig.LinkTokenAddress,
 		[]byte(fmt.Sprintf(`{"balance":{"address":"%s"}}`, feedConfig.ContractAddressBech32)),
 	).Return(balanceRes, nil).Once()
+	chainReader.On("ContractStore",
+		mock.Anything, // context
+		feedConfig.ProxyAddress,
+		[]byte(`"link_available_for_payment"`),
+	).Return([]byte(`{"amount":"-380431529018756503364"}`), nil).Once()
 	// Execute Fetch()
 	factory := NewEnvelopeSourceFactory(chainReader, newNullLogger())
 	source, err := factory.NewSource(chainConfig, feedConfig)
@@ -269,6 +274,8 @@ func TestEnvelopeSource(t *testing.T) {
 	require.Equal(t, envelope.BlockNumber, uint64(987654321))
 	require.Equal(t, envelope.Transmitter, ocr2types.Account("terra16vueyxmul8kczd0nxvw0ge7kzfzpmtsgqc9tup"))
 	require.Equal(t, envelope.LinkBalance, big.NewInt(1234567890987654321))
+	expectedLinkAvailableForPayment, _ := new(big.Int).SetString("-380431529018756503364", 10)
+	require.Equal(t, envelope.LinkAvailableForPayment, expectedLinkAvailableForPayment)
 	require.Equal(t, envelope.JuelsPerFeeCoin, big.NewInt(302815889))
 	require.Equal(t, envelope.AggregatorRoundID, uint32(452))
 }

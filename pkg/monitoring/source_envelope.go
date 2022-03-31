@@ -70,7 +70,7 @@ func (e *envelopeSource) Fetch(ctx context.Context) (interface{}, error) {
 	var envelopeErr error
 	envelopeMu := &sync.Mutex{}
 	wg := &sync.WaitGroup{}
-	wg.Add(3)
+	wg.Add(4)
 	go func() {
 		defer wg.Done()
 		configDigest, epoch, round, latestAnswer, latestTimestamp, blockNumber,
@@ -114,6 +114,18 @@ func (e *envelopeSource) Fetch(ctx context.Context) (interface{}, error) {
 		}
 		envelope.LinkBalance = balance
 	}()
+	go func() {
+		defer wg.Done()
+		amount, err := e.fetchLinkAvailableForPayment(ctx)
+		envelopeMu.Lock()
+		defer envelopeMu.Unlock()
+		if err != nil {
+			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to fetch link balance: %w", err))
+			return
+		}
+		envelope.LinkAvailableForPayment = amount
+	}()
+
 	wg.Wait()
 	return envelope, envelopeErr
 }
@@ -272,6 +284,30 @@ func (e *envelopeSource) fetchLinkBalance(ctx context.Context) (*big.Int, error)
 		return nil, fmt.Errorf("failed to parse link balance from '%s'", balanceRes.Balance)
 	}
 	return balance, nil
+}
+
+type linkAvailableForPaymentRes struct {
+	Amount string `json:"amount,omitempty"`
+}
+
+func (e *envelopeSource) fetchLinkAvailableForPayment(ctx context.Context) (*big.Int, error) {
+	res, err := e.client.ContractStore(
+		ctx,
+		e.terraFeedConfig.ContractAddress,
+		[]byte(`"link_available_for_payment"`),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read link_available_for_payment from the contract: %w", err)
+	}
+	linkAvailableForPayment := linkAvailableForPaymentRes{}
+	if err := json.Unmarshal(res, &linkAvailableForPayment); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal link available data from the response '%s': %w", string(res), err)
+	}
+	amount, success := new(big.Int).SetString(linkAvailableForPayment.Amount, 10)
+	if !success {
+		return nil, fmt.Errorf("failed to parse amount of link available for payment from string '%s' into a big.Int", linkAvailableForPayment.Amount)
+	}
+	return amount, nil
 }
 
 // Helpers
