@@ -39,11 +39,15 @@ var RelayConfig = map[string]string{
 
 // ContractNodeInfo contains the indexes of the nodes, bridges, NodeKeyBundles and nodes relevant to an OCR2 Contract
 type ContractNodeInfo struct {
-	OCR2Address    string
-	NodesIdx       []int
-	Nodes          []client.Chainlink
-	NodeKeysBundle []NodeKeysBundle
-	BridgeInfos    []BridgeInfo
+	OCR2Address             string
+	BootstrapNodeIdx        int
+	BootstrapNode           client.Chainlink
+	BootstrapNodeKeysBundle NodeKeysBundle
+	BootstrapBridgeInfo     BridgeInfo
+	NodesIdx                []int
+	Nodes                   []client.Chainlink
+	NodeKeysBundle          []NodeKeysBundle
+	BridgeInfos             []BridgeInfo
 }
 
 type NodeKeysBundle struct {
@@ -141,17 +145,17 @@ func FundOracles(c client.BlockchainClient, nkb []NodeKeysBundle, amount *big.Fl
 
 // OffChainConfigParamsFromNodes creates contracts.OffChainAggregatorV2Config
 func OffChainConfigParamsFromNodes(nodes []client.Chainlink, nkb []NodeKeysBundle) (contracts.OffChainAggregatorV2Config, error) {
-	oi, err := createOracleIdentities(nkb[1:])
+	oi, err := createOracleIdentities(nkb)
 	if err != nil {
 		return contracts.OffChainAggregatorV2Config{}, err
 	}
 	s := make([]int, 0)
-	for range nodes[1:] {
+	for range nodes {
 		s = append(s, 1)
 	}
 	faultyNodes := 0
-	if len(nodes[1:]) > 1 {
-		faultyNodes = len(nodes[1:])/3 - 1
+	if len(nodes) > 1 {
+		faultyNodes = len(nodes)/3 - 1
 	}
 	if faultyNodes == 0 {
 		faultyNodes = 1
@@ -202,6 +206,34 @@ func CreateTerraChainAndNode(nodes []client.Chainlink) error {
 
 func CreateBridges(ContractsIdxMapToContractsNodeInfo map[int]*ContractNodeInfo, mock *client.MockserverClient) error {
 	for i, nodesInfo := range ContractsIdxMapToContractsNodeInfo {
+		// Bootstrap node first
+		nodeContractPairID, err := BuildNodeContractPairID(nodesInfo.BootstrapNode, nodesInfo.OCR2Address)
+		if err != nil {
+			return err
+		}
+		sourceValueBridge := client.BridgeTypeAttributes{
+			Name:        nodeContractPairID,
+			URL:         fmt.Sprintf("%s/%s", mock.Config.ClusterURL, nodeContractPairID),
+			RequestData: "{}",
+		}
+		observationSource := client.ObservationSourceSpecBridge(sourceValueBridge)
+		err = nodesInfo.BootstrapNode.CreateBridge(&sourceValueBridge)
+		if err != nil {
+			return err
+		}
+		juelsBridge := client.BridgeTypeAttributes{
+			Name:        nodeContractPairID + "juels",
+			URL:         fmt.Sprintf("%s/juels", mock.Config.ClusterURL),
+			RequestData: "{}",
+		}
+		juelsSource := client.ObservationSourceSpecBridge(juelsBridge)
+		err = nodesInfo.BootstrapNode.CreateBridge(&juelsBridge)
+		if err != nil {
+			return err
+		}
+		ContractsIdxMapToContractsNodeInfo[i].BootstrapBridgeInfo = BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: RelayConfig}
+
+		// Other nodes later
 		for _, node := range nodesInfo.Nodes {
 			nodeContractPairID, err := BuildNodeContractPairID(node, nodesInfo.OCR2Address)
 			if err != nil {
@@ -237,19 +269,32 @@ func CreateBridges(ContractsIdxMapToContractsNodeInfo map[int]*ContractNodeInfo,
 func CreateJobs(contractNodeInfo *ContractNodeInfo) error {
 	bootstrapPeers := []client.P2PData{
 		{
-			RemoteIP:   contractNodeInfo.Nodes[0].RemoteIP(),
+			RemoteIP:   contractNodeInfo.BootstrapNode.RemoteIP(),
 			RemotePort: "6690",
-			PeerID:     contractNodeInfo.NodeKeysBundle[0].PeerID,
+			PeerID:     contractNodeInfo.BootstrapNodeKeysBundle.PeerID,
 		},
 	}
+	jobSpec := &client.OCR2TaskJobSpec{
+		Name:                  fmt.Sprintf("terra-OCRv2-%s-%s", "bootstrap", uuid.NewV4().String()),
+		JobType:               "bootstrap",
+		ContractID:            contractNodeInfo.OCR2Address,
+		Relay:                 ChainName,
+		RelayConfig:           contractNodeInfo.BootstrapBridgeInfo.RelayConfig,
+		P2PPeerID:             contractNodeInfo.BootstrapNodeKeysBundle.PeerID,
+		PluginType:            "median",
+		P2PBootstrapPeers:     bootstrapPeers,
+		OCRKeyBundleID:        contractNodeInfo.BootstrapNodeKeysBundle.OCR2Key.Data.ID,
+		TransmitterID:         contractNodeInfo.BootstrapNodeKeysBundle.TXKey.Data.ID,
+		ObservationSource:     contractNodeInfo.BootstrapBridgeInfo.ObservationSource,
+		JuelsPerFeeCoinSource: contractNodeInfo.BootstrapBridgeInfo.JuelsSource,
+	}
+	if _, err := contractNodeInfo.BootstrapNode.CreateJob(jobSpec); err != nil {
+		return err
+	}
 	for nIdx, n := range contractNodeInfo.Nodes {
-		jobType := "offchainreporting2"
-		if nIdx == 0 {
-			jobType = "bootstrap"
-		}
 		jobSpec := &client.OCR2TaskJobSpec{
 			Name:                  fmt.Sprintf("terra-OCRv2-%d-%s", nIdx, uuid.NewV4().String()),
-			JobType:               jobType,
+			JobType:               "offchainreporting2",
 			ContractID:            contractNodeInfo.OCR2Address,
 			Relay:                 ChainName,
 			RelayConfig:           contractNodeInfo.BridgeInfos[nIdx].RelayConfig,

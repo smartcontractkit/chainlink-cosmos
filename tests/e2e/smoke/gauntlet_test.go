@@ -38,7 +38,7 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			state.NodeKeysBundle, state.Err = common.CreateNodeKeysBundle(state.Nodes)
 			Expect(state.Err).ShouldNot(HaveOccurred())
 
-			state.OCConfig, state.Err = common.OffChainConfigParamsFromNodes(state.Nodes, state.NodeKeysBundle)
+			_, state.Err = common.OffChainConfigParamsFromNodes(state.Nodes, state.NodeKeysBundle)
 			Expect(state.Err).ShouldNot(HaveOccurred())
 
 			// Remove the stuff below when the token:deploy command is fixed to work for automated testing
