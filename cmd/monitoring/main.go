@@ -49,7 +49,7 @@ func main() {
 		l.With("component", "source-txresults"),
 	)
 
-	entrypoint, err := relayMonitoring.NewEntrypoint(
+	monitor, err := relayMonitoring.NewMonitor(
 		ctx,
 		l,
 		terraConfig,
@@ -58,7 +58,7 @@ func main() {
 		monitoring.TerraFeedParser,
 	)
 	if err != nil {
-		l.Fatalw("failed to build entrypoint", "error", err)
+		l.Fatalw("failed to build monitor", "error", err)
 		return
 	}
 
@@ -66,18 +66,15 @@ func main() {
 		chainReader,
 		l.With("component", "source-proxy"),
 	)
-	if entrypoint.Config.Feature.TestOnlyFakeReaders {
-		proxySourceFactory = monitoring.NewFakeProxySourceFactory(l.With("component", "fake-proxy-source"))
-	}
-	entrypoint.SourceFactories = append(entrypoint.SourceFactories, proxySourceFactory)
+	monitor.SourceFactories = append(monitor.SourceFactories, proxySourceFactory)
 
 	prometheusExporterFactory := monitoring.NewPrometheusExporterFactory(
 		l.With("component", "terra-prometheus-exporter"),
 		monitoring.NewMetrics(l.With("component", "terra-metrics")),
 	)
-	entrypoint.ExporterFactories = append(entrypoint.ExporterFactories, prometheusExporterFactory)
+	monitor.ExporterFactories = append(monitor.ExporterFactories, prometheusExporterFactory)
 
-	entrypoint.Run()
+	monitor.Run()
 	l.Info("monitor stopped")
 }
 
