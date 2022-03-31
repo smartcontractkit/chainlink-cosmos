@@ -21,13 +21,20 @@ export const getLatestOCRConfigEvent = async (provider: LCDClient, contract: Acc
 }
 
 export const getLatestOCRNewTransmissionEvent = async (provider: LCDClient, contract: AccAddress) => {
-  const latestConfigDetails: any = await provider.wasm.contractQuery(contract, 'latest_config_details' as any)
-  const setNewTransmissionTx = providerUtils.filterTxsByEvent(
-    await providerUtils.getBlockTxs(provider, latestConfigDetails.block_number),
-    'wasm-new_transmission',
-  )
+  let transmissionTx = (
+    await provider.tx.search({
+      events: [
+        {
+          key: 'wasm-new_transmission.contract_address',
+          value: contract,
+        },
+      ],
+    })
+  ).txs
 
-  return setNewTransmissionTx?.logs?.[0].eventsByType['wasm-new_transmission']
+  return transmissionTx.length > 0
+    ? transmissionTx[transmissionTx.length - 1]?.logs?.[0].eventsByType['wasm-new_transmission']
+    : null
 }
 
 export const parseObserversByLength = (observers: string, observersNumber: number): number[] =>

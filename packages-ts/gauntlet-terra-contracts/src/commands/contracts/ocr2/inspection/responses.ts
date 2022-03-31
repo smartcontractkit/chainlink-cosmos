@@ -79,8 +79,6 @@ const makeOnchainData = (provider: LCDClient) => async (
       observations_timestamp: Number(onchainEvent.observations_timestamp[0]),
       aggregator_round_id: Number(onchainEvent.aggregator_round_id[0]),
     }
-  } else {
-    event
   }
 
   return {
