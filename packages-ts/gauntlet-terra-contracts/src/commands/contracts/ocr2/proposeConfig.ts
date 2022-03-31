@@ -1,13 +1,13 @@
-import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
+import { RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
 import { getLatestOCRConfigEvent } from '../../../lib/inspection'
 import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../abstract/executionWrapper'
 import { logger, prompt, diff } from '@chainlink/gauntlet-core/dist/utils'
 
 type OnchainConfig = any
-type CommandInput = {
+export type CommandInput = {
   f: number
-  proposalId: number
+  proposalId: string
   signers: string[]
   transmitters: string[]
   payees: string[]
@@ -16,7 +16,7 @@ type CommandInput = {
 
 export type ContractInput = {
   f: number
-  id: number
+  id: string
   onchain_config: string
   signers: string[]
   transmitters: string[]

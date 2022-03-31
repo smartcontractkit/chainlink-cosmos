@@ -1,5 +1,11 @@
 import { RDD } from '@chainlink/gauntlet-terra'
-import { AbstractInstruction, instructionToCommand, BeforeExecute, AfterExecute } from '../../abstract/executionWrapper'
+import {
+  AbstractInstruction,
+  instructionToCommand,
+  BeforeExecute,
+  AfterExecute,
+  Validation,
+} from '../../abstract/executionWrapper'
 import { time, BN } from '@chainlink/gauntlet-core/dist/utils'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
 import { CATEGORIES } from '../../../lib/constants'
@@ -7,10 +13,9 @@ import { getLatestOCRConfigEvent } from '../../../lib/inspection'
 import { serializeOffchainConfig, deserializeConfig, generateSecretWords } from '../../../lib/encoding'
 import { logger, prompt, diff, longs } from '@chainlink/gauntlet-core/dist/utils'
 
-type CommandInput = {
+export type CommandInput = {
   proposalId: string
   offchainConfig: OffchainConfig
-  offchainConfigVersion: number
   randomSecret?: string
 }
 
@@ -112,21 +117,28 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   return {
     proposalId: flags.proposalId || flags.configProposal, // -configProposal alias requested by eng ops
     offchainConfig: getOffchainConfigInput(rdd, contract),
-    offchainConfigVersion: 2,
     randomSecret: randomSecret || (await generateSecretWords()),
   }
 }
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inputContext) => async () => {
+  const tryDeserialize = (config: string): OffchainConfig => {
+    try {
+      return deserializeConfig(Buffer.from(config, 'base64'))
+    } catch (e) {
+      return {} as OffchainConfig
+    }
+  }
+
   // Config in contract
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
   const offchainConfigInContract = event?.offchain_config
-    ? deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
+    ? tryDeserialize(event.offchain_config[0])
     : ({} as OffchainConfig)
   const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, { f: event?.f })
 
   // Proposed config
-  const proposedOffchainConfig = deserializeConfig(Buffer.from(inputContext.contractInput.offchain_config, 'base64'))
+  const proposedOffchainConfig = tryDeserialize(inputContext.contractInput.offchain_config)
   const proposedConfig = prepareOffchainConfigForDiff(proposedOffchainConfig)
 
   logger.info('Review the proposed changes below: green - added, red - deleted.')
@@ -165,61 +177,68 @@ const afterExecute: AfterExecute<CommandInput, ContractInput> = (_, inputContext
   }
 }
 
-const validateInput = (input: CommandInput): boolean => {
-  const { offchainConfig } = input
+const validations: Validation<CommandInput>[] = [
+  {
+    id: 'OCRConfig',
+    msgSuccess: 'OCR Config is valid',
+    msgFail: 'OCR Config is not valid',
+    validate: () => async (input) => {
+      const { offchainConfig } = input
 
-  const _isNegative = (v: number): boolean => new BN(v).lt(new BN(0))
-  const nonNegativeValues = [
-    'deltaProgressNanoseconds',
-    'deltaResendNanoseconds',
-    'deltaRoundNanoseconds',
-    'deltaGraceNanoseconds',
-    'deltaStageNanoseconds',
-    'maxDurationQueryNanoseconds',
-    'maxDurationObservationNanoseconds',
-    'maxDurationReportNanoseconds',
-    'maxDurationShouldAcceptFinalizedReportNanoseconds',
-    'maxDurationShouldTransmitAcceptedReportNanoseconds',
-  ]
-  for (let prop in nonNegativeValues) {
-    if (_isNegative(input[prop])) throw new Error(`${prop} must be non-negative`)
-  }
-  const safeIntervalNanoseconds = new BN(200).mul(time.Millisecond).toNumber()
-  if (offchainConfig.deltaProgressNanoseconds < safeIntervalNanoseconds)
-    throw new Error(
-      `deltaProgressNanoseconds (${offchainConfig.deltaProgressNanoseconds} ns)  is set below the resource exhaustion safe interval (${safeIntervalNanoseconds} ns)`,
-    )
-  if (offchainConfig.deltaResendNanoseconds < safeIntervalNanoseconds)
-    throw new Error(
-      `deltaResendNanoseconds (${offchainConfig.deltaResendNanoseconds} ns) is set below the resource exhaustion safe interval (${safeIntervalNanoseconds} ns)`,
-    )
+      const _isNegative = (v: number): boolean => new BN(v).lt(new BN(0))
+      const nonNegativeValues = [
+        'deltaProgressNanoseconds',
+        'deltaResendNanoseconds',
+        'deltaRoundNanoseconds',
+        'deltaGraceNanoseconds',
+        'deltaStageNanoseconds',
+        'maxDurationQueryNanoseconds',
+        'maxDurationObservationNanoseconds',
+        'maxDurationReportNanoseconds',
+        'maxDurationShouldAcceptFinalizedReportNanoseconds',
+        'maxDurationShouldTransmitAcceptedReportNanoseconds',
+      ]
+      for (let prop in nonNegativeValues) {
+        if (_isNegative(input[prop])) throw new Error(`${prop} must be non-negative`)
+      }
+      const safeIntervalNanoseconds = new BN(200).mul(time.Millisecond).toNumber()
+      if (offchainConfig.deltaProgressNanoseconds < safeIntervalNanoseconds)
+        throw new Error(
+          `deltaProgressNanoseconds (${offchainConfig.deltaProgressNanoseconds} ns)  is set below the resource exhaustion safe interval (${safeIntervalNanoseconds} ns)`,
+        )
+      if (offchainConfig.deltaResendNanoseconds < safeIntervalNanoseconds)
+        throw new Error(
+          `deltaResendNanoseconds (${offchainConfig.deltaResendNanoseconds} ns) is set below the resource exhaustion safe interval (${safeIntervalNanoseconds} ns)`,
+        )
 
-  if (offchainConfig.deltaRoundNanoseconds >= offchainConfig.deltaProgressNanoseconds)
-    throw new Error(
-      `deltaRoundNanoseconds (${offchainConfig.deltaRoundNanoseconds}) must be less than deltaProgressNanoseconds (${offchainConfig.deltaProgressNanoseconds})`,
-    )
-  const sumMaxDurationsReportGeneration = new BN(offchainConfig.maxDurationQueryNanoseconds)
-    .add(new BN(offchainConfig.maxDurationObservationNanoseconds))
-    .add(new BN(offchainConfig.maxDurationReportNanoseconds))
+      if (offchainConfig.deltaRoundNanoseconds >= offchainConfig.deltaProgressNanoseconds)
+        throw new Error(
+          `deltaRoundNanoseconds (${offchainConfig.deltaRoundNanoseconds}) must be less than deltaProgressNanoseconds (${offchainConfig.deltaProgressNanoseconds})`,
+        )
+      const sumMaxDurationsReportGeneration = new BN(offchainConfig.maxDurationQueryNanoseconds)
+        .add(new BN(offchainConfig.maxDurationObservationNanoseconds))
+        .add(new BN(offchainConfig.maxDurationReportNanoseconds))
 
-  if (sumMaxDurationsReportGeneration.gte(new BN(offchainConfig.deltaProgressNanoseconds)))
-    throw new Error(
-      `sum of MaxDurationQuery/Observation/Report (${sumMaxDurationsReportGeneration}) must be less than deltaProgressNanoseconds (${offchainConfig.deltaProgressNanoseconds})`,
-    )
+      if (sumMaxDurationsReportGeneration.gte(new BN(offchainConfig.deltaProgressNanoseconds)))
+        throw new Error(
+          `sum of MaxDurationQuery/Observation/Report (${sumMaxDurationsReportGeneration}) must be less than deltaProgressNanoseconds (${offchainConfig.deltaProgressNanoseconds})`,
+        )
 
-  if (offchainConfig.rMax <= 0 || offchainConfig.rMax >= 255)
-    throw new Error(`rMax (${offchainConfig.rMax}) must be greater than zero and less than 255`)
+      if (offchainConfig.rMax <= 0 || offchainConfig.rMax >= 255)
+        throw new Error(`rMax (${offchainConfig.rMax}) must be greater than zero and less than 255`)
 
-  if (offchainConfig.s.length >= 1000)
-    throw new Error(`Length of S (${offchainConfig.s.length}) must be less than 1000`)
-  for (let i = 0; i < offchainConfig.s.length; i++) {
-    const s = offchainConfig.s[i]
-    if (s < 0 || s > ORACLES_MAX_LENGTH)
-      throw new Error(`S[${i}] (${s}) must be between 0 and Max Oracles (${ORACLES_MAX_LENGTH})`)
-  }
+      if (offchainConfig.s.length >= 1000)
+        throw new Error(`Length of S (${offchainConfig.s.length}) must be less than 1000`)
+      for (let i = 0; i < offchainConfig.s.length; i++) {
+        const s = offchainConfig.s[i]
+        if (s < 0 || s > ORACLES_MAX_LENGTH)
+          throw new Error(`S[${i}] (${s}) must be between 0 and Max Oracles (${ORACLES_MAX_LENGTH})`)
+      }
 
-  return true
-}
+      return true
+    },
+  },
+]
 
 const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   examples: [
@@ -231,10 +250,11 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
     function: 'propose_offchain_config',
   },
   makeInput: makeCommandInput,
-  validateInput: validateInput,
+  validateInput: () => true,
   makeContractInput: makeContractInput,
   beforeExecute,
   afterExecute,
+  validations,
 }
 
 export default instructionToCommand(instruction)

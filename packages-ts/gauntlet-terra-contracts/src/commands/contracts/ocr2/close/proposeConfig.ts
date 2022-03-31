@@ -1,26 +1,20 @@
-import { RDD } from '@chainlink/gauntlet-terra'
-import { CATEGORIES } from '../../../../lib/constants'
-import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../../abstract/executionWrapper'
-import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { ContractInput } from '../proposeConfig'
 import { MnemonicKey } from '@terra-money/terra.js'
+import { instructionToTailCommand, TailInstruction } from '../../../abstract/executionWrapper'
+import ProposeConfig, { CommandInput as ProposeConfigInput } from '../proposeConfig'
 
-type CommandInput = {
-  proposalId: number
-}
+type CommandInput = Pick<ProposeConfigInput, 'proposalId'>
 
-const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
+const makeInput = (flags, args): CommandInput => {
   if (flags.input) return flags.input as CommandInput
   return {
     proposalId: flags.configProposal,
   }
 }
 
-const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
-  const hexToBase64 = (s) => Buffer.from(s, 'hex').toString('base64')
+const makeInnerCommandInput = (input: CommandInput): ProposeConfigInput => {
   const randomAcc = () => new MnemonicKey().publicKey?.address()!
   const makeEmptyOracle = (n: number) => ({
-    signer: hexToBase64(new Array(64).fill(n.toString(16)).join('')),
+    signer: new Array(64).fill(n.toString(16)).join(''),
     transmitter: randomAcc(),
     payee: randomAcc(),
   })
@@ -28,41 +22,24 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   const oracles = new Array(4).fill('').map((_, i) => makeEmptyOracle(i))
 
   return {
+    proposalId: input.proposalId,
     f: Number(1),
-    id: input.proposalId,
-    onchain_config: '',
+    onchainConfig: '',
     signers: oracles.map((o) => o.signer),
     transmitters: oracles.map((o) => o.transmitter),
     payees: oracles.map((o) => o.payee),
   }
 }
 
-const validateInput = (input: CommandInput): boolean => {
-  return true
-}
-
-const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inputContext) => async () => {
-  const rddContract = RDD.getContractFromRDD(RDD.getRDD(context.flags.rdd), context.contract)
-  logger.info(`IMPORTANT: You are proposing an EMPTY configuration on the following contract:
-    - Contract: ${rddContract.address} ${rddContract.description ? '- ' + rddContract.description : ''}
-  `)
-  await prompt('Continue?')
-}
-
-const instruction: AbstractInstruction<CommandInput, ContractInput> = {
-  examples: [
-    'yarn gauntlet ocr2:propose_config:close --network=<NETWORK> --configProposal=<PROPOSAL_ID> <CONTRACT_ADDRESS>',
-  ],
-  instruction: {
-    contract: 'ocr2',
-    function: 'propose_config',
-    subInstruction: 'close',
-    category: CATEGORIES.OCR,
+const instruction: TailInstruction<CommandInput, ProposeConfigInput> = {
+  command: ProposeConfig,
+  ui: {
+    suffixes: ['close'],
+    examples: [`yarn gauntlet ${ProposeConfig.id}:close --network=<NETWORK> <CONTRACT_ADDRESS>`],
   },
-  makeInput: makeCommandInput,
-  validateInput: validateInput,
-  makeContractInput: makeContractInput,
-  beforeExecute,
+  makeInput,
+  makeInnerCommandInput,
+  skipValidations: [],
 }
 
-export default instructionToCommand(instruction)
+export default instructionToTailCommand(instruction)

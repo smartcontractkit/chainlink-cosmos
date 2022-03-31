@@ -1,57 +1,44 @@
-import { RDD } from '@chainlink/gauntlet-terra'
-import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../../abstract/executionWrapper'
-import { CATEGORIES } from '../../../../lib/constants'
-import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { ContractInput } from '../proposeOffchainConfig'
+import { instructionToTailCommand, TailInstruction } from '../../../abstract/executionWrapper'
+import ProposeOffchainConfig, { CommandInput as ProposeOffchainConfigInput } from '../proposeOffchainConfig'
+import { OffchainConfig } from '../proposeOffchainConfig'
 
-export const EMPTY_CONFIG = Buffer.from([]).toString('base64')
+type CommandInput = Pick<ProposeOffchainConfigInput, 'proposalId'>
 
-type CommandInput = {
-  proposalId: string
+export const makeEmptyOffchainConfig = (): OffchainConfig => {
+  return ({
+    offchainPublicKeys: [],
+    configPublicKeys: [],
+    peerIds: [],
+  } as unknown) as OffchainConfig
 }
 
-const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
+export const EMPTY_SECRET = 'EMPTY'
+
+const makeInput = (flags, args): CommandInput => {
   if (flags.input) return flags.input as CommandInput
+
   return {
     proposalId: flags.configProposal,
   }
 }
 
-const validateInput = (input: CommandInput): boolean => {
-  if (!input.proposalId) throw new Error('Config Proposal not found')
-  return true
-}
-
-const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inputContext) => async () => {
-  const rddContract = RDD.getContractFromRDD(RDD.getRDD(context.flags.rdd), context.contract)
-  logger.info(`IMPORTANT: You are proposing an EMPTY configuration on the following contract:
-    - Contract: ${rddContract.address} ${rddContract.description ? '- ' + rddContract.description : ''}
-  `)
-  await prompt('Continue?')
-}
-
-const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
+const makeInnerCommandInput = (input: CommandInput): ProposeOffchainConfigInput => {
   return {
-    id: input.proposalId,
-    offchain_config_version: 2,
-    offchain_config: EMPTY_CONFIG,
+    proposalId: input.proposalId,
+    offchainConfig: makeEmptyOffchainConfig(),
+    randomSecret: EMPTY_SECRET,
   }
 }
 
-const instruction: AbstractInstruction<CommandInput, ContractInput> = {
-  examples: [
-    'yarn gauntlet ocr2:propose_offchain_config:close --network=<NETWORK> --configProposal=<PROPOSAL_ID> <CONTRACT_ADDRESS>',
-  ],
-  instruction: {
-    category: CATEGORIES.OCR,
-    contract: 'ocr2',
-    function: 'propose_offchain_config',
-    subInstruction: 'close',
+const instruction: TailInstruction<CommandInput, ProposeOffchainConfigInput> = {
+  command: ProposeOffchainConfig,
+  ui: {
+    suffixes: ['close'],
+    examples: [`yarn gauntlet ${ProposeOffchainConfig.id}:close --network=<NETWORK> <CONTRACT_ADDRESS>`],
   },
-  makeInput: makeCommandInput,
-  validateInput: validateInput,
-  makeContractInput: makeContractInput,
-  beforeExecute,
+  makeInput,
+  makeInnerCommandInput,
+  skipValidations: ['OCRConfig'],
 }
 
-export default instructionToCommand(instruction)
+export default instructionToTailCommand(instruction)

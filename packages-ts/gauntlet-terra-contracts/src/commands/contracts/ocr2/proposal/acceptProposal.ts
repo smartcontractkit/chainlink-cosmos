@@ -2,13 +2,18 @@ import { Result } from '@chainlink/gauntlet-core'
 import { logger, prompt, diff } from '@chainlink/gauntlet-core/dist/utils'
 import { TransactionResponse, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
-import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../../abstract/executionWrapper'
+import {
+  AbstractInstruction,
+  instructionToCommand,
+  BeforeExecute,
+  Validation,
+} from '../../../abstract/executionWrapper'
 import { serializeOffchainConfig, deserializeConfig } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig, prepareOffchainConfigForDiff } from '../proposeOffchainConfig'
 import { getLatestOCRConfigEvent } from '../../../../lib/inspection'
 import assert from 'assert'
 
-type CommandInput = {
+export type CommandInput = {
   proposalId: string
   digest: string
   offchainConfig: OffchainConfig
@@ -19,6 +24,61 @@ type ContractInput = {
   id: string
   digest: string
 }
+
+const validations: Validation<CommandInput>[] = [
+  {
+    id: 'proposalId',
+    msgSuccess: 'Config Proposal ID is provided',
+    msgFail: 'Config Proposal ID is required',
+    validate: () => async (input) => {
+      if (!input.proposalId) return false
+      return true
+    },
+  },
+  {
+    id: 'digest',
+    msgSuccess: 'Config digest is provided',
+    msgFail: 'Config digest is required',
+    validate: () => async (input) => {
+      if (!input.digest) return false
+      return true
+    },
+  },
+  {
+    id: 'randomSecret',
+    msgSuccess: 'Random secret is provided',
+    msgFail: 'Secret generated at proposing offchain config is required',
+    validate: () => async (input) => {
+      if (!input.randomSecret) return false
+      return true
+    },
+  },
+  {
+    id: 'OCRConfig',
+    msgSuccess: 'Generated configuration matches with onchain proposal configuration',
+    msgFail: 'Generated configuration does not correspond to the proposal configuration',
+    validate: (context) => async (input) => {
+      const { offchainConfig } = await serializeOffchainConfig(
+        input.offchainConfig,
+        process.env.SECRET!,
+        input.randomSecret,
+      )
+      const proposal: any = await context.provider.wasm.contractQuery(context.contract, {
+        proposal: {
+          id: input.proposalId,
+        },
+      })
+
+      try {
+        assert.equal(offchainConfig.toString('base64'), proposal.offchain_config)
+      } catch (err) {
+        return false
+      }
+
+      return true
+    },
+  },
+]
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
@@ -44,10 +104,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 }
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inputContext) => async () => {
-  const { proposalId, randomSecret, offchainConfig: offchainLocalConfig } = inputContext.input
-
-  const { offchainConfig } = await serializeOffchainConfig(offchainLocalConfig, process.env.SECRET!, randomSecret)
-  const localConfig = offchainConfig.toString('base64')
+  const { proposalId } = inputContext.input
 
   const proposal: any = await context.provider.wasm.contractQuery(context.contract, {
     proposal: {
@@ -55,21 +112,21 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
     },
   })
 
-  try {
-    assert.equal(localConfig, proposal.offchain_config)
-  } catch (err) {
-    throw new Error(`RDD configuration does not correspond to the proposal configuration. Error: ${err.message}`)
+  const tryDeserialize = (config: string): OffchainConfig => {
+    try {
+      return deserializeConfig(Buffer.from(config, 'base64'))
+    } catch (e) {
+      return {} as OffchainConfig
+    }
   }
-  logger.success('RDD Generated configuration matches with onchain proposal configuration')
-
   // Config in Proposal
-  const offchainConfigInProposal = deserializeConfig(Buffer.from(proposal.offchain_config, 'base64'))
+  const offchainConfigInProposal = tryDeserialize(proposal.offchain_config)
   const configInProposal = prepareOffchainConfigForDiff(offchainConfigInProposal, { f: proposal.f })
 
   // Config in contract
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
   const offchainConfigInContract = event?.offchain_config
-    ? deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
+    ? tryDeserialize(event.offchain_config[0])
     : ({} as OffchainConfig)
   const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, { f: event?.f[0] })
 
@@ -86,9 +143,6 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
 }
 
 const validateInput = (input: CommandInput): boolean => {
-  if (!input.proposalId) throw new Error('A Config Proposal ID is required. Provide it with --configProposal flag')
-  if (!input.randomSecret)
-    throw new Error('Secret generated at proposing offchain config is required. Provide it with --secret flag')
   return true
 }
 
@@ -119,6 +173,7 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   makeContractInput: makeContractInput,
   beforeExecute,
   afterExecute,
+  validations,
 }
 
 export default instructionToCommand(instruction)
