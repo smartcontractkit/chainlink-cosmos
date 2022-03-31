@@ -29,12 +29,12 @@ export const getLatestOCRNewTransmissionEvent = async (provider: LCDClient, cont
           value: contract,
         },
       ],
+      'pagination.limit': '1',
+      order_by: 'ORDER_BY_DESC',
     })
   ).txs
 
-  return transmissionTx.length > 0
-    ? transmissionTx[transmissionTx.length - 1]?.logs?.[0].eventsByType['wasm-new_transmission']
-    : null
+  return transmissionTx.length > 0 ? transmissionTx[0]?.logs?.[0].eventsByType['wasm-new_transmission'] : null
 }
 
 export const parseObserversByLength = (observers: string, observersNumber: number): number[] =>
