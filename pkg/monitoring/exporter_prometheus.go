@@ -3,7 +3,6 @@ package monitoring
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"sync"
 
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
@@ -58,7 +57,6 @@ func (p *prometheusExporter) Export(ctx context.Context, data interface{}) {
 		return
 	}
 	answer := float64(proxyData.Answer.Uint64())
-	linkAvailableForPayment, _ := new(big.Float).SetInt(proxyData.LinkAvailableForPayment).Float64()
 	multiply := float64(p.feedConfig.Multiply.Uint64())
 	if multiply == 0 {
 		multiply = 1.0
@@ -78,17 +76,6 @@ func (p *prometheusExporter) Export(ctx context.Context, data interface{}) {
 	p.metrics.SetProxyAnswers(
 		answer/multiply,
 		p.feedConfig.ProxyAddressBech32,
-		p.feedConfig.GetID(),
-		p.chainConfig.GetChainID(),
-		p.feedConfig.GetContractStatus(),
-		p.feedConfig.GetContractType(),
-		p.feedConfig.GetName(),
-		p.feedConfig.GetPath(),
-		p.chainConfig.GetNetworkID(),
-		p.chainConfig.GetNetworkName(),
-	)
-	p.metrics.SetLinkAvailableForPayment(
-		linkAvailableForPayment,
 		p.feedConfig.GetID(),
 		p.chainConfig.GetChainID(),
 		p.feedConfig.GetContractStatus(),

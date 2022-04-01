@@ -200,18 +200,26 @@ func (m *OCRv2State) DeployContracts(contractsDir string) {
 }
 
 func (m *OCRv2State) SetAllAdapterResponsesToTheSameValue(response int) {
-	for i := range m.Nodes {
-		path := fmt.Sprintf("/node%d", i)
-		m.Err = m.MockServer.SetValuePath(path, response)
-		Expect(m.Err).ShouldNot(HaveOccurred())
+	for _, contract := range m.Contracts {
+		for _, node := range m.Nodes {
+			nodeContractPairID, err := common.BuildNodeContractPairID(node, contract.OCR2.Address())
+			Expect(err).ShouldNot(HaveOccurred())
+			path := fmt.Sprintf("/%s", nodeContractPairID)
+			m.Err = m.MockServer.SetValuePath(path, response)
+			Expect(m.Err).ShouldNot(HaveOccurred())
+		}
 	}
 }
 
 func (m *OCRv2State) SetAllAdapterResponsesToDifferentValues(responses []int) {
-	Expect(len(responses)).Should(BeNumerically("==", len(m.Nodes)))
-	for i := range m.Nodes {
-		m.Err = m.MockServer.SetValuePath(fmt.Sprintf("/node%d", i), responses[i])
-		Expect(m.Err).ShouldNot(HaveOccurred())
+	for _, contract := range m.Contracts {
+		for nodeIndex, node := range m.Nodes {
+			nodeContractPairID, err := common.BuildNodeContractPairID(node, contract.OCR2.Address())
+			Expect(err).ShouldNot(HaveOccurred())
+			path := fmt.Sprintf("/%s", nodeContractPairID)
+			m.Err = m.MockServer.SetValuePath(path, responses[nodeIndex])
+			Expect(m.Err).ShouldNot(HaveOccurred())
+		}
 	}
 }
 
@@ -220,13 +228,20 @@ func (m *OCRv2State) CreateJobs() {
 	m.SetAllAdapterResponsesToTheSameValue(5)
 	err := m.MockServer.SetValuePath("/juels", 1)
 	Expect(err).ShouldNot(HaveOccurred())
-	bi, err := common.CreateBridges(m.Nodes, m.MockServer)
+	err = common.CreateTerraChainAndNode(m.Nodes)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	ocr2Contracts := []string{}
+	for _, contract := range m.Contracts {
+		ocr2Contracts = append(ocr2Contracts, contract.OCR2.Address())
+	}
+	biMap, err := common.CreateBridges(ocr2Contracts, m.Nodes, m.MockServer)
 	Expect(err).ShouldNot(HaveOccurred())
 	g := errgroup.Group{}
 	for i := 0; i < m.ContractsNum; i++ {
 		i := i
 		g.Go(func() error {
-			m.Err = common.CreateJobs(m.Contracts[i].OCR2.Address(), bi, m.Nodes, m.NodeKeysBundle)
+			m.Err = common.CreateJobs(m.Contracts[i].OCR2.Address(), biMap[m.Contracts[i].OCR2.Address()], m.Nodes, m.NodeKeysBundle)
 			Expect(m.Err).ShouldNot(HaveOccurred())
 			return nil
 		})

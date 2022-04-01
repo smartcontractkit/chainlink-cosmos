@@ -131,9 +131,10 @@ func (gd *GauntletDeployer) DeployToken() string {
 		gd.Cli.Flag("version", gd.Version),
 		codeIds,
 		artifacts,
-	}, []string{
-		TERRA_COMMAND_ERROR,
-	}, RETRY_COUNT)
+	}, gauntlet.ExecCommandOptions{
+		ErrHandling: []string{TERRA_COMMAND_ERROR},
+		RetryCount:  RETRY_COUNT,
+	})
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy link token")
 	report, err := LoadReportJson(reportName + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
@@ -147,9 +148,10 @@ func (gd *GauntletDeployer) Upload() {
 		"upload",
 		gd.Cli.Flag("version", gd.Version),
 		gd.Cli.Flag("maxRetry", "10"),
-	}, []string{
-		TERRA_COMMAND_ERROR,
-	}, RETRY_COUNT)
+	}, gauntlet.ExecCommandOptions{
+		ErrHandling: []string{TERRA_COMMAND_ERROR},
+		RetryCount:  RETRY_COUNT,
+	})
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to upload contracts")
 }
 
@@ -161,9 +163,10 @@ func (gd *GauntletDeployer) deployAccessController(name string) string {
 		"access_controller:deploy",
 		gd.Cli.Flag("version", gd.Version),
 		codeIds,
-	}, []string{
-		TERRA_COMMAND_ERROR,
-	}, RETRY_COUNT)
+	}, gauntlet.ExecCommandOptions{
+		ErrHandling: []string{TERRA_COMMAND_ERROR},
+		RetryCount:  RETRY_COUNT,
+	})
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy the billing access controller")
 	report, err := LoadReportJson(name + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
@@ -193,9 +196,10 @@ func (gd *GauntletDeployer) DeployFlags(billingAccessController, requesterAccess
 		gd.Cli.Flag("loweringAccessController", billingAccessController),
 		gd.Cli.Flag("raisingAccessController", requesterAccessController),
 		gd.Cli.Flag("version", gd.Version),
-	}, []string{
-		TERRA_COMMAND_ERROR,
-	}, RETRY_COUNT)
+	}, gauntlet.ExecCommandOptions{
+		ErrHandling: []string{TERRA_COMMAND_ERROR},
+		RetryCount:  RETRY_COUNT,
+	})
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy the flag")
 	flagsReport, err := LoadReportJson(reportName + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
@@ -212,9 +216,10 @@ func (gd *GauntletDeployer) DeployDeviationFlaggingValidator(flags string, flagg
 		gd.Cli.Flag("flaggingThreshold", fmt.Sprintf("%v", uint32(flaggingThreshold))),
 		gd.Cli.Flag("flags", flags),
 		gd.Cli.Flag("version", gd.Version),
-	}, []string{
-		TERRA_COMMAND_ERROR,
-	}, RETRY_COUNT)
+	}, gauntlet.ExecCommandOptions{
+		ErrHandling: []string{TERRA_COMMAND_ERROR},
+		RetryCount:  RETRY_COUNT,
+	})
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy the deviation flagging validator")
 	dfvReport, err := LoadReportJson(reportName + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
@@ -235,9 +240,10 @@ func (gd *GauntletDeployer) DeployOcr() (string, string) {
 		gd.Cli.Flag("rdd", rddPath),
 		gd.Cli.Flag("version", gd.Version),
 		tmpId,
-	}, []string{
-		TERRA_COMMAND_ERROR,
-	}, RETRY_COUNT)
+	}, gauntlet.ExecCommandOptions{
+		ErrHandling: []string{TERRA_COMMAND_ERROR},
+		RetryCount:  RETRY_COUNT,
+	})
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy ocr2")
 	ocrReport, err := LoadReportJson(reportName + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
@@ -258,9 +264,10 @@ func (gd *GauntletDeployer) SetBilling(ocr, rddPath string) {
 		gd.Cli.Flag("version", gd.Version),
 		gd.Cli.Flag("rdd", rddPath),
 		ocr,
-	}, []string{
-		TERRA_COMMAND_ERROR,
-	}, RETRY_COUNT)
+	}, gauntlet.ExecCommandOptions{
+		ErrHandling: []string{TERRA_COMMAND_ERROR},
+		RetryCount:  RETRY_COUNT,
+	})
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to set billing")
 }
 
@@ -273,9 +280,10 @@ func (gd *GauntletDeployer) BeginProposal(ocr, rddPath string) string {
 		gd.Cli.Flag("version", gd.Version),
 		gd.Cli.Flag("rdd", rddPath),
 		ocr,
-	}, []string{
-		TERRA_COMMAND_ERROR,
-	}, RETRY_COUNT)
+	}, gauntlet.ExecCommandOptions{
+		ErrHandling: []string{TERRA_COMMAND_ERROR},
+		RetryCount:  RETRY_COUNT,
+	})
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to begin proposal")
 	beginProposalReport, err := LoadReportJson(reportName + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
@@ -292,9 +300,10 @@ func (gd *GauntletDeployer) ProposeConfig(ocr, proposalId, rddPath string) {
 		gd.Cli.Flag("rdd", rddPath),
 		gd.Cli.Flag("proposalId", proposalId),
 		gd.OCR,
-	}, []string{
-		TERRA_COMMAND_ERROR,
-	}, RETRY_COUNT)
+	}, gauntlet.ExecCommandOptions{
+		ErrHandling: []string{TERRA_COMMAND_ERROR},
+		RetryCount:  RETRY_COUNT,
+	})
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to propose config")
 }
 
@@ -309,9 +318,10 @@ func (gd *GauntletDeployer) ProposeOffchainConfig(ocr, proposalId, rddPath strin
 		gd.Cli.Flag("rdd", rddPath),
 		gd.Cli.Flag("proposalId", proposalId),
 		ocr,
-	}, []string{
-		TERRA_COMMAND_ERROR,
-	}, RETRY_COUNT)
+	}, gauntlet.ExecCommandOptions{
+		ErrHandling: []string{TERRA_COMMAND_ERROR},
+		RetryCount:  RETRY_COUNT,
+	})
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to propose offchain config")
 	offchainProposalReport, err := LoadReportJson(reportName + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
@@ -328,9 +338,10 @@ func (gd *GauntletDeployer) FinalizeProposal(ocr, proposalId, rddPath string) st
 		gd.Cli.Flag("rdd", rddPath),
 		gd.Cli.Flag("proposalId", proposalId),
 		ocr,
-	}, []string{
-		TERRA_COMMAND_ERROR,
-	}, RETRY_COUNT)
+	}, gauntlet.ExecCommandOptions{
+		ErrHandling: []string{TERRA_COMMAND_ERROR},
+		RetryCount:  RETRY_COUNT,
+	})
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to finalize proposal")
 	finalizeProposalReport, err := LoadReportJson(reportName + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
@@ -349,9 +360,10 @@ func (gd *GauntletDeployer) AcceptProposal(ocr, proposalId, proposalDigest, secr
 		gd.Cli.Flag("digest", proposalDigest),
 		gd.Cli.Flag("secret", secret),
 		ocr,
-	}, []string{
-		TERRA_COMMAND_ERROR,
-	}, RETRY_COUNT)
+	}, gauntlet.ExecCommandOptions{
+		ErrHandling: []string{TERRA_COMMAND_ERROR},
+		RetryCount:  RETRY_COUNT,
+	})
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to accept proposal")
 	acceptProposalReport, err := LoadReportJson(reportName + ".json")
 	Expect(err).ShouldNot(HaveOccurred())
@@ -366,9 +378,10 @@ func (gd *GauntletDeployer) OcrInspect(ocr, rddPath string) map[string]Inspectio
 		gd.Cli.Flag("version", gd.Version),
 		gd.Cli.Flag("rdd", rddPath),
 		ocr,
-	}, []string{
-		TERRA_COMMAND_ERROR,
-	}, RETRY_COUNT)
+	}, gauntlet.ExecCommandOptions{
+		ErrHandling: []string{TERRA_COMMAND_ERROR},
+		RetryCount:  RETRY_COUNT,
+	})
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to inspect")
 
 	results, err := GetInspectionResultsFromOutput(output)

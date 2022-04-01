@@ -1,6 +1,6 @@
 [package]
 name = "proxy-ocr2"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Blaž Hrastnik <blaz@smartcontract.com>"]
 edition = "2018"
 
@@ -14,7 +14,7 @@ library = []
 
 [dependencies]
 ocr2 = { path = "../ocr2", default-features = false, features = ["library"] }
-owned = { version = "0.1", path = "../../crates/owned" }
+owned = { version = "1.0", path = "../../crates/owned" }
 cosmwasm-std = { version = "0.16.2" }
 cosmwasm-storage = { version = "0.16.0" }
 cw-storage-plus = "0.9.0"

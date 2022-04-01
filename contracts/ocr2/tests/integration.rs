@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Binary, Response};
+use cosmwasm_std::{Addr, Binary, Response, Uint128};
 use cosmwasm_vm::testing::{
     execute, instantiate, mock_env, mock_info, mock_instance, MockApi, MockQuerier, MockStorage,
 };
@@ -52,14 +52,14 @@ pub const REPORT2: &[u8] = &[
 ];
 
 #[test]
-fn init_works() {
+fn gas_test() {
     // Sanity check that the OCR2 .wasm contract is valid and accepted by the VM
     let mut deps = setup();
 
     // generate a few signer keypairs
     let mut keypairs = Vec::new();
 
-    let f = 10;
+    let f = 5;
     let n = 31;
 
     for _ in 0..n {
@@ -78,12 +78,30 @@ fn init_works() {
         .map(|(i, _)| format!("transmitter{}", i))
         .collect::<Vec<_>>();
 
-    let id = 0; // TODO
+    let payees = keypairs
+        .iter()
+        .enumerate()
+        .map(|(i, _)| format!("payee{}", i))
+        .collect::<Vec<_>>();
+
+    let msg = ExecuteMsg::BeginProposal;
+    let execute_info = mock_info(OWNER, &[]);
+    let response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
+
+    // Extract the proposal id from the wasm execute event
+    let id = &response
+        .attributes
+        .iter()
+        .find(|attr| attr.key == "proposal_id")
+        .unwrap()
+        .value;
+    let id = Uint128::new(id.parse::<u128>().unwrap());
 
     let msg = ExecuteMsg::ProposeConfig {
         id,
         signers,
         transmitters: transmitters.clone(),
+        payees,
         f,
         onchain_config: Binary(vec![]),
     };
@@ -100,13 +118,34 @@ fn init_works() {
     let execute_info = mock_info(OWNER, &[]);
     let response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
 
+    let msg = ExecuteMsg::FinalizeProposal { id };
+    let execute_info = mock_info(OWNER, &[]);
+    let response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
+
+    // Extract the proposal digest from the wasm execute event
+    let mut digest = [0u8; 32];
+    let proposal_digest = &response
+        .attributes
+        .iter()
+        .find(|attr| attr.key == "digest")
+        .unwrap()
+        .value;
+    hex::decode_to_slice(proposal_digest, &mut digest).unwrap();
+
+    let msg = ExecuteMsg::AcceptProposal {
+        id,
+        digest: Binary(digest.to_vec()),
+    };
+    let execute_info = mock_info(OWNER, &[]);
+    let response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
+
+    // Determine latest config digest
     let set_config = response
         .events
         .iter()
         .find(|event| event.ty == "set_config")
         .unwrap();
 
-    // determine the config_digest using events returned from set_config
     let mut config_digest = [0u8; 32];
     let digest = &set_config
         .attributes

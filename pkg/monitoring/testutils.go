@@ -63,8 +63,7 @@ func generateBigInt(bitSize uint8) *big.Int {
 
 func generateProxyData() ProxyData {
 	return ProxyData{
-		Answer:                  generateBigInt(128),
-		LinkAvailableForPayment: generateBigInt(160),
+		Answer: generateBigInt(128),
 	}
 }
 

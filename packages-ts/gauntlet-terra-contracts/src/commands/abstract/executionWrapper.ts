@@ -1,8 +1,8 @@
 import AbstractCommand, { makeAbstractCommand } from '.'
 import { Result } from '@chainlink/gauntlet-core'
-import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
+import { TerraCommand, TransactionResponse, logger } from '@chainlink/gauntlet-terra'
 import { AccAddress, LCDClient } from '@terra-money/terra.js'
-import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { prompt } from '@chainlink/gauntlet-core/dist/utils'
 
 export type ExecutionContext<Input, ContractInput> = {
   input: Input
