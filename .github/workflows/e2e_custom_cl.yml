@@ -29,8 +29,7 @@ jobs:
           path: ~/.cargo/git
           key: ${{ runner.os }}-v2-cargo-index-${{ hashFiles('**/Cargo.lock') }}
       - name: Build Artifacts
-        run: |
-          make contracts_compile
+        run: make contracts_compile
       - name: Upload Artifacts
         uses: actions/upload-artifact@master
         with:

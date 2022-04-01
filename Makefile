@@ -33,6 +33,7 @@ ifeq ($(OSFLAG),$(OSX))
 	asdf plugin-add golang https://github.com/kennyp/asdf-golang.git || true
 	asdf plugin-add ginkgo https://github.com/jimmidyson/asdf-ginkgo.git || true
 	asdf plugin-add pulumi || true
+	asdf plugin add golangci-lint https://github.com/hypnoglow/asdf-golangci-lint.git
 	asdf install
 endif
 ifeq ($(OSFLAG),$(LINUX))
@@ -42,6 +43,9 @@ ifneq ($(CI),true)
 endif
 	go install github.com/onsi/ginkgo/v2/ginkgo@v$(shell cat ./.tool-versions | grep ginkgo | sed -En "s/ginkgo.(.*)/\1/p")
 endif
+
+golint:
+	${BIN_DIR}/golangci-lint --color=always --timeout=5m0s --tests=false run ./... -v
 
 build_js:
 	yarn install --frozen-lockfile
