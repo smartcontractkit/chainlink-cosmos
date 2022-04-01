@@ -18,7 +18,7 @@ type ContractExpectedInfo = {
   description: string
   aggregatorAddress: string
   latestRoundData: RoundData
-  event: NewTransmissionEventData
+  event?: NewTransmissionEventData
 }
 
 type Oracle = {
@@ -70,18 +70,7 @@ const makeOnchainData = (provider: LCDClient) => async (
   const transmitters = instructionsData[1]
   const description = instructionsData[2]
 
-  let event
   const onchainEvent = await getLatestOCRNewTransmissionEvent(provider, aggregator)
-  if (onchainEvent) {
-    event = {
-      answer: Number(onchainEvent.answer[0]),
-      transmitter: onchainEvent.transmitter[0],
-      observations: onchainEvent.observations,
-      observers: onchainEvent.observers[0],
-      observations_timestamp: Number(onchainEvent.observations_timestamp[0]),
-      aggregator_round_id: Number(onchainEvent.aggregator_round_id[0]),
-    }
-  }
 
   return {
     transmitters: transmitters.addresses,
@@ -93,9 +82,21 @@ const makeOnchainData = (provider: LCDClient) => async (
       observationsTimestamp: latestRoundData.observations_timestamp,
       transmissionTimestamp: latestRoundData.transmission_timestamp,
     },
-    event: event,
+    ...(onchainEvent && {
+      event: {
+        answer: Number(onchainEvent.answer[0]),
+        transmitter: onchainEvent.transmitter[0],
+        observations: onchainEvent.observations.map((o) => Number(o)),
+        observers: onchainEvent.observers[0],
+        observations_timestamp: Number(onchainEvent.observations_timestamp[0]),
+        aggregator_round_id: Number(onchainEvent.aggregator_round_id[0]),
+      },
+    }),
   }
 }
+
+const parseObserversByLength = (observers: string, observersNumber: number): number[] =>
+  (observers.substring(0, observersNumber * 2).match(/.{2}/g) || []).map((s) => parseInt(s, 16))
 
 const inspect = (inputData: CommandInput, onchainData: ContractExpectedInfo): boolean => {
   let inspections: inspection.Inspection[] = [
@@ -115,9 +116,6 @@ const inspect = (inputData: CommandInput, onchainData: ContractExpectedInfo): bo
 
   const roundTime = dateFromUnix(event.observations_timestamp)
   logger.info(`Found NewTransmission event for round ${event.aggregator_round_id} (${roundTime})`)
-
-  const parseObserversByLength = (observers: string, observersNumber: number): number[] =>
-    (observers.substring(0, observersNumber * 2).match(/.{2}/g) || []).map((s) => parseInt(s, 16))
 
   const parsedObserversIndexes = parseObserversByLength(event.observers, event.observations.length)
 
