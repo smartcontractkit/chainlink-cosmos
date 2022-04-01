@@ -5,7 +5,7 @@ on:
 
 jobs:
   gauntlet_build:
-    name: Guantlet Build
+    name: Gauntlet Build
     env:
       CI: true
     runs-on: ubuntu-latest
