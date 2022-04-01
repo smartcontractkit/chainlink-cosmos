@@ -1,5 +1,6 @@
 import { AccAddress, LCDClient } from '@terra-money/terra.js'
 import { providerUtils } from '@chainlink/gauntlet-terra'
+import { getLatestContractEvent } from './utils'
 
 export type RoundData = {
   roundId: number
@@ -21,21 +22,5 @@ export const getLatestOCRConfigEvent = async (provider: LCDClient, contract: Acc
 }
 
 export const getLatestOCRNewTransmissionEvent = async (provider: LCDClient, contract: AccAddress) => {
-  let transmissionTx = (
-    await provider.tx.search({
-      events: [
-        {
-          key: 'wasm-new_transmission.contract_address',
-          value: contract,
-        },
-      ],
-      'pagination.limit': '1',
-      order_by: 'ORDER_BY_DESC',
-    })
-  ).txs
-
-  return transmissionTx.length > 0 ? transmissionTx[0]?.logs?.[0].eventsByType['wasm-new_transmission'] : null
+  return getLatestContractEvent(provider, 'wasm-new_transmission', contract)
 }
-
-export const parseObserversByLength = (observers: string, observersNumber: number): number[] =>
-  (observers.substring(0, observersNumber * 2).match(/.{2}/g) || []).map((s) => parseInt(s, 16))
