@@ -45,7 +45,7 @@ endif
 endif
 
 golint:
-	${BIN_DIR}/golangci-lint --color=always --timeout=5m0s --tests=false run ./... -v
+	golangci-lint --color=always --timeout=5m0s --tests=false run ./... -v
 
 build_js:
 	yarn install --frozen-lockfile
