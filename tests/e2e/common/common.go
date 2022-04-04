@@ -289,7 +289,7 @@ func CreateJobs(contractNodeInfo *ContractNodeInfo) error {
 		JuelsPerFeeCoinSource: contractNodeInfo.BootstrapBridgeInfo.JuelsSource,
 	}
 	if _, err := contractNodeInfo.BootstrapNode.CreateJob(jobSpec); err != nil {
-		return err
+		return fmt.Errorf("failed creating job for boostrap node: %w", err)
 	}
 	for nIdx, n := range contractNodeInfo.Nodes {
 		jobSpec := &client.OCR2TaskJobSpec{
@@ -307,7 +307,7 @@ func CreateJobs(contractNodeInfo *ContractNodeInfo) error {
 			JuelsPerFeeCoinSource: contractNodeInfo.BridgeInfos[nIdx].JuelsSource,
 		}
 		if _, err := n.CreateJob(jobSpec); err != nil {
-			return err
+			return fmt.Errorf("failed creating job for node %s: %w", n.URL(), err)
 		}
 	}
 	return nil

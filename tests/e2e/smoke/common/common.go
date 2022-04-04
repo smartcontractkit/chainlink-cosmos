@@ -10,6 +10,7 @@ import (
 
 	"github.com/neilotoole/errgroup"
 
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rs/zerolog/log"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e"
@@ -156,18 +157,13 @@ func (m *OCRv2State) SetupClients() {
 }
 
 func (m *OCRv2State) initializeNodesInContractsMap() {
-	for _, contractNodeInfo := range m.ContractsNodeSetup {
-		nodeIndexes := contractNodeInfo.NodesIdx
-		nodes := []client.Chainlink{}
-		nodeKeysBundles := []common.NodeKeysBundle{}
-		for _, nodeIndex := range nodeIndexes {
-			nodes = append(nodes, m.Nodes[nodeIndex])
-			nodeKeysBundles = append(nodeKeysBundles, m.NodeKeysBundle[nodeIndex])
+	for i := 0; i < len(m.ContractsNodeSetup); i++ {
+		for _, nodeIndex := range m.ContractsNodeSetup[i].NodesIdx {
+			m.ContractsNodeSetup[i].Nodes = append(m.ContractsNodeSetup[i].Nodes, m.Nodes[nodeIndex])
+			m.ContractsNodeSetup[i].NodeKeysBundle = append(m.ContractsNodeSetup[i].NodeKeysBundle, m.NodeKeysBundle[nodeIndex])
 		}
-		contractNodeInfo.Nodes = nodes
-		contractNodeInfo.NodeKeysBundle = nodeKeysBundles
-		contractNodeInfo.BootstrapNode = m.Nodes[contractNodeInfo.BootstrapNodeIdx]
-		contractNodeInfo.BootstrapNodeKeysBundle = m.NodeKeysBundle[contractNodeInfo.BootstrapNodeIdx]
+		m.ContractsNodeSetup[i].BootstrapNode = m.Nodes[m.ContractsNodeSetup[i].BootstrapNodeIdx]
+		m.ContractsNodeSetup[i].BootstrapNodeKeysBundle = m.NodeKeysBundle[m.ContractsNodeSetup[i].BootstrapNodeIdx]
 	}
 }
 
@@ -188,9 +184,10 @@ func (m *OCRv2State) DeployContracts(contractsDir string) {
 
 	m.initializeNodesInContractsMap()
 	g := errgroup.Group{}
-	for i, contractNodeInfo := range m.ContractsNodeSetup {
+	for i := 0; i < len(m.ContractsNodeSetup); i++ {
 		i := i
 		g.Go(func() error {
+			defer ginkgo.GinkgoRecover()
 			c := defaultNetwork.GetClients()[i]
 			cd := e2e.NewTerraContractDeployer(c)
 
@@ -208,7 +205,7 @@ func (m *OCRv2State) DeployContracts(contractsDir string) {
 			err = ocr2.SetBilling(uint64(2e5), uint64(1), uint64(1), "1", bac.Address())
 			Expect(err).ShouldNot(HaveOccurred())
 
-			ocConfig, err := common.OffChainConfigParamsFromNodes(contractNodeInfo.Nodes, contractNodeInfo.NodeKeysBundle)
+			ocConfig, err := common.OffChainConfigParamsFromNodes(m.ContractsNodeSetup[i].Nodes, m.ContractsNodeSetup[i].NodeKeysBundle)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			_, err = ocr2.SetOffChainConfig(ocConfig)
@@ -220,8 +217,6 @@ func (m *OCRv2State) DeployContracts(contractsDir string) {
 			Expect(err).ShouldNot(HaveOccurred())
 			validatorProxy, err := cd.DeployOCRv2Proxy(validator.Address(), contractsDir)
 			Expect(err).ShouldNot(HaveOccurred())
-
-			contractNodeInfo.OCR2Address = ocr2.Address()
 
 			m.Mu.Lock()
 			m.Contracts = append(m.Contracts, Contracts{
@@ -239,12 +234,15 @@ func (m *OCRv2State) DeployContracts(contractsDir string) {
 		})
 	}
 	Expect(g.Wait()).ShouldNot(HaveOccurred())
+	for i := 0; i < len(m.ContractsNodeSetup); i++ {
+		m.ContractsNodeSetup[i].OCR2Address = m.Contracts[i].OCR2.Address()
+	}
 }
 
 func (m *OCRv2State) SetAllAdapterResponsesToTheSameValue(response int) {
-	for _, contractNodeInfo := range m.ContractsNodeSetup {
-		for _, node := range contractNodeInfo.Nodes {
-			nodeContractPairID, err := common.BuildNodeContractPairID(node, contractNodeInfo.OCR2Address)
+	for i := 0; i < len(m.ContractsNodeSetup); i++ {
+		for _, node := range m.ContractsNodeSetup[i].Nodes {
+			nodeContractPairID, err := common.BuildNodeContractPairID(node, m.ContractsNodeSetup[i].OCR2Address)
 			Expect(err).ShouldNot(HaveOccurred())
 			path := fmt.Sprintf("/%s", nodeContractPairID)
 			m.Err = m.MockServer.SetValuePath(path, response)
@@ -264,9 +262,11 @@ func (m *OCRv2State) CreateJobs() {
 	err = common.CreateBridges(m.ContractsNodeSetup, m.MockServer)
 	Expect(err).ShouldNot(HaveOccurred())
 	g := errgroup.Group{}
-	for _, contractNodeInfo := range m.ContractsNodeSetup {
+	for i := 0; i < len(m.ContractsNodeSetup); i++ {
+		i := i
 		g.Go(func() error {
-			m.Err = common.CreateJobs(contractNodeInfo)
+			defer ginkgo.GinkgoRecover()
+			m.Err = common.CreateJobs(m.ContractsNodeSetup[i])
 			Expect(m.Err).ShouldNot(HaveOccurred())
 			return nil
 		})
