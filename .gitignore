@@ -22,3 +22,4 @@ tests/e2e/logs
 packages-ts/gauntlet-terra-contracts/networks/.env.test*
 tests/e2e/smoke/rdd/directory*
 tests/e2e/smoke/reports
+artifacts

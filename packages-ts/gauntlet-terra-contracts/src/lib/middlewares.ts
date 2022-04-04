@@ -20,7 +20,7 @@ export const withAddressBook: Middleware = (c: TerraCommand, next: Next) => {
 
     const tryAddInstance = (id: CONTRACT_LIST, address: string | undefined, name?: string) => {
       if (!address) {
-        console.warn(`${address} not set in environment`)
+        logger.warn(`${id} not set in environment`)
       } else if (!AccAddress.validate(address)) {
         throw new Error(`Read invalid contract address ${address} for ${id} contract from env`)
       } else {
