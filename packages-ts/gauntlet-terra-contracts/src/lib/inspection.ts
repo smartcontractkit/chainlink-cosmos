@@ -1,5 +1,13 @@
 import { AccAddress, LCDClient } from '@terra-money/terra.js'
 import { providerUtils } from '@chainlink/gauntlet-terra'
+import { getLatestContractEvent } from './utils'
+
+export type RoundData = {
+  roundId: number
+  answer: string
+  observationsTimestamp: number
+  transmissionTimestamp: number
+}
 
 // TODO: find the right place for this function
 export const getLatestOCRConfigEvent = async (provider: LCDClient, contract: AccAddress) => {
@@ -11,4 +19,8 @@ export const getLatestOCRConfigEvent = async (provider: LCDClient, contract: Acc
   )
 
   return setConfigTx?.logs?.[0].eventsByType['wasm-set_config']
+}
+
+export const getLatestOCRNewTransmissionEvent = async (provider: LCDClient, contract: AccAddress) => {
+  return getLatestContractEvent(provider, 'wasm-new_transmission', contract)
 }
