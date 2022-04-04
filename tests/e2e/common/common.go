@@ -30,6 +30,26 @@ const (
 
 // Those functions may be common with another chains and should be moved to another lib
 
+var RelayConfig = map[string]string{
+	"nodeType":      "terra",
+	"tendermintURL": "http://terrad:26657",
+	"fcdURL":        "http://fcd-api:3060",
+	"chainID":       "localterra",
+}
+
+// ContractNodeInfo contains the indexes of the nodes, bridges, NodeKeyBundles and nodes relevant to an OCR2 Contract
+type ContractNodeInfo struct {
+	OCR2Address             string
+	BootstrapNodeIdx        int
+	BootstrapNode           client.Chainlink
+	BootstrapNodeKeysBundle NodeKeysBundle
+	BootstrapBridgeInfo     BridgeInfo
+	NodesIdx                []int
+	Nodes                   []client.Chainlink
+	NodeKeysBundle          []NodeKeysBundle
+	BridgeInfos             []BridgeInfo
+}
+
 type NodeKeysBundle struct {
 	PeerID  string
 	OCR2Key *client.OCR2Key
@@ -51,7 +71,7 @@ func stripKeyPrefix(key string) string {
 	return key
 }
 
-func createNodeKeys(nodes []client.Chainlink) ([]NodeKeysBundle, error) {
+func CreateNodeKeysBundle(nodes []client.Chainlink) ([]NodeKeysBundle, error) {
 	nkb := make([]NodeKeysBundle, 0)
 	for _, n := range nodes {
 		p2pkeys, err := n.ReadP2PKeys()
@@ -123,23 +143,19 @@ func FundOracles(c client.BlockchainClient, nkb []NodeKeysBundle, amount *big.Fl
 	return nil
 }
 
-// DefaultOffChainConfigParamsFromNodes collects OCR2 keys and creates contracts.OffChainAggregatorV2Config
-func DefaultOffChainConfigParamsFromNodes(nodes []client.Chainlink) (contracts.OffChainAggregatorV2Config, []NodeKeysBundle, error) {
-	nkb, err := createNodeKeys(nodes)
+// OffChainConfigParamsFromNodes creates contracts.OffChainAggregatorV2Config
+func OffChainConfigParamsFromNodes(nodes []client.Chainlink, nkb []NodeKeysBundle) (contracts.OffChainAggregatorV2Config, error) {
+	oi, err := createOracleIdentities(nkb)
 	if err != nil {
-		return contracts.OffChainAggregatorV2Config{}, nil, err
-	}
-	oi, err := createOracleIdentities(nkb[1:])
-	if err != nil {
-		return contracts.OffChainAggregatorV2Config{}, nil, err
+		return contracts.OffChainAggregatorV2Config{}, err
 	}
 	s := make([]int, 0)
-	for range nodes[1:] {
+	for range nodes {
 		s = append(s, 1)
 	}
 	faultyNodes := 0
-	if len(nodes[1:]) > 1 {
-		faultyNodes = len(nkb[1:])/3 - 1
+	if len(nodes) > 1 {
+		faultyNodes = len(nodes)/3 - 1
 	}
 	if faultyNodes == 0 {
 		faultyNodes = 1
@@ -165,28 +181,22 @@ func DefaultOffChainConfigParamsFromNodes(nodes []client.Chainlink) (contracts.O
 		MaxDurationShouldTransmitAcceptedReport: 500 * time.Millisecond,
 		F:                                       faultyNodes,
 		OnchainConfig:                           []byte{},
-	}, nkb, nil
+	}, nil
 }
 
 func CreateTerraChainAndNode(nodes []client.Chainlink) error {
-	relayConfig := map[string]string{
-		"nodeType":      "terra",
-		"tendermintURL": "http://terrad:26657",
-		"fcdURL":        "http://fcd-api:3060",
-		"chainID":       "localterra",
-	}
 	for _, n := range nodes {
 		_, err := n.CreateTerraChain(&client.TerraChainAttributes{
 			ChainID: "localterra",
-			FCDURL:  relayConfig["fcdURL"],
+			FCDURL:  RelayConfig["fcdURL"],
 		})
 		if err != nil {
 			return err
 		}
 		if _, err = n.CreateTerraNode(&client.TerraNodeAttributes{
 			Name:          "terra",
-			TerraChainID:  relayConfig["chainID"],
-			TendermintURL: relayConfig["tendermintURL"],
+			TerraChainID:  RelayConfig["chainID"],
+			TendermintURL: RelayConfig["tendermintURL"],
 		}); err != nil {
 			return err
 		}
@@ -194,19 +204,40 @@ func CreateTerraChainAndNode(nodes []client.Chainlink) error {
 	return nil
 }
 
-func CreateBridges(contracts []string, nodes []client.Chainlink, mock *client.MockserverClient) (map[string][]BridgeInfo, error) {
-	relayConfig := map[string]string{
-		"nodeType":      "terra",
-		"tendermintURL": "http://terrad:26657",
-		"fcdURL":        "http://fcd-api:3060",
-		"chainID":       "localterra",
-	}
-	biMap := make(map[string][]BridgeInfo)
-	for _, contract := range contracts {
-		for _, n := range nodes {
-			nodeContractPairID, err := BuildNodeContractPairID(n, contract)
+func CreateBridges(ContractsIdxMapToContractsNodeInfo map[int]*ContractNodeInfo, mock *client.MockserverClient) error {
+	for i, nodesInfo := range ContractsIdxMapToContractsNodeInfo {
+		// Bootstrap node first
+		nodeContractPairID, err := BuildNodeContractPairID(nodesInfo.BootstrapNode, nodesInfo.OCR2Address)
+		if err != nil {
+			return err
+		}
+		sourceValueBridge := client.BridgeTypeAttributes{
+			Name:        nodeContractPairID,
+			URL:         fmt.Sprintf("%s/%s", mock.Config.ClusterURL, nodeContractPairID),
+			RequestData: "{}",
+		}
+		observationSource := client.ObservationSourceSpecBridge(sourceValueBridge)
+		err = nodesInfo.BootstrapNode.CreateBridge(&sourceValueBridge)
+		if err != nil {
+			return err
+		}
+		juelsBridge := client.BridgeTypeAttributes{
+			Name:        nodeContractPairID + "juels",
+			URL:         fmt.Sprintf("%s/juels", mock.Config.ClusterURL),
+			RequestData: "{}",
+		}
+		juelsSource := client.ObservationSourceSpecBridge(juelsBridge)
+		err = nodesInfo.BootstrapNode.CreateBridge(&juelsBridge)
+		if err != nil {
+			return err
+		}
+		ContractsIdxMapToContractsNodeInfo[i].BootstrapBridgeInfo = BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: RelayConfig}
+
+		// Other nodes later
+		for _, node := range nodesInfo.Nodes {
+			nodeContractPairID, err := BuildNodeContractPairID(node, nodesInfo.OCR2Address)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			sourceValueBridge := client.BridgeTypeAttributes{
 				Name:        nodeContractPairID,
@@ -214,9 +245,9 @@ func CreateBridges(contracts []string, nodes []client.Chainlink, mock *client.Mo
 				RequestData: "{}",
 			}
 			observationSource := client.ObservationSourceSpecBridge(sourceValueBridge)
-			err = n.CreateBridge(&sourceValueBridge)
+			err = node.CreateBridge(&sourceValueBridge)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			juelsBridge := client.BridgeTypeAttributes{
 				Name:        nodeContractPairID + "juels",
@@ -224,42 +255,56 @@ func CreateBridges(contracts []string, nodes []client.Chainlink, mock *client.Mo
 				RequestData: "{}",
 			}
 			juelsSource := client.ObservationSourceSpecBridge(juelsBridge)
-			err = n.CreateBridge(&juelsBridge)
+			err = node.CreateBridge(&juelsBridge)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			biMap[contract] = append(biMap[contract], BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: relayConfig})
+			ContractsIdxMapToContractsNodeInfo[i].BridgeInfos = append(ContractsIdxMapToContractsNodeInfo[i].BridgeInfos, BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: RelayConfig})
 		}
 	}
-	return biMap, nil
+
+	return nil
 }
 
-func CreateJobs(ocr2Addr string, bridgesInfo []BridgeInfo, nodes []client.Chainlink, nkb []NodeKeysBundle) error {
+func CreateJobs(contractNodeInfo *ContractNodeInfo) error {
 	bootstrapPeers := []client.P2PData{
 		{
-			RemoteIP:   nodes[0].RemoteIP(),
+			RemoteIP:   contractNodeInfo.BootstrapNode.RemoteIP(),
 			RemotePort: "6690",
-			PeerID:     nkb[0].PeerID,
+			PeerID:     contractNodeInfo.BootstrapNodeKeysBundle.PeerID,
 		},
 	}
-	for nIdx, n := range nodes {
-		jobType := "offchainreporting2"
-		if nIdx == 0 {
-			jobType = "bootstrap"
-		}
+	jobSpec := &client.OCR2TaskJobSpec{
+		Name:                  fmt.Sprintf("terra-OCRv2-%s-%s", "bootstrap", uuid.NewV4().String()),
+		JobType:               "bootstrap",
+		ContractID:            contractNodeInfo.OCR2Address,
+		Relay:                 ChainName,
+		RelayConfig:           contractNodeInfo.BootstrapBridgeInfo.RelayConfig,
+		P2PPeerID:             contractNodeInfo.BootstrapNodeKeysBundle.PeerID,
+		PluginType:            "median",
+		P2PBootstrapPeers:     bootstrapPeers,
+		OCRKeyBundleID:        contractNodeInfo.BootstrapNodeKeysBundle.OCR2Key.Data.ID,
+		TransmitterID:         contractNodeInfo.BootstrapNodeKeysBundle.TXKey.Data.ID,
+		ObservationSource:     contractNodeInfo.BootstrapBridgeInfo.ObservationSource,
+		JuelsPerFeeCoinSource: contractNodeInfo.BootstrapBridgeInfo.JuelsSource,
+	}
+	if _, err := contractNodeInfo.BootstrapNode.CreateJob(jobSpec); err != nil {
+		return err
+	}
+	for nIdx, n := range contractNodeInfo.Nodes {
 		jobSpec := &client.OCR2TaskJobSpec{
 			Name:                  fmt.Sprintf("terra-OCRv2-%d-%s", nIdx, uuid.NewV4().String()),
-			JobType:               jobType,
-			ContractID:            ocr2Addr,
+			JobType:               "offchainreporting2",
+			ContractID:            contractNodeInfo.OCR2Address,
 			Relay:                 ChainName,
-			RelayConfig:           bridgesInfo[nIdx].RelayConfig,
-			P2PPeerID:             nkb[nIdx].PeerID,
+			RelayConfig:           contractNodeInfo.BridgeInfos[nIdx].RelayConfig,
+			P2PPeerID:             contractNodeInfo.NodeKeysBundle[nIdx].PeerID,
 			PluginType:            "median",
 			P2PBootstrapPeers:     bootstrapPeers,
-			OCRKeyBundleID:        nkb[nIdx].OCR2Key.Data.ID,
-			TransmitterID:         nkb[nIdx].TXKey.Data.ID,
-			ObservationSource:     bridgesInfo[nIdx].ObservationSource,
-			JuelsPerFeeCoinSource: bridgesInfo[nIdx].JuelsSource,
+			OCRKeyBundleID:        contractNodeInfo.NodeKeysBundle[nIdx].OCR2Key.Data.ID,
+			TransmitterID:         contractNodeInfo.NodeKeysBundle[nIdx].TXKey.Data.ID,
+			ObservationSource:     contractNodeInfo.BridgeInfos[nIdx].ObservationSource,
+			JuelsPerFeeCoinSource: contractNodeInfo.BridgeInfos[nIdx].JuelsSource,
 		}
 		if _, err := n.CreateJob(jobSpec); err != nil {
 			return err

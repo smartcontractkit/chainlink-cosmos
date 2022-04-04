@@ -15,7 +15,7 @@ var _ = Describe("Terra OCRv2 @ocr2", func() {
 	var state *tc.OCRv2State
 
 	BeforeEach(func() {
-		state = tc.NewOCRv2State(1)
+		state = tc.NewOCRv2State(1, 5)
 		By("Deploying the cluster", func() {
 			state.DeployCluster(5, common.ChainBlockTime, false, utils.ContractsDir)
 			state.SetAllAdapterResponsesToTheSameValue(2)
