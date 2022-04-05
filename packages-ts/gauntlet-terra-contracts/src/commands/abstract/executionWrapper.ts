@@ -12,31 +12,31 @@ export type ExecutionContext = {
   flags: any
 }
 
-export type InputContext<Input, ContractInput> = {
-  input: Input
+export type Input<UserInput, ContractInput> = {
+  input: UserInput
   contractInput: ContractInput
 }
 
-export type BeforeExecute<Input, ContractInput> = (
+export type BeforeExecute<UserInput, ContractInput> = (
   context: ExecutionContext,
-  inputContext: InputContext<Input, ContractInput>,
+  inputContext: Input<UserInput, ContractInput>,
 ) => (signer: AccAddress) => Promise<void>
 
-export type AfterExecute<Input, ContractInput> = (
+export type AfterExecute<UserInput, ContractInput> = (
   context: ExecutionContext,
-  inputContext: InputContext<Input, ContractInput>,
+  inputContext: Input<UserInput, ContractInput>,
 ) => (response: Result<TransactionResponse>) => Promise<any>
 
-export type Validate<Input> = (input: Input, context: ExecutionContext) => Promise<boolean>
-export interface Validation<Input> {
+export type Validate<UserInput> = (input: UserInput, context: ExecutionContext) => Promise<boolean>
+export interface Validation<UserInput> {
   id: number
-  validate: Validate<Input>
+  validate: Validate<UserInput>
 }
 
-export const makeValidations = (validates: Validate<any>[]): Validation<any>[] =>
+export const makeValidations = (...validates: Validate<any>[]): Validation<any>[] =>
   validates.map((validate, idx) => ({ id: idx, validate }))
 
-export interface AbstractInstruction<Input, ContractInput> {
+export interface AbstractInstruction<UserInput, ContractInput> {
   examples?: string[]
   instruction: {
     category: string
@@ -44,32 +44,32 @@ export interface AbstractInstruction<Input, ContractInput> {
     function: string
     suffixes?: string[]
   }
-  makeInput: (flags: any, args: string[]) => Promise<Input>
-  validateInput: (input: Input) => boolean
-  makeContractInput: (input: Input, context: ExecutionContext) => Promise<ContractInput>
-  beforeExecute?: BeforeExecute<Input, ContractInput>
-  afterExecute?: AfterExecute<Input, ContractInput>
-  validations?: Validation<Input>[]
+  makeInput: (flags: any, args: string[]) => Promise<UserInput>
+  validateInput: (input: UserInput) => boolean
+  makeContractInput: (input: UserInput, context: ExecutionContext) => Promise<ContractInput>
+  beforeExecute?: BeforeExecute<UserInput, ContractInput>
+  afterExecute?: AfterExecute<UserInput, ContractInput>
+  validations?: Validation<UserInput>[]
 }
 
-const defaultBeforeExecute = <Input, ContractInput>(
+const defaultBeforeExecute = <UserInput, ContractInput>(
   context: ExecutionContext,
-  inputContext: InputContext<Input, ContractInput>,
+  inputContext: Input<UserInput, ContractInput>,
 ) => async () => {
   logger.loading(`Executing ${context.id} from contract ${context.contract}`)
   logger.log('Input Params:', inputContext.contractInput)
   await prompt(`Continue?`)
 }
 
-export const extendCommand = <Input, ContractInput>(
-  instruction: AbstractInstruction<Input, ContractInput>,
+export const extendCommandInstruction = <UserInput, ContractInput>(
+  instruction: AbstractInstruction<UserInput, ContractInput>,
   config: {
     suffixes: string[]
     validationsToSkip?: number[]
-    makeInput: (flags: any, args: string[]) => Promise<Input>
+    makeInput: (flags: any, args: string[]) => Promise<UserInput>
     examples: string[]
   },
-): AbstractInstruction<Input, ContractInput> => {
+): AbstractInstruction<UserInput, ContractInput> => {
   return {
     ...instruction,
     examples: config.examples || instruction.examples,
@@ -79,11 +79,13 @@ export const extendCommand = <Input, ContractInput>(
     },
     makeInput: config.makeInput,
     validations:
-      instruction.validations && instruction.validations.filter(({ id }) => config.validationsToSkip?.includes(id)),
+      instruction.validations && instruction.validations.filter(({ id }) => !config.validationsToSkip?.includes(id)),
   }
 }
 
-export const instructionToCommand = <Input, ContractInput>(instruction: AbstractInstruction<Input, ContractInput>) => {
+export const instructionToCommand = <UserInput, ContractInput>(
+  instruction: AbstractInstruction<UserInput, ContractInput>,
+) => {
   const id = `${instruction.instruction.contract}:${instruction.instruction.function}`
   const commandId = instruction.instruction.suffixes ? `${id}:${instruction.instruction.suffixes.join(':')}` : id
   const category = `${instruction.instruction.category}`
@@ -110,7 +112,11 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
       if (!AccAddress.validate(address)) throw new Error(`Invalid contract address ${address}`)
     }
 
-    runValidations = async (validations: Validation<Input>[], executionContext: ExecutionContext, input: Input) => {
+    runValidations = async (
+      validations: Validation<UserInput>[],
+      executionContext: ExecutionContext,
+      input: UserInput,
+    ) => {
       logger.loading('Running command validations')
       const results = await Promise.all(
         validations.map(async ({ validate, id }) => {
@@ -157,7 +163,7 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
 
       const contractInput = await instruction.makeContractInput(input, executionContext)
 
-      const inputContext: InputContext<Input, ContractInput> = {
+      const inputContext: Input<UserInput, ContractInput> = {
         input,
         contractInput,
       }

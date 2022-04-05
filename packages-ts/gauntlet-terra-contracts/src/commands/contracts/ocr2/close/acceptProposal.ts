@@ -1,4 +1,4 @@
-import { extendCommand } from '../../../abstract/executionWrapper'
+import { extendCommandInstruction, instructionToCommand } from '../../../abstract/executionWrapper'
 import AcceptProposal, {
   CommandInput as AcceptProposalInput,
   instruction as acceptProposalInstruction,
@@ -17,14 +17,16 @@ const makeInput = async (flags): Promise<AcceptProposalInput> => {
     }
 
   return {
-    proposalId: flags.configProposal,
+    proposalId: flags.proposalId || flags.configProposal,
     digest: flags.digest,
     ...defaultInput,
   }
 }
 
-export default extendCommand(acceptProposalInstruction, {
-  suffixes: ['close'],
-  examples: [`yarn gauntlet ${AcceptProposal.id}:close --network=<NETWORK> <CONTRACT_ADDRESS>`],
-  makeInput,
-})
+export default instructionToCommand(
+  extendCommandInstruction(acceptProposalInstruction, {
+    suffixes: ['close'],
+    examples: [`yarn gauntlet ${AcceptProposal.id}:close --network=<NETWORK> <CONTRACT_ADDRESS>`],
+    makeInput,
+  }),
+)

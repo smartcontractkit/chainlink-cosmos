@@ -78,7 +78,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   const contract = args[0]
 
   return {
-    proposalId: flags.proposalId || flags.configProposal, // --configProposal alias requested by eng ops
+    proposalId: flags.proposalId || flags.configProposal || flags.id, // --configProposal alias requested by eng ops
     digest: flags.digest,
     offchainConfig: getOffchainConfigInput(rdd, contract),
     randomSecret: secret,
@@ -154,7 +154,7 @@ export const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   makeContractInput: makeContractInput,
   beforeExecute,
   afterExecute,
-  validations: makeValidations([validationA, validationB, validationC, validationD]),
+  validations: makeValidations(validationA, validationB, validationC, validationD),
 }
 
 export default instructionToCommand(instruction)

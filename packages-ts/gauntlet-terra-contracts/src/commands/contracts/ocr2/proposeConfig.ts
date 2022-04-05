@@ -38,7 +38,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 
   return {
     f: aggregator.config.f,
-    proposalId: flags.proposalId || flags.configProposal, // -configProposal alias requested by eng ops
+    proposalId: flags.proposalId || flags.configProposal || flags.id, // -configProposal alias requested by eng ops
     signers,
     transmitters,
     payees,
@@ -93,7 +93,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
   await prompt('Continue?')
 }
 
-const instruction: AbstractInstruction<CommandInput, ContractInput> = {
+export const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   examples: ['yarn gauntlet ocr2:propose_config --network=<NETWORK> --configProposal=<PROPOSAL_ID> <CONTRACT_ADDRESS>'],
   instruction: {
     contract: 'ocr2',

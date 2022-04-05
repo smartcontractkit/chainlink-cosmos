@@ -4,7 +4,7 @@ import {
   instructionToCommand,
   BeforeExecute,
   AfterExecute,
-  Validation,
+  makeValidations,
 } from '../../abstract/executionWrapper'
 import { time, BN } from '@chainlink/gauntlet-core/dist/utils'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
@@ -115,7 +115,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   const contract = args[0]
 
   return {
-    proposalId: flags.proposalId || flags.configProposal, // -configProposal alias requested by eng ops
+    proposalId: flags.proposalId || flags.configProposal || flags.id, // -configProposal alias requested by eng ops
     offchainConfig: getOffchainConfigInput(rdd, contract),
     randomSecret: randomSecret || (await generateSecretWords()),
   }
@@ -177,70 +177,63 @@ const afterExecute: AfterExecute<CommandInput, ContractInput> = (_, inputContext
   }
 }
 
-const validations: Validation<CommandInput>[] = [
-  {
-    id: 'OCRConfig',
-    msgSuccess: 'OCR Config is valid',
-    msgFail: 'OCR Config is not valid',
-    validate: () => async (input) => {
-      const { offchainConfig } = input
+const validateA = async (input) => {
+  const { offchainConfig } = input
 
-      const _isNegative = (v: number): boolean => new BN(v).lt(new BN(0))
-      const nonNegativeValues = [
-        'deltaProgressNanoseconds',
-        'deltaResendNanoseconds',
-        'deltaRoundNanoseconds',
-        'deltaGraceNanoseconds',
-        'deltaStageNanoseconds',
-        'maxDurationQueryNanoseconds',
-        'maxDurationObservationNanoseconds',
-        'maxDurationReportNanoseconds',
-        'maxDurationShouldAcceptFinalizedReportNanoseconds',
-        'maxDurationShouldTransmitAcceptedReportNanoseconds',
-      ]
-      for (let prop in nonNegativeValues) {
-        if (_isNegative(input[prop])) throw new Error(`${prop} must be non-negative`)
-      }
-      const safeIntervalNanoseconds = new BN(200).mul(time.Millisecond).toNumber()
-      if (offchainConfig.deltaProgressNanoseconds < safeIntervalNanoseconds)
-        throw new Error(
-          `deltaProgressNanoseconds (${offchainConfig.deltaProgressNanoseconds} ns)  is set below the resource exhaustion safe interval (${safeIntervalNanoseconds} ns)`,
-        )
-      if (offchainConfig.deltaResendNanoseconds < safeIntervalNanoseconds)
-        throw new Error(
-          `deltaResendNanoseconds (${offchainConfig.deltaResendNanoseconds} ns) is set below the resource exhaustion safe interval (${safeIntervalNanoseconds} ns)`,
-        )
+  const _isNegative = (v: number): boolean => new BN(v).lt(new BN(0))
+  const nonNegativeValues = [
+    'deltaProgressNanoseconds',
+    'deltaResendNanoseconds',
+    'deltaRoundNanoseconds',
+    'deltaGraceNanoseconds',
+    'deltaStageNanoseconds',
+    'maxDurationQueryNanoseconds',
+    'maxDurationObservationNanoseconds',
+    'maxDurationReportNanoseconds',
+    'maxDurationShouldAcceptFinalizedReportNanoseconds',
+    'maxDurationShouldTransmitAcceptedReportNanoseconds',
+  ]
+  for (let prop in nonNegativeValues) {
+    if (_isNegative(input[prop])) throw new Error(`${prop} must be non-negative`)
+  }
+  const safeIntervalNanoseconds = new BN(200).mul(time.Millisecond).toNumber()
+  if (offchainConfig.deltaProgressNanoseconds < safeIntervalNanoseconds)
+    throw new Error(
+      `deltaProgressNanoseconds (${offchainConfig.deltaProgressNanoseconds} ns)  is set below the resource exhaustion safe interval (${safeIntervalNanoseconds} ns)`,
+    )
+  if (offchainConfig.deltaResendNanoseconds < safeIntervalNanoseconds)
+    throw new Error(
+      `deltaResendNanoseconds (${offchainConfig.deltaResendNanoseconds} ns) is set below the resource exhaustion safe interval (${safeIntervalNanoseconds} ns)`,
+    )
 
-      if (offchainConfig.deltaRoundNanoseconds >= offchainConfig.deltaProgressNanoseconds)
-        throw new Error(
-          `deltaRoundNanoseconds (${offchainConfig.deltaRoundNanoseconds}) must be less than deltaProgressNanoseconds (${offchainConfig.deltaProgressNanoseconds})`,
-        )
-      const sumMaxDurationsReportGeneration = new BN(offchainConfig.maxDurationQueryNanoseconds)
-        .add(new BN(offchainConfig.maxDurationObservationNanoseconds))
-        .add(new BN(offchainConfig.maxDurationReportNanoseconds))
+  if (offchainConfig.deltaRoundNanoseconds >= offchainConfig.deltaProgressNanoseconds)
+    throw new Error(
+      `deltaRoundNanoseconds (${offchainConfig.deltaRoundNanoseconds}) must be less than deltaProgressNanoseconds (${offchainConfig.deltaProgressNanoseconds})`,
+    )
+  const sumMaxDurationsReportGeneration = new BN(offchainConfig.maxDurationQueryNanoseconds)
+    .add(new BN(offchainConfig.maxDurationObservationNanoseconds))
+    .add(new BN(offchainConfig.maxDurationReportNanoseconds))
 
-      if (sumMaxDurationsReportGeneration.gte(new BN(offchainConfig.deltaProgressNanoseconds)))
-        throw new Error(
-          `sum of MaxDurationQuery/Observation/Report (${sumMaxDurationsReportGeneration}) must be less than deltaProgressNanoseconds (${offchainConfig.deltaProgressNanoseconds})`,
-        )
+  if (sumMaxDurationsReportGeneration.gte(new BN(offchainConfig.deltaProgressNanoseconds)))
+    throw new Error(
+      `sum of MaxDurationQuery/Observation/Report (${sumMaxDurationsReportGeneration}) must be less than deltaProgressNanoseconds (${offchainConfig.deltaProgressNanoseconds})`,
+    )
 
-      if (offchainConfig.rMax <= 0 || offchainConfig.rMax >= 255)
-        throw new Error(`rMax (${offchainConfig.rMax}) must be greater than zero and less than 255`)
+  if (offchainConfig.rMax <= 0 || offchainConfig.rMax >= 255)
+    throw new Error(`rMax (${offchainConfig.rMax}) must be greater than zero and less than 255`)
 
-      if (offchainConfig.s.length >= 1000)
-        throw new Error(`Length of S (${offchainConfig.s.length}) must be less than 1000`)
-      for (let i = 0; i < offchainConfig.s.length; i++) {
-        const s = offchainConfig.s[i]
-        if (s < 0 || s > ORACLES_MAX_LENGTH)
-          throw new Error(`S[${i}] (${s}) must be between 0 and Max Oracles (${ORACLES_MAX_LENGTH})`)
-      }
+  if (offchainConfig.s.length >= 1000)
+    throw new Error(`Length of S (${offchainConfig.s.length}) must be less than 1000`)
+  for (let i = 0; i < offchainConfig.s.length; i++) {
+    const s = offchainConfig.s[i]
+    if (s < 0 || s > ORACLES_MAX_LENGTH)
+      throw new Error(`S[${i}] (${s}) must be between 0 and Max Oracles (${ORACLES_MAX_LENGTH})`)
+  }
 
-      return true
-    },
-  },
-]
+  return true
+}
 
-const instruction: AbstractInstruction<CommandInput, ContractInput> = {
+export const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   examples: [
     'yarn gauntlet ocr2:propose_offchain_config --network=NETWORK --proposalId=<PROPOSAL_ID> <CONTRACT_ADDRESS>',
   ],
@@ -254,7 +247,7 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   makeContractInput: makeContractInput,
   beforeExecute,
   afterExecute,
-  validations,
+  validations: makeValidations(validateA),
 }
 
 export default instructionToCommand(instruction)
