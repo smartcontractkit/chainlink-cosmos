@@ -50,4 +50,17 @@ To specify a network, use the `--network` flag.
 yarn gauntlet tooling:query --network=testnet-bombay-internal --msg='{"owed_payment":{"transmitter": "terra1myd0kxk3fqaz9zl47gm2uvxjm0zn3lczrtvljz"}}' terra14mf0qcjpduhcs8p6289pjnwn8skhgk5aus3yxg
 ```
 
+### 5. Configuring a new network
+
 The network name must be selected from the [networks](../packages-ts/gauntlet-terra-contracts/networks/) folder. To add a new network configuration, simply add a new file to this folder (.env.YOUR_NETWORK_NAME).
+
+The following code snippet defines the general structure for defining a new network:
+
+```
+NODE_URL=
+CHAIN_ID=columbus-5
+DEFAULT_GAS_PRICE=0.5
+RDD=../reference-data-directory/directory-terra-mainnet.json
+```
+
+The only thing that needs to be updated here is the `NODE_URL`, which can be retrieved from [Terra Public LCD Endpoints](https://docs.terra.money/docs/develop/endpoints.html#public-lcd)

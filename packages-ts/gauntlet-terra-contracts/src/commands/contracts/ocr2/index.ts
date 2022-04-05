@@ -6,6 +6,7 @@ import ProposeConfig from './proposeConfig'
 import ProposeOffchainConfig from './proposeOffchainConfig'
 import Inspect from './inspection/inspect'
 import Responses from './inspection/responses'
+import WithdrawPayment from './withdrawPayment'
 import ProposalCommands from './proposal'
 import { makeTransferOwnershipCommand, makeAcceptOwnershipCommand } from '../ownership'
 import { CONTRACT_LIST } from '../../../lib/contracts'
@@ -17,6 +18,7 @@ export default [
   ProposeConfig,
   ProposeOffchainConfig,
   OCR2InitializeFlow,
+  WithdrawPayment,
   Inspect,
   Responses,
   ...ProposalCommands,
