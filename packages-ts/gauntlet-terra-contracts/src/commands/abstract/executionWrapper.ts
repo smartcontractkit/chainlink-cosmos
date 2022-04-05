@@ -27,12 +27,14 @@ export type AfterExecute<Input, ContractInput> = (
   inputContext: InputContext<Input, ContractInput>,
 ) => (response: Result<TransactionResponse>) => Promise<any>
 
+export type Validate<Input> = (input: Input, context: ExecutionContext) => Promise<boolean>
 export interface Validation<Input> {
-  id: string
-  msgSuccess: string
-  msgFail: string
-  validate: (context: ExecutionContext) => (input: Input) => Promise<boolean>
+  id: number
+  validate: Validate<Input>
 }
+
+export const makeValidations = (validates: Validate<any>[]): Validation<any>[] =>
+  validates.map((validate, idx) => ({ id: idx, validate }))
 
 export interface AbstractInstruction<Input, ContractInput> {
   examples?: string[]
@@ -40,7 +42,7 @@ export interface AbstractInstruction<Input, ContractInput> {
     category: string
     contract: string
     function: string
-    subInstruction?: string
+    suffixes?: string[]
   }
   makeInput: (flags: any, args: string[]) => Promise<Input>
   validateInput: (input: Input) => boolean
@@ -59,9 +61,31 @@ const defaultBeforeExecute = <Input, ContractInput>(
   await prompt(`Continue?`)
 }
 
+export const extendCommand = <Input, ContractInput>(
+  instruction: AbstractInstruction<Input, ContractInput>,
+  config: {
+    suffixes: string[]
+    validationsToSkip?: number[]
+    makeInput: (flags: any, args: string[]) => Promise<Input>
+    examples: string[]
+  },
+): AbstractInstruction<Input, ContractInput> => {
+  return {
+    ...instruction,
+    examples: config.examples || instruction.examples,
+    instruction: {
+      ...instruction.instruction,
+      suffixes: config.suffixes,
+    },
+    makeInput: config.makeInput,
+    validations:
+      instruction.validations && instruction.validations.filter(({ id }) => config.validationsToSkip?.includes(id)),
+  }
+}
+
 export const instructionToCommand = <Input, ContractInput>(instruction: AbstractInstruction<Input, ContractInput>) => {
   const id = `${instruction.instruction.contract}:${instruction.instruction.function}`
-  const commandId = instruction.instruction.subInstruction ? `${id}:${instruction.instruction.subInstruction}` : id
+  const commandId = instruction.instruction.suffixes ? `${id}:${instruction.instruction.suffixes.join(':')}` : id
   const category = `${instruction.instruction.category}`
   const examples = instruction.examples || []
 
@@ -76,10 +100,10 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
       super(flags, args)
     }
 
-    getValidationsToSkip = (flags: any): string[] => {
+    getValidationsToSkip = (flags: any): number[] => {
       return Object.keys(flags)
         .filter((key) => key.startsWith('skip-'))
-        .map((value) => value.replace('skip-', ''))
+        .map((value) => Number(value.replace('skip-', '')))
     }
 
     validateContractAddress = (address: string) => {
@@ -89,17 +113,21 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
     runValidations = async (validations: Validation<Input>[], executionContext: ExecutionContext, input: Input) => {
       logger.loading('Running command validations')
       const results = await Promise.all(
-        validations.map(async ({ validate, msgFail, msgSuccess }) => {
+        validations.map(async ({ validate, id }) => {
           try {
-            return { success: await validate(executionContext)(input), msgFail, msgSuccess }
+            return {
+              success: await validate(input, executionContext),
+              msgFail: `Validation ${id} Failed`,
+              msgSuccess: `Validation ${id} Succeeded`,
+            }
           } catch (e) {
-            return { success: false, msgFail: e.message || msgFail, msgSuccess }
+            return { success: false, msgFail: e.message, msgSuccess: '' }
           }
         }),
       )
       results.forEach(({ success, msgFail, msgSuccess }) => {
         if (!success) logger.error(`Validation Failed: ${msgFail}`)
-        else logger.success(`Validation Succeeded: ${msgSuccess}`)
+        else logger.success(msgSuccess)
       })
       if (results.filter((r) => !r.success).length > 0) {
         throw new Error('Command validation failed')
@@ -122,8 +150,8 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
       // Validation
       if (instruction.validations) {
         const validationsToSkip = this.getValidationsToSkip(flags)
-        const validations = instruction.validations.filter(({ id }) => !validationsToSkip.includes(id))
-        await this.runValidations(validations, executionContext, input)
+        const toValidate = instruction.validations.filter(({ id }) => !validationsToSkip.includes(id))
+        await this.runValidations(toValidate, executionContext, input)
       }
       if (!instruction.validateInput(input)) throw new Error(`Invalid input params: ${JSON.stringify(input)}`)
 
@@ -161,57 +189,6 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
       let response = await this.command.execute()
       const data = await this.afterExecute(response)
       return !!data ? { ...response, data: { ...data } } : response
-    }
-  }
-}
-
-export interface TailInstruction<Input, InnerCommandInput> {
-  command: typeof TerraCommand
-  ui: {
-    suffixes: string[]
-    examples: string[]
-  }
-  makeInput: (flags, args) => Input
-  makeInnerCommandInput: (input: Input) => InnerCommandInput
-  skipValidations: string[]
-}
-
-export const instructionToTailCommand = <Input, AcceptProposalInput>(
-  instruction: TailInstruction<Input, AcceptProposalInput>,
-) => {
-  const id = `${instruction.command.id}:${instruction.ui.suffixes.join(':')}`
-  return class SuperCommand extends TerraCommand {
-    static id = id
-    static category = instruction.command.category
-
-    innerCommand: TerraCommand
-
-    constructor(flags, args) {
-      super(flags, args)
-    }
-
-    makeRawTransaction = (signer) => {
-      return this.innerCommand.makeRawTransaction(signer)
-    }
-
-    buildCommand = async (flags, args) => {
-      const input = instruction.makeInput(flags, args)
-      const innerInput = { input: instruction.makeInnerCommandInput(input) }
-      const skipFlags = instruction.skipValidations.reduce(
-        (agg, validation) => ({ ...agg, [`skip-${validation}`]: true }),
-        {},
-      )
-      const innerFlags = { ...flags, ...skipFlags, ...innerInput }
-
-      this.innerCommand = new (instruction.command as any)(innerFlags, args) as TerraCommand
-      this.innerCommand.invokeMiddlewares(this.innerCommand, this.innerCommand.middlewares)
-
-      return this
-    }
-
-    execute = async () => {
-      await this.buildCommand(this.flags, this.args)
-      return this.innerCommand.execute()
     }
   }
 }

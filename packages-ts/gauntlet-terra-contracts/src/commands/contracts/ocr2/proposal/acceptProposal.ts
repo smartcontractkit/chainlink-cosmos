@@ -6,7 +6,8 @@ import {
   AbstractInstruction,
   instructionToCommand,
   BeforeExecute,
-  Validation,
+  Validate,
+  makeValidations,
 } from '../../../abstract/executionWrapper'
 import { serializeOffchainConfig, deserializeConfig } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig, prepareOffchainConfigForDiff } from '../proposeOffchainConfig'
@@ -25,60 +26,41 @@ type ContractInput = {
   digest: string
 }
 
-const validations: Validation<CommandInput>[] = [
-  {
-    id: 'proposalId',
-    msgSuccess: 'Config Proposal ID is provided',
-    msgFail: 'Config Proposal ID is required',
-    validate: () => async (input) => {
-      if (!input.proposalId) return false
-      return true
-    },
-  },
-  {
-    id: 'digest',
-    msgSuccess: 'Config digest is provided',
-    msgFail: 'Config digest is required',
-    validate: () => async (input) => {
-      if (!input.digest) return false
-      return true
-    },
-  },
-  {
-    id: 'randomSecret',
-    msgSuccess: 'Random secret is provided',
-    msgFail: 'Secret generated at proposing offchain config is required',
-    validate: () => async (input) => {
-      if (!input.randomSecret) return false
-      return true
-    },
-  },
-  {
-    id: 'OCRConfig',
-    msgSuccess: 'Generated configuration matches with onchain proposal configuration',
-    msgFail: 'Generated configuration does not correspond to the proposal configuration',
-    validate: (context) => async (input) => {
-      const { offchainConfig } = await serializeOffchainConfig(
-        input.offchainConfig,
-        process.env.SECRET!,
-        input.randomSecret,
-      )
-      const proposal: any = await context.provider.wasm.contractQuery(context.contract, {
-        proposal: {
-          id: input.proposalId,
-        },
-      })
+const validationA: Validate<CommandInput> = async (input) => {
+  if (!input.proposalId) throw new Error('Config Proposal ID is required')
+  return true
+}
 
-      try {
-        assert.equal(offchainConfig.toString('base64'), proposal.offchain_config)
-      } catch (err) {
-        return false
-      }
+const validationB: Validate<CommandInput> = async (input) => {
+  if (!input.digest) throw new Error('Config digest is required')
+  return true
+}
 
-      return true
+const validationC: Validate<CommandInput> = async (input) => {
+  if (!input.randomSecret) throw new Error('Secret generated at proposing offchain config is required')
+  return true
+}
+
+const validationD: Validate<CommandInput> = async (input, context) => {
+  const { offchainConfig } = await serializeOffchainConfig(
+    input.offchainConfig,
+    process.env.SECRET!,
+    input.randomSecret,
+  )
+  const proposal: any = await context.provider.wasm.contractQuery(context.contract, {
+    proposal: {
+      id: input.proposalId,
     },
-  },
-]
+  })
+
+  try {
+    assert.equal(offchainConfig.toString('base64'), proposal.offchain_config)
+  } catch (err) {
+    throw new Error('Offchain config generated is different from the one proposed')
+  }
+
+  return true
+}
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
@@ -142,9 +124,8 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   }
 }
 
-const validateInput = (input: CommandInput): boolean => {
-  return true
-}
+// TODO: Deprecate
+const validateInput = (input: CommandInput): boolean => true
 
 const afterExecute = () => async (response: Result<TransactionResponse>) => {
   logger.success(`Config Proposal accepted on tx ${response.responses[0].tx.hash}`)
@@ -159,7 +140,7 @@ const afterExecute = () => async (response: Result<TransactionResponse>) => {
   }
 }
 
-const instruction: AbstractInstruction<CommandInput, ContractInput> = {
+export const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   examples: [
     'yarn gauntlet ocr2:accept_proposal --network=<NETWORK> --configProposal=<PROPOSAL_ID> --digest=<DIGEST> <CONTRACT_ADDRESS>',
   ],
@@ -173,7 +154,7 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   makeContractInput: makeContractInput,
   beforeExecute,
   afterExecute,
-  validations,
+  validations: makeValidations([validationA, validationB, validationC, validationD]),
 }
 
 export default instructionToCommand(instruction)
