@@ -15,16 +15,14 @@ const styles = {
   OPERATOR_ADDRESS: ['green', 'dim'],
 } as Styles
 
-const astronaut = '\uD83E\uDDD1\uD83C\uDFFD\u200D\uD83D\uDE80'
-
 const formatMultisig = (address: string, label: string): string =>
-  `🧳 ${logger.style(label, ...styles.MULTISIG_LABEL)}: ${logger.style(address, ...styles.MULTISIG_ADDRESS)}`
+  `🧳 ${logger.style(label, ...styles.MULTISIG_LABEL)}:${logger.style(address, ...styles.MULTISIG_ADDRESS)}`
 
 const formatContract = (address: string, label: string): string =>
-  `📜 ${logger.style(label, ...styles.CONTRACT_LABEL)}: ${logger.style(address, ...styles.CONTRACT_ADDRESS)}`
+  `📜 ${logger.style(label, ...styles.CONTRACT_LABEL)}:${logger.style(address, ...styles.CONTRACT_ADDRESS)}`
 
 const formatOperator = (address: string): string =>
-  `🧑🏽 ${logger.style('operator', ...styles.OPERATOR_LABEL)}: ${logger.style(address, ...styles.OPERATOR_ADDRESS)}`
+  `🧑🏽 ${logger.style('operator', ...styles.OPERATOR_LABEL)}:${logger.style(address, ...styles.OPERATOR_ADDRESS)}`
 
 export class TerraLogger {
   addressBook: AddressBook

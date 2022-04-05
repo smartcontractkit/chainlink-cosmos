@@ -5,6 +5,7 @@ import { CATEGORIES } from '../../../../lib/constants'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { dateFromUnix } from '../../../../lib/utils'
 import { LCDClient } from '@terra-money/terra.js'
+import { RoundData } from '../../../../lib/inspection'
 
 type CommandInput = {
   aggregator: string
@@ -22,13 +23,6 @@ type ContractExpectedInfo = {
   latestRoundData?: RoundData
 }
 
-type RoundData = {
-  roundId: number
-  answer: string
-  observationsTimestamp: number
-  transmissionTimestamp: number
-}
-
 const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
   const rdd = RDD.getRDD(flags.rdd)
@@ -40,14 +34,6 @@ const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
     aggregator: info.aggregator,
     description: info.name,
     decimals,
-  }
-}
-
-const makeInspectionData = () => async (input: CommandInput): Promise<ContractExpectedInfo> => {
-  return {
-    aggregator: input.aggregator,
-    description: input.description,
-    decimals: input.decimals,
   }
 }
 
@@ -80,7 +66,7 @@ const makeOnchainData = (provider: LCDClient) => async (
   }
 }
 
-const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedInfo): boolean => {
+const inspect = (expected: CommandInput, onchainData: ContractExpectedInfo): boolean => {
   let inspections: inspection.Inspection[] = [
     inspection.makeInspection(onchainData.aggregator, expected.aggregator, 'Aggregator'),
     inspection.makeInspection(onchainData.description, expected.description, 'Description'),
@@ -151,7 +137,6 @@ const instruction: InspectInstruction<CommandInput, ContractExpectedInfo> = {
     },
   ],
   makeInput,
-  makeInspectionData,
   makeOnchainData,
   inspect,
 }
