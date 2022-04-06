@@ -8,16 +8,16 @@ type EventOraclePaid = {
   method?: string
 }
 
-export const parseOraclePaidEvent = (event): EventOraclePaid => {
+export const parseOraclePaidEvent = (event): EventOraclePaid | null => {
   // Parse and validate every value
   const transmitter = event.transmitter[0]
   const payee = event.payee[0]
   const amount = event.amount[0]
   const link_token = event.link_token[0]
 
-  if (!AccAddress.validate(transmitter)) throw new Error(`Invalid transmitter address`)
-  if (!AccAddress.validate(payee)) throw new Error(`Invalid payee wallet address`)
-  if (!AccAddress.validate(link_token)) throw new Error(`Invalid LINK token contract address`)
+  if (!AccAddress.validate(transmitter)) return null
+  if (!AccAddress.validate(payee)) return null
+  if (!AccAddress.validate(link_token)) return null
 
   return {
     transmitter: transmitter,
