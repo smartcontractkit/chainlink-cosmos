@@ -11,6 +11,7 @@ export interface AbstractOpts {
   contract: Contract
   function: string
   action: TERRA_OPERATIONS.DEPLOY | TERRA_OPERATIONS.EXECUTE | TERRA_OPERATIONS.QUERY | 'help'
+  isBatchCall: Boolean
 }
 
 export interface AbstractParams {
@@ -53,7 +54,12 @@ export const parseInstruction = async (instruction: string, inputVersion: string
   }
 
   const command = instruction.split(':')
-  if (!command.length || command.length > 2) throw new Error(`Abstract: Instruction ${command.join(':')} not found`)
+  if (!command.length || command.length > 3) throw new Error(`Abstract: Instruction ${command.join(':')} not found`)
+
+  var isBatchCall = false
+  if (command[2] == 'batch') {
+    isBatchCall = true
+  }
 
   const id = command[0] as CONTRACT_LIST
   const contract = await contracts.getContractWithSchemaAndCode(id, inputVersion)
@@ -64,6 +70,7 @@ export const parseInstruction = async (instruction: string, inputVersion: string
       contract,
       function: 'help',
       action: 'help',
+      isBatchCall: isBatchCall,
     }
   }
 
@@ -72,6 +79,7 @@ export const parseInstruction = async (instruction: string, inputVersion: string
       contract,
       function: TERRA_OPERATIONS.DEPLOY,
       action: TERRA_OPERATIONS.DEPLOY,
+      isBatchCall: isBatchCall,
     }
   }
 
@@ -82,6 +90,7 @@ export const parseInstruction = async (instruction: string, inputVersion: string
     contract,
     function: functionName,
     action: isQueryFunction(contract.abi, functionName) ? TERRA_OPERATIONS.QUERY : TERRA_OPERATIONS.EXECUTE,
+    isBatchCall: isBatchCall,
   }
 }
 
