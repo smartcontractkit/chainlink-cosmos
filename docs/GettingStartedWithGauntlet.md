@@ -60,7 +60,6 @@ The following code snippet defines the general structure for defining a new netw
 NODE_URL=
 CHAIN_ID=columbus-5
 DEFAULT_GAS_PRICE=0.5
-RDD=../reference-data-directory/directory-terra-mainnet.json
 ```
 
 The only thing that needs to be updated here is the `NODE_URL`, which can be retrieved from [Terra Public LCD Endpoints](https://docs.terra.money/docs/develop/endpoints.html#public-lcd)
