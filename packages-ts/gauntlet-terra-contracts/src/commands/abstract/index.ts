@@ -2,9 +2,10 @@ import { Result } from '@chainlink/gauntlet-core'
 import { AccAddress, MsgExecuteContract } from '@terra-money/terra.js'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TransactionResponse, TerraCommand } from '@chainlink/gauntlet-terra'
-import { Contract, CONTRACT_LIST, getContract, TerraABI, TERRA_OPERATIONS } from '../../lib/contracts'
+import { Contract, CONTRACT_LIST, contracts, TerraABI, TERRA_OPERATIONS } from '../../lib/contracts'
 import { DEFAULT_RELEASE_VERSION } from '../../lib/constants'
 import schema from '../../lib/schema'
+import { withAddressBook } from '../../lib/middlewares'
 
 export interface AbstractOpts {
   contract: Contract
@@ -28,11 +29,6 @@ export const makeAbstractCommand = async (
 }
 
 export const parseInstruction = async (instruction: string, inputVersion: string): Promise<AbstractOpts> => {
-  const isValidContract = (contractName: string): boolean => {
-    // Validate that we have this contract available
-    return Object.values(CONTRACT_LIST).includes(contractName as CONTRACT_LIST)
-  }
-
   const isValidFunction = (abi: TerraABI, functionName: string): boolean => {
     // Check against ABI if method exists
     const availableFunctions = [
@@ -57,11 +53,10 @@ export const parseInstruction = async (instruction: string, inputVersion: string
   }
 
   const command = instruction.split(':')
-  if (!command.length || command.length > 2) throw new Error(`Abstract: Contract ${command[0]} not found`)
+  if (!command.length || command.length > 2) throw new Error(`Abstract: Instruction ${command.join(':')} not found`)
 
-  const version = inputVersion ? inputVersion : DEFAULT_RELEASE_VERSION
-  const contractByteCode = await getContract(command[0] as CONTRACT_LIST, version)
-  const contract = isValidContract(command[0]) && contractByteCode
+  const id = command[0] as CONTRACT_LIST
+  const contract = await contracts.getContractWithSchemaAndCode(id, inputVersion)
   if (!contract) throw new Error(`Abstract: Contract ${command[0]} not found`)
 
   if (command[1] === 'help') {
@@ -120,7 +115,7 @@ export default class AbstractCommand extends TerraCommand {
 
   constructor(flags, args, opts, params) {
     super(flags, args)
-
+    this.use(withAddressBook)
     this.opts = opts
     this.params = params
 

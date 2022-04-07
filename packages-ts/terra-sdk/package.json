@@ -1,0 +1,45 @@
+{
+  "name": "@chainlink/terra-sdk",
+  "version": "0.0.5",
+  "repository": "https://github.com/smartcontractkit/chainlink-terra",
+  "license": "MIT",
+  "engines": {
+    "node": ">= 14"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "sideEffects": false,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "prebuild": "yarn clean",
+    "build": "yarn tsc",
+    "clean": "rm -rf dist",
+    "format": "yarn prettier --write ./src",
+    "prepublish": "yarn build"
+  },
+  "dependencies": {
+    "@terra-money/terra.js": "^3.0.6"
+  },
+  "devDependencies": {
+    "@types/eslint": "^8.2.1",
+    "@types/eslint-plugin-prettier": "^3.1.0",
+    "@types/mocha": "^9.0.0",
+    "@types/node": "^16.11.13",
+    "@types/prettier": "^2.4.2",
+    "@typescript-eslint/eslint-plugin": "^5.8.1",
+    "@typescript-eslint/parser": "^5.8.1",
+    "eslint": "^8.5.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "prettier": "^2.5.1",
+    "ts-node": "^10.4.0",
+    "tslib": "^2.3.1",
+    "typedoc": "^0.22.10",
+    "typescript": "^4.4.4"
+  }
+}

@@ -1,6 +1,6 @@
 module github.com/smartcontractkit/chainlink-terra
 
-go 1.17
+go 1.18
 
 require (
 	github.com/cosmos/cosmos-sdk v0.44.5
@@ -13,12 +13,12 @@ require (
 	github.com/rs/zerolog v1.26.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/smartcontractkit/chainlink v1.2.1-0.20220315133704-8769e75d54b1
-	github.com/smartcontractkit/chainlink-relay v0.0.0-20220317101556-ad02f88fa139
-	github.com/smartcontractkit/helmenv v1.0.40
-	github.com/smartcontractkit/integrations-framework v1.0.51
+	github.com/smartcontractkit/chainlink-relay v0.0.0-20220331131917-698887a93d0c
+	github.com/smartcontractkit/helmenv v1.0.43
+	github.com/smartcontractkit/integrations-framework v1.0.53-0.20220328121026-0a15bb496493
 	github.com/smartcontractkit/libocr v0.0.0-20220217180537-449836e6cfec
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/tendermint/tendermint v0.34.15
 	github.com/terra-money/core v0.5.14
 	go.uber.org/multierr v1.8.0
@@ -62,7 +62,7 @@ require (
 	github.com/chai2010/gettext-go v0.0.0-20160711120539-c6fed771bfd5 // indirect
 	github.com/confio/ics23/go v0.6.6 // indirect
 	github.com/confluentinc/confluent-kafka-go v1.8.2 // indirect
-	github.com/containerd/containerd v1.5.9 // indirect
+	github.com/containerd/containerd v1.5.10 // indirect
 	github.com/cosmos/btcutil v1.0.4 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/iavl v0.17.3 // indirect
@@ -78,7 +78,7 @@ require (
 	github.com/dgraph-io/ristretto v0.0.3 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/docker/cli v20.10.11+incompatible // indirect
-	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.12+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.6.4 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect

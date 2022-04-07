@@ -12,4 +12,7 @@ pub enum ContractError {
     /// Only callable by owner
     #[error("Only callable by owner")]
     Unauthorized,
+
+    #[error("Cannot migrate from different contract type: {previous_contract}")]
+    CannotMigrate { previous_contract: String },
 }

@@ -1,4 +1,4 @@
-name: E2E Chaos Tests
+name: e2e_chaos_tests
 on:
   schedule:
     - cron: '0 */3 * * *'
@@ -11,8 +11,8 @@ on:
         type: string
 
 jobs:
-  build_custom_cl_image:
-    name: Build custom CL image
+  e2e_chaos_build_custom_chainlink_image:
+    name: E2E Chaos Build Custom CL Image
     # target branch can't be set as var, it's from where we getting pipeline code
     uses: smartcontractkit/chainlink/.github/workflows/build-custom.yml@develop
     with:
@@ -27,7 +27,8 @@ jobs:
       AWS_REGION: ${{ secrets.QA_AWS_REGION }}
       AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
       QA_KUBECONFIG: ${{ secrets.QA_KUBECONFIG }}
-  build:
+  e2e_chaos_build_contracts:
+    name: E2E Chaos Build Contracts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -42,24 +43,29 @@ jobs:
           path: ~/.cargo/git
           key: ${{ runner.os }}-v2-cargo-index-${{ hashFiles('**/Cargo.lock') }}
       - name: Build Artifacts
-        run: |
-          make contracts_compile
-      - uses: actions/upload-artifact@master
+        run: make contracts_compile
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@master
         with:
           name: artifacts
           path: artifacts
-  chaos:
+  e2e_run_chaos_tests:
+    name: E2E Run Chaos Tests
     runs-on: ubuntu-latest
-    needs: [build, build_custom_cl_image]
+    needs: [e2e_chaos_build_contracts, e2e_chaos_build_custom_chainlink_image]
     env:
       CGO_ENABLED: 1
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v2
-      - name: Setup go
-        uses: actions/setup-go@v1
+      - name: Install Nix
+        uses: cachix/install-nix-action@v14
         with:
-          go-version: 1.17.2
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -85,14 +91,11 @@ jobs:
             ${{ runner.os }}-go-
       - name: Download Go Vendor Packages
         if: steps.cache-packages.outputs.cache-hit != 'true'
-        run: go mod download
+        run: nix develop -c make download
       - name: Install Ginkgo CLI
-        run: |
-          go get github.com/onsi/ginkgo/v2/ginkgo/generators@v2.1.2
-          go get github.com/onsi/ginkgo/v2/ginkgo/internal@v2.1.2
-          go get github.com/onsi/ginkgo/v2/ginkgo/labels@v2.1.2
-          go install github.com/onsi/ginkgo/v2/ginkgo
-      - uses: actions/download-artifact@master
+        run: nix develop -c make install
+      - name: Download Artifacts
+        uses: actions/download-artifact@master
         with:
           name: artifacts
           path: artifacts
@@ -104,7 +107,8 @@ jobs:
           CHAINLINK_VERSION: custom.${{ github.sha }}
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
-          ginkgo tests/e2e/chaos
+          cp -r artifacts packages-ts/gauntlet-terra-contracts/artifacts/bin
+          nix develop -c make test_chaos
       - name: Publish Test Results
         uses: mikepenz/action-junit-report@v2
         if: always()

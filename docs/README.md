@@ -10,10 +10,11 @@ This repository is a monorepo of the various components required for Chainlink o
 - [Integration/E2E Tests](../tests/e2e)
 - [Demos & Examples](../examples)
 
-Additional documentation on contract queries and end to end testing can be found in this directory.
+Additional documentation can be found in this directory.
 
 - [Inspecting Terra Contracts](./InspectingContracts.md)
 - [Running End to End Tests](./RunningE2eTests.md)
+- [Getting Started With Gauntlet](./GettingStartedWithGauntlet.md)
 
 # Local initial setup
 
