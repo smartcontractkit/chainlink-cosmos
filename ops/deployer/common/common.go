@@ -64,7 +64,15 @@ type AcceptProposalDetails struct {
 	Secret string `json:"secret"`
 }
 
-type balance struct {
+type ClearProposalDetails struct {
+	ID     string `json:"proposalId"`
+}
+
+type FinalizeProposalDetails struct {
+	ID     string `json:"proposalId"`
+}
+
+type Balance struct {
 	Address string `json:"address"`
 	Amount  string `json:"amount"`
 }
@@ -73,7 +81,7 @@ type LINKinit struct {
 	Name            string      `json:"name"`
 	Symbol          string      `json:"symbol"`
 	Decimals        int         `json:"decimals"`
-	InitialBalances []balance   `json:"initial_balances"`
+	InitialBalances []Balance   `json:"initial_balances"`
 	Mint            interface{} `json:"mint"`
 	Marketing       interface{} `json:"marketing"`
 }
