@@ -1,10 +1,12 @@
 import { Result } from '@chainlink/gauntlet-core'
-import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { time, logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { AccAddress, MsgExecuteContract, MsgSend } from '@terra-money/terra.js'
 import { isDeepEqual } from '../lib/utils'
 import { fetchProposalState, makeInspectionMessage } from './inspect'
-import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg } from '../lib/types'
+import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg, Expiration } from '../lib/types'
+
+export const DEFAULT_VOTING_PERIOD_IN_SECS = 24 * 60 * 60
 
 type ProposalAction = (
   signer: AccAddress,
@@ -91,15 +93,35 @@ export const wrapCommand = (command) => {
       }
     }
 
+    async parseVotingPeriod(votingPeriod: string): Promise<number> {
+      const state = await this.fetchState()
+      const n = Number.parseInt(votingPeriod)
+      if (isNaN(n) || n < 0 || n > state.multisig.maxVotingPeriod) {
+        throw new Error(
+          `votingPeriod=${votingPeriod}: must be a valid duration in seconds, ` +
+            `(range: [0-${state.multisig.maxVotingPeriod}], default: ${DEFAULT_VOTING_PERIOD_IN_SECS})`,
+        )
+      }
+      return n
+    }
+
     makeProposeTransaction: ProposalAction = async (signer, _, message) => {
-      logger.info('Generating data for creating new multisig proposal')
+      // default voting period of 24 hours, if unspecified
+      const votingPeriod: number = this.flags.votingPeriod
+        ? await this.parseVotingPeriod(this.flags.votingPeriod)
+        : DEFAULT_VOTING_PERIOD_IN_SECS
+
+      const msExpiration: number = Date.now() + votingPeriod * 1000 // milliseconds since 1970
+      logger.info(`Generating data for creating new multisig proposal (expires at ${new Date(msExpiration)})`)
+      // Expiration.at_time is a string representation of nanoseconds since 1970
+      const expiration: Expiration = { at_time: (msExpiration * time.Millisecond).toString() }
+
       const proposeInput = {
         propose: {
           description: command.id,
           msgs: [this.toMsg(message)],
           title: command.id,
-          // TODO: Set expiration time
-          // latest: { at_height: 7970238 },
+          latest: expiration,
         },
       }
       return new MsgExecuteContract(signer, this.multisig, proposeInput)
@@ -127,8 +149,7 @@ export const wrapCommand = (command) => {
     }
 
     fetchState = async (proposalId?: number): Promise<State> => {
-      const query = this.provider.wasm.contractQuery.bind(this.provider.wasm)
-      return fetchProposalState(query)(this.multisig, proposalId)
+      return fetchProposalState(this.provider)(this.multisig, proposalId)
     }
 
     printPostInstructions = async (proposalId: number) => {

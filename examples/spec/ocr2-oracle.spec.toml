@@ -62,7 +62,10 @@ juelsPerFeeCoinSource = """
     median_coin [type="median" values=<[ $(ds1_coin_parse), $(ds2_coin_parse), $(ds3_coin_parse) ]> allowedFaults=2]
 
     // Divide and scale appropriately
-    divide [type="divide" input="$(median_link)" divisor="$(median_coin)" precision="18"]
+    // median_link (dollars/LINK)
+    // median_coin (dollars/LUNA)
+    // median_coin / median_link = LINK/LUNA
+    divide [type="divide" input="$(median_coin)" divisor="$(median_link)" precision="18"]
     scale  [type="multiply" times=1000000000000000000]
 
     median_link -> divide

@@ -24,13 +24,16 @@ juelsPerFeeCoinSource = """
     ds1_link_parse [type="jsonparse" path="result"]
     ds1_link -> ds1_link_parse -> divide
 
-    // Fetch the SOL price from a data source
+    // Fetch the LUNA price from a data source
     // data source 1
     ds1_coin       [type="bridge" name="bridge-coingecko" requestData=<{"data": {"from":"LUNA","to":"USD"}}>]
     ds1_coin_parse [type="jsonparse" path="result"]
     ds1_coin -> ds1_coin_parse -> divide
 
-    divide [type="divide" input="$(ds1_link_parse)" divisor="$(ds1_coin_parse)" precision="18"]
+    // ds1_link_parse (dollars/LINK)
+    // ds1_coin_parse (dollars/LUNA)
+    // ds1_coin_parse / ds1_link_parse = LINK/LUNA
+    divide [type="divide" input="$(ds1_coin_parse)" divisor="$(ds1_link_parse)" precision="18"]
     scale  [type="multiply" times=1000000000000000000]
 
     divide -> scale
