@@ -1,6 +1,6 @@
 import Upload from './tooling/upload'
 import Query from './tooling/query'
-import TransferLink from './contracts/link/transfer'
+import { TransferLink, BatchTransferLink } from './contracts/link/transfer'
 import DeployLink from './contracts/link/deploy'
 import OCR2 from './contracts/ocr2'
 import AccessController from './contracts/access_controller'
@@ -16,6 +16,7 @@ export default [
   Query,
   DeployLink,
   TransferLink,
+  BatchTransferLink,
   ...OCR2,
   ...AccessController,
   ...Flags,

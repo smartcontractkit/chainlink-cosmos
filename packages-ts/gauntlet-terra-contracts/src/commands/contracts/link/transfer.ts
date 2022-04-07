@@ -1,7 +1,7 @@
 import { BN, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { logger } from '@chainlink/gauntlet-terra'
 import { CATEGORIES, TOKEN_DECIMALS } from '../../../lib/constants'
-import { AbstractInstruction, ExecutionContext, instructionToCommand } from '../../abstract/executionWrapper'
+import { AbstractInstruction, ExecutionContext, BatchExecutionContext, instructionToBatchCommand, instructionToCommand } from '../../abstract/executionWrapper'
 import { AccAddress } from '@terra-money/terra.js'
 
 type CommandInput = {
@@ -46,6 +46,20 @@ const beforeExecute = (context: ExecutionContext<CommandInput, ContractInput>) =
   await prompt('Continue?')
 }
 
+const batchBeforeExecute = (context: BatchExecutionContext<CommandInput, ContractInput>) => async (): Promise<void> => {
+  logger.info(`Making the following transfers of LINK`)
+
+  context.inputs.forEach((_, i) => 
+    logger.info(
+      `Transferring ${context.contractInputs[i].amount} (${context.inputs[i].amount}) Tokens to ${logger.styleAddress(
+        context.contractInputs[i].recipient,
+      )}`,
+    )
+  )
+  
+  await prompt('Continue?')
+}
+
 const transferToken: AbstractInstruction<CommandInput, ContractInput> = {
   instruction: {
     category: CATEGORIES.LINK,
@@ -58,4 +72,17 @@ const transferToken: AbstractInstruction<CommandInput, ContractInput> = {
   beforeExecute,
 }
 
-export default instructionToCommand(transferToken)
+const transferTokenBatch: AbstractInstruction<CommandInput, ContractInput> = {
+  instruction: {
+    category: CATEGORIES.LINK,
+    contract: 'cw20_base',
+    function: 'transfer',
+  },
+  makeInput: makeCommandInput,
+  validateInput: validateInput,
+  makeContractInput: makeContractInput,
+  beforeExecute: batchBeforeExecute
+}
+
+export const BatchTransferLink = instructionToBatchCommand(transferTokenBatch)
+export const TransferLink = instructionToCommand(transferToken)
