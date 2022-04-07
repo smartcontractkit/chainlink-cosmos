@@ -25,7 +25,9 @@ export const makeAbstractCommand = async (
   input?: any,
 ): Promise<AbstractCommand> => {
   const commandOpts = await parseInstruction(instruction, flags.version)
-  const params = (commandOpts.isBatchCall) ? parseBatchParams(commandOpts, input || flags) : parseParams(commandOpts, input || flags)
+  const params = commandOpts.isBatchCall
+    ? parseBatchParams(commandOpts, input || flags)
+    : parseParams(commandOpts, input || flags)
   return new AbstractCommand(flags, args, commandOpts, params)
 }
 
@@ -56,7 +58,7 @@ export const parseInstruction = async (instruction: string, inputVersion: string
   const command = instruction.split(':')
   if (!command.length || command.length > 3) throw new Error(`Abstract: Instruction ${command.join(':')} not found`)
 
-  const isBatchCall = (command[2] == 'batch') ? true : false
+  const isBatchCall = command[2] == 'batch' ? true : false
   const id = command[0] as CONTRACT_LIST
   const contract = await contracts.getContractWithSchemaAndCode(id, inputVersion)
   if (!contract) throw new Error(`Abstract: Contract ${command[0]} not found`)
@@ -115,9 +117,9 @@ export const parseParams = (commandOpts: AbstractOpts, params: any): AbstractPar
 
 export const parseBatchParams = (commandOpts: AbstractOpts, params: any): AbstractParams[] => {
   var allParams: AbstractParams[] = []
-  params.forEach(element => {
+  params.forEach((element) => {
     allParams.push(parseParams(commandOpts, element))
-  });
+  })
   return allParams
 }
 
@@ -162,7 +164,9 @@ export default class AbstractCommand extends TerraCommand {
 
   abstractExecute: AbstractExecute = async (params: any, address: string) => {
     logger.debug(`Executing ${this.opts.function} from contract ${this.opts.contract.id} at ${address}`)
-    const tx = (this.opts.isBatchCall) ? await this.batchCall(address, params as AbstractParams[]) : await this.call(address, params)
+    const tx = this.opts.isBatchCall
+      ? await this.batchCall(address, params as AbstractParams[])
+      : await this.call(address, params)
     logger.debug(`Execution finished at tx ${tx.hash}`)
     return {
       responses: [
@@ -209,9 +213,7 @@ export default class AbstractCommand extends TerraCommand {
     const input = this.params
     const msgs: MsgExecuteContract[] = []
     if (this.opts.isBatchCall) {
-      this.params.forEach(
-        element => msgs.push(new MsgExecuteContract(signer, contractAddress, element))
-      )
+      this.params.forEach((element) => msgs.push(new MsgExecuteContract(signer, contractAddress, element)))
     } else {
       msgs.push(new MsgExecuteContract(signer, contractAddress, input))
     }
