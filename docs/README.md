@@ -15,6 +15,7 @@ Additional documentation can be found in this directory.
 - [Inspecting Terra Contracts](./InspectingContracts.md)
 - [Running End to End Tests](./RunningE2eTests.md)
 - [Getting Started With Gauntlet](./GettingStartedWithGauntlet.md)
+- [Withdrawing Payments From Feeds](./WithdrawingPaymentsFromFeeds.md)
 
 # Local initial setup
 
