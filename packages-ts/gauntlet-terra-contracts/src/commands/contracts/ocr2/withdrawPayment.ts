@@ -53,9 +53,7 @@ const afterExecute = () => async (response: Result<TransactionResponse>) => {
     return
   }
 
-  logger.info(
-    `Paying ${paidOracleEvent.payee} ${paidOracleEvent.amount} LINK`,
-  )
+  logger.info(`Paying ${paidOracleEvent.payee} ${paidOracleEvent.amount} LINK`)
   return
 }
 
