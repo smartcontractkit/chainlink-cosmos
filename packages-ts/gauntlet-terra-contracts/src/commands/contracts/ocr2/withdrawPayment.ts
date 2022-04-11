@@ -49,12 +49,12 @@ const afterExecute = () => async (response: Result<TransactionResponse>) => {
 
   const paidOracleEvent = parseOraclePaidEvent(events[0].wasm)
   if (!paidOracleEvent) {
-    logger.error('Unable to parse/validate response date')
+    logger.error('Unable to parse/validate response data')
     return
   }
 
   logger.info(
-    `Paying ${paidOracleEvent.payee} ${paidOracleEvent.amount} LINK (${paidOracleEvent.linkToken}) for transmitter ${paidOracleEvent.transmitter}`,
+    `Paying ${paidOracleEvent.payee} ${paidOracleEvent.amount} LINK`,
   )
   return
 }
