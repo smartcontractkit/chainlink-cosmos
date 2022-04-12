@@ -33,8 +33,8 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
-  logger.info(`Transmitter ${context.contractInput.transmitter} withdrawing LINK payment from ${context.contract}`)
+const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, input) => async () => {
+  logger.info(`Transmitter ${input.contractInput.transmitter} withdrawing LINK payment from ${context.contract}`)
 
   await prompt('Continue?')
   return

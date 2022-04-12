@@ -1,16 +1,16 @@
-import { MnemonicKey } from '@terra-money/terra.js'
+import { AccAddress } from '@terra-money/terra.js'
+import { EMPTY_TRANSMITTERS } from '../../../../lib/constants'
 import { extendCommandInstruction, instructionToCommand } from '../../../abstract/executionWrapper'
 import ProposeConfig, { CommandInput, instruction } from '../proposeConfig'
 
 const makeInput = async (flags): Promise<CommandInput> => {
-  const randomAcc = () => new MnemonicKey().publicKey?.address()!
-  const makeEmptyOracle = (n: number) => ({
+  const makeEmptyOracle = (n: number, emptyAddress: AccAddress) => ({
     signer: new Array(64).fill(n.toString(16)).join(''),
-    transmitter: randomAcc(),
-    payee: randomAcc(),
+    transmitter: emptyAddress,
+    payee: emptyAddress,
   })
   // > f * 3 oracles
-  const oracles = new Array(4).fill('').map((_, i) => makeEmptyOracle(i))
+  const oracles = new Array(4).fill('').map((_, i) => makeEmptyOracle(i, EMPTY_TRANSMITTERS[i]))
   const defaultInput = {
     f: Number(1),
     onchainConfig: '',
