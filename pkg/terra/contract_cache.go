@@ -48,6 +48,13 @@ func NewContractCache(cfg Config, reader *OCR2Reader, lggr Logger) *ContractCach
 }
 
 func (cc *ContractCache) Start() error {
+	// We synchronously update the config on start so that
+	// when OCR starts there is config available (if possible).
+	// Avoids confusing "contract has not been configured" OCR errors.
+	ctx, _ := utils.ContextFromChan(cc.stop)
+	if err := cc.updateConfig(ctx); err != nil {
+		cc.lggr.Warnf("failed to populate initial config: %v", err)
+	}
 	go cc.poll()
 	return nil
 }
