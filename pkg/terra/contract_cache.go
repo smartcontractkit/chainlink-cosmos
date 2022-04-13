@@ -51,7 +51,8 @@ func (cc *ContractCache) Start() error {
 	// We synchronously update the config on start so that
 	// when OCR starts there is config available (if possible).
 	// Avoids confusing "contract has not been configured" OCR errors.
-	ctx, _ := utils.ContextFromChan(cc.stop)
+	ctx, cancel := utils.ContextFromChan(cc.stop)
+	defer cancel()
 	if err := cc.updateConfig(ctx); err != nil {
 		cc.lggr.Warnf("failed to populate initial config: %v", err)
 	}
@@ -77,7 +78,7 @@ func (cc *ContractCache) poll() {
 		case <-cc.stop:
 			return
 		case <-tick:
-			ctx, _ := utils.ContextFromChan(cc.stop)
+			ctx, cancel := utils.ContextFromChan(cc.stop)
 			if err := cc.updateConfig(ctx); err != nil {
 				cc.lggr.Errorf("Failed to update config: %v", err)
 			}
@@ -87,6 +88,7 @@ func (cc *ContractCache) poll() {
 			if err := cc.updateTransmission(ctx); err != nil {
 				cc.lggr.Errorf("Failed to update transmission: %v", err)
 			}
+			cancel()
 			tick = time.After(utils.WithJitter(cc.cfg.OCR2CachePollPeriod()))
 		}
 	}
