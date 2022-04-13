@@ -8,6 +8,10 @@ export interface Round {
   epoch: number
   aggregatorRoundId: number
   observationsTS: Date
+
+  blockHeight: bigint
+  txIndex: bigint
+  txHash: string
 }
 
 export class OCR2Feed {
@@ -31,9 +35,17 @@ export class OCR2Feed {
         'wasm-new_transmission.contract_address': contract,
       },
       async (data) => {
-        const txRes = data.value.TxResult.result
-        OCR2Feed.parseLog(txRes.log)
-          .filter((r) => r.contract == contract)
+        const txResult = data.value.TxResult
+        OCR2Feed.parseLog(txResult.result.log)
+          .filter((r: Round) => r.contract == contract)
+          .map(
+            (r: Round): Round => {
+              r.blockHeight = txResult.height
+              r.txIndex = txResult.index
+              r.txHash = txResult.tx
+              return r
+            },
+          )
           .forEach(callback)
       },
     )
@@ -74,6 +86,6 @@ export class OCR2Feed {
       epoch: tryInt(onlyAttr('epoch')),
       aggregatorRoundId: tryInt(onlyAttr('aggregator_round_id')),
       observationsTS: tryUnixDate(onlyAttr('observations_timestamp')),
-    }
+    } as Round
   }
 }
