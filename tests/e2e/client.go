@@ -303,6 +303,10 @@ func (t *TerraLCDClient) CalculateTxGas(gasUsedValue *big.Int) (*big.Float, erro
 	panic("implement me")
 }
 
+func (t *TerraLCDClient) EstimateTransactionGasCost() (*big.Int, error) {
+	panic("implement me")
+}
+
 // GetDefaultWallet gets the default wallet
 func (t *TerraLCDClient) GetDefaultWallet() *ifclient.EthereumWallet {
 	panic("implement me")

@@ -142,7 +142,7 @@ func (m *OCRv2State) DeployEnv(nodes int, blockTime string, stateful bool) {
 
 // SetupClients setting up clients
 func (m *OCRv2State) SetupClients() {
-	networkRegistry := client.NewNetworkRegistry()
+	networkRegistry := client.NewDefaultNetworkRegistry()
 	networkRegistry.RegisterNetwork(
 		"terra",
 		e2e.ClientInitFunc(len(m.ContractsNodeSetup)),
