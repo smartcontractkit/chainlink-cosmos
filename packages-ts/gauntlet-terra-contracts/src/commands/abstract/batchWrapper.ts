@@ -16,16 +16,18 @@ export const wrapCommand = (command) => {
     }
 
     buildCommand = async (flags, args): Promise<TerraCommand> => {
-    //   console.log(command)
-    //   console.log(Object.getPrototypeOf(command) instanceof TerraCommand)
-    //   console.log(TerraCommand.prototype)
-    //   console.log(command instanceof TerraCommand)
-    //   console.log(flags)
-    //   console.log(command.buildCommand)
+      //   console.log(command)
+      //   console.log(Object.getPrototypeOf(command) instanceof TerraCommand)
+      //   console.log(TerraCommand.prototype)
+      //   console.log(command instanceof TerraCommand)
+      //   console.log(flags)
+      //   console.log(command.buildCommand)
       // const abstractCommand = await makeAbstractCommand(BatchCommand.id, flags, args)
       // await abstractCommand.invokeMiddlewares(abstractCommand, abstractCommand.middlewares)
       // this.command = abstractCommand
-      this.subCommands = flags.input.map(async (item) => await command.buildCommand(item, args))
+      this.subCommands = flags.input.map(async (item) => {
+        return command.buildCommand ? await command.buildCommand(item, args) : command
+      })
       return this
     }
 
@@ -41,12 +43,13 @@ export const wrapCommand = (command) => {
     }
 
     execute = async (): Promise<Result<TransactionResponse>> => {
-        if (typeof command.buildCommand != "undefined") throw new Error("This command does not support batching")
+      if (typeof (command as TerraCommand).buildCommand == 'undefined')
+        throw new Error('This command does not support batching')
       // TODO: Command should be built from gauntet-core
       await this.buildCommand(this.flags, this.args)
       await this.defaultBeforeBatchExecute
 
-      console.log(this.subCommands[0])
+      // console.log(this.subCommands[0].wallet)
       const msg = await this.subCommands[0].makeRawTransaction(this.subCommands[0].wallet.key.accAddress)
       console.log(msg)
       let tx = await this.subCommands[0].signAndSend([msg])
