@@ -51,7 +51,7 @@ var _ = Describe("Terra OCRv2 Proxy @ocr_proxy", func() {
 
 	AfterEach(func() {
 		By("Tearing down the environment", func() {
-			err := actions.TeardownSuite(state.Env, nil, "logs", nil)
+			err := actions.TeardownSuite(state.Env, nil, "logs", nil, nil)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 	})
