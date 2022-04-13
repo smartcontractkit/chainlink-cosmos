@@ -4,11 +4,13 @@ import { existsSync } from 'fs'
 import path from 'path'
 import { io } from '@chainlink/gauntlet-core/dist/utils'
 import Terra from './commands'
+import { wrapCommand as batchCommandWrapper } from './commands/abstract/batchWrapper'
 import { makeAbstractCommand } from './commands/abstract'
 import { defaultFlags } from './lib/args'
+import { TerraCommand } from '@chainlink/gauntlet-terra'
 
 const commands = {
-  custom: [...Terra, ...Terra.map(multisigWrapCommand), ...CWPlusCommands],
+  custom: [...Terra, ...Terra.map(multisigWrapCommand), ...Terra.map(batchCommandWrapper), ...CWPlusCommands],
   loadDefaultFlags: () => defaultFlags,
   abstract: {
     findPolymorphic: () => undefined,
