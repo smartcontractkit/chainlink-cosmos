@@ -28,12 +28,14 @@ ifeq ($(OSFLAG),$(WINDOWS))
 endif
 ifeq ($(OSFLAG),$(OSX))
 	brew install asdf
-	asdf plugin-add nodejs https://github.com/asdf-vm/asdf-nodejs.git || true
-	asdf plugin-add rust https://github.com/code-lever/asdf-rust.git || true
-	asdf plugin-add golang https://github.com/kennyp/asdf-golang.git || true
-	asdf plugin-add ginkgo https://github.com/jimmidyson/asdf-ginkgo.git || true
+	asdf plugin-add nodejs || true
+	asdf plugin-add rust || true
+	asdf plugin-add golang || true
+	asdf plugin-add ginkgo || true
 	asdf plugin-add pulumi || true
-	asdf plugin add golangci-lint https://github.com/hypnoglow/asdf-golangci-lint.git
+	asdf plugin add golangci-lint || true
+	asdf plugin add actionlint || true
+	asdf plugin add shellcheck || true
 	asdf install
 endif
 ifeq ($(OSFLAG),$(LINUX))
