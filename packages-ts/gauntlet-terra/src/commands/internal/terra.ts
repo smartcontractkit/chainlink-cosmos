@@ -54,8 +54,12 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
         return attribute.value
       }
     } catch (e) {
-      logger.log('Error parsing response', e.message)
-      return undefined
+      if (receipt?.raw_log.includes('insufficient funds')) {
+        throw Error(`Wallet does not have enough funds for txn: ${receipt?.raw_log}`)
+      } else {
+        logger.log('Error parsing response', e.message)
+        return undefined
+      }
     }
   }
 
