@@ -1,12 +1,7 @@
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 
-export const getRDD = (path: string, fileDescription: string = 'RDD'): any => {
-  path = path || process.env.RDD
-  if (!path) {
-    throw new Error(`No reference data directory specified!  Must pass in the '--rdd' flag or set the 'RDD' env var`)
-  }
-
+export const parseJSON = (path: string, fileDescription: string): any => {
   // test whether the file exists as a relative path or an absolute path
   let pathToUse
   if (existsSync(path)) {
@@ -25,6 +20,15 @@ export const getRDD = (path: string, fileDescription: string = 'RDD'): any => {
       `An error ocurred while parsing the ${fileDescription}. Make sure you provided a valid ${fileDescription} path`,
     )
   }
+}
+
+export const getRDD = (path: string): any => {
+  path = path || process.env.RDD
+  if (!path) {
+    throw new Error(`No reference data directory specified!  Must pass in the '--rdd' flag or set the 'RDD' env var`)
+  }
+
+  return parseJSON(path, 'RDD')
 }
 
 export enum CONTRACT_TYPES {

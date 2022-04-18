@@ -4,6 +4,7 @@ import { TerraCommand, TransactionResponse, logger } from '@chainlink/gauntlet-t
 import { AccAddress, LCDClient, Msg } from '@terra-money/terra.js'
 import { prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { ExecutionContext } from './executionWrapper'
+import { parseJSON } from '@chainlink/gauntlet-terra/dist/lib/rdd'
 
 export const wrapCommand = (command) => {
   return class BatchCommand extends TerraCommand {
@@ -15,8 +16,10 @@ export const wrapCommand = (command) => {
     }
 
     buildCommand = async (flags, args): Promise<TerraCommand> => {
+      const input = flags.input ? flags.input : parseJSON(flags.inputFile, 'BatchInputFile')
+
       this.subCommands = await Promise.all(
-        flags.input.map(async (individualInput) => {
+        input.map(async (individualInput) => {
           const newFlags = { ...flags, input: individualInput }
 
           let c = new command(newFlags, args) as TerraCommand
@@ -31,8 +34,6 @@ export const wrapCommand = (command) => {
     makeRawTransaction = async (signer: AccAddress) => {
       return await Promise.all(this.subCommands.map(async (element) => (await element.makeRawTransaction(signer))[0]))
     }
-
-    defaultBeforeBatchExecute = () => async () => {}
 
     execute = async (): Promise<Result<TransactionResponse>> => {
       // TODO: Command should be built from gauntet-core

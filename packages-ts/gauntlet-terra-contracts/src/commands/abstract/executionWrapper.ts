@@ -55,7 +55,6 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
 
     constructor(flags, args) {
       super(flags, args)
-      // Object.setPrototypeOf(this, TerraCommand.prototype)
     }
 
     buildCommand = async (flags, args): Promise<TerraCommand> => {
