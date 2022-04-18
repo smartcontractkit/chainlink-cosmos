@@ -31,7 +31,7 @@ jobs:
     name: E2E Chaos Build Contracts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@f25a3a9f25bd5f4c5d77189cab02ff357b5aedeb # v2.4.1
       - name: Cache cargo registry
         uses: actions/cache@v2.1.7
         with:
@@ -57,7 +57,7 @@ jobs:
       CGO_ENABLED: 1
     steps:
       - name: Checkout the repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@f25a3a9f25bd5f4c5d77189cab02ff357b5aedeb # v2.4.1
       - name: Install Nix
         uses: cachix/install-nix-action@v14
         with:
