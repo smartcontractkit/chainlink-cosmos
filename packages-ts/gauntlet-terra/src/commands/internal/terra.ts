@@ -31,7 +31,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   public codeIds: CodeIds
 
   abstract execute: () => Promise<Result<TransactionResponse>>
-  abstract makeRawTransaction: (signer: AccAddress) => Promise<MsgExecuteContract | MsgSend>
+  abstract makeRawTransaction: (signer: AccAddress) => Promise<(MsgExecuteContract | MsgSend)[]>
   // Preferable option to initialize the command instead of new TerraCommand. This should be an static option to construct the command
   buildCommand?: (flags, args) => Promise<TerraCommand>
   beforeExecute: (context?: any) => Promise<void>
