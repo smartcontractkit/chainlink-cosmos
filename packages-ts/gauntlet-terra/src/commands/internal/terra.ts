@@ -1,8 +1,8 @@
 import { Result, WriteCommand } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
+import { AddressBook } from '@chainlink/gauntlet-core/dist/commands/addressBook'
 import { SignMode } from '@terra-money/terra.proto/cosmos/tx/signing/v1beta1/signing'
 import { withProvider, withWallet, withCodeIds, withNetwork } from '../middlewares'
-import { AddressBook } from '../addressBook'
 import {
   EventsByType,
   MsgStoreCode,

@@ -1,5 +1,5 @@
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
-import { AddressBook } from './addressBook'
+import { AddressBook } from '@chainlink/gauntlet-core/dist/commands/addressBook'
 import { assertions } from '@chainlink/gauntlet-core/dist/utils'
 import { Logger } from '@chainlink/gauntlet-core/dist/utils/logger'
 

@@ -1,5 +1,6 @@
-import { TerraCommand, AddressBook, logger } from '@chainlink/gauntlet-terra'
+import { TerraCommand, logger } from '@chainlink/gauntlet-terra'
 import { Middleware, Next } from '@chainlink/gauntlet-core'
+import { AddressBook } from '@chainlink/gauntlet-core/dist/commands/addressBook'
 import { CONTRACT_LIST } from './contracts'
 import { AccAddress } from '@terra-money/terra.js'
 
