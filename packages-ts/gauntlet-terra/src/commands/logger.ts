@@ -2,28 +2,6 @@ import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { AddressBook } from './addressBook'
 import { assertions } from '@chainlink/gauntlet-core/dist/utils'
 
-type COLOR = 'red' | 'green' | 'blue' | 'yellow' | 'cyan' | 'magenta'
-type INTENSITY = 'dim' | 'bright'
-type Style = COLOR | INTENSITY
-type Styles = { [id: string]: [color: COLOR, intensity: INTENSITY] }
-const styles = {
-  MULTISIG_LABEL: ['cyan', 'bright'],
-  MULTISIG_ADDRESS: ['cyan', 'dim'],
-  CONTRACT_LABEL: ['blue', 'bright'],
-  CONTRACT_ADDRESS: ['blue', 'dim'],
-  OPERATOR_LABEL: ['green', 'bright'],
-  OPERATOR_ADDRESS: ['green', 'dim'],
-} as Styles
-
-const formatMultisig = (address: string, label: string): string =>
-  `🧳 ${logger.style(label, ...styles.MULTISIG_LABEL)}:${logger.style(address, ...styles.MULTISIG_ADDRESS)}`
-
-const formatContract = (address: string, label: string): string =>
-  `📜 ${logger.style(label, ...styles.CONTRACT_LABEL)}:${logger.style(address, ...styles.CONTRACT_ADDRESS)}`
-
-const formatOperator = (address: string): string =>
-  `🧑🏽 ${logger.style('operator', ...styles.OPERATOR_LABEL)}:${logger.style(address, ...styles.OPERATOR_ADDRESS)}`
-
 export class TerraLogger {
   addressBook: AddressBook
 
@@ -41,12 +19,12 @@ export class TerraLogger {
     if (this.addressBook.instances.has(address)) {
       const name = this.addressBook.instances.get(address).name
       if (name == 'multisig') {
-        return formatMultisig(address, name)
+        return logger.formatMultisig(address, name)
       } else {
-        return formatContract(address, name)
+        return logger.formatContract(address, name)
       }
     } else if (address == this.addressBook.operator) {
-      return formatOperator(address)
+      return logger.formatOperator(address)
     } else {
       return address
     }
