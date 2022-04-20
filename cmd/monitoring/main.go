@@ -55,7 +55,8 @@ func main() {
 		terraConfig,
 		envelopeSourceFactory,
 		txResultsFactory,
-		monitoring.TerraFeedParser,
+		monitoring.TerraFeedsParser,
+		monitoring.TerraNodesParser,
 	)
 	if err != nil {
 		l.Fatalw("failed to build monitor", "error", err)
