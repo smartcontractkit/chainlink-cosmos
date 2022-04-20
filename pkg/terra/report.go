@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"sort"
 
+	"github.com/smartcontractkit/libocr/bigbigendian"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
@@ -16,18 +17,17 @@ const (
 	observationsLenBytes     = 1
 	prefixSizeBytes          = timestampSizeBytes + observersSizeBytes + observationsLenBytes
 	juelsPerFeeCoinSizeBytes = 16
+	observationSizeBytes 	 = 16
 )
 
 type observation []byte
 
-const observationSizeBytes = 16
-
 func newObservationFromInt(o *big.Int) (observation, error) {
-	return ToBytes(o, observationSizeBytes)
+	return bigbigendian.SerializeSigned(observationSizeBytes, o)
 }
 
 func (o observation) ToBigInt() (*big.Int, error) {
-	return ToBigInt(o, observationSizeBytes)
+	return bigbigendian.DeserializeSigned(observationSizeBytes, o)
 }
 
 var _ median.ReportCodec = (*ReportCodec)(nil)
@@ -87,12 +87,16 @@ func (c ReportCodec) BuildReport(oo []median.ParsedAttributedObservation) (types
 	}
 
 	// Add juels per fee coin value
-	jBytes, err := ToBytes(juelsPerFeeCoin, juelsPerFeeCoinSizeBytes)
+	jBytes, err := bigbigendian.SerializeSigned(juelsPerFeeCoinSizeBytes, juelsPerFeeCoin)
 	if err != nil {
 		return nil, err
 	}
 	report = append(report, jBytes...)
 	return report, nil
+}
+
+func (c ReportCodec) MaxReportLength(n int) int {
+	return prefixSizeBytes + (n * observationSizeBytes) + juelsPerFeeCoinSizeBytes
 }
 
 func (c ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
