@@ -25,15 +25,14 @@ type prometheusExporterFactory struct {
 }
 
 func (p *prometheusExporterFactory) NewExporter(
-	chainConfig relayMonitoring.ChainConfig,
-	feedConfig relayMonitoring.FeedConfig,
+	params relayMonitoring.ExporterParams,
 ) (relayMonitoring.Exporter, error) {
-	terraFeedConfig, ok := feedConfig.(TerraFeedConfig)
+	terraFeedConfig, ok := params.FeedConfig.(TerraFeedConfig)
 	if !ok {
-		return nil, fmt.Errorf("expected feedConfig to be of type TerraFeedConfig not %T", feedConfig)
+		return nil, fmt.Errorf("expected feedConfig to be of type TerraFeedConfig not %T", params.FeedConfig)
 	}
 	return &prometheusExporter{
-		chainConfig,
+		params.ChainConfig,
 		terraFeedConfig,
 		p.log,
 		p.metrics,
