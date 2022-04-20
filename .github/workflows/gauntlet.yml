@@ -1,18 +1,16 @@
-name: Gauntlet
+name: gauntlet
 
 on:
   push:
-    branches:
-      - develop
-  pull_request:
 
 jobs:
-  build:
+  gauntlet_build:
+    name: Gauntlet Build
     env:
       CI: true
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@f25a3a9f25bd5f4c5d77189cab02ff357b5aedeb # v2.4.1
       - name: Install Nix
         uses: cachix/install-nix-action@v14
         with:
@@ -21,19 +19,16 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - run: |
-          npm config set -- '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-          nix develop -c yarn install --frozen-lockfile
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - run: ${{ matrix.env }} nix develop -c yarn build
+      - run: nix develop -c yarn install --frozen-lockfile
+      - run: nix develop -c yarn build
 
-  format:
+  gauntlet_format:
+    name: Gauntlet Format
     env:
       CI: true
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@f25a3a9f25bd5f4c5d77189cab02ff357b5aedeb # v2.4.1
       - name: Install Nix
         uses: cachix/install-nix-action@v14
         with:
@@ -42,19 +37,16 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - run: |
-          npm config set -- '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-          nix develop -c yarn install --frozen-lockfile
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - run: ${{ matrix.env }} nix develop -c yarn lint:format
+      - run: nix develop -c yarn install --frozen-lockfile
+      - run: nix develop -c yarn lint:format
 
-  test:
+  gauntlet_run_tests:
+    name: Gauntlet Run Tests
     env:
       CI: true
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@f25a3a9f25bd5f4c5d77189cab02ff357b5aedeb # v2.4.1
       - name: Install Nix
         uses: cachix/install-nix-action@v14
         with:
@@ -63,9 +55,5 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - run: |
-          npm config set -- '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-          nix develop -c yarn install --frozen-lockfile
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - run: ${{ matrix.env }} nix develop -c yarn test:ci
+      - run: nix develop -c yarn install --frozen-lockfile
+      - run: nix develop -c yarn test:ci

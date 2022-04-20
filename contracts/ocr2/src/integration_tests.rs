@@ -1,16 +1,16 @@
 #![cfg(test)]
 #![cfg(not(tarpaulin_include))]
-use crate::contract::tests::REPORT;
-use crate::contract::{execute, instantiate, query};
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, LatestConfigDetailsResponse, LatestTransmissionDetailsResponse,
     LinkAvailableForPaymentResponse, QueryMsg,
 };
-use crate::state::{Billing, Round};
+use crate::state::{Billing, Round, Validator};
 use crate::Decimal;
+use anyhow::Result as AnyResult;
 use cosmwasm_std::{to_binary, Addr, Binary, Empty, Uint128};
 use cw20::Cw20Coin;
-use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, AppBuilder, AppResponse, Contract, ContractWrapper, Executor};
+use deviation_flagging_validator as validator;
 use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes};
 use rand::thread_rng;
 use std::convert::TryFrom;
@@ -23,7 +23,10 @@ fn mock_app() -> App {
 }
 
 pub fn contract_ocr2() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(execute, instantiate, query);
+    use crate::contract::{execute, instantiate, migrate, query, reply};
+    let contract = ContractWrapper::new(execute, instantiate, query)
+        .with_reply(reply)
+        .with_migrate(migrate);
     Box::new(contract)
 }
 
@@ -41,6 +44,25 @@ pub fn contract_access_controller() -> Box<dyn Contract<Empty>> {
         access_controller::contract::execute,
         access_controller::contract::instantiate,
         access_controller::contract::query,
+    )
+    .with_migrate(access_controller::contract::migrate);
+    Box::new(contract)
+}
+
+pub fn contract_validator() -> Box<dyn Contract<Empty>> {
+    let contract = ContractWrapper::new(
+        validator::contract::execute,
+        validator::contract::instantiate,
+        validator::contract::query,
+    );
+    Box::new(contract)
+}
+
+pub fn contract_flags() -> Box<dyn Contract<Empty>> {
+    let contract = ContractWrapper::new(
+        flags::contract::execute,
+        flags::contract::instantiate,
+        flags::contract::query,
     );
     Box::new(contract)
 }
@@ -50,6 +72,8 @@ struct Env {
     router: App,
     owner: Addr,
     link_token_id: u64,
+    ocr2_id: u64,
+    access_controller_id: u64,
     billing_access_controller_addr: Addr,
     requester_access_controller_addr: Addr,
     link_token_addr: Addr,
@@ -59,17 +83,40 @@ struct Env {
     config_digest: [u8; 32],
 }
 
-fn transmit_report(env: &mut Env, epoch: u32, round: u8) {
-    let report = REPORT.to_vec();
+const ANSWER: i128 = 1234567890;
 
+fn transmit_report(
+    env: &mut Env,
+    epoch: u32,
+    round: u8,
+    answer: i128,
+    valid_sig: bool,
+) -> AnyResult<AppResponse> {
+    // Build a report
+    let len: u8 = 4;
+    let mut report = Vec::new();
+    report.extend_from_slice(&[97, 91, 43, 83]); // observations_timestamp
+    let mut observers = [0; 32];
+    for i in 0..len {
+        observers[i as usize] = i;
+    }
+    report.extend_from_slice(&observers); // observers
+    report.extend_from_slice(&[len]); // len
+    let bytes = answer.to_be_bytes();
+    for _ in 0..len {
+        report.extend_from_slice(&bytes); // observation
+    }
+    report.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0]); // juels per luna (1 with 18 decimal places)
+
+    // Generate report context
     let mut report_context = vec![0; 96];
     let (cfg_digest, ctx) = report_context.split_at_mut(32);
     let (epoch_and_round, _context) = ctx.split_at_mut(32);
     cfg_digest.copy_from_slice(&env.config_digest);
 
-    // epoch 1
+    // epoch
     epoch_and_round[27..27 + 4].clone_from_slice(&epoch.to_be_bytes());
-    // round 1
+    // round
     epoch_and_round[31] = round;
 
     // determine hash to sign
@@ -92,7 +139,11 @@ fn transmit_report(env: &mut Env, epoch: u32, round: u8) {
 
             let mut result = Vec::new();
             result.extend_from_slice(&pk_bytes);
-            result.extend_from_slice(&sig_bytes);
+            if valid_sig {
+                result.extend_from_slice(&sig_bytes);
+            } else {
+                result.extend_from_slice(&[0u8; 64]);
+            }
             Binary(result)
         })
         .collect();
@@ -103,9 +154,9 @@ fn transmit_report(env: &mut Env, epoch: u32, round: u8) {
         report: Binary(report),
         signatures,
     };
+
     env.router
         .execute_contract(transmitter.clone(), env.ocr2_addr.clone(), &msg, &[])
-        .unwrap();
 }
 
 fn setup() -> Env {
@@ -129,7 +180,7 @@ fn setup() -> Env {
             &access_controller::msg::InstantiateMsg {},
             &[],
             "billing_access_controller",
-            None,
+            Some(owner.to_string()),
         )
         .unwrap();
 
@@ -140,7 +191,7 @@ fn setup() -> Env {
             &access_controller::msg::InstantiateMsg {},
             &[],
             "requester_access_controller",
-            None,
+            Some(owner.to_string()),
         )
         .unwrap();
 
@@ -158,7 +209,7 @@ fn setup() -> Env {
             },
             &[],
             "LINK",
-            None,
+            Some(owner.to_string()),
         )
         .unwrap();
 
@@ -177,7 +228,7 @@ fn setup() -> Env {
             },
             &[],
             "OCR2",
-            None,
+            Some(owner.to_string()),
         )
         .unwrap();
 
@@ -306,6 +357,8 @@ fn setup() -> Env {
         router,
         owner,
         link_token_id,
+        ocr2_id,
+        access_controller_id,
         billing_access_controller_addr,
         requester_access_controller_addr,
         link_token_addr,
@@ -317,13 +370,40 @@ fn setup() -> Env {
 }
 
 #[test]
+fn migrate() {
+    let mut env = setup();
+
+    let migrate_msg = Empty {};
+
+    // Migrate should succeed
+    env.router
+        .migrate_contract(
+            env.owner.clone(),
+            env.ocr2_addr.clone(),
+            &migrate_msg,
+            env.ocr2_id,
+        )
+        .unwrap();
+
+    // Migrate should fail if the contract type doesn't match
+    env.router
+        .migrate_contract(
+            env.owner,
+            env.ocr2_addr.clone(),
+            &migrate_msg,
+            env.access_controller_id,
+        )
+        .unwrap_err();
+}
+
+#[test]
 // cw3 multisig account can control cw20 admin actions
 fn transmit_happy_path() {
     let mut env = setup();
     let deposit = Decimal::from_str("1000").unwrap().0;
     // expected in juels
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
 
     // -- set billing
 
@@ -368,8 +448,14 @@ fn transmit_happy_path() {
         .unwrap();
     assert_eq!(decimals, 18);
 
+    // Should revert
+    let res = transmit_report(&mut env, 1, 1, ANSWER, false);
+    assert!(res.is_err());
+    assert_eq!(res.err().unwrap().to_string(), "invalid signature");
+
     // -- call transmit
-    transmit_report(&mut env, 1, 1);
+    let res = transmit_report(&mut env, 1, 1, ANSWER, true);
+    assert!(!res.is_err());
 
     let transmitter = Addr::unchecked(env.transmitters.first().cloned().unwrap());
 
@@ -380,7 +466,7 @@ fn transmit_happy_path() {
         .unwrap();
     assert_eq!(data.observations_timestamp, 1633364819);
     assert_eq!(data.transmission_timestamp, 1571797419);
-    assert_eq!(data.answer, 1234567890i128);
+    assert_eq!(data.answer, ANSWER);
 
     let response: LatestTransmissionDetailsResponse = env
         .router
@@ -625,7 +711,7 @@ fn set_link_token() {
     let deposit = Decimal::from_str("1000").unwrap().0;
     // expected in juels
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
 
     // -- set billing
 
@@ -672,7 +758,7 @@ fn set_link_token() {
     assert_eq!(decimals, 18);
 
     // -- call transmit
-    transmit_report(&mut env, 1, 1);
+    transmit_report(&mut env, 1, 1, ANSWER, true).unwrap();
 
     let transmitter = Addr::unchecked(env.transmitters.first().cloned().unwrap());
 
@@ -683,7 +769,7 @@ fn set_link_token() {
         .unwrap();
     assert_eq!(data.observations_timestamp, 1633364819);
     assert_eq!(data.transmission_timestamp, 1571797419);
-    assert_eq!(data.answer, 1234567890i128);
+    assert_eq!(data.answer, ANSWER);
 
     let response: LatestTransmissionDetailsResponse = env
         .router
@@ -808,7 +894,7 @@ fn revert_payouts_correctly() {
 
     // set billing
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
     let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
@@ -843,7 +929,7 @@ fn revert_payouts_correctly() {
     assert_eq!(0, available.amount);
 
     // transmit round
-    transmit_report(&mut env, 1, 1);
+    transmit_report(&mut env, 1, 1, ANSWER, true).unwrap();
 
     // check owed balance
     let transmitter = Addr::unchecked("transmitter0");
@@ -943,11 +1029,120 @@ fn revert_payouts_correctly() {
 }
 
 #[test]
+fn transmit_failing_validation() {
+    let mut env = setup();
+
+    let flags_id = env.router.store_code(contract_flags());
+    let validator_id = env.router.store_code(contract_validator());
+
+    // setup flags
+
+    let flags_addr = env
+        .router
+        .instantiate_contract(
+            flags_id,
+            env.owner.clone(),
+            &flags::msg::InstantiateMsg {
+                lowering_access_controller: env.billing_access_controller_addr.to_string(),
+                raising_access_controller: env.billing_access_controller_addr.to_string(),
+            },
+            &[],
+            "flags",
+            None,
+        )
+        .unwrap();
+
+    let validator_addr = env
+        .router
+        .instantiate_contract(
+            validator_id,
+            env.owner.clone(),
+            &validator::msg::InstantiateMsg {
+                flags: flags_addr.to_string(),
+                flagging_threshold: 1, // 1%?
+            },
+            &[],
+            "validator",
+            None,
+        )
+        .unwrap();
+
+    // Add validator to the flags access controller list
+    env.router
+        .execute_contract(
+            env.owner.clone(),
+            env.billing_access_controller_addr.clone(),
+            &access_controller::msg::ExecuteMsg::AddAccess {
+                address: validator_addr.to_string(),
+            },
+            &[],
+        )
+        .unwrap();
+
+    // Configure the aggregator to use the validator
+    env.router
+        .execute_contract(
+            env.owner.clone(),
+            env.ocr2_addr.clone(),
+            &ExecuteMsg::SetValidatorConfig {
+                config: Some(Validator {
+                    address: validator_addr.clone(),
+                    gas_limit: u64::MAX,
+                }),
+            },
+            &[],
+        )
+        .unwrap();
+
+    // -- call transmit
+    transmit_report(&mut env, 1, 1, 1, true).unwrap();
+
+    // check validator didn't flag
+    let flagged: bool = env
+        .router
+        .wrap()
+        .query_wasm_smart(
+            &flags_addr,
+            &flags::msg::QueryMsg::Flag {
+                subject: env.ocr2_addr.to_string(),
+            },
+        )
+        .unwrap();
+    assert!(!flagged);
+
+    // this should be out of threshold
+    assert!(!validator::contract::is_valid(1, 1, 1000).unwrap());
+    transmit_report(&mut env, 1, 2, 1000, true).unwrap();
+
+    // check validator flagged
+    let flagged: bool = env
+        .router
+        .wrap()
+        .query_wasm_smart(
+            &flags_addr,
+            &flags::msg::QueryMsg::Flag {
+                subject: env.ocr2_addr.to_string(),
+            },
+        )
+        .unwrap();
+    assert!(flagged);
+
+    // read latest value to be -1
+    let round: Round = env
+        .router
+        .wrap()
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestRoundData)
+        .unwrap();
+    assert_eq!(round.round_id, 2);
+    assert_eq!(round.answer, 1000);
+}
+
+#[test]
 fn set_billing_payout() {
     let mut env = setup();
     // expected in juels
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.001871716").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
 
     // -- set billing
     // price in uLUNA
@@ -965,7 +1160,7 @@ fn set_billing_payout() {
         .unwrap();
 
     // -- call transmit
-    transmit_report(&mut env, 1, 1);
+    transmit_report(&mut env, 1, 1, ANSWER, true).unwrap();
 
     // -- set billing again
     let msg = ExecuteMsg::SetBilling {

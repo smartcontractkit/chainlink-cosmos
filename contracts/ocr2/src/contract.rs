@@ -1,10 +1,9 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order, Reply, Response,
-    StdResult, SubMsg, Uint128, WasmMsg,
+    attr, to_binary, Addr, Binary, Deps, DepsMut, Empty, Env, Event, MessageInfo, Order, Reply,
+    Response, StdResult, SubMsg, Uint128, WasmMsg,
 };
-use cw2::set_contract_version;
 use cw20::{Cw20Contract, Cw20ReceiveMsg};
 
 use crate::error::ContractError;
@@ -86,7 +85,7 @@ pub fn instantiate(
         },
         validator: None,
     };
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     CONFIG.save(deps.storage, &config)?;
     NEXT_PROPOSAL_ID.save(deps.storage, &Uint128::new(0))?;
 
@@ -257,6 +256,34 @@ pub fn reply(_deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, Contract
         // There are no other submessages in use
         id => Err(ContractError::UnknownReplyId { id }),
     }
+}
+
+// Migrate contract if version is lower than current version
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: Empty) -> Result<Response, ContractError> {
+    let stored = cw2::get_contract_version(deps.storage)?;
+
+    // ensure we are migrating from an allowed contract
+    if stored.contract != CONTRACT_NAME {
+        return Err(ContractError::CannotMigrate {
+            previous_contract: stored.contract,
+        });
+    }
+
+    // TODO: could use semver to only allow upgrades:
+    // let version: Version = CONTRACT_VERSION.parse()?;
+    // let storage_version: Version = get_contract_version(deps.storage)?.version.parse()?;
+    //
+    // if storage_version < version {
+    //
+    //     // If state structure changed in any contract version in the way migration is needed, it
+    //     // should occur here
+    // }
+
+    // Update the contract version
+    cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    Ok(Response::new())
 }
 
 pub fn execute_receive(
@@ -1472,8 +1499,10 @@ fn calculate_reimbursement(
     signature_count: usize,
 ) -> Uint128 {
     let signature_count = signature_count as u64;
-    let gas_per_signature = config.gas_per_signature.unwrap_or(17_000);
-    let gas_base = config.gas_base.unwrap_or(84_000);
+    let gas_per_signature = config.gas_per_signature.unwrap_or(4_096);
+    let gas_base = config.gas_base.unwrap_or(146_000);
+    // The relay uses a 1.5x factor, but the simulation seems to slightly underestimate gas
+    // so the actual transaction uses more. Gas allocated ends up being almost exactly 1.4x of gas used.
     let gas_adjustment = Decimal::percent(u64::from(config.gas_adjustment.unwrap_or(140)));
 
     let micro = Decimal::from_ratio(1u128, 10u128.pow(6));

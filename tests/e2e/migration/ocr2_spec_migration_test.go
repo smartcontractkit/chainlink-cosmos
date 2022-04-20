@@ -1,6 +1,8 @@
 package migration_test
 
 import (
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 	"os"
 	"time"
 
@@ -18,7 +20,7 @@ var _ = Describe("Terra OCRv2 @ocr-spec-migration", func() {
 	var migrateToVersion string
 
 	BeforeEach(func() {
-		state = &tc.OCRv2State{}
+		state = tc.NewOCRv2State(1, nodes)
 		By("Deploying the cluster", func() {
 			migrateToImage = os.Getenv("CHAINLINK_IMAGE_TO")
 			if migrateToImage == "" {
@@ -28,22 +30,22 @@ var _ = Describe("Terra OCRv2 @ocr-spec-migration", func() {
 			if migrateToVersion == "" {
 				Fail("Provide CHAINLINK_VERSION_TO variable: a version on which we migrate")
 			}
-			state.DeployCluster(nodes, true)
+			state.DeployCluster(nodes, common.ChainBlockTime, true, utils.ContractsDir)
 			state.SetAllAdapterResponsesToTheSameValue(2)
 		})
 	})
 
 	Describe("with Terra OCR2", func() {
 		It("performs OCR2 round", func() {
-			state.ValidateRoundsAfter(time.Now(), rounds, false)
+			state.ValidateAllRounds(time.Now(), tc.NewRoundCheckTimeout, rounds, false)
 			state.UpdateChainlinkVersion(migrateToImage, migrateToVersion)
-			state.ValidateRoundsAfter(time.Now(), rounds, false)
+			state.ValidateAllRounds(time.Now(), tc.NewRoundCheckTimeout, rounds, false)
 		})
 	})
 
 	AfterEach(func() {
 		By("Tearing down the environment", func() {
-			err := actions.TeardownSuite(state.Env, nil, "logs", nil)
+			err := actions.TeardownSuite(state.Env, nil, "logs", nil, nil)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 	})

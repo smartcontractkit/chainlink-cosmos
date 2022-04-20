@@ -1,10 +1,12 @@
 import { Result } from '@chainlink/gauntlet-core'
-import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { time, logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { AccAddress, MsgExecuteContract, MsgSend } from '@terra-money/terra.js'
 import { isDeepEqual } from '../lib/utils'
 import { fetchProposalState, makeInspectionMessage } from './inspect'
-import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg } from '../lib/types'
+import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg, Expiration } from '../lib/types'
+
+export const DEFAULT_VOTING_PERIOD_IN_SECS = 24 * 60 * 60
 
 type ProposalAction = (
   signer: AccAddress,
@@ -24,9 +26,9 @@ export const wrapCommand = (command) => {
     }
 
     buildCommand = async (flags, args): Promise<TerraCommand> => {
-      if (!AccAddress.validate(process.env.CW3_FLEX_MULTISIG)) throw new Error(`Invalid Multisig wallet address`)
-      if (!AccAddress.validate(process.env.CW4_GROUP)) throw new Error(`Invalid Multisig group address`)
       this.multisig = process.env.CW3_FLEX_MULTISIG as AccAddress
+      if (!AccAddress.validate(this.multisig)) throw new Error(`Invalid Multisig wallet address`)
+      if (!AccAddress.validate(process.env.CW4_GROUP)) throw new Error(`Invalid Multisig group address`)
 
       const c = new command(flags, args) as TerraCommand
       await c.invokeMiddlewares(c, c.middlewares)
@@ -55,7 +57,8 @@ export const wrapCommand = (command) => {
         )
       }
 
-      return operations[state.proposal.nextAction](signer, Number(this.flags.proposal), message)
+      const proposal_id = Number(this.flags.proposal || this.flags.multisigProposal) // alias requested by eng ops
+      return operations[state.proposal.nextAction](signer, Number(proposal_id), message)
     }
 
     isSameProposal = (proposalMsgs: (Cw3WasmMsg | Cw3BankMsg)[], generatedMsgs: (Cw3WasmMsg | Cw3BankMsg)[]) => {
@@ -90,15 +93,35 @@ export const wrapCommand = (command) => {
       }
     }
 
+    async parseVotingPeriod(votingPeriod: string): Promise<number> {
+      const state = await this.fetchState()
+      const n = Number.parseInt(votingPeriod)
+      if (isNaN(n) || n < 0 || n > state.multisig.maxVotingPeriod) {
+        throw new Error(
+          `votingPeriod=${votingPeriod}: must be a valid duration in seconds, ` +
+            `(range: [0-${state.multisig.maxVotingPeriod}], default: ${DEFAULT_VOTING_PERIOD_IN_SECS})`,
+        )
+      }
+      return n
+    }
+
     makeProposeTransaction: ProposalAction = async (signer, _, message) => {
-      logger.info('Generating data for creating new proposal')
+      // default voting period of 24 hours, if unspecified
+      const votingPeriod: number = this.flags.votingPeriod
+        ? await this.parseVotingPeriod(this.flags.votingPeriod)
+        : DEFAULT_VOTING_PERIOD_IN_SECS
+
+      const msExpiration: number = Date.now() + votingPeriod * 1000 // milliseconds since 1970
+      logger.info(`Generating data for creating new multisig proposal (expires at ${new Date(msExpiration)})`)
+      // Expiration.at_time is a string representation of nanoseconds since 1970
+      const expiration: Expiration = { at_time: (msExpiration * time.Millisecond).toString() }
+
       const proposeInput = {
         propose: {
           description: command.id,
           msgs: [this.toMsg(message)],
           title: command.id,
-          // TODO: Set expiration time
-          // latest: { at_height: 7970238 },
+          latest: expiration,
         },
       }
       return new MsgExecuteContract(signer, this.multisig, proposeInput)
@@ -116,7 +139,7 @@ export const wrapCommand = (command) => {
     }
 
     makeExecuteTransaction: ProposalAction = async (signer, proposalId) => {
-      logger.info(`Generating data for executing proposal ${proposalId}`)
+      logger.info(`Generating data for executing multisig proposal ${proposalId}`)
       const executeInput = {
         execute: {
           proposal_id: proposalId,
@@ -126,23 +149,22 @@ export const wrapCommand = (command) => {
     }
 
     fetchState = async (proposalId?: number): Promise<State> => {
-      const query = this.provider.wasm.contractQuery.bind(this.provider.wasm)
-      return fetchProposalState(query)(this.multisig, proposalId)
+      return fetchProposalState(this.provider)(this.multisig, proposalId)
     }
 
     printPostInstructions = async (proposalId: number) => {
       const state = await this.fetchState(proposalId)
       if (!state.proposal.id) {
-        logger.error(`Proposal ${proposalId} not found`)
+        logger.error(`Multisig proposal ${proposalId} not found`)
         return
       }
       const approvalsLeft = state.multisig.threshold - state.proposal.approvers.length
       const messages = {
-        passed: `The proposal reached the threshold and can be executed. Run the same command with the flag --proposal=${proposalId}`,
-        open: `The proposal needs ${approvalsLeft} more approvals. Run the same command with the flag --proposal=${proposalId}`,
-        pending: `The proposal needs ${approvalsLeft} more approvals. Run the same command with the flag --proposal=${proposalId}`,
-        rejected: `The proposal has been rejected. No actions available`,
-        executed: `The proposal has been executed. No more actions needed`,
+        passed: `The multisig proposal reached the threshold and can be executed. Run the same command with the flag --multisigProposal=${proposalId}`,
+        open: `The multisig proposal needs ${approvalsLeft} more approvals. Run the same command with the flag --multisigProposal=${proposalId}`,
+        pending: `The multisig proposal needs ${approvalsLeft} more approvals. Run the same command with the flag --multisigProposal=${proposalId}`,
+        rejected: `The multisig proposal has been rejected. No actions available`,
+        executed: `The multisig proposal has been executed. No more actions needed`,
       }
       logger.line()
       logger.info(`${messages[state.proposal.currentStatus]}`)
@@ -153,7 +175,7 @@ export const wrapCommand = (command) => {
       // TODO: Gauntlet core should initialize commands using `buildCommand` instead of new Command
       await this.buildCommand(this.flags, this.args)
 
-      let proposalId = !!this.flags.proposal && Number(this.flags.proposal)
+      let proposalId = Number(this.flags.proposal || this.flags.multisigProposal) // alias requested by eng ops
       const state = await this.fetchState(proposalId)
       logger.info(makeInspectionMessage(state))
 
@@ -172,7 +194,7 @@ export const wrapCommand = (command) => {
       if (this.flags.execute) {
         await this.command.beforeExecute(this.multisig)
 
-        await prompt(`Continue ${actionMessage[state.proposal.nextAction]} proposal?`)
+        await prompt(`Continue ${actionMessage[state.proposal.nextAction]} multisig proposal?`)
         const tx = await this.signAndSend([rawTx])
         let response: Result<TransactionResponse> = {
           responses: [
@@ -188,7 +210,7 @@ export const wrapCommand = (command) => {
 
         if (state.proposal.nextAction === Action.CREATE) {
           const proposalFromEvent = tx.events[0].wasm.proposal_id[0]
-          logger.success(`New proposal created with ID: ${proposalFromEvent}`)
+          logger.success(`New proposal created with multisig proposal ID: ${proposalFromEvent}`)
           proposalId = Number(proposalFromEvent)
         }
 
@@ -206,7 +228,7 @@ export const wrapCommand = (command) => {
       // TODO: Test raw message
       const msgData = Buffer.from(JSON.stringify(rawTx.execute_msg)).toString('base64')
       logger.line()
-      logger.success(`Message generated succesfully for ${actionMessage[state.proposal.nextAction]} proposal`)
+      logger.success(`Message generated succesfully for ${actionMessage[state.proposal.nextAction]} multisig proposal`)
       logger.log()
       logger.log(msgData)
       logger.log()

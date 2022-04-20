@@ -1,0 +1,68 @@
+[
+  {
+    "name": "ATOM / USD",
+    "path": "atom-usd",
+    "symbol": "",
+    "heartbeat": 0,
+    "contract_type": "numerical_median_feed",
+    "status": "live",
+    "contract_address_bech32": "terra13vgemxvpdshmhvwcz2nnr239948dxa2kz4glg8",
+    "multiply": "100000000",
+    "proxy_address_bech32": "terra1l8dx8tansvvghm4s7zn79g963xqc02su4l00we"
+  },
+  {
+    "name": "LUNA / USD",
+    "path": "luna-usd",
+    "symbol": "",
+    "heartbeat": 0,
+    "contract_type": "numerical_median_feed",
+    "status": "live",
+    "contract_address_bech32": "terra1dkzsga72fwzzurhh5jmm0ze3wehef5ctnnwfse",
+    "multiply": "100000000",
+    "proxy_address_bech32": "terra1zn6ar8fjhzd4rz6gkahpz45x0mdgprg997ca4e"
+  },
+  {
+    "name": "bLUNA / USD",
+    "path": "bluna-usd",
+    "symbol": "",
+    "heartbeat": 0,
+    "contract_type": "numerical_median_feed",
+    "status": "live",
+    "contract_address_bech32": "terra1fwhxcdlm7cefu585pv54vgcpacq9daxppa823c",
+    "multiply": "100000000",
+    "proxy_address_bech32": "terra1hxm5d7met8dkzgh4nhhv9d2fkqsj5nxvrrh4h6"
+  },
+  {
+    "name": "MIR / USD",
+    "path": "mir-usd",
+    "symbol": "",
+    "heartbeat": 0,
+    "contract_type": "numerical_median_feed",
+    "status": "live",
+    "contract_address_bech32": "terra1k9scjw6uc9flyac9pyrs4vxuf9gstln7yvsxau",
+    "multiply": "100000000",
+    "proxy_address_bech32": "terra1d5799dw0a6gh4fkd6n2nmguagl4tt7nsjuepuf"
+  },
+  {
+    "name": "UST / USD",
+    "path": "ust-usd",
+    "symbol": "",
+    "heartbeat": 0,
+    "contract_type": "numerical_median_feed",
+    "status": "live",
+    "contract_address_bech32": "terra1qx4vmz9hpp5uydevkq5kglyga48qd6xdxaswus",
+    "multiply": "100000000",
+    "proxy_address_bech32": "terra1qe0yuc2236tez0mx3vjhvdw8zwpyycw5c8xu8u"
+  },
+  {
+    "name": "bETH / USD",
+    "path": "beth-usd",
+    "symbol": "",
+    "heartbeat": 0,
+    "contract_type": "numerical_median_feed",
+    "status": "live",
+    "contract_address_bech32": "terra1tk2ytkxkxfuc5ztsjxz03g5udfge8ke68hwye9",
+    "multiply": "100000000",
+    "proxy_address_bech32": "terra1nvaj7v0fuhf0clykt9swl0kpx47r0ny2ekpn2t"
+  }
+]

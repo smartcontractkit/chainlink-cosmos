@@ -2,12 +2,10 @@ name: relay
 
 on:
   push:
-    branches:
-      - develop
-  pull_request:
 
 jobs:
-  test:
+  relay_run_unit_tests:
+    name: Relay Run Unit Tests
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgres://postgres@localhost:5432/postgres?sslmode=disable
@@ -24,12 +22,9 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    # defaults:
-    #   run:
-    #     working-directory: ./relay
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@f25a3a9f25bd5f4c5d77189cab02ff357b5aedeb # v2.4.1
 
       - name: Install Nix
         uses: cachix/install-nix-action@v14

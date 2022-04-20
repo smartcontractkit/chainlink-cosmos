@@ -1,5 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
+use cosmwasm_std::Empty;
 use cosmwasm_std::{
     to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
 };
@@ -89,6 +90,24 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
+// Migrate contract if version is lower than current version
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: Empty) -> Result<Response, ContractError> {
+    let stored = cw2::get_contract_version(deps.storage)?;
+
+    // ensure we are migrating from an allowed contract
+    if stored.contract != CONTRACT_NAME {
+        return Err(ContractError::CannotMigrate {
+            previous_contract: stored.contract,
+        });
+    }
+
+    // Update the contract version
+    cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    Ok(Response::new())
+}
+
 pub fn execute_validate(
     deps: DepsMut,
     _env: Env,
@@ -161,7 +180,7 @@ pub fn execute_set_flagging_threshold(
     Ok(response)
 }
 
-fn is_valid(flagging_threshold: u32, previous_answer: i128, answer: i128) -> StdResult<bool> {
+pub fn is_valid(flagging_threshold: u32, previous_answer: i128, answer: i128) -> StdResult<bool> {
     if previous_answer == 0i128 {
         return Ok(true);
     }

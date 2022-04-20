@@ -28,15 +28,17 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			gd = &e2e.GauntletDeployer{
 				Version: "local",
 			}
-			state = &tc.OCRv2State{}
-			state.DeployEnv(1, false)
+			state = tc.NewOCRv2State(1, 1)
+			state.DeployEnv(1, common.ChainBlockTime, false)
 			state.SetupClients()
 			if state.Nets.Default.ContractsDeployed() {
 				err := state.LoadContracts()
 				Expect(err).ShouldNot(HaveOccurred())
 			}
+			state.NodeKeysBundle, state.Err = common.CreateNodeKeysBundle(state.Nodes)
+			Expect(state.Err).ShouldNot(HaveOccurred())
 
-			state.OCConfig, state.NodeKeysBundle, state.Err = common.DefaultOffChainConfigParamsFromNodes(state.Nodes)
+			_, state.Err = common.OffChainConfigParamsFromNodes(state.Nodes, state.NodeKeysBundle)
 			Expect(state.Err).ShouldNot(HaveOccurred())
 
 			// Remove the stuff below when the token:deploy command is fixed to work for automated testing
@@ -126,7 +128,7 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 
 	AfterEach(func() {
 		By("Tearing down the environment", func() {
-			err := actions.TeardownSuite(state.Env, nil, "logs", nil)
+			err := actions.TeardownSuite(state.Env, nil, "logs", nil, nil)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 	})
