@@ -12,11 +12,11 @@ require (
 	github.com/prometheus/client_golang v1.12.1
 	github.com/rs/zerolog v1.26.1
 	github.com/satori/go.uuid v1.2.0
-	github.com/smartcontractkit/chainlink v1.2.1-0.20220315133704-8769e75d54b1
+	github.com/smartcontractkit/chainlink v1.3.0
 	github.com/smartcontractkit/chainlink-relay v0.0.0-20220420083254-96c9e49ed0bc
 	github.com/smartcontractkit/helmenv v1.0.59
 	github.com/smartcontractkit/integrations-framework v1.0.54-0.20220413120014-215e37bdf051
-	github.com/smartcontractkit/libocr v0.0.0-20220217180537-449836e6cfec
+	github.com/smartcontractkit/libocr v0.0.0-20220414173908-cdfa6bef133a
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	github.com/stretchr/testify v1.7.1
 	github.com/tendermint/tendermint v0.34.15
@@ -310,7 +310,7 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220107163113-42d7afdf6368 // indirect
 	google.golang.org/grpc v1.43.0 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/gorp.v1 v1.7.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
@@ -341,3 +341,10 @@ replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/hdevalence/ed25519consensus => github.com/smartcontractkit/ed25519consensus v0.0.1
 )
+
+// Uncomment to fix the build on M1 Macs (arm64)
+// replace (
+// 	github.com/CosmWasm/wasmvm => github.com/mandrean/wasmvm v0.16.3-arm64
+// 	github.com/smartcontractkit/terra.go => github.com/anirudhwarrier/terra.go v1.0.3-0.20220304033105-0463a8da57f0
+// 	github.com/terra-money/core => github.com/mandrean/terra-core v0.5.14-arm64
+// )
