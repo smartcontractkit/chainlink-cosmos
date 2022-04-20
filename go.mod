@@ -338,9 +338,13 @@ require (
 )
 
 replace (
-	// github.com/CosmWasm/wasmvm => github.com/mandrean/wasmvm v0.16.3-arm64
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/hdevalence/ed25519consensus => github.com/smartcontractkit/ed25519consensus v0.0.1
-	// github.com/smartcontractkit/terra.go => github.com/anirudhwarrier/terra.go v1.0.3-0.20220304033105-0463a8da57f0
-	// github.com/terra-money/core => github.com/mandrean/terra-core v0.5.14-arm64
 )
+
+// Uncomment to fix the build on M1 Macs (arm64)
+// replace (
+// 	github.com/CosmWasm/wasmvm => github.com/mandrean/wasmvm v0.16.3-arm64
+// 	github.com/smartcontractkit/terra.go => github.com/anirudhwarrier/terra.go v1.0.3-0.20220304033105-0463a8da57f0
+// 	github.com/terra-money/core => github.com/mandrean/terra-core v0.5.14-arm64
+// )

@@ -17,7 +17,7 @@ const (
 	observationsLenBytes     = 1
 	prefixSizeBytes          = timestampSizeBytes + observersSizeBytes + observationsLenBytes
 	juelsPerFeeCoinSizeBytes = 16
-	observationSizeBytes 	 = 16
+	observationSizeBytes     = 16
 )
 
 type observation []byte
