@@ -54,7 +54,10 @@ func JuelsSource(priceAdapter string) string {
 	 luna2usd [type=bridge name=%s requestData=<{"data":{"from":"LUNA", "to":"USD"}}>]
 	 parseT [type="jsonparse" path="result"]
 
-	 divide [type="divide" input="$(parseL)" divisor="$(parseT)" precision="18"]
+	 // parseL (dollars/LINK)
+	 // parseT (dollars/LUNA)
+	 // parseT / parseL = LINK/LUNA
+	 divide [type="divide" input="$(parseT)" divisor="$(parseL)" precision="18"]
    scale [type="multiply" times=1000000000000000000]
 
 	 link2usd -> parseL -> divide

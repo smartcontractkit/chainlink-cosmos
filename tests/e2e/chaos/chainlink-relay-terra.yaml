@@ -2,6 +2,8 @@ namespace_prefix: chainlink
 charts:
   localterra:
     index: 1
+    values:
+      block_time: "200ms"
   mockserver-config:
     index: 2
   mockserver:
@@ -23,7 +25,7 @@ charts:
         TERRA_ENABLED: "true"
         eth_disabled: "true"
         CHAINLINK_DEV: "true"
-        USE_LEGACY_ETH_ENV_VARS: "true"
+        USE_LEGACY_ETH_ENV_VARS: "false"
         feature_external_initiators: "true"
         FEATURE_OFFCHAIN_REPORTING2: "true"
         P2P_NETWORKING_STACK: "V2"

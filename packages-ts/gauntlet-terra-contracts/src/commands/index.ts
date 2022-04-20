@@ -1,4 +1,5 @@
 import Upload from './tooling/upload'
+import Query from './tooling/query'
 import TransferLink from './contracts/link/transfer'
 import DeployLink from './contracts/link/deploy'
 import OCR2 from './contracts/ocr2'
@@ -12,6 +13,7 @@ import Wallet from './wallet'
 
 export default [
   Upload,
+  Query,
   DeployLink,
   TransferLink,
   ...OCR2,

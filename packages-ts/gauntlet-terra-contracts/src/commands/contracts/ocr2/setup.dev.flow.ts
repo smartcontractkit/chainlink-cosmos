@@ -34,7 +34,7 @@ export default class DeployOCR2Flow extends FlowCommand<TransactionResponse> {
 
     this.stepIds = {
       BILLING_ACCESS_CONTROLLER: 1,
-      REQUEST_ACCESS_CONTROLLER: 2,
+      REQUESTER_ACCESS_CONTROLLER: 2,
       LINK: 3,
       OCR_2: 4,
       BEGIN_PROPOSAL: 5,
@@ -105,7 +105,7 @@ export default class DeployOCR2Flow extends FlowCommand<TransactionResponse> {
       // {
       //   name: 'Deploy Request Access Controller',
       //   command: 'access_controller:deploy',
-      //   id: this.stepIds.REQUEST_ACCESS_CONTROLLER,
+      //   id: this.stepIds.REQUESTER_ACCESS_CONTROLLER,
       // },
       // {
       //   name: 'Set environment',
@@ -192,7 +192,7 @@ export default class DeployOCR2Flow extends FlowCommand<TransactionResponse> {
   setEnvironment = async () => {
     const linkAddress = this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.LINK))
     const billingAC = this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.BILLING_ACCESS_CONTROLLER))
-    const requesterAC = this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.REQUEST_ACCESS_CONTROLLER))
+    const requesterAC = this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.REQUESTER_ACCESS_CONTROLLER))
     logger.info(`
       Setting the following env variables. Include them into .env.${this.flags.network} for future runs
         LINK=${linkAddress}

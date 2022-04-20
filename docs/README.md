@@ -10,11 +10,15 @@ This repository is a monorepo of the various components required for Chainlink o
 - [Integration/E2E Tests](../tests/e2e)
 - [Demos & Examples](../examples)
 
-# Local asdf initial setup
+Additional documentation can be found in this directory.
 
-    asdf plugin-add golang https://github.com/kennyp/asdf-golang.git 
-    # for other golang requirements for your os go to https://github.com/kennyp/asdf-golang
-    asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git
+- [Inspecting Terra Contracts](./InspectingContracts.md)
+- [Running End to End Tests](./RunningE2eTests.md)
+- [Getting Started With Gauntlet](./GettingStartedWithGauntlet.md)
+- [Withdrawing Payments From Feeds](./WithdrawingPaymentsFromFeeds.md)
 
-    # Then run
-    asdf install
+# Local initial setup
+
+```bash
+make install
+```

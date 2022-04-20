@@ -1,5 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
+use cosmwasm_std::Empty;
 use cosmwasm_std::{
     attr, to_binary, Addr, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
 };
@@ -74,6 +75,23 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
     }
 }
 
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: Empty) -> Result<Response, ContractError> {
+    let stored = cw2::get_contract_version(deps.storage)?;
+
+    // ensure we are migrating from an allowed contract
+    if stored.contract != CONTRACT_NAME {
+        return Err(ContractError::CannotMigrate {
+            previous_contract: stored.contract,
+        });
+    }
+
+    // Update the contract version
+    cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    Ok(Response::new())
+}
+
 pub fn execute_raise_flag(
     deps: DepsMut,
     _env: Env,
@@ -81,6 +99,7 @@ pub fn execute_raise_flag(
     subject: String,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
+
     check_access(deps.as_ref(), info, &config.raising_access_controller)?;
     let subject = deps.api.addr_validate(&subject)?;
 

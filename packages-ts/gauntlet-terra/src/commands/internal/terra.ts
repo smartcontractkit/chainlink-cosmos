@@ -2,6 +2,7 @@ import { Result, WriteCommand } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { SignMode } from '@terra-money/terra.proto/cosmos/tx/signing/v1beta1/signing'
 import { withProvider, withWallet, withCodeIds, withNetwork } from '../middlewares'
+import { AddressBook } from '../addressBook'
 import {
   EventsByType,
   MsgStoreCode,
@@ -25,6 +26,7 @@ type CodeIds = Record<string, number>
 export default abstract class TerraCommand extends WriteCommand<TransactionResponse> {
   wallet: Wallet
   provider: LCDClient
+  addressBook: AddressBook
   contracts: string[]
   public codeIds: CodeIds
 

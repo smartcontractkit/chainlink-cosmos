@@ -3,12 +3,15 @@ package e2e
 import "github.com/smartcontractkit/helmenv/environment"
 
 // NewChainlinkTerraEnv returns a cluster config with LocalTerra node
-func NewChainlinkTerraEnv(nodes int, stateful bool) *environment.Config {
+func NewChainlinkTerraEnv(nodes int, blockTime string, stateful bool) *environment.Config {
 	env := &environment.Config{
 		NamespacePrefix: "chainlink-terra",
 		Charts: environment.Charts{
 			"localterra": {
 				Index: 1,
+				Values: map[string]interface{}{
+					"block_time": blockTime,
+				},
 			},
 			"mockserver-config": {
 				Index: 2,

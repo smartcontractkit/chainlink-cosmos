@@ -1,6 +1,7 @@
 package terra
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -70,17 +71,23 @@ type OCR2Spec struct {
 type Relayer struct {
 	lggr     Logger
 	chainSet ChainSet
+	ctx      context.Context
+	cancel   func()
 }
 
 // Note: constructed in core
 func NewRelayer(lggr Logger, chainSet ChainSet) *Relayer {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &Relayer{
 		lggr:     lggr,
 		chainSet: chainSet,
+		ctx:      ctx,
+		cancel:   cancel,
 	}
 }
 
-func (r *Relayer) Start() error {
+// Start starts the relayer respecting the given context.
+func (r *Relayer) Start(context.Context) error {
 	if r.chainSet == nil {
 		return errors.New("Terra unavailable")
 	}
@@ -88,6 +95,7 @@ func (r *Relayer) Start() error {
 }
 
 func (r *Relayer) Close() error {
+	r.cancel()
 	return nil
 }
 
@@ -100,13 +108,14 @@ func (r *Relayer) Healthy() error {
 	return r.chainSet.Healthy()
 }
 
-func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relaytypes.OCR2Provider, error) {
+// NewOCR2Provider creates a new OCR2ProviderCtx instance.
+func (r *Relayer) NewOCR2Provider(externalJobID uuid.UUID, s interface{}) (relaytypes.OCR2ProviderCtx, error) {
 	spec, ok := s.(OCR2Spec)
 	if !ok {
 		return nil, errors.New("unsuccessful cast to 'terra.OCR2Spec'")
 	}
 
-	chain, err := r.chainSet.Chain(spec.ChainID)
+	chain, err := r.chainSet.Chain(r.ctx, spec.ChainID)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +175,8 @@ type ocr2Provider struct {
 	contractCache *ContractCache
 }
 
-func (p *ocr2Provider) Start() error {
+// Start starts OCR2Provider respecting the given context.
+func (p *ocr2Provider) Start(context.Context) error {
 	return p.StartOnce("TerraOCR2Provider", func() error {
 		p.lggr.Debugf("Starting")
 

@@ -12,7 +12,7 @@ type ContractInput = {
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
   return {
-    proposalId: flags.proposalId,
+    proposalId: flags.proposalId || flags.configProposal, // --configProposal alias requested by eng ops
   }
 }
 
@@ -23,12 +23,14 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
 }
 
 const validateInput = (input: CommandInput): boolean => {
-  if (!input.proposalId) throw new Error('A proposal ID is required. Provide it with --id flag')
+  if (!input.proposalId) throw new Error('A Config Proposal ID is required. Provide it with --configProposal flag')
   return true
 }
 
-// yarn gauntlet ocr2:clear_proposal --network=bombay-testnet --id=7 terra14nrtuhrrhl2ldad7gln5uafgl8s2m25du98hlx
 const instruction: AbstractInstruction<CommandInput, ContractInput> = {
+  examples: [
+    'yarn gauntlet ocr2:clear_proposal --network=bombay-testnet --configProposal=<PROPOSAL_ID> <CONTRACT_ADDRESS>',
+  ],
   instruction: {
     category: CATEGORIES.OCR,
     contract: 'ocr2',

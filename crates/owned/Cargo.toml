@@ -1,6 +1,6 @@
 [package]
 name = "owned"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Blaž Hrastnik <blaz@smartcontract.com>"]
 edition = "2018"
 

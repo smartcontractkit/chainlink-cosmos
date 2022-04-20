@@ -50,4 +50,7 @@ pub enum ContractError {
 
     #[error("unknown reply id {id}")]
     UnknownReplyId { id: u64 },
+
+    #[error("Cannot migrate from different contract type: {previous_contract}")]
+    CannotMigrate { previous_contract: String },
 }

@@ -42,6 +42,7 @@ export type State = {
   multisig: {
     threshold: number
     owners: AccAddress[]
+    maxVotingPeriod: number
   }
   proposal: {
     id?: number
@@ -51,4 +52,8 @@ export type State = {
     expiresAt?: Date
     approvers: string[]
   }
+}
+
+export type Expiration = {
+  at_time: string // Uint64
 }

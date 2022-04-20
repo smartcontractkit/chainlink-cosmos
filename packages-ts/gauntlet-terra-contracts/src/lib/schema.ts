@@ -13,6 +13,11 @@ ajv.addFormat('uint32', {
   validate: (x) => !isNaN(x),
 })
 
+ajv.addFormat('uint16', {
+  type: 'number',
+  validate: (x) => !isNaN(x),
+})
+
 export default ajv
 
 const jtd = new JTD()

@@ -1,4 +1,4 @@
-# Chainlink Terra
+# Chainlink Cosmos
 
 ## Quick Start
 

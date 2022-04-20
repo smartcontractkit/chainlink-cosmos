@@ -1,11 +1,11 @@
-import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
+import { RDD } from '@chainlink/gauntlet-terra'
 import { AbstractInstruction, instructionToCommand, BeforeExecute, AfterExecute } from '../../abstract/executionWrapper'
 import { time, BN } from '@chainlink/gauntlet-core/dist/utils'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
 import { CATEGORIES } from '../../../lib/constants'
-import { getLatestOCRConfigEvent, longsInObjToNumbers, printDiff } from '../../../lib/inspection'
+import { getLatestOCRConfigEvent } from '../../../lib/inspection'
 import { serializeOffchainConfig, deserializeConfig, generateSecretWords } from '../../../lib/encoding'
-import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { logger, prompt, diff, longs } from '@chainlink/gauntlet-core/dist/utils'
 
 type CommandInput = {
   proposalId: string
@@ -89,12 +89,12 @@ export const getOffchainConfigInput = (rdd: any, contract: string): OffchainConf
   return input
 }
 
-export const prepareOffchainConfigForDiff = (config: OffchainConfig, extra?: Object) => {
-  return longsInObjToNumbers({
+export const prepareOffchainConfigForDiff = (config: OffchainConfig, extra?: Object): Object => {
+  return longs.longsInObjToNumbers({
     ...config,
     ...(extra || {}),
     offchainPublicKeys: config.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
-  })
+  }) as Object
 }
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
@@ -110,7 +110,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   const contract = args[0]
 
   return {
-    proposalId: flags.proposalId,
+    proposalId: flags.proposalId || flags.configProposal, // -configProposal alias requested by eng ops
     offchainConfig: getOffchainConfigInput(rdd, contract),
     offchainConfigVersion: 2,
     randomSecret: randomSecret || (await generateSecretWords()),
@@ -130,7 +130,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const proposedConfig = prepareOffchainConfigForDiff(proposedOffchainConfig)
 
   logger.info('Review the proposed changes below: green - added, red - deleted.')
-  printDiff(configInContract, proposedConfig)
+  diff.printDiff(configInContract, proposedConfig)
 
   logger.info(
     `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
@@ -161,7 +161,7 @@ const afterExecute: AfterExecute<CommandInput, ContractInput> = (context) => asy
     SECRET: ${context.input.randomSecret}`,
   )
   return {
-    randomSecret: context.input.randomSecret,
+    secret: context.input.randomSecret,
   }
 }
 
@@ -221,8 +221,10 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-// yarn gauntlet ocr2:propose_offchain_config --network=bombay-testnet --proposalId=4 --rdd=../reference-data-directory/directory-terra-mainnet.json terra14nrtuhrrhl2ldad7gln5uafgl8s2m25du98hlx
 const instruction: AbstractInstruction<CommandInput, ContractInput> = {
+  examples: [
+    'yarn gauntlet ocr2:propose_offchain_config --network=NETWORK --proposalId=<PROPOSAL_ID> <CONTRACT_ADDRESS>',
+  ],
   instruction: {
     category: CATEGORIES.OCR,
     contract: 'ocr2',

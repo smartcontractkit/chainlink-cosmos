@@ -99,8 +99,8 @@ func (t TerraFeedConfig) ToMapping() map[string]interface{} {
 	}
 }
 
-// TerraFeedParser decodes a JSON-encoded list of terra-specific feed configurations.
-func TerraFeedParser(buf io.ReadCloser) ([]relayMonitoring.FeedConfig, error) {
+// TerraFeedsParser decodes a JSON-encoded list of terra-specific feed configurations.
+func TerraFeedsParser(buf io.ReadCloser) ([]relayMonitoring.FeedConfig, error) {
 	rawFeeds := []TerraFeedConfig{}
 	decoder := json.NewDecoder(buf)
 	if err := decoder.Decode(&rawFeeds); err != nil {

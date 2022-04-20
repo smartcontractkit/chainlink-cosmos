@@ -5,6 +5,7 @@ import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { CATEGORIES } from '../../lib/constants'
 import { CONTRACT_LIST } from '../../lib/contracts'
 import { LCDClient } from '@terra-money/terra.js'
+import { withAddressBook } from '../../lib/middlewares'
 
 /**
  * Inspection commands need to match this interface
@@ -22,18 +23,18 @@ export interface InspectInstruction<CommandInput, ContractExpectedInfo> {
   command: {
     category: CATEGORIES
     contract: CONTRACT_LIST
-    id: 'inspect'
+    id: string
+    examples: string[]
   }
   instructions: {
     contract: string
     function: string
   }[]
   makeInput: (flags: any, args: string[]) => Promise<CommandInput>
-  makeInspectionData: (provider: LCDClient) => (input: CommandInput) => Promise<ContractExpectedInfo>
   makeOnchainData: (
     provider: LCDClient,
   ) => (instructionsData: any[], input: CommandInput, contractAddress: string) => Promise<ContractExpectedInfo>
-  inspect: (expected: ContractExpectedInfo, data: ContractExpectedInfo) => boolean
+  inspect: (expected: CommandInput, data: ContractExpectedInfo) => boolean
 }
 
 export const instructionToInspectCommand = <CommandInput, Expected>(
@@ -42,9 +43,11 @@ export const instructionToInspectCommand = <CommandInput, Expected>(
   const id = `${inspectInstruction.command.contract}:${inspectInstruction.command.id}`
   return class Command extends TerraCommand {
     static id = id
+    static examples = inspectInstruction.command.examples
 
     constructor(flags, args) {
       super(flags, args)
+      this.use(withAddressBook)
     }
 
     makeRawTransaction = () => {
@@ -69,8 +72,7 @@ export const instructionToInspectCommand = <CommandInput, Expected>(
       )
 
       const onchainData = await inspectInstruction.makeOnchainData(this.provider)(data, input, this.args[0])
-      const inspectData = await inspectInstruction.makeInspectionData(this.provider)(input)
-      const inspection = inspectInstruction.inspect(inspectData, onchainData)
+      const inspection = inspectInstruction.inspect(input, onchainData)
       return {
         data: inspection,
         responses: [

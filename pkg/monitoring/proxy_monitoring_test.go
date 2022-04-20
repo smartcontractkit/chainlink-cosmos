@@ -48,14 +48,6 @@ func TestProxyMonitoring(t *testing.T) {
 			[]byte(`{"round_id":5709,"answer":"2632212500","observations_timestamp":1645456354,"transmission_timestamp":1645456380}`),
 			nil,
 		).Once()
-		chainReader.On("ContractStore",
-			mock.Anything, // context
-			feedConfig.ProxyAddress,
-			[]byte(`"link_available_for_payment"`),
-		).Return(
-			[]byte(`{"amount":"-380431529018756503364"}`),
-			nil,
-		).Once()
 		metrics.On("SetProxyAnswersRaw",
 			float64(2632212500),            // answer
 			feedConfig.ProxyAddressBech32,  // proxyContractAddress
@@ -79,17 +71,6 @@ func TestProxyMonitoring(t *testing.T) {
 			feedConfig.GetPath(),           // feedPath
 			chainConfig.GetNetworkID(),     // networkID
 			chainConfig.GetNetworkName(),   // networkName
-		)
-		metrics.On("SetLinkAvailableForPayment",
-			float64(-380431529018756503364), // link balance
-			feedConfig.GetID(),              // feedID
-			chainConfig.GetChainID(),        // chainID
-			feedConfig.GetContractStatus(),  // contractStatus
-			feedConfig.GetContractType(),    // contractType
-			feedConfig.GetName(),            // feedName
-			feedConfig.GetPath(),            // feedPath
-			chainConfig.GetNetworkID(),      // networkID
-			chainConfig.GetNetworkName(),    // networkName
 		)
 		metrics.On("Cleanup",
 			feedConfig.ProxyAddressBech32,  // proxyContractAddress

@@ -102,8 +102,9 @@ func (gpe *FCDGasPriceEstimator) request() (map[string]sdk.DecCoin, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
+	source := http.MaxBytesReader(nil, resp.Body, httpResponseLimit)
+	defer source.Close()
+	b, err := ioutil.ReadAll(source)
 	if err != nil {
 		gpe.lggr.Errorf("error reading body from %s, err %v", fcdURL, err)
 		return nil, err

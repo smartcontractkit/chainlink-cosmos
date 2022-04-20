@@ -7,3 +7,6 @@ export type TransactionResponse = {
   tx?: BlockTxBroadcastResult
   events?: EventsByType[]
 }
+
+// TODO:  move to gauntlet-core
+export type ContractId = string

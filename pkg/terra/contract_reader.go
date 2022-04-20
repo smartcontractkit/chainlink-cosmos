@@ -57,7 +57,7 @@ func (r *OCR2Reader) LatestConfig(ctx context.Context, changedInBlock uint64) (t
 	if len(res.TxResponses) == 0 {
 		return types.ContractConfig{}, fmt.Errorf("No transactions found for block %d, query %v", changedInBlock, query)
 	}
-	// fetch event and process (use first tx and \first log set)
+	// Use the first tx and log set, which are most recent.
 	if len(res.TxResponses[0].Logs) == 0 {
 		return types.ContractConfig{}, fmt.Errorf("No logs found for tx %s, query %v", res.TxResponses[0].TxHash, query)
 	}
