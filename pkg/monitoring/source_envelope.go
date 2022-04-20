@@ -47,6 +47,10 @@ func (e *envelopeSourceFactory) NewSource(
 		e.log,
 		terraConfig,
 		terraFeedConfig,
+
+		sync.Mutex{},
+		types.ContractConfig{}, // initial value for cached ContractConfig
+		0,                      // initial value for the block height of the latest cached contract config
 	}, nil
 }
 
@@ -59,6 +63,10 @@ type envelopeSource struct {
 	log             relayMonitoring.Logger
 	terraConfig     TerraConfig
 	terraFeedConfig TerraFeedConfig
+
+	cachedConfigMu    sync.Mutex
+	cachedConfig      types.ContractConfig
+	cachedConfigBlock uint64
 }
 
 type linkBalanceResponse struct {
@@ -205,9 +213,55 @@ func (e *envelopeSource) fetchLatestTransmission(ctx context.Context) (
 }
 
 func (e *envelopeSource) fetchLatestConfig(ctx context.Context) (types.ContractConfig, error) {
-	query := []string{
-		fmt.Sprintf(`wasm-set_config.contract_address='%s'`, e.terraFeedConfig.ContractAddressBech32),
+	var cachedConfig types.ContractConfig
+	var cachedConfigBlock uint64
+	go func() {
+		e.cachedConfigMu.Lock()
+		defer e.cachedConfigMu.Unlock()
+		cachedConfig = e.cachedConfig
+		cachedConfigBlock = e.cachedConfigBlock
+	}()
+	latestConfigBlock, err := e.fetchLatestConfigBlock(ctx)
+	if err != nil {
+		return types.ContractConfig{}, err
 	}
+	if cachedConfigBlock != 0 && latestConfigBlock == cachedConfigBlock {
+		return cachedConfig, nil
+	}
+	latestConfig, err := e.fetchLatestConfigFromLogs(ctx, latestConfigBlock)
+	if err != nil {
+		return types.ContractConfig{}, err
+	}
+	// Cache the config and block height
+	e.cachedConfigMu.Lock()
+	defer e.cachedConfigMu.Unlock()
+	e.cachedConfig = latestConfig
+	e.cachedConfigBlock = latestConfigBlock
+	return latestConfig, nil
+}
+
+func (e *envelopeSource) fetchLatestConfigBlock(ctx context.Context) (uint64, error) {
+	resp, err := e.client.ContractStore(
+		ctx,
+		e.terraFeedConfig.ContractAddress,
+		[]byte(`"latest_config_details"`),
+	)
+	var details pkgTerra.ConfigDetails
+	if err != nil {
+		return 0, fmt.Errorf("failed to fetch config details: %w", err)
+	}
+	if err = json.Unmarshal(resp, &details); err != nil {
+		return 0, fmt.Errorf("failed to unmarshal config details: %w", err)
+	}
+	return details.BlockNumber, nil
+}
+
+func (e *envelopeSource) fetchLatestConfigFromLogs(ctx context.Context, blockHeight uint64) (types.ContractConfig, error) {
+	query := []string{}
+	if blockHeight != 0 {
+		query = append(query, fmt.Sprintf("tx.height=%d", blockHeight))
+	}
+	query = append(query, fmt.Sprintf(`wasm-set_config.contract_address='%s'`, e.terraFeedConfig.ContractAddressBech32))
 	res, err := e.client.TxsEvents(ctx, query, &cosmosQuery.PageRequest{Limit: 1})
 	if err != nil {
 		return types.ContractConfig{}, fmt.Errorf("failed to fetch latest 'set_config' event: %w", err)
