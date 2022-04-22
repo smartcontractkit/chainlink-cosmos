@@ -34,54 +34,14 @@ type chainReader struct {
 	contractStoreSequencer sync.Mutex
 }
 
-func (c *chainReader) TxsEvents(ctx context.Context, events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error) {
+func (c *chainReader) TxsEvents(_ context.Context, events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error) {
 	c.txEventsSequencer.Lock()
 	defer c.txEventsSequencer.Unlock()
-	raw, err := withContext(ctx, func() (interface{}, error) {
-		return c.client.TxsEvents(events, paginationParams)
-	})
-	if err != nil {
-		return nil, err
-	}
-	return raw.(*txtypes.GetTxsEventResponse), nil
+	return c.client.TxsEvents(events, paginationParams)
 }
 
-func (c *chainReader) ContractStore(ctx context.Context, contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
+func (c *chainReader) ContractStore(_ context.Context, contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
 	c.contractStoreSequencer.Lock()
 	defer c.contractStoreSequencer.Unlock()
-	raw, err := withContext(ctx, func() (interface{}, error) {
-		return c.client.ContractStore(contractAddress, queryMsg)
-	})
-	if err != nil {
-		return nil, err
-	}
-	return raw.([]byte), nil
-}
-
-type callResult struct {
-	data interface{}
-	err  error
-}
-
-// Helpers
-
-// withContext makes a function that does not take in a context exit when the context cancels or expires.
-// In reality withContext will abandon a call that continues after the context expires and simply return an error.
-// This helper is needed, because the cosmos/tendermint clients don't respect context.
-// Note! This method may leak goroutines.
-func withContext(ctx context.Context, call func() (interface{}, error)) (interface{}, error) {
-	callResults := make(chan callResult)
-	go func() {
-		data, err := call()
-		select {
-		case callResults <- callResult{data, err}:
-		case <-ctx.Done():
-		}
-	}()
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case result := <-callResults:
-		return result.data, result.err
-	}
+	return c.client.ContractStore(contractAddress, queryMsg)
 }
