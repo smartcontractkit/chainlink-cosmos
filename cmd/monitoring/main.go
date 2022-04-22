@@ -9,6 +9,7 @@ import (
 	"github.com/smartcontractkit/chainlink/core/logger"
 
 	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring"
+	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
 )
 
 func main() {
@@ -29,13 +30,15 @@ func main() {
 	}
 
 	chainReader := monitoring.NewChainReader(terraConfig, coreLog)
+	fcdClient := fcdclient.New(terraConfig.FCDURL, 1) // requests per sec
 
 	envelopeSourceFactory := monitoring.NewEnvelopeSourceFactory(
 		chainReader,
+		fcdClient,
 		l.With("component", "source-envelope"),
 	)
 	txResultsFactory := monitoring.NewTxResultsSourceFactory(
-		l.With("component", "source-txresults"),
+		fcdClient,
 	)
 
 	monitor, err := relayMonitoring.NewMonitor(
