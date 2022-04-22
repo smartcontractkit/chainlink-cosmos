@@ -25,6 +25,7 @@ func TestProxyMonitoring(t *testing.T) {
 		chainConfig := generateChainConfig()
 		feedConfig := generateFeedConfig()
 		feedConfig.Multiply = big.NewInt(100)
+		nodes := []relayMonitoring.NodeConfig{}
 
 		chainReader := new(mocks.ChainReader)
 		chainReader.Test(t)
@@ -36,7 +37,7 @@ func TestProxyMonitoring(t *testing.T) {
 		require.NoError(t, err)
 
 		exporterFactory := NewPrometheusExporterFactory(newNullLogger(), metrics)
-		exporter, err := exporterFactory.NewExporter(chainConfig, feedConfig)
+		exporter, err := exporterFactory.NewExporter(relayMonitoring.ExporterParams{chainConfig, feedConfig, nodes})
 		require.NoError(t, err)
 
 		// Setup claims.
