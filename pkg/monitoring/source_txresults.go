@@ -8,18 +8,28 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
+	"go.uber.org/ratelimit"
 )
 
 // NewTxResultsSourceFactory builds sources of TxResults objects expected by the relay monitoring.
 func NewTxResultsSourceFactory(log relayMonitoring.Logger) relayMonitoring.SourceFactory {
-	return &txResultsSourceFactory{log, &http.Client{}}
+	return &txResultsSourceFactory{
+		log,
+		&http.Client{},
+		ratelimit.New(1,
+			ratelimit.Per(1*time.Second), // one request every 1 second
+			ratelimit.WithoutSlack,       // don't accumulate previously "unspent" requests for future bursts
+		),
+	}
 }
 
 type txResultsSourceFactory struct {
-	log        relayMonitoring.Logger
-	httpClient *http.Client
+	log           relayMonitoring.Logger
+	httpClient    *http.Client
+	globalLimiter ratelimit.Limiter
 }
 
 func (t *txResultsSourceFactory) NewSource(
@@ -39,6 +49,7 @@ func (t *txResultsSourceFactory) NewSource(
 		terraConfig,
 		terraFeedConfig,
 		t.httpClient,
+		t.globalLimiter,
 		0,
 		sync.Mutex{},
 	}, nil
@@ -53,6 +64,7 @@ type txResultsSource struct {
 	terraConfig     TerraConfig
 	terraFeedConfig TerraFeedConfig
 	httpClient      *http.Client
+	globalLimiter   ratelimit.Limiter
 
 	latestTxID   uint64
 	latestTxIDMu sync.Mutex
@@ -69,6 +81,7 @@ type fcdTx struct {
 }
 
 func (t *txResultsSource) Fetch(ctx context.Context) (interface{}, error) {
+	t.globalLimiter.Take()
 	// Query the FCD endpoint.
 	query := url.Values{}
 	query.Set("account", t.terraFeedConfig.ContractAddressBech32)
