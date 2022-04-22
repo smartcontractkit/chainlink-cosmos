@@ -26,7 +26,6 @@ func NewChainReader(terraConfig TerraConfig, coreLog logger.Logger) ChainReader 
 		terraConfig,
 		coreLog,
 		sync.Mutex{},
-		sync.Mutex{},
 	}
 }
 
@@ -34,13 +33,12 @@ type chainReader struct {
 	terraConfig TerraConfig
 	coreLog     logger.Logger
 
-	txEventsSequencer      sync.Mutex
-	contractStoreSequencer sync.Mutex
+	globalSequencer sync.Mutex
 }
 
 func (c *chainReader) TxsEvents(_ context.Context, events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error) {
-	c.txEventsSequencer.Lock()
-	defer c.txEventsSequencer.Unlock()
+	c.globalSequencer.Lock()
+	defer c.globalSequencer.Unlock()
 	client, err := pkgClient.NewClient(
 		c.terraConfig.ChainID,
 		c.terraConfig.TendermintURL,
@@ -54,8 +52,8 @@ func (c *chainReader) TxsEvents(_ context.Context, events []string, paginationPa
 }
 
 func (c *chainReader) ContractStore(_ context.Context, contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
-	c.contractStoreSequencer.Lock()
-	defer c.contractStoreSequencer.Unlock()
+	c.globalSequencer.Lock()
+	defer c.globalSequencer.Unlock()
 	client, err := pkgClient.NewClient(
 		c.terraConfig.ChainID,
 		c.terraConfig.TendermintURL,
