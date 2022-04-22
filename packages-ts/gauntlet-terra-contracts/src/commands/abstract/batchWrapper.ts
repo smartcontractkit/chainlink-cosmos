@@ -32,7 +32,12 @@ export const wrapCommand = (command) => {
     }
 
     makeRawTransaction = async (signer: AccAddress) => {
-      return await Promise.all(this.subCommands.map(async (element) => (await element.makeRawTransaction(signer))[0]))
+      const rawTxs = (await Promise.all(this.subCommands.map((c) => 
+      c.makeRawTransaction(signer)))).reduce((agg, txs) => [
+        ...agg,
+        ...txs,
+      ])
+      return rawTxs
     }
 
     execute = async (): Promise<Result<TransactionResponse>> => {
