@@ -40,10 +40,10 @@ func (c *client) GetTxList(ctx context.Context, params GetTxListParams) (Respons
 		query.Set("account", params.Account.String())
 	}
 	if params.Limit != 0 {
-		query.Set("limit", strconv.Itoa(params.Offset))
+		query.Set("limit", strconv.Itoa(params.Limit))
 	}
 	if params.Offset != 0 {
-		query.Set("offset", strconv.Itoa(params.Limit))
+		query.Set("offset", strconv.Itoa(params.Offset))
 	}
 	if params.Block != "" {
 		query.Set("block", params.Block)
@@ -54,18 +54,49 @@ func (c *client) GetTxList(ctx context.Context, params GetTxListParams) (Respons
 	}
 	getTxsURL.Path = "/v1/txs"
 	getTxsURL.RawQuery = query.Encode()
-	readTxsReq, err := http.NewRequestWithContext(ctx, http.MethodGet, getTxsURL.String(), nil)
+	getTxsReq, err := http.NewRequestWithContext(ctx, http.MethodGet, getTxsURL.String(), nil)
 	if err != nil {
 		return Response{}, fmt.Errorf("unable to build a request to the terra FCD: %w", err)
 	}
-	res, err := c.httpClient.Do(readTxsReq)
+	res, err := c.httpClient.Do(getTxsReq)
 	if err != nil {
 		return Response{}, fmt.Errorf("unable to fetch transactions from terra FCD: %w", err)
 	}
 	defer res.Body.Close()
-	// Decode the response
-	output := Response{}
 	resBody, _ := io.ReadAll(res.Body)
+	if res.StatusCode != http.StatusOK {
+		return Response{}, fmt.Errorf("non-200 response from FCD, status=%d, body='%s'", res.StatusCode, resBody)
+	}
+	output := Response{}
+	// Decode the response
+	if err := json.Unmarshal(resBody, &output); err != nil {
+		return Response{}, fmt.Errorf("unable to decode transactions from response '%s': %w", resBody, err)
+	}
+	return output, nil
+}
+
+func (c *client) GetBlockAtHeight(ctx context.Context, height uint64) (Response, error) {
+	_ = c.limiter.Take()
+	getBlockURL, err := url.Parse(c.fcdURL)
+	if err != nil {
+		return Response{}, err
+	}
+	getBlockURL.Path = fmt.Sprintf("/v1/blocks/%d", height)
+	getBlockReq, err := http.NewRequestWithContext(ctx, http.MethodGet, getBlockURL.String(), nil)
+	if err != nil {
+		return Response{}, fmt.Errorf("unable to build a request to the terra FCD: %w", err)
+	}
+	res, err := c.httpClient.Do(getBlockReq)
+	if err != nil {
+		return Response{}, fmt.Errorf("unable to fetch block from terra FCD: %w", err)
+	}
+	defer res.Body.Close()
+	resBody, _ := io.ReadAll(res.Body)
+	if res.StatusCode != http.StatusOK {
+		return Response{}, fmt.Errorf("non-200 response from FCD, status=%d, body='%s'", res.StatusCode, resBody)
+	}
+	output := Response{}
+	// Decode the response
 	if err := json.Unmarshal(resBody, &output); err != nil {
 		return Response{}, fmt.Errorf("unable to decode transactions from response '%s': %w", resBody, err)
 	}

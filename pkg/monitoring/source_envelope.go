@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -207,7 +209,10 @@ func (e *envelopeSource) fetchLatestTransmission(ctx context.Context) (transmiss
 	if err != nil {
 		return data, fmt.Errorf("failed to extract transmission from logs: %w", err)
 	}
-	data.blockNumber = uint64(res.Txs[0].Height)
+	data.blockNumber, err = strconv.ParseUint(res.Txs[0].Height, 10, 64)
+	if err != nil {
+		return data, fmt.Errorf("failed to parse block height from fcd data '%s': %w", res.Txs[0].Height, err)
+	}
 	return data, nil
 }
 
@@ -256,13 +261,9 @@ func (e *envelopeSource) fetchLatestConfigBlock(ctx context.Context) (uint64, er
 }
 
 func (e *envelopeSource) fetchLatestConfigFromLogs(ctx context.Context, blockHeight uint64) (types.ContractConfig, error) {
-	res, err := e.fcdClient.GetTxList(ctx, fcdclient.GetTxListParams{
-		Account: e.terraFeedConfig.ContractAddress,
-		Limit:   1,
-		Block:   strconv.Itoa(int(blockHeight)),
-	})
+	res, err := e.fcdClient.GetBlockAtHeight(ctx, blockHeight)
 	if err != nil {
-		return types.ContractConfig{}, fmt.Errorf("failed to fetch latest 'set_config' event: %w", err)
+		return types.ContractConfig{}, fmt.Errorf("failed to fetch block at height: %w", err)
 	}
 	output := types.ContractConfig{}
 	err = e.extractDataFromTxResponse("wasm-set_config", e.terraFeedConfig.ContractAddressBech32, res, map[string]func(string) error{
@@ -374,18 +375,13 @@ func (e *envelopeSource) extractDataFromTxResponse(
 	res fcdclient.Response,
 	extractors map[string]func(string) error,
 ) error {
-	if len(res.Txs) == 0 ||
-		len(res.Txs[0].Logs) == 0 ||
-		len(res.Txs[0].Logs[0].Events) == 0 {
-		return fmt.Errorf("0 events found in response")
-	}
 	// Extract matching events
-	events := extractMatchingEvents(res.Txs[0].Logs[0].Events, eventType, contractAddressBech32)
+	events := extractMatchingEvents(res, eventType, contractAddressBech32)
 	if len(events) == 0 {
 		return fmt.Errorf("no event found with type='%s' and contract_address='%s'", eventType, contractAddressBech32)
 	}
 	if len(events) != 1 {
-		e.log.Infow("multiple matching events found, selecting the last one", "type", eventType, "contract_address", contractAddressBech32)
+		e.log.Debugw("multiple matching events found, selecting the most recent one", "type", eventType, "contract_address", contractAddressBech32)
 	}
 	event := events[len(events)-1]
 	if err := checkEventAttributes(event, extractors); err != nil {
@@ -407,21 +403,29 @@ func (e *envelopeSource) extractDataFromTxResponse(
 	return nil
 }
 
-func extractMatchingEvents(events []fcdclient.Event, eventType, contractAddressBech32 string) []fcdclient.Event {
+func extractMatchingEvents(res fcdclient.Response, eventType, contractAddressBech32 string) []fcdclient.Event {
 	out := []fcdclient.Event{}
-	for _, event := range events {
-		if event.Typ != eventType {
+	sort.Slice(res.Txs, func(i, j int) bool {
+		return res.Txs[i].ID > res.Txs[j].ID
+	})
+	for _, tx := range res.Txs {
+		if !strings.Contains(tx.RawLog, fmt.Sprintf(`"type":"%s"`, eventType)) {
 			continue
 		}
-		isMatchingContractAddress := false
-		for _, attribute := range event.Attributes {
-			if attribute.Key == "contract_address" && attribute.Value == contractAddressBech32 {
-				isMatchingContractAddress = true
-				break
+		for _, event := range tx.Logs[0].Events {
+			if event.Typ != eventType {
+				continue
 			}
-		}
-		if isMatchingContractAddress {
-			out = append(out, event)
+			isMatchingContractAddress := false
+			for _, attribute := range event.Attributes {
+				if attribute.Key == "contract_address" && attribute.Value == contractAddressBech32 {
+					isMatchingContractAddress = true
+					break
+				}
+			}
+			if isMatchingContractAddress {
+				out = append(out, event)
+			}
 		}
 	}
 	return out

@@ -12,9 +12,10 @@ type Response struct {
 
 type Tx struct {
 	ID     uint64 `json:"id"`
-	Height uint64 `json:"height"`
+	Height string `json:"height"`
 	Code   int    `json:"code"` // Error code if present
 	Logs   []Log  `json:"logs"`
+	RawLog string `json:"raw_log"`
 }
 
 type Log struct {
@@ -35,6 +36,7 @@ type Attribute struct {
 
 type Client interface {
 	GetTxList(context.Context, GetTxListParams) (Response, error)
+	GetBlockAtHeight(context.Context, uint64) (Response, error)
 }
 
 type GetTxListParams struct {
