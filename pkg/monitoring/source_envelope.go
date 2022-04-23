@@ -381,9 +381,9 @@ func (e *envelopeSource) extractDataFromTxResponse(
 		return fmt.Errorf("no event found with type='%s' and contract_address='%s'", eventType, contractAddressBech32)
 	}
 	if len(events) != 1 {
-		e.log.Debugw("multiple matching events found, selecting the most recent one", "type", eventType, "contract_address", contractAddressBech32)
+		e.log.Debugw("multiple matching events found, selecting the most recent one which is the first", "type", eventType, "contract_address", contractAddressBech32)
 	}
-	event := events[len(events)-1]
+	event := events[0]
 	if err := checkEventAttributes(event, extractors); err != nil {
 		return fmt.Errorf("received incorrect event with type='%s' and contract_address='%s': %w", eventType, contractAddressBech32, err)
 	}
@@ -405,6 +405,7 @@ func (e *envelopeSource) extractDataFromTxResponse(
 
 func extractMatchingEvents(res fcdclient.Response, eventType, contractAddressBech32 string) []fcdclient.Event {
 	out := []fcdclient.Event{}
+	// Sort txs such that the most recent tx is first
 	sort.Slice(res.Txs, func(i, j int) bool {
 		return res.Txs[i].ID > res.Txs[j].ID
 	})

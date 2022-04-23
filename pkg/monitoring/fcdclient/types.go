@@ -32,8 +32,6 @@ type Attribute struct {
 	Value string `json:"value"`
 }
 
-//go:generate mockery --name Client --output ./mocks/
-
 type Client interface {
 	GetTxList(context.Context, GetTxListParams) (Response, error)
 	GetBlockAtHeight(context.Context, uint64) (Response, error)

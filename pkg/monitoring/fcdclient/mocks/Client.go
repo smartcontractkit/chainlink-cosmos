@@ -16,6 +16,27 @@ type Client struct {
 	mock.Mock
 }
 
+// GetBlockAtHeight provides a mock function with given fields: _a0, _a1
+func (_m *Client) GetBlockAtHeight(_a0 context.Context, _a1 uint64) (fcdclient.Response, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 fcdclient.Response
+	if rf, ok := ret.Get(0).(func(context.Context, uint64) fcdclient.Response); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Get(0).(fcdclient.Response)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, uint64) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetTxList provides a mock function with given fields: _a0, _a1
 func (_m *Client) GetTxList(_a0 context.Context, _a1 fcdclient.GetTxListParams) (fcdclient.Response, error) {
 	ret := _m.Called(_a0, _a1)
