@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,14 +14,16 @@ import (
 
 // TerraConfig contains configuration for connecting to a terra client.
 type TerraConfig struct {
-	TendermintURL    string
-	FCDURL           string
-	NetworkName      string
-	NetworkID        string
-	ChainID          string
-	ReadTimeout      time.Duration
-	PollInterval     time.Duration
-	LinkTokenAddress sdk.AccAddress
+	TendermintURL        string
+	TendermintReqsPerSec int
+	FCDURL               string
+	FCDReqsPerSec        int
+	NetworkName          string
+	NetworkID            string
+	ChainID              string
+	ReadTimeout          time.Duration
+	PollInterval         time.Duration
+	LinkTokenAddress     sdk.AccAddress
 }
 
 var _ relayMonitoring.ChainConfig = TerraConfig{}
@@ -70,8 +73,22 @@ func parseEnvVars(cfg *TerraConfig) error {
 	if value, isPresent := os.LookupEnv("TERRA_TENDERMINT_URL"); isPresent {
 		cfg.TendermintURL = value
 	}
+	if value, isPresent := os.LookupEnv("TERRA_TENDERMINT_REQS_PER_SEC"); isPresent {
+		rps, err := strconv.Atoi(value)
+		if err != nil {
+			return fmt.Errorf("failed to parse env var TERRA_TENDERMINT_REQS_PER_SEC '%s' as int: %w", value, err)
+		}
+		cfg.TendermintReqsPerSec = rps
+	}
 	if value, isPresent := os.LookupEnv("TERRA_FCD_URL"); isPresent {
 		cfg.FCDURL = value
+	}
+	if value, isPresent := os.LookupEnv("TERRA_FCD_REQS_PER_SEC"); isPresent {
+		rps, err := strconv.Atoi(value)
+		if err != nil {
+			return fmt.Errorf("failed to parse env var TERRA_FCD_REQS_PER_SEC '%s' as int: %w", value, err)
+		}
+		cfg.FCDReqsPerSec = rps
 	}
 	if value, isPresent := os.LookupEnv("TERRA_NETWORK_NAME"); isPresent {
 		cfg.NetworkName = value
@@ -132,8 +149,14 @@ func validateConfig(cfg TerraConfig) error {
 }
 
 func applyDefaults(cfg *TerraConfig) {
+	if cfg.TendermintReqsPerSec == 0 {
+		cfg.TendermintReqsPerSec = 1
+	}
 	if cfg.FCDURL == "" {
 		cfg.FCDURL = "https://fcd.terra.dev/"
+	}
+	if cfg.FCDReqsPerSec == 0 {
+		cfg.FCDReqsPerSec = 1
 	}
 	if cfg.ReadTimeout == 0 {
 		cfg.ReadTimeout = 2 * time.Second

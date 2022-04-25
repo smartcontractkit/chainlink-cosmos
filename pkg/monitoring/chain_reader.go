@@ -28,9 +28,10 @@ func NewChainReader(terraConfig TerraConfig, coreLog logger.Logger) ChainReader 
 		terraConfig,
 		coreLog,
 		sync.Mutex{},
-		ratelimit.New(1,
-			ratelimit.Per(5*time.Second), // one request every 5 seconds
-			ratelimit.WithoutSlack,       // don't accumulate previously "unspent" requests for future bursts
+		ratelimit.New(
+			terraConfig.TendermintReqsPerSec,
+			ratelimit.Per(1*time.Second),
+			ratelimit.WithoutSlack, // don't accumulate previously "unspent" requests for future bursts
 		),
 	}
 }

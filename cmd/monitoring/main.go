@@ -30,7 +30,7 @@ func main() {
 	}
 
 	chainReader := monitoring.NewChainReader(terraConfig, coreLog)
-	fcdClient := fcdclient.New(terraConfig.FCDURL, 1) // requests per sec
+	fcdClient := fcdclient.New(terraConfig.FCDURL, terraConfig.FCDReqsPerSec)
 
 	envelopeSourceFactory := monitoring.NewEnvelopeSourceFactory(
 		chainReader,
