@@ -70,7 +70,6 @@ export const wrapCommand = (command) => {
 
     simulateExecute = async (msgs: (MsgExecuteContract | MsgSend)[]) => {
       const signer = this.wallet.key.accAddress // signer is the default loaded wallet
-      const contractAddress = this.args[0]
       logger.loading(`Executing batch ${command.id} tx simulation`)
 
       const estimatedGas = await this.simulate(signer, msgs)
@@ -91,7 +90,7 @@ export const wrapCommand = (command) => {
       const msgs = await this.makeRawTransaction(this.wallet.key.accAddress)
       await this.simulateExecute(msgs)
 
-      let params = this.subCommands.map((element, idx) => ({ ...(element.command.params), contract: element.args }))
+      let params = this.subCommands.map((element, idx) => ({ ...element.command.params, contract: element.args }))
       await defaultBeforeExecute(command.id, this.args, params)
 
       let tx = await this.signAndSend(msgs)
