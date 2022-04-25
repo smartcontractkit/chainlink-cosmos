@@ -102,7 +102,7 @@ export const wrapCommand = (command) => {
           },
         ],
       } as Result<TransactionResponse>
-      const data = await this.subCommands[0].afterExecute(response)
+      const data = await this.afterExecute(response)
       return !!data ? { ...response, data: { ...data } } : response
     }
   }
