@@ -2,39 +2,46 @@ package monitoring
 
 import (
 	"context"
-	"net/http"
-	"net/http/httptest"
+	"encoding/json"
 	"os"
 	"testing"
 	"time"
 
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
+	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
+	fcdclientmocks "github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient/mocks"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestTxResultsSource(t *testing.T) {
-	rawTxs, err := os.ReadFile("./fixtures/txs.json")
-	require.NoError(t, err, "should be able to read fixtures")
-
 	t.Run("should correcly count failed and succeeded transactions", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
-			_, err := writer.Write(rawTxs)
-			require.NoError(t, err)
-		}))
-		defer srv.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
 
 		chainConfig := generateChainConfig()
-		chainConfig.FCDURL = srv.URL
 		feedConfig := generateFeedConfig()
 
-		factory := NewTxResultsSourceFactory(newNullLogger())
+		fcdClient := new(fcdclientmocks.Client)
+		factory := NewTxResultsSourceFactory(fcdClient)
 		source, err := factory.NewSource(chainConfig, feedConfig)
 		require.NoError(t, err)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		defer cancel()
+		// Setup mocks
+		getTxsRaw, err := os.ReadFile("./fixtures/txs.json")
+		require.NoError(t, err)
+		getTxsRes := fcdclient.Response{}
+		require.NoError(t, json.Unmarshal(getTxsRaw, &getTxsRes))
+		fcdClient.On("GetTxList",
+			mock.Anything, // context
+			fcdclient.GetTxListParams{Account: feedConfig.ContractAddress, Limit: 10},
+		).Return(getTxsRes, nil).Once()
+
+		// Execute Fetch()
 		data, err := source.Fetch(ctx)
 		require.NoError(t, err)
+
+		// Assertions
 		txResults, ok := data.(relayMonitoring.TxResults)
 		require.True(t, ok)
 		require.Equal(t, uint64(94), txResults.NumSucceeded)

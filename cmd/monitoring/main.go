@@ -9,7 +9,7 @@ import (
 	"github.com/smartcontractkit/chainlink/core/logger"
 
 	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring"
-	pkgClient "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
 )
 
 func main() {
@@ -29,24 +29,16 @@ func main() {
 		return
 	}
 
-	client, err := pkgClient.NewClient(
-		terraConfig.ChainID,
-		terraConfig.TendermintURL,
-		terraConfig.ReadTimeout,
-		coreLog,
-	)
-	if err != nil {
-		l.Fatalw("failed to create a terra client", "error", err)
-		return
-	}
-	chainReader := monitoring.NewChainReader(client)
+	chainReader := monitoring.NewChainReader(terraConfig, coreLog)
+	fcdClient := fcdclient.New(terraConfig.FCDURL, terraConfig.FCDReqsPerSec)
 
 	envelopeSourceFactory := monitoring.NewEnvelopeSourceFactory(
 		chainReader,
+		fcdClient,
 		l.With("component", "source-envelope"),
 	)
 	txResultsFactory := monitoring.NewTxResultsSourceFactory(
-		l.With("component", "source-txresults"),
+		fcdClient,
 	)
 
 	monitor, err := relayMonitoring.NewMonitor(

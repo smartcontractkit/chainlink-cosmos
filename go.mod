@@ -13,7 +13,7 @@ require (
 	github.com/rs/zerolog v1.26.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/smartcontractkit/chainlink v1.3.0
-	github.com/smartcontractkit/chainlink-relay v0.0.0-20220420083254-96c9e49ed0bc
+	github.com/smartcontractkit/chainlink-relay v0.0.0-20220422131434-0cef40354ecc
 	github.com/smartcontractkit/helmenv v1.0.59
 	github.com/smartcontractkit/integrations-framework v1.0.54-0.20220413120014-215e37bdf051
 	github.com/smartcontractkit/libocr v0.0.0-20220414173908-cdfa6bef133a
@@ -50,6 +50,7 @@ require (
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
+	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
@@ -299,6 +300,7 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.starlark.net v0.0.0-20211013185944-b0039bd2cfe3 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/ratelimit v0.2.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b // indirect
