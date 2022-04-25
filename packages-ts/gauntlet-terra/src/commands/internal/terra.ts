@@ -54,8 +54,12 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
         return attribute.value
       }
     } catch (e) {
-      logger.log('Error parsing response', e.message)
-      return undefined
+      if (receipt?.raw_log.includes('insufficient funds')) {
+        throw Error(`Wallet does not have enough funds for txn: ${receipt?.raw_log}`)
+      } else {
+        logger.log('Error parsing response', e.message)
+        return undefined
+      }
     }
   }
 
@@ -157,11 +161,15 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
       publicKey: account.getPublicKey(),
     }
 
-    const tx = await this.provider.tx.create([{ ...signerData, address: signer }], { msgs })
+    try {
+      const tx = await this.provider.tx.create([{ ...signerData, address: signer }], { msgs })
 
-    // gas estimation successful => tx is valid (simulation is run under the hood)
-    return await this.provider.tx.estimateGas(tx, {
-      signers: [signerData],
-    })
+      // gas estimation successful => tx is valid (simulation is run under the hood)
+      return await this.provider.tx.estimateGas(tx, {
+        signers: [signerData],
+      })
+    } catch (e) {
+      throw Error(`Error simulating transaction: Status code ${e.response.status}: ${e.response.data.message}`)
+    }
   }
 }
