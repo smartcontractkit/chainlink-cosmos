@@ -16,11 +16,7 @@ const makeInput = async (flags): Promise<CommandInput> => {
     offchainConfig: makeEmptyOffchainConfig(),
     randomSecret: EMPTY_SECRET,
   }
-  if (flags.input)
-    return {
-      ...flags.input,
-      ...defaultInput,
-    }
+  if (flags.input) return { ...flags.input, ...defaultInput }
 
   return {
     proposalId: flags.configProposal,
@@ -33,6 +29,6 @@ export default instructionToCommand(
     suffixes: ['close'],
     examples: [`yarn gauntlet ${ProposeOffchainConfig.id}:close --network=<NETWORK> <CONTRACT_ADDRESS>`],
     makeInput,
-    validationsToSkip: [0],
+    validationsToSkip: ['validOffchainConfig'],
   }),
 )

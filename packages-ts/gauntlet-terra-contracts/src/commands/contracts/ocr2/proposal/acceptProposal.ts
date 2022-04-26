@@ -6,8 +6,7 @@ import {
   AbstractInstruction,
   instructionToCommand,
   BeforeExecute,
-  Validate,
-  makeValidations,
+  ValidateFn,
 } from '../../../abstract/executionWrapper'
 import { serializeOffchainConfig, deserializeConfig } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig, prepareOffchainConfigForDiff } from '../proposeOffchainConfig'
@@ -26,22 +25,22 @@ type ContractInput = {
   digest: string
 }
 
-const validationA: Validate<CommandInput> = async (input) => {
+const validateProposalId: ValidateFn<CommandInput> = async (input) => {
   if (!input.proposalId) throw new Error('Config Proposal ID is required')
   return true
 }
 
-const validationB: Validate<CommandInput> = async (input) => {
+const validateDigest: ValidateFn<CommandInput> = async (input) => {
   if (!input.digest) throw new Error('Config digest is required')
   return true
 }
 
-const validationC: Validate<CommandInput> = async (input) => {
+const validateRandomSecret: ValidateFn<CommandInput> = async (input) => {
   if (!input.randomSecret) throw new Error('Secret generated at proposing offchain config is required')
   return true
 }
 
-const validationD: Validate<CommandInput> = async (input, context) => {
+const validateOffchainConfig: ValidateFn<CommandInput> = async (input, context) => {
   const { offchainConfig } = await serializeOffchainConfig(
     input.offchainConfig,
     process.env.SECRET!,
@@ -85,8 +84,8 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   }
 }
 
-const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inputContext) => async () => {
-  const { proposalId } = inputContext.input
+const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, input) => async () => {
+  const { proposalId } = input.user
 
   const proposal: any = await context.provider.wasm.contractQuery(context.contract, {
     proposal: {
@@ -154,7 +153,12 @@ export const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   makeContractInput: makeContractInput,
   beforeExecute,
   afterExecute,
-  validations: makeValidations(validationA, validationB, validationC, validationD),
+  validations: {
+    validProposalId: validateProposalId,
+    validDigest: validateDigest,
+    validOffchainConfig: validateOffchainConfig,
+    validRandomSecret: validateRandomSecret,
+  },
 }
 
 export default instructionToCommand(instruction)

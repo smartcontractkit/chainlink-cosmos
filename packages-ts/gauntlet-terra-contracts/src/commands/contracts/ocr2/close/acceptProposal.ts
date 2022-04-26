@@ -10,11 +10,7 @@ const makeInput = async (flags): Promise<AcceptProposalInput> => {
     offchainConfig: makeEmptyOffchainConfig(),
     randomSecret: EMPTY_SECRET,
   }
-  if (flags.input)
-    return {
-      ...flags.input,
-      ...defaultInput,
-    }
+  if (flags.input) return { ...flags.input, ...defaultInput }
 
   return {
     proposalId: flags.proposalId || flags.configProposal,

@@ -37,10 +37,10 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   }
 }
 
-const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (_, inputContext) => async () => {
+const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (_, input) => async () => {
   logger.info(
-    `Transferring ${inputContext.contractInput.amount} (${inputContext.input.amount}) Tokens to ${logger.styleAddress(
-      inputContext.contractInput.recipient,
+    `Transferring ${input.contract.amount} (${input.user.amount}) Tokens to ${logger.styleAddress(
+      input.contract.recipient,
     )}`,
   )
   await prompt('Continue?')

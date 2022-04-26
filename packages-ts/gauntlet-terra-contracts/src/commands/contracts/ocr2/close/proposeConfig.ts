@@ -19,12 +19,7 @@ const makeInput = async (flags): Promise<CommandInput> => {
     payees: oracles.map((o) => o.payee),
   }
 
-  if (flags.input) {
-    return {
-      ...flags.input,
-      ...defaultInput,
-    }
-  }
+  if (flags.input) return { ...flags.input, ...defaultInput }
 
   return {
     proposalId: flags.configProposal,

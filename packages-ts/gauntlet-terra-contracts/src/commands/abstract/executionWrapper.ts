@@ -13,29 +13,21 @@ export type ExecutionContext = {
 }
 
 export type Input<UserInput, ContractInput> = {
-  input: UserInput
-  contractInput: ContractInput
+  user: UserInput
+  contract: ContractInput
 }
 
 export type BeforeExecute<UserInput, ContractInput> = (
   context: ExecutionContext,
-  inputContext: Input<UserInput, ContractInput>,
+  input: Input<UserInput, ContractInput>,
 ) => (signer: AccAddress) => Promise<void>
 
 export type AfterExecute<UserInput, ContractInput> = (
   context: ExecutionContext,
-  inputContext: Input<UserInput, ContractInput>,
+  input: Input<UserInput, ContractInput>,
 ) => (response: Result<TransactionResponse>) => Promise<any>
 
-export type Validate<UserInput> = (input: UserInput, context: ExecutionContext) => Promise<boolean>
-export interface Validation<UserInput> {
-  id: number
-  validate: Validate<UserInput>
-}
-
-export const makeValidations = (...validates: Validate<any>[]): Validation<any>[] =>
-  validates.map((validate, idx) => ({ id: idx, validate }))
-
+export type ValidateFn<UserInput> = (input: UserInput, context: ExecutionContext) => Promise<boolean>
 export interface AbstractInstruction<UserInput, ContractInput> {
   examples?: string[]
   instruction: {
@@ -49,15 +41,17 @@ export interface AbstractInstruction<UserInput, ContractInput> {
   makeContractInput: (input: UserInput, context: ExecutionContext) => Promise<ContractInput>
   beforeExecute?: BeforeExecute<UserInput, ContractInput>
   afterExecute?: AfterExecute<UserInput, ContractInput>
-  validations?: Validation<UserInput>[]
+  validations?: {
+    [id: string]: ValidateFn<UserInput>
+  }
 }
 
 const defaultBeforeExecute = <UserInput, ContractInput>(
   context: ExecutionContext,
-  inputContext: Input<UserInput, ContractInput>,
+  input: Input<UserInput, ContractInput>,
 ) => async () => {
   logger.loading(`Executing ${context.id} from contract ${context.contract}`)
-  logger.log('Input Params:', inputContext.contractInput)
+  logger.log('Input Params:', input.contract)
   await prompt(`Continue?`)
 }
 
@@ -65,7 +59,7 @@ export const extendCommandInstruction = <UserInput, ContractInput>(
   instruction: AbstractInstruction<UserInput, ContractInput>,
   config: {
     suffixes: string[]
-    validationsToSkip?: number[]
+    validationsToSkip?: string[]
     makeInput: (flags: any, args: string[]) => Promise<UserInput>
     examples: string[]
   },
@@ -78,9 +72,18 @@ export const extendCommandInstruction = <UserInput, ContractInput>(
       suffixes: config.suffixes,
     },
     makeInput: config.makeInput,
-    validations:
-      instruction.validations && instruction.validations.filter(({ id }) => !config.validationsToSkip?.includes(id)),
+    validations: instruction.validations && filterValidations(instruction.validations, config.validationsToSkip),
   }
+}
+
+const filterValidations = <UserInput>(
+  validations: { [id: string]: ValidateFn<UserInput> },
+  toSkip?: string[],
+): { [id: string]: ValidateFn<UserInput> } => {
+  return Object.entries(validations).reduce((agg, [id, validate]) => {
+    if (!toSkip?.includes(id)) return agg
+    return { ...agg, ...{ [id]: validate } }
+  }, {})
 }
 
 export const instructionToCommand = <UserInput, ContractInput>(
@@ -102,24 +105,20 @@ export const instructionToCommand = <UserInput, ContractInput>(
       super(flags, args)
     }
 
-    getValidationsToSkip = (flags: any): number[] => {
+    getValidationsToSkip = (flags: any): string[] => {
       return Object.keys(flags)
         .filter((key) => key.startsWith('skip-'))
-        .map((value) => Number(value.replace('skip-', '')))
-    }
-
-    validateContractAddress = (address: string) => {
-      if (!AccAddress.validate(address)) throw new Error(`Invalid contract address ${address}`)
+        .map((value) => value.replace('skip-', ''))
     }
 
     runValidations = async (
-      validations: Validation<UserInput>[],
+      validations: { [id: string]: ValidateFn<UserInput> },
       executionContext: ExecutionContext,
       input: UserInput,
     ) => {
       logger.loading('Running command validations')
       const results = await Promise.all(
-        validations.map(async ({ validate, id }) => {
+        Object.entries(validations).map(async ([id, validate]) => {
           try {
             return {
               success: await validate(input, executionContext),
@@ -132,7 +131,7 @@ export const instructionToCommand = <UserInput, ContractInput>(
         }),
       )
       results.forEach(({ success, msgFail, msgSuccess }) => {
-        if (!success) logger.error(`Validation Failed: ${msgFail}`)
+        if (!success) logger.error(msgFail)
         else logger.success(msgSuccess)
       })
       if (results.filter((r) => !r.success).length > 0) {
@@ -151,28 +150,30 @@ export const instructionToCommand = <UserInput, ContractInput>(
         flags,
       }
 
-      const input = await instruction.makeInput(flags, args)
+      const userInput = await instruction.makeInput(flags, args)
 
       // Validation
       if (instruction.validations) {
         const validationsToSkip = this.getValidationsToSkip(flags)
-        const toValidate = instruction.validations.filter(({ id }) => !validationsToSkip.includes(id))
-        await this.runValidations(toValidate, executionContext, input)
+        const toValidate = filterValidations(instruction.validations, validationsToSkip)
+        await this.runValidations(toValidate, executionContext, userInput)
       }
-      if (!instruction.validateInput(input)) throw new Error(`Invalid input params: ${JSON.stringify(input)}`)
 
-      const contractInput = await instruction.makeContractInput(input, executionContext)
+      // TODO: Some commands just provide a validateInput fn. Update those to give a set of validations
+      if (!instruction.validateInput(userInput)) throw new Error(`Invalid input params: ${JSON.stringify(userInput)}`)
 
-      const inputContext: Input<UserInput, ContractInput> = {
-        input,
-        contractInput,
+      const contractInput = await instruction.makeContractInput(userInput, executionContext)
+
+      const input: Input<UserInput, ContractInput> = {
+        user: userInput,
+        contract: contractInput,
       }
       this.beforeExecute = instruction.beforeExecute
-        ? instruction.beforeExecute(executionContext, inputContext)
-        : defaultBeforeExecute(executionContext, inputContext)
+        ? instruction.beforeExecute(executionContext, input)
+        : defaultBeforeExecute(executionContext, input)
 
       this.afterExecute = instruction.afterExecute
-        ? instruction.afterExecute(executionContext, inputContext)
+        ? instruction.afterExecute(executionContext, input)
         : this.afterExecute
 
       const abstractCommand = await makeAbstractCommand(id, this.flags, this.args, contractInput)

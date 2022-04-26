@@ -29,9 +29,9 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 }
 
 const makeContractInput = async (input: CommandInput, context: ExecutionContext): Promise<ContractInput> => {
-  const amount = input.all
-    ? ((await context.provider.wasm.contractQuery(context.contract, 'link_available_for_payment' as any)) as any).amount
-    : input.amount
+  const queryAvailableLink = async () =>
+    ((await context.provider.wasm.contractQuery(context.contract, 'link_available_for_payment' as any)) as any).amount
+  const amount = input.all ? await queryAvailableLink() : input.amount
   const recipient = input.recipient || context.wallet.key.accAddress
   return {
     amount: new BN(amount).toString(),
@@ -39,18 +39,29 @@ const makeContractInput = async (input: CommandInput, context: ExecutionContext)
   }
 }
 
-const validateInput = (input: CommandInput): boolean => {
+const validateRecipient = async (input: CommandInput) => {
   if (input.recipient && AccAddress.validate(input.recipient))
     throw new Error(`Invalid recipient address ${input.recipient}`)
+  return true
+}
+
+const validateRequiredAmount = async (input: CommandInput) => {
   if (!input.all && !input.amount) throw new Error(`An amount is required`)
+  return true
+}
+
+const validateAmount = async (input: CommandInput) => {
   if (input.amount && isNaN(Number(input.amount))) throw new Error(`Invalid input amount ${input.amount}`)
   return true
 }
 
-const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inputContext) => async (signer) => {
+// TODO: Deprecate
+const validateInput = (input: CommandInput): boolean => true
+
+const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, input) => async (signer) => {
   logger.info(`Withdrawing feed:
-    - Amount: ${inputContext.contractInput.amount}
-    - Recipient: ${inputContext.contractInput.recipient}
+    - Amount: ${input.contract.amount}
+    - Recipient: ${input.contract.recipient}
   `)
 
   await prompt('Continue?')
@@ -71,6 +82,11 @@ const withdrawFundsInstruction: AbstractInstruction<CommandInput, ContractInput>
   validateInput,
   makeContractInput,
   beforeExecute,
+  validations: {
+    validRecipient: validateRecipient,
+    validAmount: validateAmount,
+    requireAmount: validateRequiredAmount,
+  },
 }
 
 export default instructionToCommand(withdrawFundsInstruction)

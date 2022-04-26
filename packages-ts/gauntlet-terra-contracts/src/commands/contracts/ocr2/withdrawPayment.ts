@@ -27,14 +27,16 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   }
 }
 
-const validateInput = (input: CommandInput): boolean => {
+const validateTransmitter = async (input: CommandInput) => {
   if (!AccAddress.validate(input.transmitter)) throw new Error(`Invalid ocr2 contract address`)
-
   return true
 }
 
+// TODO: Deprecate
+const validateInput = (input: CommandInput): boolean => true
+
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, input) => async () => {
-  logger.info(`Transmitter ${input.contractInput.transmitter} withdrawing LINK payment from ${context.contract}`)
+  logger.info(`Transmitter ${input.contract.transmitter} withdrawing LINK payment from ${context.contract}`)
 
   await prompt('Continue?')
   return
@@ -68,6 +70,9 @@ const withdrawPaymentInstruction: AbstractInstruction<CommandInput, ContractInpu
   makeContractInput: makeContractInput,
   beforeExecute: beforeExecute,
   afterExecute: afterExecute,
+  validations: {
+    validTransmitter: validateTransmitter,
+  },
 }
 
 export default instructionToCommand(withdrawPaymentInstruction)

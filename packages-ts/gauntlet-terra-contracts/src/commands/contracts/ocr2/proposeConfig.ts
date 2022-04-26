@@ -71,7 +71,7 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inputContext) => async () => {
+const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, input) => async () => {
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
 
   const contractConfig = {
@@ -82,10 +82,10 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
   }
 
   const proposedConfig = {
-    f: inputContext.contractInput.f,
-    transmitters: inputContext.contractInput.transmitters,
-    signers: inputContext.contractInput.signers,
-    payees: inputContext.contractInput.payees,
+    f: input.contract.f,
+    transmitters: input.contract.transmitters,
+    signers: input.contract.signers,
+    payees: input.contract.payees,
   }
 
   logger.info('Review the proposed changes below: green - added, red - deleted.')
