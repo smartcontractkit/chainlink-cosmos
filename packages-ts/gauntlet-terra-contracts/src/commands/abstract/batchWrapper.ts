@@ -15,7 +15,7 @@ const defaultBeforeExecute = async (id: string, contracts: string[], params) => 
 export const wrapCommand = (command) => {
   return class BatchCommand extends TerraCommand {
     static id = `${command.id}:batch`
-    subCommands: any[]
+    subCommands: TerraCommand[]
 
     constructor(flags, args) {
       super(flags, args)
@@ -90,7 +90,7 @@ export const wrapCommand = (command) => {
       const msgs = await this.makeRawTransaction(this.wallet.key.accAddress)
       await this.simulateExecute(msgs)
 
-      let params = this.subCommands.map((element, idx) => ({ ...element.command.params, contract: element.args }))
+      let params = msgs.map((element) => (element instanceof MsgExecuteContract) ? element.execute_msg : element)
       await defaultBeforeExecute(command.id, this.args, params)
 
       let tx = await this.signAndSend(msgs)
