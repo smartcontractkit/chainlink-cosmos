@@ -1,10 +1,8 @@
-import AbstractCommand, { makeAbstractCommand } from '.'
-import { Result, WriteCommand } from '@chainlink/gauntlet-core'
+import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse, logger } from '@chainlink/gauntlet-terra'
-import { AccAddress, LCDClient, Msg, MsgExecuteContract, MsgSend } from '@terra-money/terra.js'
+import { AccAddress, MsgExecuteContract, MsgSend } from '@terra-money/terra.js'
 import { prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { ExecutionContext } from './executionWrapper'
-import { getRDD, parseJSON } from '@chainlink/gauntlet-terra/dist/lib/rdd'
+import { RDD } from '@chainlink/gauntlet-terra'
 
 const defaultBeforeExecute = async (id: string, contracts: string[], params) => {
   logger.loading(`Executing ${id} for the following sets of inputs`)
@@ -22,10 +20,7 @@ export const wrapCommand = (command) => {
     }
 
     validateInput = (input, flags, args): Boolean => {
-      if (input == null) {
-        if (!flags.rdd) throw new Error(`One of --input, --inputFile, or --rdd must be provided`)
-        return true
-      }
+      if (!input && !flags.rdd) throw new Error(`One of --input, --inputFile, or --rdd must be provided`)
 
       const invalidInputConditions = args.length != input.length && args.length != 1
       if (invalidInputConditions)
@@ -33,7 +28,7 @@ export const wrapCommand = (command) => {
       return true
     }
 
-    buildCommandsFromRDD = async (flags, args): Promise<TerraCommand[]> => {
+    buildDefaultCommands = async (flags, args): Promise<TerraCommand[]> => {
       return await Promise.all(
         args.map(async (contract, idx) => {
           let c = new command(flags, [contract]) as TerraCommand
@@ -49,7 +44,7 @@ export const wrapCommand = (command) => {
         input.map(async (individualInput, idx) => {
           const newFlags = { ...flags, input: individualInput }
 
-          let individualArgs = args.length == 1 ? args : [args[idx]]
+          const individualArgs = args.length == 1 ? args : [args[idx]]
           let c = new command(newFlags, individualArgs) as TerraCommand
           await c.invokeMiddlewares(c, c.middlewares)
           c = c.buildCommand ? await c.buildCommand(newFlags, args) : c
@@ -59,12 +54,17 @@ export const wrapCommand = (command) => {
     }
 
     buildCommand = async (flags, args): Promise<TerraCommand> => {
-      const input = flags.input ? flags.input : flags.inputFile ? parseJSON(flags.inputFile, 'BatchInputFile') : null
+      const input = flags.input
+        ? flags.input
+        : flags.inputFile
+        ? RDD.parseJSON(flags.inputFile, 'BatchInputFile')
+        : null
+
       this.validateInput(input, flags, args)
 
       this.subCommands = input
         ? await this.buildCommandsFromInput(input, flags, args)
-        : await this.buildCommandsFromRDD(flags, args)
+        : await this.buildDefaultCommands(flags, args)
       return this
     }
 
@@ -90,10 +90,10 @@ export const wrapCommand = (command) => {
       const msgs = await this.makeRawTransaction(this.wallet.key.accAddress)
       await this.simulateExecute(msgs)
 
-      let params = msgs.map((element) => (element instanceof MsgExecuteContract) ? element.execute_msg : element)
+      const params = msgs.map((element) => (element instanceof MsgExecuteContract ? element.execute_msg : element))
       await defaultBeforeExecute(command.id, this.args, params)
 
-      let tx = await this.signAndSend(msgs)
+      const tx = await this.signAndSend(msgs)
       const response = {
         responses: [
           {
