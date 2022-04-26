@@ -1,6 +1,5 @@
 import { OCR2Feed, Round } from '../src'
 import { Int, WebSocketClient } from '@terra-money/terra.js'
-import exp = require('constants')
 
 describe('OCR2Feed', () => {
   it('parseLog', () => {
@@ -86,6 +85,9 @@ describe('OCR2Feed', () => {
       expect(got.epoch).toBeDefined()
       expect(got.aggregatorRoundId).toBeDefined()
       expect(got.observationsTS).toBeDefined()
+      expect(got.blockHeight).toBeDefined()
+      expect(got.txIndex).toBeDefined()
+      expect(got.txHash).toBeDefined()
     },
     120_000,
   )
