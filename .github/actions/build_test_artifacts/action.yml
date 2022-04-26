@@ -1,0 +1,24 @@
+name: Build Test Artifacts
+description: Common builder for test artifacts
+
+runs:
+  using: composite
+  steps:
+    - name: Cache cargo registry
+      uses: actions/cache@v2.1.7
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-v2-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+    - name: Cache cargo index
+      uses: actions/cache@v2.1.7
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-v2-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+    - name: Build Artifacts
+      shell: bash
+      run: make contracts_compile
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: artifacts
+        path: artifacts
