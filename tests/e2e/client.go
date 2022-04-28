@@ -100,7 +100,7 @@ func (t *TerraLCDClient) GetChainID() *big.Int {
 }
 
 func (t *TerraLCDClient) GetClients() []blockchain.EVMClient {
-	panic("implement me")
+	return t.Clients
 }
 
 func (t *TerraLCDClient) GetDefaultWallet() *blockchain.EthereumWallet {
