@@ -1,10 +1,11 @@
 package migration_test
 
 import (
-	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
-	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 	"os"
 	"time"
+
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

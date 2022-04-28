@@ -3,6 +3,8 @@ package e2e
 import (
 	"path/filepath"
 
+	"github.com/smartcontractkit/integrations-framework/blockchain"
+
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/actypes"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/cw20types"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/flagstypes"
@@ -10,7 +12,6 @@ import (
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/ocr2types"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/validatortypes"
-	"github.com/smartcontractkit/integrations-framework/client"
 	"github.com/smartcontractkit/terra.go/msg"
 )
 
@@ -97,7 +98,7 @@ func (t *ContractDeployer) DeployOCRv2ValidatorProxy(addr string, contractsDir s
 	}, nil
 }
 
-func NewTerraContractDeployer(client client.BlockchainClient) *ContractDeployer {
+func NewTerraContractDeployer(client blockchain.EVMClient) *ContractDeployer {
 	return &ContractDeployer{
 		client.(*TerraLCDClient),
 	}
