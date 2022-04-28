@@ -14,14 +14,15 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/smartcontractkit/chainlink v1.3.0
 	github.com/smartcontractkit/chainlink-relay v0.0.0-20220422131434-0cef40354ecc
-	github.com/smartcontractkit/helmenv v1.0.59
-	github.com/smartcontractkit/integrations-framework v1.0.54-0.20220413120014-215e37bdf051
+	github.com/smartcontractkit/helmenv v1.0.67
+	github.com/smartcontractkit/integrations-framework v1.1.10-0.20220427200158-713263b9219c
 	github.com/smartcontractkit/libocr v0.0.0-20220414173908-cdfa6bef133a
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	github.com/stretchr/testify v1.7.1
 	github.com/tendermint/tendermint v0.34.15
 	github.com/terra-money/core v0.5.14
 	go.uber.org/multierr v1.8.0
+	go.uber.org/ratelimit v0.2.0
 	golang.org/x/crypto v0.0.0-20220210151621-f4118a5b28e2
 	gopkg.in/guregu/null.v4 v4.0.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -153,7 +154,7 @@ require (
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
 	github.com/jbenet/goprocess v0.1.4 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
-	github.com/jmoiron/sqlx v1.3.4 // indirect
+	github.com/jmoiron/sqlx v1.3.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -300,7 +301,6 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.starlark.net v0.0.0-20211013185944-b0039bd2cfe3 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/ratelimit v0.2.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b // indirect

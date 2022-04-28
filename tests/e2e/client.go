@@ -10,13 +10,18 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	types2 "github.com/ethereum/go-ethereum/core/types"
+	"github.com/smartcontractkit/integrations-framework/blockchain"
+	"github.com/smartcontractkit/integrations-framework/config"
+
 	"github.com/pkg/errors"
 
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/rs/zerolog/log"
 	"github.com/smartcontractkit/helmenv/environment"
-	ifclient "github.com/smartcontractkit/integrations-framework/client"
 	"github.com/smartcontractkit/terra.go/client"
 	"github.com/smartcontractkit/terra.go/key"
 	"github.com/smartcontractkit/terra.go/msg"
@@ -82,12 +87,68 @@ func LoadWallet(mnemonic string) (*TerraWallet, error) {
 // TerraLCDClient is terra lite chain client allowing to upload and interact with the contracts
 type TerraLCDClient struct {
 	*client.LCDClient
-	Clients       []ifclient.BlockchainClient
+	Clients       []blockchain.EVMClient
 	Wallets       []*TerraWallet
 	DefaultWallet *TerraWallet
 	BroadcastMode tx.BroadcastMode
 	ID            int
 	Config        *NetworkConfig
+}
+
+func (t *TerraLCDClient) GetChainID() *big.Int {
+	panic("implement me")
+}
+
+func (t *TerraLCDClient) GetClients() []blockchain.EVMClient {
+	panic("implement me")
+}
+
+func (t *TerraLCDClient) GetDefaultWallet() *blockchain.EthereumWallet {
+	panic("implement me")
+}
+
+func (t *TerraLCDClient) GetWallets() []*blockchain.EthereumWallet {
+	panic("implement me")
+}
+
+func (t *TerraLCDClient) GetNetworkConfig() *config.ETHNetwork {
+	panic("implement me")
+}
+
+func (t *TerraLCDClient) SetDefaultWallet(num int) error {
+	panic("implement me")
+}
+
+func (t *TerraLCDClient) SetWallets(wallets []*blockchain.EthereumWallet) {
+	panic("implement me")
+}
+
+func (t *TerraLCDClient) LatestBlockNumber(ctx context.Context) (uint64, error) {
+	panic("implement me")
+}
+
+func (t *TerraLCDClient) DeployContract(contractName string, deployer blockchain.ContractDeployer) (*common.Address, *types2.Transaction, interface{}, error) {
+	panic("implement me")
+}
+
+func (t *TerraLCDClient) TransactionOpts(from *blockchain.EthereumWallet) (*bind.TransactOpts, error) {
+	panic("implement me")
+}
+
+func (t *TerraLCDClient) ProcessTransaction(tx *types2.Transaction) error {
+	panic("implement me")
+}
+
+func (t *TerraLCDClient) IsTxConfirmed(txHash common.Hash) (bool, error) {
+	panic("implement me")
+}
+
+func (t *TerraLCDClient) GasStats() *blockchain.GasStats {
+	panic("implement me")
+}
+
+func (t *TerraLCDClient) AddHeaderEventSubscription(key string, subscriber blockchain.HeaderEventSubscription) {
+	panic("implement me")
 }
 
 func NewEphemeralWallet() (*TerraWallet, error) {
@@ -131,8 +192,8 @@ func ClientURLSFunc() func(e *environment.Environment) ([]*url.URL, error) {
 	}
 }
 
-func ClientInitFunc(contracts int) func(networkName string, networkConfig map[string]interface{}, urls []*url.URL) (ifclient.BlockchainClient, error) {
-	return func(networkName string, networkConfig map[string]interface{}, urls []*url.URL) (ifclient.BlockchainClient, error) {
+func ClientInitFunc(contracts int) func(networkName string, networkConfig map[string]interface{}, urls []*url.URL) (blockchain.EVMClient, error) {
+	return func(networkName string, networkConfig map[string]interface{}, urls []*url.URL) (blockchain.EVMClient, error) {
 		d, err := yaml.Marshal(networkConfig)
 		if err != nil {
 			return nil, err
@@ -217,16 +278,8 @@ func (t *TerraLCDClient) EstimateCostForChainlinkOperations(amountOfOperations i
 	panic("implement me")
 }
 
-func (t *TerraLCDClient) GetChainID() int64 {
-	panic("implement me")
-}
-
 func (t *TerraLCDClient) SwitchNode(node int) error {
 	panic("implement me")
-}
-
-func (t *TerraLCDClient) GetClients() []ifclient.BlockchainClient {
-	return t.Clients
 }
 
 func (t *TerraLCDClient) HeaderHashByNumber(ctx context.Context, bn *big.Int) (string, error) {
@@ -241,19 +294,11 @@ func (t *TerraLCDClient) HeaderTimestampByNumber(ctx context.Context, bn *big.In
 	panic("implement me")
 }
 
-func (t *TerraLCDClient) GasStats() *ifclient.GasStats {
-	panic("implement me")
-}
-
 func (t *TerraLCDClient) ParallelTransactions(enabled bool) {
 	panic("implement me")
 }
 
 func (t *TerraLCDClient) Close() error {
-	panic("implement me")
-}
-
-func (t *TerraLCDClient) AddHeaderEventSubscription(key string, subscriber ifclient.HeaderEventSubscription) {
 	panic("implement me")
 }
 
@@ -304,11 +349,6 @@ func (t *TerraLCDClient) CalculateTxGas(gasUsedValue *big.Int) (*big.Float, erro
 }
 
 func (t *TerraLCDClient) EstimateTransactionGasCost() (*big.Int, error) {
-	panic("implement me")
-}
-
-// GetDefaultWallet gets the default wallet
-func (t *TerraLCDClient) GetDefaultWallet() *ifclient.EthereumWallet {
 	panic("implement me")
 }
 

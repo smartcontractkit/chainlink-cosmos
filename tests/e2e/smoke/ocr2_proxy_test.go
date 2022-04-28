@@ -1,9 +1,10 @@
 package smoke_test
 
 import (
+	"time"
+
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
