@@ -3,6 +3,8 @@ import { TerraCommand } from '@chainlink/gauntlet-terra'
 import { CONTRACT_LIST, contracts } from '../../lib/contracts'
 import { CATEGORIES } from '../../lib/constants'
 import path from 'path'
+import { existsSync, mkdirSync } from 'fs'
+
 export default class UploadContractCode extends TerraCommand {
   static description = 'Upload cosmwasm contract artifacts'
   static examples = [
@@ -85,11 +87,16 @@ export default class UploadContractCode extends TerraCommand {
       this.codeIds,
     )
 
-    io.saveJSON(
-      codeIds,
-      path.join(process.cwd(), `./packages-ts/gauntlet-terra-contracts/codeIds/${this.flags.network}`),
-    )
-    logger.success('New code ids have been saved')
+    const codeIdDir = existsSync('./packages-ts/gauntlet-terra-contracts/codeIds/')
+      ? './packages-ts/gauntlet-terra-contracts/codeIds/'
+      : './codeIds'
+
+    if (!existsSync(codeIdDir)) {
+      mkdirSync(codeIdDir)
+    }
+
+    io.saveJSON(codeIds, path.join(process.cwd(), `${codeIdDir}/${this.flags.network}`))
+    logger.success(`New code ids have been saved to ${codeIdDir}/${this.flags.network}`)
 
     return {
       responses,
