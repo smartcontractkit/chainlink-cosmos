@@ -4,12 +4,6 @@ import { AccAddress, MsgExecuteContract, MsgSend } from '@terra-money/terra.js'
 import { prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { RDD } from '@chainlink/gauntlet-terra'
 
-const defaultBeforeExecute = async (id: string, contracts: string[], params) => {
-  logger.loading(`Executing ${id} for the following sets of inputs`)
-  logger.log('Input Params:', params)
-  await prompt(`Continue?`)
-}
-
 export const wrapCommand = (command) => {
   return class BatchCommand extends TerraCommand {
     static id = `${command.id}:batch`
@@ -20,7 +14,10 @@ export const wrapCommand = (command) => {
     }
 
     validateInput = (input, flags, args): Boolean => {
-      if (!input && !flags.rdd) throw new Error(`One of --input, --inputFile, or --rdd must be provided`)
+      if (!input) {
+        if (!flags.rdd) throw new Error(`One of --input, --inputFile, or --rdd must be provided`)
+        return true
+      }
 
       const invalidInputConditions = args.length != input.length && args.length != 1
       if (invalidInputConditions)
@@ -42,7 +39,7 @@ export const wrapCommand = (command) => {
     buildCommandsFromInput = async (input, flags, args): Promise<TerraCommand[]> => {
       return await Promise.all(
         input.map(async (individualInput, idx) => {
-          const newFlags = { ...flags, input: individualInput }
+          const newFlags = { ...flags, ...individualInput }
 
           const individualArgs = args.length == 1 ? args : [args[idx]]
           let c = new command(newFlags, individualArgs) as TerraCommand
@@ -65,7 +62,28 @@ export const wrapCommand = (command) => {
       this.subCommands = input
         ? await this.buildCommandsFromInput(input, flags, args)
         : await this.buildDefaultCommands(flags, args)
+
+      this.afterExecute =
+        this.subCommands[0].afterExecute.toString() === this.afterExecute.toString()
+          ? this.afterExecute
+          : this.afterExecuteOverride
       return this
+    }
+
+    beforeExecute = async () => {
+      logger.log(`\n===========================================================================\n`)
+      for (const command of this.subCommands) {
+        await command.beforeExecute(this.wallet.key.accAddress)
+        logger.log(`\n===========================================================================\n`)
+      }
+    }
+
+    afterExecuteOverride = async (response) => {
+      logger.log(`\n===========================================================================\n`)
+      for (const command of this.subCommands) {
+        await command.afterExecute(response)
+        logger.log(`\n===========================================================================\n`)
+      }
     }
 
     simulateExecute = async (msgs: (MsgExecuteContract | MsgSend)[]) => {
@@ -90,8 +108,8 @@ export const wrapCommand = (command) => {
       const msgs = await this.makeRawTransaction(this.wallet.key.accAddress)
       await this.simulateExecute(msgs)
 
-      const params = msgs.map((element) => (element instanceof MsgExecuteContract ? element.execute_msg : element))
-      await defaultBeforeExecute(command.id, this.args, params)
+      await this.beforeExecute()
+      await prompt(`Continue?`)
 
       const tx = await this.signAndSend(msgs)
       const response = {

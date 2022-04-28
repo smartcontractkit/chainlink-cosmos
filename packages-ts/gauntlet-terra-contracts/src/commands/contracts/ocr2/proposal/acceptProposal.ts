@@ -1,5 +1,5 @@
 import { Result } from '@chainlink/gauntlet-core'
-import { logger, prompt, diff } from '@chainlink/gauntlet-core/dist/utils'
+import { logger, diff } from '@chainlink/gauntlet-core/dist/utils'
 import { TransactionResponse, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
 import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../../abstract/executionWrapper'
@@ -44,6 +44,8 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 }
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
+  logger.loading(`Executing ${context.id} from contract ${context.contract}`)
+
   const { proposalId, randomSecret, offchainConfig: offchainLocalConfig } = context.input
 
   const { offchainConfig } = await serializeOffchainConfig(offchainLocalConfig, process.env.SECRET!, randomSecret)
@@ -75,7 +77,6 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
 
   logger.info('Review the configuration difference from contract and proposal: green - added, red - deleted.')
   diff.printDiff(configInContract, configInProposal)
-  await prompt('Continue?')
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {

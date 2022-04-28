@@ -5,7 +5,7 @@ import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
 import { CATEGORIES } from '../../../lib/constants'
 import { getLatestOCRConfigEvent } from '../../../lib/inspection'
 import { serializeOffchainConfig, deserializeConfig, generateSecretWords } from '../../../lib/encoding'
-import { logger, prompt, diff, longs } from '@chainlink/gauntlet-core/dist/utils'
+import { logger, diff, longs } from '@chainlink/gauntlet-core/dist/utils'
 
 type CommandInput = {
   proposalId: string
@@ -129,6 +129,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   const proposedOffchainConfig = deserializeConfig(Buffer.from(context.contractInput.offchain_config, 'base64'))
   const proposedConfig = prepareOffchainConfigForDiff(proposedOffchainConfig)
 
+  logger.loading(`Executing ${context.id} from contract ${context.contract}`)
   logger.info('Review the proposed changes below: green - added, red - deleted.')
   diff.printDiff(configInContract, proposedConfig)
 
@@ -136,8 +137,6 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
     SECRET: ${context.input.randomSecret}`,
   )
-
-  await prompt('Continue?')
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {

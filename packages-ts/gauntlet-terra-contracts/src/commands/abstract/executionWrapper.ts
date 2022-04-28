@@ -38,7 +38,6 @@ export interface AbstractInstruction<Input, ContractInput> {
 const defaultBeforeExecute = <Input, ContractInput>(context: ExecutionContext<Input, ContractInput>) => async () => {
   logger.loading(`Executing ${context.id} from contract ${context.contract}`)
   logger.log('Input Params:', context.contractInput)
-  await prompt(`Continue?`)
 }
 
 export const instructionToCommand = <Input, ContractInput>(instruction: AbstractInstruction<Input, ContractInput>) => {
@@ -93,6 +92,7 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
       await this.buildCommand(this.flags, this.args)
       await this.command.simulateExecute()
       await this.beforeExecute(this.wallet.key.accAddress)
+      await prompt(`Continue?`)
 
       let response = await this.command.execute()
       const data = await this.afterExecute(response)

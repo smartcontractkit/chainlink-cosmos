@@ -31,7 +31,7 @@ export default class TransferLuna extends TerraCommand {
   }
 
   beforeExecute = async () => {
-    await prompt(`Continue sending ${this.input.amount} uLUNA to ${logger.styleAddress(this.input.destination)}?`)
+    logger.info(`Sending ${this.input.amount} uLUNA to ${logger.styleAddress(this.input.destination)}`)
   }
 
   makeInput = (flags, _) => {
@@ -49,6 +49,7 @@ export default class TransferLuna extends TerraCommand {
   execute = async () => {
     const message = await this.makeRawTransaction(this.wallet.key.accAddress)
     await this.beforeExecute()
+    await prompt(`Continue?`)
     const tx = await this.signAndSend(message)
     const result = {
       responses: [

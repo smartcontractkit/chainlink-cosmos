@@ -1,4 +1,4 @@
-import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { logger } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 import { AbstractInstruction, instructionToCommand, BeforeExecute } from '../../abstract/executionWrapper'
 import { TransactionResponse } from '@chainlink/gauntlet-terra'
@@ -34,9 +34,11 @@ const validateInput = (input: CommandInput): boolean => {
 }
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
-  logger.info(`Transmitter ${context.contractInput.transmitter} withdrawing LINK payment from ${context.contract}`)
-
-  await prompt('Continue?')
+  logger.info(
+    `Transmitter ${logger.styleAddress(context.contractInput.transmitter)} withdrawing LINK payment from ${
+      context.contract
+    }`,
+  )
   return
 }
 
