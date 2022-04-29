@@ -33,13 +33,13 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
-  const currentOwner: AccAddress = await context.provider.wasm.contractQuery(context.contract, 'owner' as any)
+const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, input) => async () => {
+  const currentOwner = await context.provider.wasm.contractQuery(context.contract, 'owner' as any)
   const contract = RDD.getContractFromRDD(RDD.getRDD(context.flags.rdd), context.contract)
   logger.info(`Proposing Ownership Transfer of contract of type "${contract.type}":
-    - Contract: ${logger.styleAddress(contract.address)} ${contract.description ? '- ' + contract.description : ''}
-    - Current Owner: ${logger.styleAddress(currentOwner)}
-    - Next Owner: ${logger.styleAddress(context.contractInput.to)}
+    - Contract: ${contract.address} ${contract.description ? '- ' + contract.description : ''}
+    - Current Owner: ${currentOwner}
+    - Next Owner: ${logger.styleAddress(input.contract.to)}
   `)
   await prompt('Continue?')
 }

@@ -7,14 +7,13 @@ import { getLatestOCRConfigEvent } from '../../../lib/inspection'
 import { serializeOffchainConfig, deserializeConfig, generateSecretWords } from '../../../lib/encoding'
 import { logger, prompt, diff, longs } from '@chainlink/gauntlet-core/dist/utils'
 
-type CommandInput = {
+export type CommandInput = {
   proposalId: string
   offchainConfig: OffchainConfig
-  offchainConfigVersion: number
   randomSecret?: string
 }
 
-type ContractInput = {
+export type ContractInput = {
   id: string
   offchain_config_version: number
   offchain_config: string
@@ -110,23 +109,30 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   const contract = args[0]
 
   return {
-    proposalId: flags.proposalId || flags.configProposal, // -configProposal alias requested by eng ops
+    proposalId: flags.proposalId || flags.configProposal || flags.id, // -configProposal alias requested by eng ops
     offchainConfig: getOffchainConfigInput(rdd, contract),
-    offchainConfigVersion: 2,
     randomSecret: randomSecret || (await generateSecretWords()),
   }
 }
 
-const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
+const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, input) => async () => {
+  const tryDeserialize = (config: string): OffchainConfig => {
+    try {
+      return deserializeConfig(Buffer.from(config, 'base64'))
+    } catch (e) {
+      return {} as OffchainConfig
+    }
+  }
+
   // Config in contract
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
   const offchainConfigInContract = event?.offchain_config
-    ? deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
+    ? tryDeserialize(event.offchain_config[0])
     : ({} as OffchainConfig)
   const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, { f: event?.f })
 
   // Proposed config
-  const proposedOffchainConfig = deserializeConfig(Buffer.from(context.contractInput.offchain_config, 'base64'))
+  const proposedOffchainConfig = tryDeserialize(input.contract.offchain_config)
   const proposedConfig = prepareOffchainConfigForDiff(proposedOffchainConfig)
 
   logger.info('Review the proposed changes below: green - added, red - deleted.')
@@ -134,7 +140,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
 
   logger.info(
     `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
-    SECRET: ${context.input.randomSecret}`,
+    SECRET: ${input.user.randomSecret}`,
   )
 
   await prompt('Continue?')
@@ -154,18 +160,18 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   }
 }
 
-const afterExecute: AfterExecute<CommandInput, ContractInput> = (context) => async (result): Promise<any> => {
+const afterExecute: AfterExecute<CommandInput, ContractInput> = (_, input) => async (result): Promise<any> => {
   logger.success(`Tx succeded at ${result.responses[0].tx.hash}`)
   logger.info(
     `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
-    SECRET: ${context.input.randomSecret}`,
+    SECRET: ${input.user.randomSecret}`,
   )
   return {
-    secret: context.input.randomSecret,
+    secret: input.user.randomSecret,
   }
 }
 
-const validateInput = (input: CommandInput): boolean => {
+const validateOffchainConfig = async (input) => {
   const { offchainConfig } = input
 
   const _isNegative = (v: number): boolean => new BN(v).lt(new BN(0))
@@ -221,7 +227,7 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const instruction: AbstractInstruction<CommandInput, ContractInput> = {
+export const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   examples: [
     'yarn gauntlet ocr2:propose_offchain_config --network=NETWORK --proposalId=<PROPOSAL_ID> <CONTRACT_ADDRESS>',
   ],
@@ -231,10 +237,13 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
     function: 'propose_offchain_config',
   },
   makeInput: makeCommandInput,
-  validateInput: validateInput,
+  validateInput: () => true,
   makeContractInput: makeContractInput,
   beforeExecute,
   afterExecute,
+  validations: {
+    validOffchainConfig: validateOffchainConfig,
+  },
 }
 
 export default instructionToCommand(instruction)

@@ -161,15 +161,15 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
       publicKey: account.getPublicKey(),
     }
 
+    // gas estimation successful => tx is valid (simulation is run under the hood)
     try {
       const tx = await this.provider.tx.create([{ ...signerData, address: signer }], { msgs })
-
-      // gas estimation successful => tx is valid (simulation is run under the hood)
       return await this.provider.tx.estimateGas(tx, {
         signers: [signerData],
       })
     } catch (e) {
-      throw Error(`Error simulating transaction: Status code ${e.response.status}: ${e.response.data.message}`)
+      const message = e.response?.data?.message || e.message || e
+      throw new Error(`Simulation Failed: ${message}`)
     }
   }
 }

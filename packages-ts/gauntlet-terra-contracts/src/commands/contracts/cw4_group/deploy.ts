@@ -1,5 +1,5 @@
+import { AccAddress } from '@terra-money/terra.js'
 import { CATEGORIES } from '../../../lib/constants'
-import { isValidAddress } from '../../../lib/utils'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
 type CommandInput = {
@@ -26,9 +26,9 @@ const validateInput = (input: CommandInput): boolean => {
   if (input.owners.length === 0) {
     throw new Error(`You must specify at least one group member (wallet owner)`)
   }
-  const areValidOwners = input.owners.filter((owner) => !isValidAddress(owner)).length === 0
+  const areValidOwners = input.owners.filter((owner) => !AccAddress.validate(owner)).length === 0
   if (!areValidOwners) throw new Error('Owners are not valid')
-  if (!isValidAddress(input.admin)) throw new Error('Admin is not valid')
+  if (!AccAddress.validate(input.admin)) throw new Error('Admin is not valid')
   return true
 }
 

@@ -1,22 +1,22 @@
-import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
+import { RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
 import { getLatestOCRConfigEvent } from '../../../lib/inspection'
 import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../abstract/executionWrapper'
 import { logger, prompt, diff } from '@chainlink/gauntlet-core/dist/utils'
 
 type OnchainConfig = any
-type CommandInput = {
+export type CommandInput = {
   f: number
-  proposalId: number
+  proposalId: string
   signers: string[]
   transmitters: string[]
   payees: string[]
   onchainConfig: OnchainConfig
 }
 
-type ContractInput = {
+export type ContractInput = {
   f: number
-  id: number
+  id: string
   onchain_config: string
   signers: string[]
   transmitters: string[]
@@ -38,7 +38,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 
   return {
     f: aggregator.config.f,
-    proposalId: flags.proposalId || flags.configProposal, // -configProposal alias requested by eng ops
+    proposalId: flags.proposalId || flags.configProposal || flags.id, // -configProposal alias requested by eng ops
     signers,
     transmitters,
     payees,
@@ -71,7 +71,7 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async () => {
+const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, input) => async () => {
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
 
   const contractConfig = {
@@ -82,10 +82,10 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   }
 
   const proposedConfig = {
-    f: context.contractInput.f,
-    transmitters: context.contractInput.transmitters,
-    signers: context.contractInput.signers,
-    payees: context.contractInput.payees,
+    f: input.contract.f,
+    transmitters: input.contract.transmitters,
+    signers: input.contract.signers,
+    payees: input.contract.payees,
   }
 
   logger.info('Review the proposed changes below: green - added, red - deleted.')
@@ -93,7 +93,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
   await prompt('Continue?')
 }
 
-const instruction: AbstractInstruction<CommandInput, ContractInput> = {
+export const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   examples: ['yarn gauntlet ocr2:propose_config --network=<NETWORK> --configProposal=<PROPOSAL_ID> <CONTRACT_ADDRESS>'],
   instruction: {
     contract: 'ocr2',
