@@ -20,7 +20,7 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const afterExecute = () => async (
+const afterExecute = (context) => async (
   response: Result<TransactionResponse>,
 ): Promise<{ proposalId: string } | undefined> => {
   const events = response.responses[0].tx.events
@@ -30,7 +30,14 @@ const afterExecute = () => async (
   }
 
   try {
-    const proposalId = events[0].wasm.proposal_id[0]
+    const proposalId = events.reduce((prev, curr) => {
+      return curr.wasm.contract_address[0] == context.contract ? curr.wasm.proposal_id[0] : prev
+    }, null)
+
+    if (!proposalId) {
+      throw new Error('ProposalId for the given contract does not exist inside events')
+    }
+
     logger.success(`New config proposal created with Config Proposal ID: ${proposalId}`)
     return {
       proposalId,
