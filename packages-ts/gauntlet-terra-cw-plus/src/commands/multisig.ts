@@ -37,8 +37,8 @@ export const wrapCommand = (command) => {
     }
 
     makeRawTransaction = async (signer: AccAddress, state?: State) => {
-      const message = await this.command.makeRawTransaction(this.multisig)
-      await this.command.simulate(this.multisig, message)
+      const messages = await this.command.makeRawTransaction(this.multisig)
+      await this.command.simulate(this.multisig, messages)
       logger.info(`Command simulation successful.`)
 
       const operations = {
@@ -54,14 +54,14 @@ export const wrapCommand = (command) => {
         this.require(
           await this.isSameProposal(
             state.proposal.data,
-            message.map((element) => this.toMsg(element)),
+            messages.map((element) => this.toMsg(element)),
           ),
           'The transaction generated is different from the proposal provided',
         )
       }
 
       const proposal_id = Number(this.flags.proposal || this.flags.multisigProposal) // alias requested by eng ops
-      return operations[state.proposal.nextAction](signer, Number(proposal_id), message)
+      return operations[state.proposal.nextAction](signer, Number(proposal_id), messages)
     }
 
     isSameProposal = (proposalMsgs: (Cw3WasmMsg | Cw3BankMsg)[], generatedMsgs: (Cw3WasmMsg | Cw3BankMsg)[]) => {
@@ -218,7 +218,7 @@ export const wrapCommand = (command) => {
         }
 
         if (state.proposal.nextAction === Action.EXECUTE && this.command.afterExecute) {
-          const data = this.command.afterExecute(response)
+          const data = await this.command.afterExecute(response)
           response = { ...response, data: { ...data } }
         }
 
