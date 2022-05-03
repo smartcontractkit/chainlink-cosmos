@@ -49,7 +49,7 @@ const generateSecretEncryptions = async (
 }
 
 export const generateSecretWords = async (): Promise<string> => {
-  const path = join(process.cwd(), 'packages-ts/gauntlet-terra-contracts/artifacts/bip-0039', 'english.txt')
+  const path = join(__dirname, '../../artifacts/bip-0039', 'english.txt')
   return await sharedSecretEncryptions.generateSecretWords(path)
 }
 
