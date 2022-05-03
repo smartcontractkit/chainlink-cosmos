@@ -7,10 +7,17 @@ import Terra from './commands'
 import { wrapCommand as batchCommandWrapper } from './commands/abstract/batchWrapper'
 import { makeAbstractCommand } from './commands/abstract'
 import { defaultFlags } from './lib/args'
-import { TerraCommand } from '@chainlink/gauntlet-terra'
+
+const batchCommands = Terra.map(batchCommandWrapper)
 
 const commands = {
-  custom: [...Terra, ...Terra.map(multisigWrapCommand), ...Terra.map(batchCommandWrapper), ...CWPlusCommands],
+  custom: [
+    ...Terra,
+    ...Terra.map(multisigWrapCommand),
+    ...batchCommands,
+    ...batchCommands.map(multisigWrapCommand),
+    ...CWPlusCommands,
+  ],
   loadDefaultFlags: () => defaultFlags,
   abstract: {
     findPolymorphic: () => undefined,

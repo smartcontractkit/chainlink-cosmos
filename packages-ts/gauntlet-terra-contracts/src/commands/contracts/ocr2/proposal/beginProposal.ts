@@ -30,9 +30,17 @@ const afterExecute = (context) => async (
   }
 
   try {
-    const proposalId = events.reduce((prev, curr) => {
+    // Non-Multisig response parsing
+    var proposalId = events.reduce((prev, curr) => {
       return curr.wasm.contract_address[0] == context.contract ? curr.wasm.proposal_id[0] : prev
     }, null)
+
+    // Multisig response parsing
+    proposalId =
+      proposalId ||
+      events[0].wasm.contract_address.reduce((prev, curr, i) => {
+        return curr == context.contract ? events[0].wasm.proposal_id[i] : prev
+      }, null)
 
     if (!proposalId) {
       throw new Error('ProposalId for the given contract does not exist inside events')
