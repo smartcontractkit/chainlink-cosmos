@@ -15,7 +15,7 @@ import Inspect from './inspection/inspect'
 export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse> {
   static id = 'ocr2:initialize:flow'
   static category = CATEGORIES.OCR
-  static examples = ['yarn gauntlet ocr2:initialize:flow --network=local --id=[ID] --rdd=[PATH_TO_RDD]']
+  static examples = ['yarn gauntlet ocr2:initialize:flow --network=local --rdd=[PATH_TO_RDD] [CONTRACT_TEMP_ID]']
 
   constructor(flags, args) {
     super(flags, args, waitExecute, makeAbstractCommand)

@@ -31,10 +31,6 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			state = tc.NewOCRv2State(1, 1)
 			state.DeployEnv(1, common.ChainBlockTime, false)
 			state.SetupClients()
-			if state.Nets.Default.ContractsDeployed() {
-				err := state.LoadContracts()
-				Expect(err).ShouldNot(HaveOccurred())
-			}
 			state.NodeKeysBundle, state.Err = common.CreateNodeKeysBundle(state.Nodes)
 			Expect(state.Err).ShouldNot(HaveOccurred())
 

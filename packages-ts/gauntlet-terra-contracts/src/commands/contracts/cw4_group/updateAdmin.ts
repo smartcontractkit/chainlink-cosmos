@@ -1,5 +1,5 @@
+import { AccAddress } from '@terra-money/terra.js'
 import { CATEGORIES } from '../../../lib/constants'
-import { isValidAddress } from '../../../lib/utils'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
 type CommandInput = {
@@ -17,7 +17,7 @@ const makeCommandInput = async (flags: any, args: any[]): Promise<CommandInput> 
 }
 
 const validateInput = (input: CommandInput): boolean => {
-  if (!isValidAddress(input.admin)) {
+  if (!AccAddress.validate(input.admin)) {
     throw new Error('Admin address is not valid!')
   }
 
