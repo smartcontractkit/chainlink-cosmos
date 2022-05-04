@@ -37,9 +37,7 @@ const validateInput = (input: CommandInput): boolean => true
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, input) => async () => {
   logger.info(
-    `Transmitter ${logger.styleAddress(input.contract.transmitter)} withdrawing LINK payment from ${
-      context.contract
-    }`,
+    `Transmitter ${logger.styleAddress(input.contract.transmitter)} withdrawing LINK payment from ${context.contract}`,
   )
   return
 }
