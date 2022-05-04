@@ -70,19 +70,19 @@ export const wrapCommand = (command) => {
       return this
     }
 
-    beforeExecute = async () => {
-      logger.log(`\n===========================================================================\n`)
+    beforeExecute = async (signer) => {
+      logger.line()
       for (const command of this.subCommands) {
-        await command.beforeExecute(this.wallet.key.accAddress)
-        logger.log(`\n===========================================================================\n`)
+        await command.beforeExecute(signer)
+        logger.line()
       }
     }
 
     afterExecuteOverride = async (response) => {
-      logger.log(`\n===========================================================================\n`)
+      logger.line()
       for (const command of this.subCommands) {
         await command.afterExecute(response)
-        logger.log(`\n===========================================================================\n`)
+        logger.line()
       }
     }
 
@@ -108,7 +108,7 @@ export const wrapCommand = (command) => {
       const msgs = await this.makeRawTransaction(this.wallet.key.accAddress)
       await this.simulateExecute(msgs)
 
-      await this.beforeExecute()
+      await this.beforeExecute(this.wallet.key.accAddress)
       await prompt(`Continue?`)
 
       const tx = await this.signAndSend(msgs)

@@ -39,21 +39,7 @@ const afterExecute = (context) => async (
     return
   }
 
-  var responseWasm = events.reduce((prev, curr) => {
-    return curr.wasm.contract_address[0] == context.contract ? curr.wasm : prev
-  }, null)
-
-  const multisigWasm = events[0].wasm
-  responseWasm =
-    responseWasm ||
-    multisigWasm.contract_address.reduce((prev, curr, i) => {
-      return curr == context.context
-        ? {
-            proposalId: [multisigWasm.proposal_id[i]],
-            digest: [multisigWasm.digest[i]],
-          }
-        : prev
-    }, null)
+  var responseWasm = events.filter((element) => element.wasm.contract_address[0] == context.contract)[0].wasm
 
   if (!responseWasm) {
     throw new Error('Response data for the given contract does not exist inside events')
