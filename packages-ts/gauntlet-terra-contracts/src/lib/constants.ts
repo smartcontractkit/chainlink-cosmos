@@ -41,3 +41,10 @@ export const TOKEN_DECIMALS = 18
 export const TOKEN_UNIT = new BN(10).pow(new BN(TOKEN_DECIMALS))
 
 export const ULUNA_DECIMALS = 6
+
+export const EMPTY_TRANSMITTERS = [
+  'terra1deadlc2heq806uyw743z4d79dj7rcg7hga852t',
+  'terra1deadmx4kksqqcagp5d02yc44390c5tv8nmfgav',
+  'terra1deadnd9uqqwx7wyq4jsgrv7h5shl5sfqm007vd',
+  'terra1deaddfmsng0s0gzahytn8m6tv858a4mzg0t0gq',
+]

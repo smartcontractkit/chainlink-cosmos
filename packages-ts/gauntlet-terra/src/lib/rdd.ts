@@ -6,8 +6,6 @@ export const parseJSON = (path: string, fileDescription: string): any => {
   let pathToUse
   if (existsSync(path)) {
     pathToUse = path
-  } else if (existsSync(join(process.cwd(), path))) {
-    pathToUse = join(process.cwd(), path)
   } else {
     throw new Error(`Could not find the ${fileDescription}. Make sure you provided a valid ${fileDescription} path`)
   }

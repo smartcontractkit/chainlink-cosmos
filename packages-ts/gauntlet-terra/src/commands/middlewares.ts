@@ -54,10 +54,13 @@ export const withCodeIds: Middleware = (c: TerraCommand, next: Next) => {
     !!c.flags.network,
     `Network required. Invalid network (${c.flags.network}), please specify a --network`,
   )
-  const codeIdsPossiblePaths = [`./codeIds`, `./packages-ts/gauntlet-terra-contracts/codeIds`]
+  const codeIdsPossiblePaths = [
+    path.join(process.cwd(), `./codeIds`),
+    path.join(__dirname, `../../../gauntlet-terra-contracts/codeIds`),
+  ]
   const codeIdPath = codeIdsPossiblePaths
-    .filter((codeIdPath) => existsSync(path.join(process.cwd(), `${codeIdPath}/${c.flags.network}.json`)))
-    .map((codeIdPath) => path.join(process.cwd(), `${codeIdPath}/${c.flags.network}`))[0]
+    .filter((codeIdPath) => existsSync(path.join(codeIdPath, `${c.flags.network}.json`)))
+    .map((codeIdPath) => path.join(codeIdPath, `${c.flags.network}`))[0]
 
   const codeIds = io.readJSON(codeIdPath)
   if (!codeIds) logger.error('Code IDs file not found')

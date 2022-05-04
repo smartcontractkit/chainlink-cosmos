@@ -15,7 +15,7 @@ type ContractInput = {
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
   return {
-    proposalId: flags.proposalId || flags.configProposal, // -configProposal alias requested by eng ops
+    proposalId: flags.proposalId || flags.configProposal || flags.id, // -configProposal alias requested by eng ops
   }
 }
 

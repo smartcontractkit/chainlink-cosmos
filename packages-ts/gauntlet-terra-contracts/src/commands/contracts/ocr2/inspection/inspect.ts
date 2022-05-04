@@ -81,9 +81,15 @@ const makeOnchainData = (provider: LCDClient) => async (
   )
 
   const event = await getLatestOCRConfigEvent(provider, aggregator)
-  const offchainConfig = event?.offchain_config
-    ? await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
-    : ({} as OffchainConfig)
+  let offchainConfig = {} as OffchainConfig
+
+  if (event?.offchain_config) {
+    try {
+      offchainConfig = await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
+    } catch (e) {
+      logger.warn('Could not deserialize offchain config')
+    }
+  }
 
   const totalOwed = owedPerTransmitter.reduce((agg: BN, v) => agg.add(new BN(v)), new BN(0)).toString()
   return {
