@@ -1,6 +1,6 @@
-import { AccAddress, LCDClient } from '@terra-money/terra.js'
+import { AccAddress, EventsByType, LCDClient } from '@terra-money/terra.js'
 import { providerUtils } from '@chainlink/gauntlet-terra'
-import { getLatestContractEvent } from './utils'
+import { logger } from '@chainlink/gauntlet-core/dist/utils'
 
 export type RoundData = {
   roundId: number
@@ -21,6 +21,15 @@ export const getLatestOCRConfigEvent = async (provider: LCDClient, contract: Acc
   return setConfigTx?.logs?.[0].eventsByType['wasm-set_config']
 }
 
-export const getLatestOCRNewTransmissionEvent = async (provider: LCDClient, contract: AccAddress) => {
-  return getLatestContractEvent(provider, 'wasm-new_transmission', contract)
+export const getLatestOCRNewTransmissionEvents = async (
+  provider: LCDClient,
+  contract: AccAddress,
+  amount = 10,
+): Promise<EventsByType[]> => {
+  try {
+    return providerUtils.getLatestContractEvents(provider, 'wasm-new_transmission', contract, amount)
+  } catch (e) {
+    logger.error(`Error fetching latest transmission events: ${e.message}`)
+    return []
+  }
 }
