@@ -1,5 +1,5 @@
+import { AccAddress } from '@terra-money/terra.js'
 import { CATEGORIES } from '../../../lib/constants'
-import { isValidAddress } from '../../../lib/utils'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
 type CW4_GROUP_Member = {
@@ -25,11 +25,11 @@ const makeCommandInput = async (flags: any, args: any[]): Promise<CommandInput> 
 }
 
 const validateInput = (input: CommandInput): boolean => {
-  if (!input.add.every((addr) => isValidAddress(addr))) {
+  if (!input.add.every((addr) => AccAddress.validate(addr))) {
     throw new Error("One of provided 'add' addresses is not valid!")
   }
 
-  if (!input.remove.every((addr) => isValidAddress(addr))) {
+  if (!input.remove.every((addr) => AccAddress.validate(addr))) {
     throw new Error("One of provided 'remove' addresses of not valid!")
   }
 

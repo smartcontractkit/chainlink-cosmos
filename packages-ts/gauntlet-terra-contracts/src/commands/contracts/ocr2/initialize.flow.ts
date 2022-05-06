@@ -15,7 +15,7 @@ import Inspect from './inspection/inspect'
 export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse> {
   static id = 'ocr2:initialize:flow'
   static category = CATEGORIES.OCR
-  static examples = ['yarn gauntlet ocr2:initialize:flow --network=local --id=[ID] --rdd=[PATH_TO_RDD]']
+  static examples = ['yarn gauntlet ocr2:initialize:flow --network=local --rdd=[PATH_TO_RDD] [CONTRACT_TEMP_ID]']
 
   constructor(flags, args) {
     super(flags, args, waitExecute, makeAbstractCommand)
@@ -24,6 +24,7 @@ export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse>
       OCR_2: 1,
       BEGIN_PROPOSAL: 2,
       FINALIZE_PROPOSAL: 3,
+      PROPOSE_OFFCHAIN: 4,
     }
 
     this.flow = [
@@ -56,6 +57,7 @@ export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse>
         args: [this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))],
       },
       {
+        id: this.stepIds.PROPOSE_OFFCHAIN,
         name: 'Propose Offchain Config',
         command: ProposeOffchainConfig,
         flags: {
@@ -78,6 +80,7 @@ export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse>
         flags: {
           proposalId: FlowCommand.ID.data(this.stepIds.BEGIN_PROPOSAL, 'proposalId'),
           digest: FlowCommand.ID.data(this.stepIds.FINALIZE_PROPOSAL, 'digest'),
+          secret: FlowCommand.ID.data(this.stepIds.PROPOSE_OFFCHAIN, 'secret'),
         },
         args: [this.getReportStepDataById(FlowCommand.ID.contract(this.stepIds.OCR_2))],
       },

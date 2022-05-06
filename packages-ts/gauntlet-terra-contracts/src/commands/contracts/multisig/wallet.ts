@@ -1,6 +1,6 @@
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
+import { AccAddress } from '@terra-money/terra.js'
 import { CATEGORIES } from '../../../lib/constants'
-import { isValidAddress } from '../../../lib/utils'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 
 // Limit the voting period you can set while creating a proposal to
@@ -55,7 +55,7 @@ const validateInput = (input: CommandInput): boolean => {
     if (Number(a) <= 0) return false
     return true
   }
-  if (!isValidAddress(input.group)) {
+  if (!AccAddress.validate(input.group)) {
     throw new Error(`group ${input.group} is not a valid terra address`)
   }
 

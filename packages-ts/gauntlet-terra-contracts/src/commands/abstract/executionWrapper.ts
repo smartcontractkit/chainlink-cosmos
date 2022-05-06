@@ -1,53 +1,101 @@
 import AbstractCommand, { makeAbstractCommand } from '.'
 import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse, logger } from '@chainlink/gauntlet-terra'
-import { AccAddress, LCDClient } from '@terra-money/terra.js'
 import { prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { AccAddress, LCDClient, Wallet } from '@terra-money/terra.js'
 
-export type ExecutionContext<Input, ContractInput> = {
-  input: Input
-  contractInput: ContractInput
+export type ExecutionContext = {
   id: string
   contract: string
+  wallet: Wallet
   provider: LCDClient
   flags: any
 }
 
-export type BeforeExecute<Input, ContractInput> = (
-  context: ExecutionContext<Input, ContractInput>,
+export type Input<UserInput, ContractInput> = {
+  user: UserInput
+  contract: ContractInput
+}
+
+export type BeforeExecute<UserInput, ContractInput> = (
+  context: ExecutionContext,
+  input: Input<UserInput, ContractInput>,
 ) => (signer: AccAddress) => Promise<void>
 
-export type AfterExecute<Input, ContractInput> = (
-  context: ExecutionContext<Input, ContractInput>,
+export type AfterExecute<UserInput, ContractInput> = (
+  context: ExecutionContext,
+  input: Input<UserInput, ContractInput>,
 ) => (response: Result<TransactionResponse>) => Promise<any>
 
-export interface AbstractInstruction<Input, ContractInput> {
+export type ValidateFn<UserInput> = (input: UserInput, context: ExecutionContext) => Promise<boolean>
+export interface AbstractInstruction<UserInput, ContractInput> {
   examples?: string[]
   instruction: {
     category: string
     contract: string
     function: string
+    suffixes?: string[]
   }
-  makeInput: (flags: any, args: string[]) => Promise<Input>
-  validateInput: (input: Input) => boolean
-  makeContractInput: (input: Input) => Promise<ContractInput>
-  beforeExecute?: BeforeExecute<Input, ContractInput>
-  afterExecute?: AfterExecute<Input, ContractInput>
+  makeInput: (flags: any, args: string[]) => Promise<UserInput>
+  validateInput: (input: UserInput) => boolean
+  makeContractInput: (input: UserInput, context: ExecutionContext) => Promise<ContractInput>
+  beforeExecute?: BeforeExecute<UserInput, ContractInput>
+  afterExecute?: AfterExecute<UserInput, ContractInput>
+  validations?: {
+    [id: string]: ValidateFn<UserInput>
+  }
 }
 
-const defaultBeforeExecute = <Input, ContractInput>(context: ExecutionContext<Input, ContractInput>) => async () => {
+const defaultBeforeExecute = <UserInput, ContractInput>(
+  context: ExecutionContext,
+  input: Input<UserInput, ContractInput>,
+) => async () => {
   logger.loading(`Executing ${context.id} from contract ${context.contract}`)
-  logger.log('Input Params:', context.contractInput)
+  logger.log('Input Params:', input.contract)
   await prompt(`Continue?`)
 }
 
-export const instructionToCommand = <Input, ContractInput>(instruction: AbstractInstruction<Input, ContractInput>) => {
+export const extendCommandInstruction = <UserInput, ContractInput>(
+  instruction: AbstractInstruction<UserInput, ContractInput>,
+  config: {
+    suffixes: string[]
+    validationsToSkip?: string[]
+    makeInput: (flags: any, args: string[]) => Promise<UserInput>
+    examples: string[]
+  },
+): AbstractInstruction<UserInput, ContractInput> => {
+  return {
+    ...instruction,
+    examples: config.examples || instruction.examples,
+    instruction: {
+      ...instruction.instruction,
+      suffixes: config.suffixes,
+    },
+    makeInput: config.makeInput,
+    validations: instruction.validations && filterValidations(instruction.validations, config.validationsToSkip),
+  }
+}
+
+const filterValidations = <UserInput>(
+  validations: { [id: string]: ValidateFn<UserInput> },
+  toSkip?: string[],
+): { [id: string]: ValidateFn<UserInput> } => {
+  return Object.entries(validations).reduce((agg, [id, validate]) => {
+    if (!toSkip?.includes(id)) return agg
+    return { ...agg, ...{ [id]: validate } }
+  }, {})
+}
+
+export const instructionToCommand = <UserInput, ContractInput>(
+  instruction: AbstractInstruction<UserInput, ContractInput>,
+) => {
   const id = `${instruction.instruction.contract}:${instruction.instruction.function}`
+  const commandId = instruction.instruction.suffixes ? `${id}:${instruction.instruction.suffixes.join(':')}` : id
   const category = `${instruction.instruction.category}`
   const examples = instruction.examples || []
 
   return class Command extends TerraCommand {
-    static id = id
+    static id = commandId
     static category = category
     static examples = examples
 
@@ -57,25 +105,76 @@ export const instructionToCommand = <Input, ContractInput>(instruction: Abstract
       super(flags, args)
     }
 
-    buildCommand = async (flags, args): Promise<TerraCommand> => {
-      const input = await instruction.makeInput(flags, args)
-      if (!instruction.validateInput(input)) {
-        throw new Error(`Invalid input params:  ${JSON.stringify(input)}`)
+    getValidationsToSkip = (flags: any): string[] => {
+      return Object.keys(flags)
+        .filter((key) => key.startsWith('skip-'))
+        .map((value) => value.replace('skip-', ''))
+    }
+
+    runValidations = async (
+      validations: { [id: string]: ValidateFn<UserInput> },
+      executionContext: ExecutionContext,
+      input: UserInput,
+    ) => {
+      logger.loading('Running command validations')
+      const results = await Promise.all(
+        Object.entries(validations).map(async ([id, validate]) => {
+          try {
+            return {
+              success: await validate(input, executionContext),
+              msgFail: `Validation ${id} Failed`,
+              msgSuccess: `Validation ${id} Succeeded`,
+            }
+          } catch (e) {
+            return { success: false, msgFail: e.message, msgSuccess: '' }
+          }
+        }),
+      )
+      results.forEach(({ success, msgFail, msgSuccess }) => {
+        if (!success) logger.error(msgFail)
+        else logger.success(msgSuccess)
+      })
+      if (results.filter((r) => !r.success).length > 0) {
+        throw new Error('Command validation failed')
       }
-      const contractInput = await instruction.makeContractInput(input)
-      const executionContext: ExecutionContext<Input, ContractInput> = {
-        input,
-        contractInput,
+    }
+
+    buildCommand = async (flags, args): Promise<TerraCommand> => {
+      const contract = args[0]
+
+      const executionContext: ExecutionContext = {
         id,
-        contract: this.args[0],
+        contract,
         provider: this.provider,
+        wallet: this.wallet,
         flags,
       }
-      this.beforeExecute = instruction.beforeExecute
-        ? instruction.beforeExecute(executionContext)
-        : defaultBeforeExecute(executionContext)
 
-      this.afterExecute = instruction.afterExecute ? instruction.afterExecute(executionContext) : this.afterExecute
+      const userInput = await instruction.makeInput(flags, args)
+
+      // Validation
+      if (instruction.validations) {
+        const validationsToSkip = this.getValidationsToSkip(flags)
+        const toValidate = filterValidations(instruction.validations, validationsToSkip)
+        await this.runValidations(toValidate, executionContext, userInput)
+      }
+
+      // TODO: Some commands just provide a validateInput fn. Update those to give a set of validations
+      if (!instruction.validateInput(userInput)) throw new Error(`Invalid input params: ${JSON.stringify(userInput)}`)
+
+      const contractInput = await instruction.makeContractInput(userInput, executionContext)
+
+      const input: Input<UserInput, ContractInput> = {
+        user: userInput,
+        contract: contractInput,
+      }
+      this.beforeExecute = instruction.beforeExecute
+        ? instruction.beforeExecute(executionContext, input)
+        : defaultBeforeExecute(executionContext, input)
+
+      this.afterExecute = instruction.afterExecute
+        ? instruction.afterExecute(executionContext, input)
+        : this.afterExecute
 
       const abstractCommand = await makeAbstractCommand(id, this.flags, this.args, contractInput)
       await abstractCommand.invokeMiddlewares(abstractCommand, abstractCommand.middlewares)

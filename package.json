@@ -34,7 +34,14 @@
       "linux",
       "macos"
     ],
-    "outputPath": "bin"
+    "outputPath": "bin",
+    "assets": [
+      "node_modules/usb/prebuilds",
+      "packages-ts/gauntlet-terra-contracts/codeIds",
+      "packages-ts/gauntlet-terra-contracts/networks",
+      "packages-ts/gauntlet-terra-contracts/artifacts",
+      "contracts"
+    ]
   },
   "devDependencies": {
     "@changesets/cli": "^2.17.0",

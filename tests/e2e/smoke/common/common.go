@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/smartcontractkit/integrations-framework/blockchain"
+
 	"github.com/neilotoole/errgroup"
 
 	"github.com/onsi/ginkgo/v2"
@@ -83,7 +85,7 @@ type OCRv2State struct {
 	Addresses          *ContractsAddresses
 	MockServer         *client.MockserverClient
 	Nodes              []client.Chainlink
-	Nets               *client.Networks
+	Nets               *blockchain.Networks
 	Contracts          []Contracts
 	ContractsNodeSetup map[int]*common.ContractNodeInfo
 	NodeKeysBundle     []common.NodeKeysBundle
@@ -118,11 +120,6 @@ func NewOCRv2State(contracts int, nodes int) *OCRv2State {
 func (m *OCRv2State) DeployCluster(nodes int, blockTime string, stateful bool, contractsDir string) {
 	m.DeployEnv(nodes, blockTime, stateful)
 	m.SetupClients()
-	if m.Nets.Default.ContractsDeployed() {
-		err := m.LoadContracts()
-		Expect(err).ShouldNot(HaveOccurred())
-		return
-	}
 	m.DeployContracts(contractsDir)
 	err := m.DumpContracts()
 	Expect(err).ShouldNot(HaveOccurred())
@@ -142,7 +139,7 @@ func (m *OCRv2State) DeployEnv(nodes int, blockTime string, stateful bool) {
 
 // SetupClients setting up clients
 func (m *OCRv2State) SetupClients() {
-	networkRegistry := client.NewDefaultNetworkRegistry()
+	networkRegistry := blockchain.NewDefaultNetworkRegistry()
 	networkRegistry.RegisterNetwork(
 		"terra",
 		e2e.ClientInitFunc(len(m.ContractsNodeSetup)),
