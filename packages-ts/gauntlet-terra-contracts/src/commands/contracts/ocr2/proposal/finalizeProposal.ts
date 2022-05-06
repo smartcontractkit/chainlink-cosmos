@@ -30,7 +30,7 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const afterExecute = () => async (
+const afterExecute = (context) => async (
   response: Result<TransactionResponse>,
 ): Promise<{ proposalId: string; digest: string } | undefined> => {
   const events = response.responses[0].tx.events
@@ -39,8 +39,14 @@ const afterExecute = () => async (
     return
   }
 
-  const proposalId = events[0].wasm.proposal_id[0]
-  const digest = events[0].wasm.digest[0]
+  var responseWasm = events.filter((element) => element.wasm.contract_address[0] == context.contract)[0].wasm
+
+  if (!responseWasm) {
+    throw new Error('Response data for the given contract does not exist inside events')
+  }
+
+  const proposalId = responseWasm.proposal_id[0]
+  const digest = responseWasm.digest[0]
   logger.success(`Config Proposal ${proposalId} finalized`)
   logger.line()
   logger.info('Important: Save the config proposal DIGEST to accept the proposal in the future:')

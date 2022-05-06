@@ -2,7 +2,7 @@ import { RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
 import { getLatestOCRConfigEvent } from '../../../lib/inspection'
 import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../abstract/executionWrapper'
-import { logger, prompt, diff } from '@chainlink/gauntlet-core/dist/utils'
+import { logger, diff } from '@chainlink/gauntlet-core/dist/utils'
 
 type OnchainConfig = any
 export type CommandInput = {
@@ -73,6 +73,7 @@ const validateInput = (input: CommandInput): boolean => {
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, input) => async () => {
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
+  logger.loading(`Executing ${context.id} from contract ${context.contract}`)
 
   const contractConfig = {
     f: event?.f[0],
@@ -90,7 +91,6 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
 
   logger.info('Review the proposed changes below: green - added, red - deleted.')
   diff.printDiff(contractConfig, proposedConfig)
-  await prompt('Continue?')
 }
 
 export const instruction: AbstractInstruction<CommandInput, ContractInput> = {

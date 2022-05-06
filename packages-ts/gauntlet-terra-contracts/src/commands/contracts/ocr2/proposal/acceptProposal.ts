@@ -1,5 +1,5 @@
 import { Result } from '@chainlink/gauntlet-core'
-import { logger, prompt, diff } from '@chainlink/gauntlet-core/dist/utils'
+import { logger, diff } from '@chainlink/gauntlet-core/dist/utils'
 import { TransactionResponse, RDD } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
 import {
@@ -85,6 +85,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 }
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, input) => async () => {
+  logger.loading(`Executing ${context.id} from contract ${context.contract}`)
   const { proposalId } = input.user
 
   const proposal: any = await context.provider.wasm.contractQuery(context.contract, {
@@ -113,7 +114,6 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
 
   logger.info('Review the configuration difference from contract and proposal: green - added, red - deleted.')
   diff.printDiff(configInContract, configInProposal)
-  await prompt('Continue?')
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
