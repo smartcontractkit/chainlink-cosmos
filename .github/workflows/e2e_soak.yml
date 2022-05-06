@@ -34,6 +34,7 @@ jobs:
       AWS_REGION: ${{ secrets.QA_AWS_REGION }}
       AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
       QA_KUBECONFIG: ${{ secrets.QA_KUBECONFIG }}
+      QA_PRIVATE_GHA_PULL: "false"
   e2e_run_soak_tests:
     name: E2E Run Soak Tests
     runs-on: ubuntu-latest

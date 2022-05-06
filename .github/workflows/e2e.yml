@@ -48,8 +48,25 @@ jobs:
         with:
           repository: ${{ inputs.repo_name }}
           ref: ${{ inputs.ref }}
-      - name: Build Test Artifacts
-        uses: ./.github/actions/build_test_artifacts
+      # We sadly can't reuse the build action since local reusable actions don't work with workflow_call
+      - name: Cache cargo registry
+        uses: actions/cache@v2.1.7
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-v2-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v2.1.7
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-v2-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build Artifacts
+        shell: bash
+        run: make contracts_compile
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifacts
+          path: artifacts
   e2e_run_smoke_tests:
     name: E2E Run Smoke Tests
     runs-on: ubuntu-latest
