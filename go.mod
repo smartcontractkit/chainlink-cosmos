@@ -21,7 +21,7 @@ require (
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	github.com/stretchr/testify v1.7.1
 	github.com/tendermint/tendermint v0.34.15
-	github.com/terra-money/core v0.5.14
+	github.com/terra-money/core v0.5.18
 	go.uber.org/multierr v1.8.0
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/crypto v0.0.0-20220210151621-f4118a5b28e2
@@ -42,7 +42,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/BurntSushi/toml v0.4.1 // indirect
 	github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d // indirect
-	github.com/CosmWasm/wasmvm v0.16.3 // indirect
+	github.com/CosmWasm/wasmvm v0.16.6 // indirect
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -343,10 +343,3 @@ replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/hdevalence/ed25519consensus => github.com/smartcontractkit/ed25519consensus v0.0.1
 )
-
-// Uncomment to fix the build on M1 Macs (arm64)
-// replace (
-// 	github.com/CosmWasm/wasmvm => github.com/mandrean/wasmvm v0.16.3-arm64
-// 	github.com/smartcontractkit/terra.go => github.com/anirudhwarrier/terra.go v1.0.3-0.20220304033105-0463a8da57f0
-// 	github.com/terra-money/core => github.com/mandrean/terra-core v0.5.14-arm64
-// )
