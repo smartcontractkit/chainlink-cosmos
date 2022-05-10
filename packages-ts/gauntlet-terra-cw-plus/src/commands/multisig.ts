@@ -11,8 +11,8 @@ export const DEFAULT_VOTING_PERIOD_IN_SECS = 24 * 60 * 60
 type ProposalAction = (
   signer: AccAddress,
   proposalId: number,
-  message: MsgExecuteContract | MsgSend,
-) => Promise<MsgExecuteContract>
+  message: (MsgExecuteContract | MsgSend)[],
+) => Promise<MsgExecuteContract[]>
 
 export const wrapCommand = (command) => {
   return class Multisig extends TerraCommand {
@@ -37,8 +37,8 @@ export const wrapCommand = (command) => {
     }
 
     makeRawTransaction = async (signer: AccAddress, state?: State) => {
-      const message = await this.command.makeRawTransaction(this.multisig)
-      await this.command.simulate(this.multisig, [message])
+      const messages = await this.command.makeRawTransaction(this.multisig)
+      await this.command.simulate(this.multisig, messages)
       logger.info(`Command simulation successful.`)
 
       const operations = {
@@ -52,13 +52,16 @@ export const wrapCommand = (command) => {
 
       if (state.proposal.nextAction !== Action.CREATE) {
         this.require(
-          await this.isSameProposal(state.proposal.data, [this.toMsg(message)]),
+          await this.isSameProposal(
+            state.proposal.data,
+            messages.map((element) => this.toMsg(element)),
+          ),
           'The transaction generated is different from the proposal provided',
         )
       }
 
       const proposal_id = Number(this.flags.proposal || this.flags.multisigProposal) // alias requested by eng ops
-      return operations[state.proposal.nextAction](signer, Number(proposal_id), message)
+      return operations[state.proposal.nextAction](signer, Number(proposal_id), messages)
     }
 
     isSameProposal = (proposalMsgs: (Cw3WasmMsg | Cw3BankMsg)[], generatedMsgs: (Cw3WasmMsg | Cw3BankMsg)[]) => {
@@ -119,12 +122,12 @@ export const wrapCommand = (command) => {
       const proposeInput = {
         propose: {
           description: command.id,
-          msgs: [this.toMsg(message)],
+          msgs: message.map((element) => this.toMsg(element)),
           title: command.id,
           latest: expiration,
         },
       }
-      return new MsgExecuteContract(signer, this.multisig, proposeInput)
+      return [new MsgExecuteContract(signer, this.multisig, proposeInput)]
     }
 
     makeAcceptTransaction: ProposalAction = async (signer, proposalId) => {
@@ -135,7 +138,7 @@ export const wrapCommand = (command) => {
           proposal_id: proposalId,
         },
       }
-      return new MsgExecuteContract(signer, this.multisig, approvalInput)
+      return [new MsgExecuteContract(signer, this.multisig, approvalInput)]
     }
 
     makeExecuteTransaction: ProposalAction = async (signer, proposalId) => {
@@ -145,7 +148,7 @@ export const wrapCommand = (command) => {
           proposal_id: proposalId,
         },
       }
-      return new MsgExecuteContract(signer, this.multisig, executeInput)
+      return [new MsgExecuteContract(signer, this.multisig, executeInput)]
     }
 
     fetchState = async (proposalId?: number): Promise<State> => {
@@ -195,7 +198,7 @@ export const wrapCommand = (command) => {
         await this.command.beforeExecute(this.multisig)
 
         await prompt(`Continue ${actionMessage[state.proposal.nextAction]} multisig proposal?`)
-        const tx = await this.signAndSend([rawTx])
+        const tx = await this.signAndSend(rawTx)
         let response: Result<TransactionResponse> = {
           responses: [
             {
@@ -215,7 +218,7 @@ export const wrapCommand = (command) => {
         }
 
         if (state.proposal.nextAction === Action.EXECUTE && this.command.afterExecute) {
-          const data = this.command.afterExecute(response)
+          const data = await this.command.afterExecute(response)
           response = { ...response, data: { ...data } }
         }
 
@@ -226,7 +229,7 @@ export const wrapCommand = (command) => {
       }
 
       // TODO: Test raw message
-      const msgData = Buffer.from(JSON.stringify(rawTx.execute_msg)).toString('base64')
+      const msgData = Buffer.from(JSON.stringify(rawTx[0].execute_msg)).toString('base64')
       logger.line()
       logger.success(`Message generated succesfully for ${actionMessage[state.proposal.nextAction]} multisig proposal`)
       logger.log()

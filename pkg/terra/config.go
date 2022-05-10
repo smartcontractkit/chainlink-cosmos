@@ -15,9 +15,11 @@ import (
 // Global terra defaults.
 var defaultConfigSet = configSet{
 	BlockRate: 6 * time.Second,
-	// ~6s per block, so ~1m until we give up on the tx getting confirmed
-	// Anecdotally it appears anything more than 4 blocks would be an extremely long wait.
-	BlocksUntilTxTimeout:  10,
+	// ~6s per block, so ~3m until we give up on the tx getting confirmed
+	// Anecdotally it appears anything more than 4 blocks would be an extremely long wait,
+	// In practice during the UST depegging and subsequent extreme congestion, we saw
+	// ~16 block FIFO lineups.
+	BlocksUntilTxTimeout:  30,
 	ConfirmPollPeriod:     time.Second,
 	FallbackGasPriceULuna: sdk.MustNewDecFromStr("0.015"),
 	// This is high since we simulate before signing the transaction.

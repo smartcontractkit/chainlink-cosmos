@@ -2,7 +2,6 @@ import { AbstractInstruction, BeforeExecute } from '../../abstract/executionWrap
 import { RDD, logger } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'
-import { prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress } from '@terra-money/terra.js'
 
 type CommandInput = {}
@@ -21,7 +20,6 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => a
     - Current Owner: ${logger.styleAddress(currentOwner)}
     - Next Owner (Current signer): ${logger.styleAddress(signer)}
   `)
-  await prompt('Continue?')
 }
 
 export const makeAcceptOwnershipInstruction = (contractId: CONTRACT_LIST) => {

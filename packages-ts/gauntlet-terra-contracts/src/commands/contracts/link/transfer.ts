@@ -1,4 +1,4 @@
-import { BN, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { logger } from '@chainlink/gauntlet-terra'
 import { CATEGORIES, TOKEN_DECIMALS } from '../../../lib/constants'
 import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../abstract/executionWrapper'
@@ -43,7 +43,6 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (_, input) => 
       input.contract.recipient,
     )}`,
   )
-  await prompt('Continue?')
 }
 
 const transferToken: AbstractInstruction<CommandInput, ContractInput> = {

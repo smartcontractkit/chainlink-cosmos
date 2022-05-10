@@ -3,7 +3,7 @@ import { InspectInstruction, instructionToInspectCommand } from '../../../abstra
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { CATEGORIES } from '../../../../lib/constants'
 import { LCDClient } from '@terra-money/terra.js'
-import { getLatestOCRNewTransmissionEvent, RoundData } from '../../../../lib/inspection'
+import { getLatestOCRNewTransmissionEvents, RoundData } from '../../../../lib/inspection'
 import { inspection, logger } from '@chainlink/gauntlet-core/dist/utils'
 import { dateFromUnix } from '../../../../lib/utils'
 
@@ -70,7 +70,7 @@ const makeOnchainData = (provider: LCDClient) => async (
   const transmitters = instructionsData[1]
   const description = instructionsData[2]
 
-  const onchainEvent = await getLatestOCRNewTransmissionEvent(provider, aggregator)
+  const onchainEvent = await getLatestOCRNewTransmissionEvents(provider, aggregator)[0]
 
   return {
     transmitters: transmitters.addresses,

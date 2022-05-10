@@ -3,7 +3,6 @@ import { RDD, logger } from '@chainlink/gauntlet-terra'
 import { AbstractInstruction, BeforeExecute } from '../../abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'
-import { prompt } from '@chainlink/gauntlet-core/dist/utils'
 
 type CommandInput = {
   to: string
@@ -41,7 +40,6 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
     - Current Owner: ${currentOwner}
     - Next Owner: ${logger.styleAddress(input.contract.to)}
   `)
-  await prompt('Continue?')
 }
 
 export const makeTransferOwnershipInstruction = (contractId: CONTRACT_LIST) => {

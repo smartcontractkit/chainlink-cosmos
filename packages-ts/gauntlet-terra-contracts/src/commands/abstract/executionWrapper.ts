@@ -52,7 +52,6 @@ const defaultBeforeExecute = <UserInput, ContractInput>(
 ) => async () => {
   logger.loading(`Executing ${context.id} from contract ${context.contract}`)
   logger.log('Input Params:', input.contract)
-  await prompt(`Continue?`)
 }
 
 export const extendCommandInstruction = <UserInput, ContractInput>(
@@ -192,6 +191,7 @@ export const instructionToCommand = <UserInput, ContractInput>(
       await this.buildCommand(this.flags, this.args)
       await this.command.simulateExecute()
       await this.beforeExecute(this.wallet.key.accAddress)
+      await prompt(`Continue?`)
 
       let response = await this.command.execute()
       const data = await this.afterExecute(response)

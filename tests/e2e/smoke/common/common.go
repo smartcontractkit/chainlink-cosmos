@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/smartcontractkit/integrations-framework/blockchain"
+	"github.com/smartcontractkit/chainlink-testing-framework/blockchain"
 
 	"github.com/neilotoole/errgroup"
 
@@ -17,9 +17,9 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
+	"github.com/smartcontractkit/chainlink-testing-framework/client"
 	"github.com/smartcontractkit/helmenv/environment"
 	"github.com/smartcontractkit/helmenv/tools"
-	"github.com/smartcontractkit/integrations-framework/client"
 	"github.com/smartcontractkit/terra.go/msg"
 )
 

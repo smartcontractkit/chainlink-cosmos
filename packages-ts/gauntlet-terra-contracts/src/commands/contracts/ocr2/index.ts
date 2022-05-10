@@ -4,8 +4,7 @@ import Deploy from './deploy'
 import SetBilling from './setBilling'
 import ProposeConfig from './proposeConfig'
 import ProposeOffchainConfig from './proposeOffchainConfig'
-import Inspect from './inspection/inspect'
-import Responses from './inspection/responses'
+import Inspection from './inspection'
 import WithdrawPayment from './withdrawPayment'
 import ProposalCommands from './proposal'
 import CloseCommands from './close'
@@ -21,11 +20,10 @@ export default [
   ProposeOffchainConfig,
   OCR2InitializeFlow,
   WithdrawPayment,
-  Inspect,
-  Responses,
   WithdrawFunds,
   ...ProposalCommands,
   ...CloseCommands,
+  ...Inspection,
   makeTransferOwnershipCommand(CONTRACT_LIST.OCR_2),
   makeAcceptOwnershipCommand(CONTRACT_LIST.OCR_2),
 ]
