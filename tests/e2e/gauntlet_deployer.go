@@ -12,7 +12,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
-	"github.com/smartcontractkit/integrations-framework/gauntlet"
+	"github.com/smartcontractkit/chainlink-testing-framework/gauntlet"
 )
 
 const TERRA_COMMAND_ERROR = "Terra Command execution error"
