@@ -50,7 +50,7 @@ func (c *ChainCfg) Scan(value interface{}) error {
 	return json.Unmarshal(b, c)
 }
 
-func (c ChainCfg) Value() (driver.Value, error) {
+func (c *ChainCfg) Value() (driver.Value, error) {
 	return json.Marshal(c)
 }
 
