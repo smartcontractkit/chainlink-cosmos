@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	tc "github.com/smartcontractkit/chainlink-terra/tests/e2e/smoke/common"
-	"github.com/smartcontractkit/integrations-framework/actions"
+	"github.com/smartcontractkit/chainlink-testing-framework/actions"
 )
 
 var _ = Describe("Terra OCRv2 soak test @ocr2-soak", func() {

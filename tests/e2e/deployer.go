@@ -3,7 +3,7 @@ package e2e
 import (
 	"path/filepath"
 
-	"github.com/smartcontractkit/integrations-framework/blockchain"
+	"github.com/smartcontractkit/chainlink-testing-framework/blockchain"
 
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/actypes"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/cw20types"

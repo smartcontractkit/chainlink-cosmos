@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/ocr2types"
-	"github.com/smartcontractkit/integrations-framework/contracts"
+	"github.com/smartcontractkit/chainlink-testing-framework/contracts"
 	"github.com/smartcontractkit/libocr/offchainreporting2/confighelper"
 	terraClient "github.com/smartcontractkit/terra.go/client"
 	"github.com/smartcontractkit/terra.go/msg"

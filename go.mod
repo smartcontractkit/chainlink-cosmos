@@ -15,8 +15,8 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/smartcontractkit/chainlink v1.3.0
 	github.com/smartcontractkit/chainlink-relay v0.0.0-20220422131434-0cef40354ecc
+	github.com/smartcontractkit/chainlink-testing-framework v1.1.19-0.20220509150418-cfc7513b9506
 	github.com/smartcontractkit/helmenv v1.0.68
-	github.com/smartcontractkit/integrations-framework v1.1.10-0.20220427200158-713263b9219c
 	github.com/smartcontractkit/libocr v0.0.0-20220414173908-cdfa6bef133a
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	github.com/stretchr/testify v1.7.1
