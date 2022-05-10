@@ -15,8 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@f25a3a9f25bd5f4c5d77189cab02ff357b5aedeb # v2.4.1
-      - name: Build Test Artifacts
-        uses: ./.github/actions/build_test_artifacts
+      - name: Build Contract Artifacts
+        uses: ./.github/actions/build_contract_artifacts
   e2e_custom_build_custom_chainlink_image:
     name: E2E Custom Build Custom CL Image
     # target branch can't be set as var, it's from where we getting pipeline code
@@ -43,13 +43,13 @@ jobs:
     steps:
       - uses: actions/checkout@f25a3a9f25bd5f4c5d77189cab02ff357b5aedeb # v2.4.1
       - name: Run Tests
-        uses: smartcontractkit/ctf-ci-e2e-action@v1.0.0
+        uses: smartcontractkit/ctf-ci-e2e-action@v1.0.1
         with:
           test_command_to_run: make test_smoke
           cl_repo: 795953128386.dkr.ecr.us-west-2.amazonaws.com/chainlink
           cl_image_tag: custom.${{ github.sha }}
           build_guantlet_command: make build_js && make artifacts_cp_gauntlet
-          download_artifacts_path: artifacts
+          download_contract_artifacts_path: artifacts
           publish_report_paths: "./tests-smoke-report.xml"
           publish_check_name: Smoke Test Results
           QA_AWS_ACCESS_KEY_ID: ${{ secrets.QA_AWS_ACCESS_KEY_ID }}

@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@f25a3a9f25bd5f4c5d77189cab02ff357b5aedeb # v2.4.1
-      - name: Build Artifacts
-        run: make contracts_compile
+      - name: Build Contract Artifacts
+        uses: ./.github/actions/build_contract_artifacts
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
