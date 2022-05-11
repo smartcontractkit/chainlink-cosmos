@@ -40,9 +40,12 @@ export type Cw3BankMsg = {
 
 export type State = {
   multisig: {
+    address: AccAddress
+    groupAddress: AccAddress
     threshold: number
     owners: AccAddress[]
     maxVotingPeriod: number
+    admin: AccAddress
   }
   proposal: {
     id?: number

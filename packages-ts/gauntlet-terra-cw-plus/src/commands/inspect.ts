@@ -18,8 +18,7 @@ export default class Inspect extends TerraCommand {
   }
 
   fetchState = async (multisig: string, proposalId?: number): Promise<State> => {
-    const query = this.provider.wasm.contractQuery.bind(this.provider.wasm)
-    return fetchProposalState(query)(multisig, proposalId)
+    return fetchProposalState(this.provider)(multisig, proposalId)
   }
 
   execute = async () => {
@@ -64,10 +63,14 @@ export const fetchProposalState = (provider: LCDClient) => async (
 
   const [contractInfo, groupState, thresholdState, proposalState, votes] = await Promise.all(queries.map((q) => q()))
 
+  const admin = (await provider.wasm.contractQuery(contractInfo.init_msg.group_addr, { admin: {} })) as any
   const multisigState = {
+    address: multisig,
     threshold: thresholdState.absolute_count.weight,
     owners: groupState.voters.map((m) => m.addr),
     maxVotingPeriod: contractInfo.init_msg.max_voting_period.time,
+    admin: admin?.admin as AccAddress,
+    groupAddress: contractInfo.init_msg.group_addr,
   }
   if (!proposalId) {
     return {
@@ -102,10 +105,12 @@ export const makeInspectionMessage = (state: State): string => {
   const newline = `\n`
   const indent = '  '.repeat(2)
   const ownersList = state.multisig.owners.map((o) => `\n${indent.repeat(2)} - ${logger.styleAddress(o)}`).join('')
-  const multisigMessage = `Multisig State:
+  const multisigMessage = `Multisig State (${state.multisig.address.toString()}):
     - Threshold: ${state.multisig.threshold}
     - Total Owners: ${state.multisig.owners.length}
-    - Owners List: ${ownersList}`
+    - Owners List: ${ownersList}
+    - Admin: ${state.multisig.admin.toString()}
+    - Group Contract: ${state.multisig.groupAddress.toString()}`
 
   let proposalMessage = `Proposal State:
     - Next Action: ${state.proposal.nextAction.toUpperCase()}`
