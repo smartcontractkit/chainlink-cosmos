@@ -46,9 +46,6 @@ export const fetchProposalState = (provider: LCDClient) => async (
     _queryMultisig({
       threshold: {},
     }),
-    _queryMultisig({
-      threshold: {},
-    }),
   ]
   const proposalQueries = [
     _queryMultisig({
