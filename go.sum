@@ -418,7 +418,7 @@ github.com/fsnotify/fsnotify v1.5.1 h1:mZcQUHVQUQWoPXXtuf9yuEXKudkV2sx1E06UadKWp
 github.com/fsnotify/fsnotify v1.5.1/go.mod h1:T3375wBYaZdLLcVNkcVbzGHY7f1l/uK5T5Ai1i3InKU=
 github.com/fxamacker/cbor/v2 v2.4.0 h1:ri0ArlOR+5XunOP8CRUowT0pSJOwhW098ZCUyskZD88=
 github.com/gagliardetto/binary v0.6.1 h1:vGrbUym10xaaswadfnuSDr0xlP3NZS5XWbLqENJidrI=
-github.com/gagliardetto/solana-go v1.4.1-0.20220428092759-5250b4abbb27 h1:q2IztKyRQUxJ6abXRsawaBtvDFvM+szj4jDqV4od1gs=
+github.com/gagliardetto/solana-go v1.4.1-0.20220413001530-3e39c80b7211 h1:o+QozGVXw4UUBaoX0+mGOPzIzxkEyJFfW3fM9OGyM+s=
 github.com/gagliardetto/treeout v0.1.4 h1:ozeYerrLCmCubo1TcIjFiOWTTGteOOHND1twdFpgwaw=
 github.com/gavv/httpexpect v2.0.0+incompatible/go.mod h1:x+9tiU1YnrOvnB725RkpoLv1M62hOWzwo5OXotisrKc=
 github.com/gballet/go-libpcsclite v0.0.0-20190607065134-2772fd86a8ff/go.mod h1:x7DCsMOv1taUwEWCzT4cmDeAkigA5/QCwUodaVOe8Ww=
@@ -1516,6 +1516,8 @@ github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6Mwd
 github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrfsX/uA88=
 github.com/sirupsen/logrus v1.7.0/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
+github.com/smartcontractkit/chainlink v1.4.1-0.20220512162144-b9662b3b52c3 h1:p7ulHbsSqbMLaGAnAKmbUdQ10xUztKOYUK/Vt/0Q16s=
+github.com/smartcontractkit/chainlink v1.4.1-0.20220512162144-b9662b3b52c3/go.mod h1:VfGJfeTYxfrnMtjUKE9C4Cdt4g/g7VOEGjGjI7E0FQI=
 github.com/smartcontractkit/chainlink-relay v0.0.0-20220422131434-0cef40354ecc h1:l4ZG9sm4Udlruzxyl/Cc4lm4oPOacQ5hzaIX8jzi0fY=
 github.com/smartcontractkit/chainlink-relay v0.0.0-20220422131434-0cef40354ecc/go.mod h1:/6gP9XHTQEBeBnXtC9oF1VelYhPMtGDu+6LxLtFP01g=
 github.com/smartcontractkit/chainlink-solana v0.2.20-0.20220420200429-3da7f865d367 h1:HfFnFidkNFhtEGWwPmdmv6j6apGo3Z5yuuUyU6VVQAE=

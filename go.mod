@@ -244,5 +244,3 @@ replace (
 // 	github.com/smartcontractkit/terra.go => github.com/anirudhwarrier/terra.go v1.0.3-0.20220304033105-0463a8da57f0
 // 	github.com/terra-money/core => github.com/mandrean/terra-core v0.5.14-arm64
 // )
-
-replace github.com/smartcontractkit/chainlink => /Users/connorstein/go/src/github.com/smartcontractkit/chainlink
