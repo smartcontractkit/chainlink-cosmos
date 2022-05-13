@@ -7,17 +7,13 @@ import Terra from './commands'
 import { wrapCommand as batchCommandWrapper } from './commands/abstract/batchWrapper'
 import { makeAbstractCommand } from './commands/abstract'
 import { defaultFlags } from './lib/args'
-import AcceptProposal from './commands/contracts/ocr2/proposal/acceptProposal'
-
-const multisigCommands = [AcceptProposal].map(multisigWrapCommand)
-const multisigBatchCommands = multisigCommands.map(batchCommandWrapper).map(multisigWrapCommand)
 
 const commands = {
   custom: [
     ...Terra,
+    ...Terra.map(multisigWrapCommand),
     ...Terra.map(batchCommandWrapper),
-    ...multisigCommands,
-    ...multisigBatchCommands,
+    ...Terra.map(batchCommandWrapper).map(multisigWrapCommand),
     ...CWPlusCommands,
   ],
   loadDefaultFlags: () => defaultFlags,

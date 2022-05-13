@@ -30,7 +30,7 @@ export const wrapCommand = (command) => {
         args.map(async (contract, idx) => {
           let c = new command(flags, [contract]) as TerraCommand
           await c.invokeMiddlewares(c, c.middlewares)
-          c = c.buildCommand ? await c.buildCommand(flags, args) : c
+          c = c.buildCommand ? await c.buildCommand(flags, [contract]) : c
           return c
         }),
       )
@@ -44,7 +44,7 @@ export const wrapCommand = (command) => {
           const individualArgs = args.length == 1 ? args : [args[idx]]
           let c = new command(newFlags, individualArgs) as TerraCommand
           await c.invokeMiddlewares(c, c.middlewares)
-          c = c.buildCommand ? await c.buildCommand(newFlags, args) : c
+          c = c.buildCommand ? await c.buildCommand(newFlags, individualArgs) : c
           return c
         }),
       )
