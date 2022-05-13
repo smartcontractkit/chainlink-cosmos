@@ -7,9 +7,9 @@ require (
 	github.com/pelletier/go-toml v1.9.4
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.1
-	github.com/smartcontractkit/chainlink v1.4.1-0.20220512162144-b9662b3b52c3
+	github.com/smartcontractkit/chainlink v1.4.1-rc1.0.20220513142922-3fd7d3037d55
 	github.com/smartcontractkit/chainlink-relay v0.0.0-20220422131434-0cef40354ecc
-	github.com/smartcontractkit/libocr v0.0.0-20220414173908-cdfa6bef133a
+	github.com/smartcontractkit/libocr v0.0.0-20220512162406-9e4afd8896f3
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	github.com/stretchr/testify v1.7.1
 	github.com/tendermint/tendermint v0.34.15
