@@ -99,11 +99,11 @@ func (r *Relayer) Healthy() error {
 }
 
 func (r *Relayer) NewConfigWatcher(args relaytypes.ConfigWatcherArgs) (relaytypes.ConfigWatcher, error) {
-	return newConfigWatcher(r.lggr, r.ctx, r.chainSet, args)
+	return newConfigWatcher(r.ctx, r.lggr, r.chainSet, args)
 }
 
 func (r *Relayer) NewMedianProvider(args relaytypes.PluginArgs) (relaytypes.MedianProvider, error) {
-	configWatcher, err := newConfigWatcher(r.lggr, r.ctx, r.chainSet, args.ConfigWatcherArgs)
+	configWatcher, err := newConfigWatcher(r.ctx, r.lggr, r.chainSet, args.ConfigWatcherArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ type configWatcher struct {
 	contractAddr  cosmosSDK.AccAddress
 }
 
-func newConfigWatcher(lggr Logger, ctx context.Context, chainSet ChainSet, args relaytypes.ConfigWatcherArgs) (*configWatcher, error) {
+func newConfigWatcher(ctx context.Context, lggr Logger, chainSet ChainSet, args relaytypes.ConfigWatcherArgs) (*configWatcher, error) {
 	var relayConfig RelayConfig
 	err := json.Unmarshal(args.RelayConfig, &relayConfig)
 	if err != nil {
