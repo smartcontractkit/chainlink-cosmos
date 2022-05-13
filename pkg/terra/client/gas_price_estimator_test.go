@@ -5,18 +5,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/mock"
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
+	"go.uber.org/zap"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGasPriceEstimators(t *testing.T) {
-	lggr := new(mocks.Logger)
-	lggr.Test(t)
+	lggr, logs := logger.TestObserved(t, zap.WarnLevel)
+	assertLogsLen := func(t *testing.T, l int) func() {
+		return func() { assert.Len(t, logs.TakeAll(), l) }
+	}
+
 	t.Run("fixed", func(t *testing.T) {
 		gpeFixed := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
 			"uluna": sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("10")),
@@ -72,7 +75,7 @@ func TestGasPriceEstimators(t *testing.T) {
 		// Use cache
 		const badURL = "https://does.not.exist:443/v1/txs/gas_prices"
 		gpeFCD.cfg = newConfig(t, badURL)
-		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything).Once()
+		t.Cleanup(assertLogsLen(t, 1))
 		cachedPrices, err := cachingFCD.GasPrices()
 		require.NoError(t, err)
 		assert.Equal(t, prices["uluna"], cachedPrices["uluna"])
@@ -99,7 +102,7 @@ func TestGasPriceEstimators(t *testing.T) {
 			"uluna": sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("10")),
 		})
 		gpe := NewMustGasPriceEstimator([]GasPricesEstimator{cachingFCD, gpeFixed}, lggr)
-		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything).Twice()
+		t.Cleanup(assertLogsLen(t, 1))
 		fixedPrices := gpe.GasPrices()
 		uluna, ok := fixedPrices["uluna"]
 		assert.True(t, ok)

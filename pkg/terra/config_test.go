@@ -4,22 +4,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/smartcontractkit/chainlink/core/store/models"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
+	"github.com/smartcontractkit/chainlink/core/store/models"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/mocks"
 )
 
 func TestConfig(t *testing.T) {
 	def := defaultConfigSet
 
-	lggr := new(mocks.Logger)
-	lggr.On("Warnf", mock.Anything, "FallbackGasPriceULuna", "not-a-number", mock.Anything, mock.Anything).Once()
+	lggr, logs := logger.TestObserved(t, zap.WarnLevel)
 	cfg := NewConfig(db.ChainCfg{}, lggr)
 	assert.Equal(t, def.BlockRate, cfg.BlockRate())
 	assert.Equal(t, def.BlocksUntilTxTimeout, cfg.BlocksUntilTxTimeout())
@@ -51,4 +49,7 @@ func TestConfig(t *testing.T) {
 	}
 	cfg.Update(updated)
 	assert.Equal(t, def.FallbackGasPriceULuna, cfg.FallbackGasPriceULuna())
+	if all := logs.All(); assert.Len(t, all, 1) {
+		assert.Contains(t, all[0].Message, `Invalid value provided for FallbackGasPriceULuna, "not-a-number"`)
+	}
 }

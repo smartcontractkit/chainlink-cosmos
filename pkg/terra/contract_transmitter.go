@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	terraSDK "github.com/terra-money/core/x/wasm/types"
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/chains/evmutil"
@@ -16,7 +17,7 @@ var _ types.ContractTransmitter = (*ContractTransmitter)(nil)
 type ContractTransmitter struct {
 	*OCR2Reader
 	msgEnqueuer MsgEnqueuer
-	lggr        Logger
+	lggr        logger.Logger
 	jobID       string
 	contract    cosmosSDK.AccAddress
 	sender      cosmosSDK.AccAddress
@@ -29,7 +30,7 @@ func NewContractTransmitter(
 	contract cosmosSDK.AccAddress,
 	sender cosmosSDK.AccAddress,
 	msgEnqueuer MsgEnqueuer,
-	lggr Logger,
+	lggr logger.Logger,
 	cfg Config,
 ) *ContractTransmitter {
 	return &ContractTransmitter{

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	"github.com/smartcontractkit/chainlink/core/logger"
 
 	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring"
 	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
@@ -15,13 +15,15 @@ import (
 func main() {
 	ctx := context.Background()
 
-	coreLog, closeLggr := logger.NewLogger()
+	l, err := logger.New()
+	if err != nil {
+		log.Fatalln(err)
+	}
 	defer func() {
-		if err := closeLggr(); err != nil {
-			log.Println(fmt.Sprintf("Error while closing Logger: %v", err))
+		if serr := l.Sync(); serr != nil {
+			log.Println(fmt.Sprintf("Error while closing Logger: %v", serr))
 		}
 	}()
-	l := logWrapper{coreLog}
 
 	terraConfig, err := monitoring.ParseTerraConfig()
 	if err != nil {
@@ -29,13 +31,13 @@ func main() {
 		return
 	}
 
-	chainReader := monitoring.NewChainReader(terraConfig, coreLog)
+	chainReader := monitoring.NewChainReader(terraConfig, l)
 	fcdClient := fcdclient.New(terraConfig.FCDURL, terraConfig.FCDReqsPerSec)
 
 	envelopeSourceFactory := monitoring.NewEnvelopeSourceFactory(
 		chainReader,
 		fcdClient,
-		l.With("component", "source-envelope"),
+		logger.With(l, "component", "source-envelope"),
 	)
 	txResultsFactory := monitoring.NewTxResultsSourceFactory(
 		fcdClient,
@@ -57,26 +59,16 @@ func main() {
 
 	proxySourceFactory := monitoring.NewProxySourceFactory(
 		chainReader,
-		l.With("component", "source-proxy"),
+		logger.With(l, "component", "source-proxy"),
 	)
 	monitor.SourceFactories = append(monitor.SourceFactories, proxySourceFactory)
 
 	prometheusExporterFactory := monitoring.NewPrometheusExporterFactory(
-		l.With("component", "terra-prometheus-exporter"),
-		monitoring.NewMetrics(l.With("component", "terra-metrics")),
+		logger.With(l, "component", "terra-prometheus-exporter"),
+		monitoring.NewMetrics(logger.With(l, "component", "terra-metrics")),
 	)
 	monitor.ExporterFactories = append(monitor.ExporterFactories, prometheusExporterFactory)
 
 	monitor.Run()
 	l.Info("monitor stopped")
-}
-
-// adapt core/logger.Logger to monitoring logger.
-
-type logWrapper struct {
-	logger.Logger
-}
-
-func (l logWrapper) With(values ...interface{}) relayMonitoring.Logger {
-	return logWrapper{l.Logger.With(values...)}
 }
