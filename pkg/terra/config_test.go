@@ -6,8 +6,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
-	"github.com/smartcontractkit/chainlink/core/store/models"
+	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"gopkg.in/guregu/null.v4"
 
@@ -27,7 +28,8 @@ func TestConfig(t *testing.T) {
 	assert.Equal(t, def.GasLimitMultiplier, cfg.GasLimitMultiplier())
 	assert.Equal(t, def.MaxMsgsPerBatch, cfg.MaxMsgsPerBatch())
 
-	minute := models.MustMakeDuration(time.Minute)
+	minute, err := utils.NewDuration(time.Minute)
+	require.NoError(t, err)
 	updated := db.ChainCfg{
 		BlockRate:             &minute,
 		BlocksUntilTxTimeout:  null.IntFrom(1000),
