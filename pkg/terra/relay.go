@@ -7,6 +7,7 @@ import (
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 	uuid "github.com/satori/go.uuid"
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
 	relaytypes "github.com/smartcontractkit/chainlink/core/services/relay/types"
 	"github.com/smartcontractkit/chainlink/core/utils"
@@ -21,18 +22,6 @@ type ErrMsgUnsupported struct {
 
 func (e *ErrMsgUnsupported) Error() string {
 	return fmt.Sprintf("unsupported message type %T: %s", e.Msg, e.Msg)
-}
-
-//go:generate mockery --name Logger --output ./mocks/
-type Logger interface {
-	Tracef(format string, values ...interface{})
-	Debugf(format string, values ...interface{})
-	Infof(format string, values ...interface{})
-	Warnf(format string, values ...interface{})
-	Errorf(format string, values ...interface{})
-	Criticalf(format string, values ...interface{})
-	Panicf(format string, values ...interface{})
-	Fatalf(format string, values ...interface{})
 }
 
 type MsgEnqueuer interface {
@@ -69,14 +58,14 @@ type OCR2Spec struct {
 }
 
 type Relayer struct {
-	lggr     Logger
+	lggr     logger.Logger
 	chainSet ChainSet
 	ctx      context.Context
 	cancel   func()
 }
 
 // Note: constructed in core
-func NewRelayer(lggr Logger, chainSet ChainSet) *Relayer {
+func NewRelayer(lggr logger.Logger, chainSet ChainSet) *Relayer {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Relayer{
 		lggr:     lggr,
@@ -167,7 +156,7 @@ type ocr2Provider struct {
 	utils.StartStopOnce
 	digester    types.OffchainConfigDigester
 	reportCodec median.ReportCodec
-	lggr        Logger
+	lggr        logger.Logger
 
 	tracker     types.ContractConfigTracker
 	transmitter types.ContractTransmitter

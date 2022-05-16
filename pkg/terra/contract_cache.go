@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/chainlink/core/utils"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
@@ -19,7 +20,7 @@ var _ median.MedianContract = (*ContractCache)(nil)
 type ContractCache struct {
 	cfg    Config
 	reader *OCR2Reader
-	lggr   Logger
+	lggr   logger.Logger
 
 	stop, done chan struct{}
 
@@ -37,7 +38,7 @@ type ContractCache struct {
 	latestTimestamp time.Time
 }
 
-func NewContractCache(cfg Config, reader *OCR2Reader, lggr Logger) *ContractCache {
+func NewContractCache(cfg Config, reader *OCR2Reader, lggr logger.Logger) *ContractCache {
 	return &ContractCache{
 		cfg:    cfg,
 		reader: reader,

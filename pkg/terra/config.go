@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
+
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -78,11 +80,11 @@ type config struct {
 	defaults configSet
 	chain    db.ChainCfg
 	chainMu  sync.RWMutex
-	lggr     Logger
+	lggr     logger.Logger
 }
 
 // NewConfig returns a Config with defaults overridden by dbcfg.
-func NewConfig(dbcfg db.ChainCfg, lggr Logger) *config {
+func NewConfig(dbcfg db.ChainCfg, lggr logger.Logger) *config {
 	return &config{
 		defaults: defaultConfigSet,
 		chain:    dbcfg,
