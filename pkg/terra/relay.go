@@ -89,16 +89,16 @@ func (r *Relayer) Healthy() error {
 }
 
 func (r *Relayer) NewConfigProvider(args relaytypes.RelayArgs) (relaytypes.ConfigProvider, error) {
-	configWatcher, err := newConfigWatcher(r.ctx, r.lggr, r.chainSet, args)
+	configProvider, err := newConfigProvider(r.ctx, r.lggr, r.chainSet, args)
 	if err != nil {
 		// Never return (*configProvider)(nil)
 		return nil, err
 	}
-	return configWatcher, err
+	return configProvider, err
 }
 
 func (r *Relayer) NewMedianProvider(rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MedianProvider, error) {
-	configWatcher, err := newConfigWatcher(r.ctx, r.lggr, r.chainSet, rargs)
+	configProvider, err := newConfigProvider(r.ctx, r.lggr, r.chainSet, rargs)
 	if err != nil {
 		return nil, err
 	}
@@ -108,17 +108,17 @@ func (r *Relayer) NewMedianProvider(rargs relaytypes.RelayArgs, pargs relaytypes
 	}
 
 	return &medianProvider{
-		configProvider: configWatcher,
+		configProvider: configProvider,
 		reportCodec:    ReportCodec{},
-		contract:       configWatcher.contractCache,
+		contract:       configProvider.contractCache,
 		transmitter: NewContractTransmitter(
-			configWatcher.reader,
+			configProvider.reader,
 			rargs.ExternalJobID.String(),
-			configWatcher.contractAddr,
+			configProvider.contractAddr,
 			senderAddr,
-			configWatcher.chain.TxManager(),
+			configProvider.chain.TxManager(),
 			r.lggr,
-			configWatcher.chain.Config(),
+			configProvider.chain.Config(),
 		),
 	}, nil
 }
@@ -140,7 +140,7 @@ type configProvider struct {
 	contractAddr  cosmosSDK.AccAddress
 }
 
-func newConfigWatcher(ctx context.Context, lggr logger.Logger, chainSet ChainSet, args relaytypes.RelayArgs) (*configProvider, error) {
+func newConfigProvider(ctx context.Context, lggr logger.Logger, chainSet ChainSet, args relaytypes.RelayArgs) (*configProvider, error) {
 	var relayConfig RelayConfig
 	err := json.Unmarshal(args.RelayConfig, &relayConfig)
 	if err != nil {
