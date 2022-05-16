@@ -60,10 +60,25 @@ func (sb *safeBuffer) ReadBytes(delim byte) (line []byte, err error) {
 	return sb.buf.ReadBytes(delim)
 }
 
+func (sb *safeBuffer) String() string {
+	sb.bufMu.RLock()
+	defer sb.bufMu.RUnlock()
+	return sb.buf.String()
+}
+
 // 0.001
 var minGasPrice = msg.NewDecCoinFromDec("uluna", msg.NewDecWithPrec(1, 3))
 
-func findAvailablePortAndStart(t *testing.T, testdir string) (*exec.Cmd, bytes.Buffer, string) {
+func cleanupNode(t *testing.T, stdErr *safeBuffer, cmd *exec.Cmd) {
+	assert.NoError(t, cmd.Process.Kill())
+	if err2 := cmd.Wait(); assert.Error(t, err2) {
+		if !assert.Contains(t, err2.Error(), "signal: killed", cmd.ProcessState.String()) {
+			t.Log("terrad stderr:", stdErr.String())
+		}
+	}
+}
+
+func findAvailablePortAndStart(t *testing.T, testdir string) (*exec.Cmd, *safeBuffer, string) {
 	maxPortAttempts := 5
 	for i := 0; i < maxPortAttempts; i++ {
 		port := mustRandomPort()
@@ -75,34 +90,29 @@ func findAvailablePortAndStart(t *testing.T, testdir string) (*exec.Cmd, bytes.B
 			"--grpc.address", "0.0.0.0:0",
 			"--grpc-web.address", "0.0.0.0:0",
 			"--p2p.laddr", "0.0.0.0:0")
-		var stdErr bytes.Buffer
-		cmd.Stderr = &safeBuffer{buf: stdErr}
+		buf := safeBuffer{buf: bytes.Buffer{}}
+		cmd.Stderr = &buf
 		require.NoError(t, cmd.Start())
 		// Read stderr to confirm boot
 		for {
-			line, err := stdErr.ReadBytes(byte('\n'))
+			line, err := buf.ReadBytes(byte('\n'))
 			if errors.Is(err, io.EOF) {
 				time.Sleep(1 * time.Second)
 				continue
 			}
 			if strings.Contains(string(line), "received proposal") {
 				// Means we successfully started
-				return cmd, stdErr, tendermintURL
+				return cmd, &buf, tendermintURL
 			}
 			if strings.Contains(string(line), "address already in use") {
 				t.Log("port already in use, retrying with different port")
-				assert.NoError(t, cmd.Process.Kill())
-				if err2 := cmd.Wait(); assert.Error(t, err2) {
-					if !assert.Contains(t, err2.Error(), "signal: killed", cmd.ProcessState.String()) {
-						t.Log("terrad stderr:", stdErr.String())
-					}
-				}
+				cleanupNode(t, &buf, cmd)
 				break
 			}
 		}
 	}
 	t.Fatalf("unable to find available port")
-	return nil, bytes.Buffer{}, ""
+	return nil, &safeBuffer{}, ""
 }
 
 // SetupLocalTerraNode sets up a local terra node via terrad, and returns pre-funded accounts, the test directory, and the url.
