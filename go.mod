@@ -7,8 +7,7 @@ require (
 	github.com/pelletier/go-toml v1.9.4
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.1
-	github.com/satori/go.uuid v1.2.0
-	github.com/smartcontractkit/chainlink v1.4.2-0.20220516210742-2ca036bd7085
+	github.com/smartcontractkit/chainlink v1.4.2-0.20220516185434-65f3be3d96da
 	github.com/smartcontractkit/chainlink-relay v0.0.0-20220516114104-7bb76d12796b
 	github.com/smartcontractkit/libocr v0.0.0-20220512162406-9e4afd8896f3
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
@@ -184,6 +183,7 @@ require (
 	github.com/rs/zerolog v1.26.1 // indirect
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0 // indirect
 	github.com/sasha-s/go-deadlock v0.2.1-0.20190427202633-1595213edefa // indirect
+	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/shirou/gopsutil/v3 v3.22.2 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
