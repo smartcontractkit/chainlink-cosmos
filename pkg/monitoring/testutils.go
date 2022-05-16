@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 	"github.com/smartcontractkit/terra.go/msg"
 )
@@ -97,26 +98,9 @@ func (f *fakeProxySource) Fetch(ctx context.Context) (interface{}, error) {
 	return generateProxyData(), nil
 }
 
-// Logger
-
-type nullLogger struct{}
-
-func newNullLogger() relayMonitoring.Logger {
-	return &nullLogger{}
+func newNullLogger() logger.Logger {
+	return logger.Nop()
 }
-
-func (n *nullLogger) With(args ...interface{}) relayMonitoring.Logger {
-	return n
-}
-
-func (n *nullLogger) Tracew(format string, values ...interface{})    {}
-func (n *nullLogger) Debugw(format string, values ...interface{})    {}
-func (n *nullLogger) Infow(format string, values ...interface{})     {}
-func (n *nullLogger) Warnw(format string, values ...interface{})     {}
-func (n *nullLogger) Errorw(format string, values ...interface{})    {}
-func (n *nullLogger) Criticalw(format string, values ...interface{}) {}
-func (n *nullLogger) Panicw(format string, values ...interface{})    {}
-func (n *nullLogger) Fatalw(format string, values ...interface{})    {}
 
 var (
 	_ = newNullLogger()

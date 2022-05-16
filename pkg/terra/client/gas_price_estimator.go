@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"go.uber.org/multierr"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -53,13 +54,13 @@ var _ GasPricesEstimator = (*FCDGasPriceEstimator)(nil)
 type FCDGasPriceEstimator struct {
 	cfg    Config
 	client http.Client
-	lggr   Logger
+	lggr   logger.Logger
 }
 
 // Config is a subset of pkg/terra.Config, which cannot be imported here.
 type Config interface{ FCDURL() url.URL }
 
-func NewFCDGasPriceEstimator(cfg Config, requestTimeout time.Duration, lggr Logger) *FCDGasPriceEstimator {
+func NewFCDGasPriceEstimator(cfg Config, requestTimeout time.Duration, lggr logger.Logger) *FCDGasPriceEstimator {
 	client := http.Client{Timeout: requestTimeout}
 	gpe := FCDGasPriceEstimator{cfg: cfg, client: client, lggr: lggr}
 	return &gpe
@@ -136,10 +137,10 @@ var _ GasPricesEstimator = (*CachingGasPriceEstimator)(nil)
 type CachingGasPriceEstimator struct {
 	lastPrices map[string]sdk.DecCoin
 	estimator  GasPricesEstimator
-	lggr       Logger
+	lggr       logger.Logger
 }
 
-func NewCachingGasPriceEstimator(estimator GasPricesEstimator, lggr Logger) *CachingGasPriceEstimator {
+func NewCachingGasPriceEstimator(estimator GasPricesEstimator, lggr logger.Logger) *CachingGasPriceEstimator {
 	return &CachingGasPriceEstimator{estimator: estimator, lggr: lggr}
 }
 
@@ -158,10 +159,10 @@ func (gpe *CachingGasPriceEstimator) GasPrices() (map[string]sdk.DecCoin, error)
 
 type ComposedGasPriceEstimator struct {
 	estimators []GasPricesEstimator
-	lggr       Logger
+	lggr       logger.Logger
 }
 
-func NewMustGasPriceEstimator(estimators []GasPricesEstimator, lggr Logger) *ComposedGasPriceEstimator {
+func NewMustGasPriceEstimator(estimators []GasPricesEstimator, lggr logger.Logger) *ComposedGasPriceEstimator {
 	return &ComposedGasPriceEstimator{estimators: estimators, lggr: lggr}
 }
 

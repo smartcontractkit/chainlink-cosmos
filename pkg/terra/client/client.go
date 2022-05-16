@@ -14,6 +14,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/pkg/errors"
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -101,14 +102,6 @@ const (
 	DefaultGasLimitMultiplier = 1.5
 )
 
-//go:generate mockery --name Logger --output ./mocks/
-// Logger is for logging in the client
-type Logger interface {
-	Infof(format string, values ...interface{})
-	Warnf(format string, values ...interface{})
-	Errorf(format string, values ...interface{})
-}
-
 // Client is a terra client
 type Client struct {
 	chainID                 string
@@ -118,7 +111,7 @@ type Client struct {
 	wasmClient              wasmtypes.QueryClient
 	bankClient              banktypes.QueryClient
 	tendermintServiceClient tmtypes.ServiceClient
-	log                     Logger
+	log                     logger.Logger
 }
 
 // responseRoundTripper is a http.RoundTripper which calls respFn with each response body.
@@ -147,7 +140,7 @@ func (rt *responseRoundTripper) RoundTrip(r *http.Request) (resp *http.Response,
 func NewClient(chainID string,
 	tendermintURL string,
 	requestTimeout time.Duration,
-	lggr Logger,
+	lggr logger.Logger,
 ) (*Client, error) {
 	if requestTimeout <= 0 {
 		requestTimeout = DefaultTimeout

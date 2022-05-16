@@ -10,12 +10,12 @@ import (
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/smartcontractkit/terra.go/msg"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/abci/types"
 	wasmtypes "github.com/terra-money/core/x/wasm/types"
+	"go.uber.org/zap"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/mocks"
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 )
 
 func TestErrMatch(t *testing.T) {
@@ -38,14 +38,16 @@ func TestErrMatch(t *testing.T) {
 func TestBatchSim(t *testing.T) {
 	accounts, testdir, tendermintURL := SetupLocalTerraNode(t, "42")
 
-	lggr := new(mocks.Logger)
-	lggr.Test(t)
+	lggr, logs := logger.TestObserved(t, zap.WarnLevel)
 	tc, err := NewClient(
 		"42",
 		tendermintURL,
 		DefaultTimeout,
 		lggr)
 	require.NoError(t, err)
+	assertLogsLen := func(t *testing.T, l int) func() {
+		return func() { assert.Len(t, logs.TakeAll(), l) }
+	}
 
 	contract := DeployTestContract(t, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 	var succeed sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), ExecuteMsg: []byte(`{"reset":{"count":5}}`)}
@@ -54,6 +56,7 @@ func TestBatchSim(t *testing.T) {
 	t.Run("single success", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
+		t.Cleanup(assertLogsLen(t, 0))
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}}, sn)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(res.Succeeded))
@@ -64,7 +67,7 @@ func TestBatchSim(t *testing.T) {
 	t.Run("single failure", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+		t.Cleanup(assertLogsLen(t, 1))
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: fail}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(res.Succeeded))
@@ -75,8 +78,7 @@ func TestBatchSim(t *testing.T) {
 	t.Run("multi failure", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once() // retry
-		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+		t.Cleanup(assertLogsLen(t, 2))
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(res.Succeeded))
@@ -89,7 +91,7 @@ func TestBatchSim(t *testing.T) {
 	t.Run("multi succeed", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+		t.Cleanup(assertLogsLen(t, 1))
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: fail}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 2, len(res.Succeeded))
@@ -99,6 +101,7 @@ func TestBatchSim(t *testing.T) {
 	t.Run("all succeed", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
+		t.Cleanup(assertLogsLen(t, 0))
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: succeed}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 3, len(res.Succeeded))
@@ -108,23 +111,18 @@ func TestBatchSim(t *testing.T) {
 	t.Run("all fail", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Times(2) // retry
-		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+		t.Cleanup(assertLogsLen(t, 3))
 		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: fail}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(res.Succeeded))
 		assert.Equal(t, 3, len(res.Failed))
 	})
-	lggr.AssertExpectations(t)
 }
 
 func TestTerraClient(t *testing.T) {
 	// Local only for now, could maybe run on CI if we install terrad there?
 	accounts, testdir, tendermintURL := SetupLocalTerraNode(t, "42")
-	lggr := new(mocks.Logger)
-	lggr.Test(t)
-	lggr.On("Infof", mock.Anything, mock.Anything, mock.Anything).Maybe()
-	lggr.On("Errorf", mock.Anything, mock.Anything, mock.Anything).Maybe()
+	lggr := logger.Test(t)
 	tc, err := NewClient(
 		"42",
 		tendermintURL,

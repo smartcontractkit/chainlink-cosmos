@@ -12,6 +12,7 @@ import (
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
@@ -20,10 +21,10 @@ import (
 type OCR2Reader struct {
 	address     cosmosSDK.AccAddress
 	chainReader client.Reader
-	lggr        Logger
+	lggr        logger.Logger
 }
 
-func NewOCR2Reader(addess cosmosSDK.AccAddress, chainReader client.Reader, lggr Logger) *OCR2Reader {
+func NewOCR2Reader(addess cosmosSDK.AccAddress, chainReader client.Reader, lggr logger.Logger) *OCR2Reader {
 	return &OCR2Reader{
 		address:     addess,
 		chainReader: chainReader,

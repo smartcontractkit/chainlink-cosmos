@@ -9,9 +9,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	pkgClient "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
-	"github.com/smartcontractkit/chainlink/core/logger"
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"go.uber.org/ratelimit"
+
+	pkgClient "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 )
 
 // ChainReader is a subset of the pkg/terra/client.Reader interface enhanced with context support.
