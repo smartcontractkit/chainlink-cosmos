@@ -84,6 +84,7 @@ func findAvailablePortAndStart(t *testing.T, testdir string) (*exec.Cmd, *safeBu
 		port := mustRandomPort()
 		tendermintURL := fmt.Sprintf("http://127.0.0.1:%d", port)
 		t.Log(tendermintURL)
+		//nolint:gosec
 		cmd := exec.Command("terrad", "start", "--home", testdir,
 			"--rpc.laddr", fmt.Sprintf("tcp://127.0.0.1:%d", port),
 			"--rpc.pprof_laddr", "0.0.0.0:0",
