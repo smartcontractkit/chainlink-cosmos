@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -42,6 +43,23 @@ type Account struct {
 	Address    sdk.AccAddress
 }
 
+type safeBuffer struct {
+	buf   bytes.Buffer
+	bufMu sync.RWMutex
+}
+
+func (sb *safeBuffer) Write(p []byte) (n int, err error) {
+	sb.bufMu.Lock()
+	defer sb.bufMu.Unlock()
+	return sb.buf.Write(p)
+}
+
+func (sb *safeBuffer) ReadBytes(delim byte) (line []byte, err error) {
+	sb.bufMu.RLock()
+	defer sb.bufMu.RUnlock()
+	return sb.buf.ReadBytes(delim)
+}
+
 // 0.001
 var minGasPrice = msg.NewDecCoinFromDec("uluna", msg.NewDecWithPrec(1, 3))
 
@@ -58,7 +76,7 @@ func findAvailablePortAndStart(t *testing.T, testdir string) (*exec.Cmd, bytes.B
 			"--grpc-web.address", "0.0.0.0:0",
 			"--p2p.laddr", "0.0.0.0:0")
 		var stdErr bytes.Buffer
-		cmd.Stderr = &stdErr
+		cmd.Stderr = &safeBuffer{buf: stdErr}
 		require.NoError(t, cmd.Start())
 		// Read stderr to confirm boot
 		for {
@@ -73,6 +91,12 @@ func findAvailablePortAndStart(t *testing.T, testdir string) (*exec.Cmd, bytes.B
 			}
 			if strings.Contains(string(line), "address already in use") {
 				t.Log("port already in use, retrying with different port")
+				assert.NoError(t, cmd.Process.Kill())
+				if err2 := cmd.Wait(); assert.Error(t, err2) {
+					if !assert.Contains(t, err2.Error(), "signal: killed", cmd.ProcessState.String()) {
+						t.Log("terrad stderr:", stdErr.String())
+					}
+				}
 				break
 			}
 		}
