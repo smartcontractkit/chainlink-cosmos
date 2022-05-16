@@ -135,7 +135,7 @@ type configWatcher struct {
 	contractAddr  cosmosSDK.AccAddress
 }
 
-func newConfigWatcher(ctx context.Context, lggr Logger, chainSet ChainSet, args relaytypes.ConfigWatcherArgs) (*configWatcher, error) {
+func newConfigWatcher(ctx context.Context, lggr logger.Logger, chainSet ChainSet, args relaytypes.ConfigWatcherArgs) (*configWatcher, error) {
 	var relayConfig RelayConfig
 	err := json.Unmarshal(args.RelayConfig, &relayConfig)
 	if err != nil {
