@@ -88,32 +88,32 @@ func (r *Relayer) Healthy() error {
 	return r.chainSet.Healthy()
 }
 
-func (r *Relayer) NewConfigWatcher(args relaytypes.ConfigWatcherArgs) (relaytypes.ConfigWatcher, error) {
+func (r *Relayer) NewConfigProvider(args relaytypes.RelayArgs) (relaytypes.ConfigProvider, error) {
 	configWatcher, err := newConfigWatcher(r.ctx, r.lggr, r.chainSet, args)
 	if err != nil {
-		// Never return (*configWatcher)(nil)
+		// Never return (*configProvider)(nil)
 		return nil, err
 	}
 	return configWatcher, err
 }
 
-func (r *Relayer) NewMedianProvider(args relaytypes.PluginArgs) (relaytypes.MedianProvider, error) {
-	configWatcher, err := newConfigWatcher(r.ctx, r.lggr, r.chainSet, args.ConfigWatcherArgs)
+func (r *Relayer) NewMedianProvider(rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MedianProvider, error) {
+	configWatcher, err := newConfigWatcher(r.ctx, r.lggr, r.chainSet, rargs)
 	if err != nil {
 		return nil, err
 	}
-	senderAddr, err := cosmosSDK.AccAddressFromBech32(args.TransmitterID)
+	senderAddr, err := cosmosSDK.AccAddressFromBech32(pargs.TransmitterID)
 	if err != nil {
 		return nil, err
 	}
 
 	return &medianProvider{
-		configWatcher: configWatcher,
-		reportCodec:   ReportCodec{},
-		contract:      configWatcher.contractCache,
+		configProvider: configWatcher,
+		reportCodec:    ReportCodec{},
+		contract:       configWatcher.contractCache,
 		transmitter: NewContractTransmitter(
 			configWatcher.reader,
-			args.ExternalJobID.String(),
+			rargs.ExternalJobID.String(),
 			configWatcher.contractAddr,
 			senderAddr,
 			configWatcher.chain.TxManager(),
@@ -123,9 +123,9 @@ func (r *Relayer) NewMedianProvider(args relaytypes.PluginArgs) (relaytypes.Medi
 	}, nil
 }
 
-var _ relaytypes.ConfigWatcher = &configWatcher{}
+var _ relaytypes.ConfigProvider = &configProvider{}
 
-type configWatcher struct {
+type configProvider struct {
 	utils.StartStopOnce
 	digester    types.OffchainConfigDigester
 	reportCodec median.ReportCodec
@@ -140,7 +140,7 @@ type configWatcher struct {
 	contractAddr  cosmosSDK.AccAddress
 }
 
-func newConfigWatcher(ctx context.Context, lggr logger.Logger, chainSet ChainSet, args relaytypes.ConfigWatcherArgs) (*configWatcher, error) {
+func newConfigWatcher(ctx context.Context, lggr logger.Logger, chainSet ChainSet, args relaytypes.RelayArgs) (*configProvider, error) {
 	var relayConfig RelayConfig
 	err := json.Unmarshal(args.RelayConfig, &relayConfig)
 	if err != nil {
@@ -162,7 +162,7 @@ func newConfigWatcher(ctx context.Context, lggr logger.Logger, chainSet ChainSet
 	contract := NewContractCache(chain.Config(), reader, lggr)
 	tracker := NewContractTracker(chainReader, contract)
 	digester := NewOffchainConfigDigester(relayConfig.ChainID, contractAddr)
-	return &configWatcher{
+	return &configProvider{
 		digester:      digester,
 		tracker:       tracker,
 		lggr:          lggr,
@@ -174,30 +174,30 @@ func newConfigWatcher(ctx context.Context, lggr logger.Logger, chainSet ChainSet
 }
 
 // Start starts OCR2Provider respecting the given context.
-func (p *configWatcher) Start(context.Context) error {
+func (p *configProvider) Start(context.Context) error {
 	return p.StartOnce("TerraRelay", func() error {
 		p.lggr.Debugf("Starting")
 		return p.contractCache.Start()
 	})
 }
 
-func (p *configWatcher) Close() error {
+func (p *configProvider) Close() error {
 	return p.StopOnce("TerraRelay", func() error {
 		p.lggr.Debugf("Stopping")
 		return p.contractCache.Close()
 	})
 }
 
-func (p *configWatcher) ContractConfigTracker() types.ContractConfigTracker {
+func (p *configProvider) ContractConfigTracker() types.ContractConfigTracker {
 	return p.tracker
 }
 
-func (p *configWatcher) OffchainConfigDigester() types.OffchainConfigDigester {
+func (p *configProvider) OffchainConfigDigester() types.OffchainConfigDigester {
 	return p.digester
 }
 
 type medianProvider struct {
-	*configWatcher
+	*configProvider
 	reportCodec median.ReportCodec
 	contract    median.MedianContract
 	transmitter types.ContractTransmitter
