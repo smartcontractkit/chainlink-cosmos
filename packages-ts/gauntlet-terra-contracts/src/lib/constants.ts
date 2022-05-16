@@ -23,6 +23,7 @@ export const CW20_BASE_CODE_IDs = {
   mainnet: 3,
   local: 32,
   'testnet-bombay': 148,
+  'testnet-bombay-internal': 148,
 }
 
 export const CW4_GROUP_CODE_IDs = {
