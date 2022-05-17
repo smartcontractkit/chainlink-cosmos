@@ -8,7 +8,7 @@ import (
 
 	"gopkg.in/guregu/null.v4"
 
-	"github.com/smartcontractkit/chainlink/core/store/models"
+	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 )
 
 type Chain struct {
@@ -29,16 +29,16 @@ type Node struct {
 }
 
 type ChainCfg struct {
-	BlockRate             *models.Duration
+	BlockRate             *utils.Duration
 	BlocksUntilTxTimeout  null.Int
-	ConfirmPollPeriod     *models.Duration
+	ConfirmPollPeriod     *utils.Duration
 	FallbackGasPriceULuna null.String
 	FCDURL                null.String `db:"fcd_url"`
 	GasLimitMultiplier    null.Float
 	MaxMsgsPerBatch       null.Int
-	OCR2CachePollPeriod   *models.Duration
-	OCR2CacheTTL          *models.Duration
-	TxMsgTimeout          *models.Duration
+	OCR2CachePollPeriod   *utils.Duration
+	OCR2CacheTTL          *utils.Duration
+	TxMsgTimeout          *utils.Duration
 }
 
 func (c *ChainCfg) Scan(value interface{}) error {
