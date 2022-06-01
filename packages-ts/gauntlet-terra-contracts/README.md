@@ -84,3 +84,12 @@ yarn gauntlet cw3_flex_multisig:deploy --network=bombay-testnet --group=terra1wx
 You may also specify the threshold as an absolute number of votes, or even a quorum combined with a threshold percentage.
 ( See https://docs.cosmwasm.com/cw-plus/0.9.0/cw3/cw3-flex-spec for details )
 
+## Signing with Ledger Wallet
+
+To sign transactions with Ledger cold storage, the command follows the same style but with the `--withLedger` flag:
+
+```
+<contract>:<action> --<param>=<value> <contract_address> --withLedger
+```
+
+
