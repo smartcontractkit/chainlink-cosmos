@@ -9,7 +9,7 @@ stdenv.mkDerivation rec {
 
   src = fetchurl {
     url = "https://github.com/terra-money/core/releases/download/v${version}/terra_${version}_Linux_x86_64.tar.gz";
-    sha256 = "sha256-FBomyS6B8WTNYDk+WnxC8KkYXs7pLEO9UGClESHQxL4=";
+    sha256 = "sha256-6uI6rVmzbqKtqlQadmKmEZVpJ50ubEAT497ulukmOzA=";
   };
 
   # nativeBuildInputs = [
