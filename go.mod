@@ -7,8 +7,8 @@ require (
 	github.com/pelletier/go-toml v1.9.4
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.1
-	github.com/rs/zerolog v1.26.1
-	github.com/smartcontractkit/chainlink-relay v0.1.0
+	github.com/shopspring/decimal v1.2.0
+	github.com/smartcontractkit/chainlink-relay v0.1.1-0.20220610150550-c783cf974bee
 	github.com/smartcontractkit/libocr v0.0.0-20220512162406-9e4afd8896f3
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	github.com/stretchr/testify v1.7.1
@@ -107,6 +107,7 @@ require (
 	github.com/regen-network/cosmos-proto v0.3.1 // indirect
 	github.com/riferrei/srclient v0.4.1-0.20211229125508-8edc580da179 // indirect
 	github.com/rjeczalik/notify v0.9.2 // indirect
+	github.com/rs/zerolog v1.26.1 // indirect
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0 // indirect
 	github.com/sasha-s/go-deadlock v0.2.1-0.20190427202633-1595213edefa // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect

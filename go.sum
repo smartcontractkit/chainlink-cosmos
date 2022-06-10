@@ -1012,6 +1012,8 @@ github.com/shirou/gopsutil v2.20.5+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu
 github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
 github.com/shirou/gopsutil v3.21.11+incompatible h1:+1+c1VGhc88SSonWP6foOcLhvnKlUeu/erjjvaPEYiI=
 github.com/shirou/gopsutil v3.21.11+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
+github.com/shopspring/decimal v1.2.0 h1:abSATXmQEYyShuxI4/vyW3tV1MrKAJzCZ/0zLUXYbsQ=
+github.com/shopspring/decimal v1.2.0/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
 github.com/shurcooL/sanitized_anchor_name v1.0.0/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
@@ -1019,8 +1021,8 @@ github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6Mwd
 github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrfsX/uA88=
 github.com/sirupsen/logrus v1.7.0/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
-github.com/smartcontractkit/chainlink-relay v0.1.0 h1:uMgHh3GzGpnFAahde1PW2AKmBxXqN8vVFcJo3m2A/Ac=
-github.com/smartcontractkit/chainlink-relay v0.1.0/go.mod h1:iQnEkkbWn1mhF3X6qdh8Lgl5emLsJzwxFGd1C7xCcaM=
+github.com/smartcontractkit/chainlink-relay v0.1.1-0.20220610150550-c783cf974bee h1:g4ePn/spC4Ne7Km+n9VM34frWNMHqyne0Gbt97Af94o=
+github.com/smartcontractkit/chainlink-relay v0.1.1-0.20220610150550-c783cf974bee/go.mod h1:iQnEkkbWn1mhF3X6qdh8Lgl5emLsJzwxFGd1C7xCcaM=
 github.com/smartcontractkit/ed25519consensus v0.0.1 h1:Ta23Y6YJTACLCpKWSWAwgHCtkmWrGGfrUAV8Ns5r4z0=
 github.com/smartcontractkit/ed25519consensus v0.0.1/go.mod h1:8Wf0F4mu3B5DdEOFKMMLgSoZ8EyaA2Cmf4YMUsNHXzE=
 github.com/smartcontractkit/libocr v0.0.0-20220512162406-9e4afd8896f3 h1:SpaPYF6Yf/9D4Ilj6S9Yti5kMMe86xlliWQpGwaAFok=
