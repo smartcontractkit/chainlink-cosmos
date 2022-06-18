@@ -1020,8 +1020,8 @@ github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6Mwd
 github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrfsX/uA88=
 github.com/sirupsen/logrus v1.7.0/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
-github.com/smartcontractkit/chainlink-relay v0.1.1-0.20220610150550-c783cf974bee h1:g4ePn/spC4Ne7Km+n9VM34frWNMHqyne0Gbt97Af94o=
-github.com/smartcontractkit/chainlink-relay v0.1.1-0.20220610150550-c783cf974bee/go.mod h1:iQnEkkbWn1mhF3X6qdh8Lgl5emLsJzwxFGd1C7xCcaM=
+github.com/smartcontractkit/chainlink-relay v0.1.1 h1:KyijJdddcG81o+5beo/RQQJvvSwl8uW9yaKeCTl5HnQ=
+github.com/smartcontractkit/chainlink-relay v0.1.1/go.mod h1:iQnEkkbWn1mhF3X6qdh8Lgl5emLsJzwxFGd1C7xCcaM=
 github.com/smartcontractkit/ed25519consensus v0.0.1 h1:Ta23Y6YJTACLCpKWSWAwgHCtkmWrGGfrUAV8Ns5r4z0=
 github.com/smartcontractkit/ed25519consensus v0.0.1/go.mod h1:8Wf0F4mu3B5DdEOFKMMLgSoZ8EyaA2Cmf4YMUsNHXzE=
 github.com/smartcontractkit/libocr v0.0.0-20220512162406-9e4afd8896f3 h1:SpaPYF6Yf/9D4Ilj6S9Yti5kMMe86xlliWQpGwaAFok=
