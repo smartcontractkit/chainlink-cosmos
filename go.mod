@@ -8,7 +8,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.1
 	github.com/shopspring/decimal v1.2.0
-	github.com/smartcontractkit/chainlink-relay v0.1.1-0.20220610150550-c783cf974bee
+	github.com/smartcontractkit/chainlink-relay v0.1.1
 	github.com/smartcontractkit/libocr v0.0.0-20220512162406-9e4afd8896f3
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	github.com/stretchr/testify v1.7.1
