@@ -5,7 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
+	"go.uber.org/multierr"
 
+	"github.com/smartcontractkit/chainlink-relay/pkg/config"
 	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
@@ -73,12 +75,14 @@ func (c *Chain) SetFromDB(cfg *db.ChainCfg) error {
 }
 
 type Node struct {
-	Name          string
+	Name          *string
 	TendermintURL *utils.URL
 }
 
 func (n *Node) SetFromDB(db db.Node) error {
-	n.Name = db.Name
+	if db.Name != "" {
+		n.Name = &db.Name
+	}
 	if db.TendermintURL != "" {
 		u, err := url.Parse(db.TendermintURL)
 		if err != nil {
@@ -87,4 +91,16 @@ func (n *Node) SetFromDB(db db.Node) error {
 		n.TendermintURL = (*utils.URL)(u)
 	}
 	return nil
+}
+
+func (n *Node) ValidateConfig() (err error) {
+	if n.Name == nil {
+		err = multierr.Append(err, config.ErrMissing{Name: "Name", Msg: "required for all nodes"})
+	} else if *n.Name == "" {
+		err = multierr.Append(err, config.ErrEmpty{Name: "Name", Msg: "required for all nodes"})
+	}
+	if n.TendermintURL == nil {
+		err = multierr.Append(err, config.ErrMissing{Name: "TendermintURL", Msg: "required for all nodes"})
+	}
+	return
 }
