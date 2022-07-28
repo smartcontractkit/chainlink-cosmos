@@ -6,10 +6,11 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
+
+	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
 )
@@ -68,13 +69,13 @@ func TestNode_SetFromDB(t *testing.T) {
 			Name:          "test-name",
 			TendermintURL: "http://fake.test",
 		}, Node{
-			Name:          "test-name",
+			Name:          ptr("test-name"),
 			TendermintURL: utils.MustParseURL("http://fake.test"),
 		}, false},
 		{"url-missing", db.Node{
 			Name: "test-name",
 		}, Node{
-			Name: "test-name",
+			Name: ptr("test-name"),
 		}, false},
 		{"url-invalid", db.Node{
 			Name:          "test-name",
