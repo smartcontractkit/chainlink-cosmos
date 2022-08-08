@@ -14,6 +14,8 @@ import (
 )
 
 func TestProxyMonitoring(t *testing.T) {
+	t.Parallel()
+
 	t.Run("the read proxied value should be reported to prometheus", func(t *testing.T) {
 		// This test checks both the source and the corresponding exporter.
 		// It does so by using a mock ChainReader to return values that the real proxy would return.
@@ -27,17 +29,15 @@ func TestProxyMonitoring(t *testing.T) {
 		feedConfig.Multiply = big.NewInt(100)
 		nodes := []relayMonitoring.NodeConfig{}
 
-		chainReader := new(mocks.ChainReader)
-		chainReader.Test(t)
-		metrics := new(mocks.Metrics)
-		metrics.Test(t)
+		chainReader := mocks.NewChainReader(t)
+		metrics := mocks.NewMetrics(t)
 
 		sourceFactory := NewProxySourceFactory(chainReader, newNullLogger())
 		source, err := sourceFactory.NewSource(chainConfig, feedConfig)
 		require.NoError(t, err)
 
 		exporterFactory := NewPrometheusExporterFactory(newNullLogger(), metrics)
-		exporter, err := exporterFactory.NewExporter(relayMonitoring.ExporterParams{chainConfig, feedConfig, nodes})
+		exporter, err := exporterFactory.NewExporter(relayMonitoring.ExporterParams{ChainConfig: chainConfig, FeedConfig: feedConfig, Nodes: nodes})
 		require.NoError(t, err)
 
 		// Setup claims.
@@ -90,19 +90,15 @@ func TestProxyMonitoring(t *testing.T) {
 		require.NoError(t, err)
 		exporter.Export(ctx, data)
 		exporter.Cleanup(ctx)
-
-		// Assertions
-		mock.AssertExpectationsForObjects(t, chainReader)
-		mock.AssertExpectationsForObjects(t, metrics)
 	})
+
 	t.Run("contract without a proxy are not monitored by the proxy source", func(t *testing.T) {
 		chainConfig := generateChainConfig()
 		feedConfig := generateFeedConfig()
 		feedConfig.ProxyAddressBech32 = ""
 		feedConfig.ProxyAddress = sdk.AccAddress{}
 
-		chainReader := new(mocks.ChainReader)
-		chainReader.Test(t)
+		chainReader := mocks.NewChainReader(t)
 
 		sourceFactory := NewProxySourceFactory(chainReader, newNullLogger())
 		source, err := sourceFactory.NewSource(chainConfig, feedConfig)
@@ -111,6 +107,5 @@ func TestProxyMonitoring(t *testing.T) {
 		data, err := source.Fetch(context.Background())
 		require.Nil(t, data)
 		require.Error(t, err, relayMonitoring.ErrNoUpdate)
-
 	})
 }
