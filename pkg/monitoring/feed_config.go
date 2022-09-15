@@ -84,13 +84,14 @@ func (t TerraFeedConfig) GetMultiply() *big.Int {
 // ToMapping returns the feed's configuration mapped to a data structure expected by the Avro schema encoders.
 func (t TerraFeedConfig) ToMapping() map[string]interface{} {
 	return map[string]interface{}{
-		"feed_name":        t.Name,
-		"feed_path":        t.Path,
-		"symbol":           t.Symbol,
-		"heartbeat_sec":    int64(t.HeartbeatSec),
-		"contract_type":    t.ContractType,
-		"contract_status":  t.ContractStatus,
-		"contract_address": t.ContractAddress.Bytes(),
+		"feed_name":               t.Name,
+		"feed_path":               t.Path,
+		"symbol":                  t.Symbol,
+		"heartbeat_sec":           int64(t.HeartbeatSec),
+		"contract_type":           t.ContractType,
+		"contract_status":         t.ContractStatus,
+		"contract_address":        t.ContractAddress.Bytes(),
+		"contract_address_string": map[string]interface{}{"string": t.ContractAddressBech32},
 
 		// These fields are legacy. They are required in the schema but they
 		// should be set to a zero value for any other chain.
