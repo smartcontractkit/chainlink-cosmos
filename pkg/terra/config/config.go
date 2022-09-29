@@ -7,9 +7,12 @@ import (
 	"github.com/shopspring/decimal"
 	"go.uber.org/multierr"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/smartcontractkit/chainlink-relay/pkg/config"
 	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra"
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
 )
 
@@ -72,6 +75,41 @@ func (c *Chain) SetFromDB(cfg *db.ChainCfg) error {
 		c.TxMsgTimeout = utils.MustNewDuration(cfg.TxMsgTimeout.Duration())
 	}
 	return nil
+}
+
+func (c *Chain) SetDefaults() {
+	if c.BlockRate == nil {
+		c.BlockRate = utils.MustNewDuration(terra.DefaultConfigSet.BlockRate)
+	}
+	if c.BlocksUntilTxTimeout == nil {
+		c.BlocksUntilTxTimeout = &terra.DefaultConfigSet.BlocksUntilTxTimeout
+	}
+	if c.ConfirmPollPeriod == nil {
+		c.ConfirmPollPeriod = utils.MustNewDuration(terra.DefaultConfigSet.ConfirmPollPeriod)
+	}
+	if c.FallbackGasPriceULuna == nil {
+		d := decimal.NewFromBigInt(terra.DefaultConfigSet.FallbackGasPriceULuna.BigInt(), -sdk.Precision)
+		c.FallbackGasPriceULuna = &d
+	}
+	if c.FCDURL == nil {
+		c.FCDURL = (*utils.URL)(&terra.DefaultConfigSet.FCDURL)
+	}
+	if c.GasLimitMultiplier == nil {
+		d := decimal.NewFromFloat(terra.DefaultConfigSet.GasLimitMultiplier)
+		c.GasLimitMultiplier = &d
+	}
+	if c.MaxMsgsPerBatch == nil {
+		c.MaxMsgsPerBatch = &terra.DefaultConfigSet.MaxMsgsPerBatch
+	}
+	if c.OCR2CachePollPeriod == nil {
+		c.OCR2CachePollPeriod = utils.MustNewDuration(terra.DefaultConfigSet.OCR2CachePollPeriod)
+	}
+	if c.OCR2CacheTTL == nil {
+		c.OCR2CacheTTL = utils.MustNewDuration(terra.DefaultConfigSet.OCR2CacheTTL)
+	}
+	if c.TxMsgTimeout == nil {
+		c.TxMsgTimeout = utils.MustNewDuration(terra.DefaultConfigSet.TxMsgTimeout)
+	}
 }
 
 type Node struct {

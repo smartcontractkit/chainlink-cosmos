@@ -15,7 +15,7 @@ import (
 )
 
 // Global terra defaults.
-var defaultConfigSet = configSet{
+var DefaultConfigSet = configSet{
 	BlockRate: 6 * time.Second,
 	// ~6s per block, so ~3m until we give up on the tx getting confirmed
 	// Anecdotally it appears anything more than 4 blocks would be an extremely long wait,
@@ -86,7 +86,7 @@ type config struct {
 // NewConfig returns a Config with defaults overridden by dbcfg.
 func NewConfig(dbcfg db.ChainCfg, lggr logger.Logger) *config {
 	return &config{
-		defaults: defaultConfigSet,
+		defaults: DefaultConfigSet,
 		chain:    dbcfg,
 		lggr:     lggr,
 	}
