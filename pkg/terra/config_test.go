@@ -16,7 +16,7 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	def := defaultConfigSet
+	def := DefaultConfigSet
 
 	lggr, logs := logger.TestObserved(t, zap.WarnLevel)
 	cfg := NewConfig(db.ChainCfg{}, lggr)
