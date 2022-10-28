@@ -3,10 +3,10 @@
 use crate::contract::{execute, instantiate, query};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use cosmwasm_std::{Addr, Empty};
-use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, Contract, ContractWrapper, Executor};
 
 fn mock_app() -> App {
-    AppBuilder::new().build()
+    App::default()
 }
 
 pub fn contract_hello_world() -> Box<dyn Contract<Empty>> {
