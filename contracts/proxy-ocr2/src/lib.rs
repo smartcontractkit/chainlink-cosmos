@@ -5,7 +5,7 @@ use cosmwasm_std::{
     Response, StdError,
 };
 
-use cw_storage_plus::{Item, Map, U16Key};
+use cw_storage_plus::{Item, Map};
 
 use thiserror::Error;
 
@@ -41,7 +41,7 @@ pub struct Phase {
 pub const OWNER: Auth = Auth::new("owner");
 pub const CURRENT_PHASE: Item<Phase> = Item::new("current_phase");
 pub const PROPOSED_CONTRACT: Item<Addr> = Item::new("proposed_contract");
-pub const PHASES: Map<U16Key, Addr> = Map::new("phases");
+pub const PHASES: Map<u16, Addr> = Map::new("phases");
 
 pub mod state {
     use super::*;
@@ -125,7 +125,7 @@ pub fn instantiate(
 
     OWNER.initialize(deps.storage, info.sender)?;
 
-    PHASES.save(deps.storage, 1.into(), &contract_address)?;
+    PHASES.save(deps.storage, 1, &contract_address)?;
     CURRENT_PHASE.save(
         deps.storage,
         &Phase {
@@ -178,7 +178,7 @@ pub fn execute(
 
             PHASES.save(
                 deps.storage,
-                current_phase.id.into(),
+                current_phase.id,
                 &current_phase.contract_address,
             )?;
 
@@ -221,7 +221,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
         }
         QueryMsg::RoundData { round_id } => {
             let (phase_id, round_id) = parse_round_id(round_id);
-            let contract_address = PHASES.load(deps.storage, phase_id.into())?;
+            let contract_address = PHASES.load(deps.storage, phase_id)?;
 
             let round: ocr2::state::Round = deps.querier.query_wasm_smart(
                 contract_address,
@@ -261,7 +261,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
             Ok(to_binary(&phase_id)?)
         }
         QueryMsg::PhaseAggregators { phase_id } => {
-            let contract_address = PHASES.load(deps.storage, phase_id.into())?;
+            let contract_address = PHASES.load(deps.storage, phase_id)?;
             Ok(to_binary(&contract_address)?)
         }
         QueryMsg::ProposedAggregator => {

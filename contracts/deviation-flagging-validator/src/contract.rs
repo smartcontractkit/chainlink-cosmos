@@ -225,7 +225,7 @@ mod tests {
 
     #[test]
     fn proper_initialization() {
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
 
         let msg = InstantiateMsg {
             flags: "flags".to_string(),
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn setting_flags_address() {
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
 
         let msg = InstantiateMsg {
             flags: "flags".to_string(),
@@ -265,7 +265,7 @@ mod tests {
 
     #[test]
     fn setting_threshold() {
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
 
         let msg = InstantiateMsg {
             flags: "flags".to_string(),
@@ -309,7 +309,7 @@ mod tests {
 
     #[test]
     fn validate() {
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
 
         let msg = InstantiateMsg {
             flags: "flags".to_string(),
@@ -372,7 +372,7 @@ mod tests {
 
     #[test]
     fn test_query_flagging_threshold() {
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
 
         let msg = InstantiateMsg {
             flags: "flags".to_string(),

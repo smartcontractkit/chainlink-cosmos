@@ -36,11 +36,6 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 // ID used by the reply call for validator::validate
 const REPLY_VALIDATOR_VALIDATE: u64 = 1;
 
-// Converts a raw Map key back into Addr. Works around a cw-storage-plus limitation
-fn to_addr(raw_key: Vec<u8>) -> Addr {
-    Addr::unchecked(unsafe { String::from_utf8_unchecked(raw_key) })
-}
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -321,7 +316,7 @@ pub fn execute_begin_proposal(
     // Add an empty proposal
     PROPOSALS.save(
         deps.storage,
-        id.u128().into(),
+        id.u128(),
         &Proposal {
             owner: info.sender,
             finalized: false,
@@ -346,13 +341,13 @@ pub fn execute_clear_proposal(
     id: ProposalId,
 ) -> Result<Response, ContractError> {
     let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
-    let proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
+    let proposal = PROPOSALS.load(deps.storage, id.u128())?;
 
     // Only contract owner or proposal owner allowed
     require!(is_owner || proposal.owner == info.sender, Unauthorized);
 
     // Clear out proposal
-    PROPOSALS.remove(deps.storage, id.u128().into());
+    PROPOSALS.remove(deps.storage, id.u128());
 
     Ok(Response::default())
 }
@@ -364,7 +359,7 @@ pub fn execute_finalize_proposal(
     id: ProposalId,
 ) -> Result<Response, ContractError> {
     let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
-    let mut proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
+    let mut proposal = PROPOSALS.load(deps.storage, id.u128())?;
 
     // Only contract owner or proposal owner allowed
     require!(is_owner || proposal.owner == info.sender, Unauthorized);
@@ -381,7 +376,7 @@ pub fn execute_finalize_proposal(
 
     // Mark proposal as finalized
     proposal.finalized = true;
-    PROPOSALS.save(deps.storage, id.u128().into(), &proposal)?;
+    PROPOSALS.save(deps.storage, id.u128(), &proposal)?;
 
     let digest = proposal.digest();
 
@@ -404,7 +399,7 @@ pub fn execute_accept_proposal(
 
     let mut config = CONFIG.load(deps.storage)?;
 
-    let proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
+    let proposal = PROPOSALS.load(deps.storage, id.u128())?;
 
     let response = Response::new().add_attribute("method", "accept_proposal");
 
@@ -418,15 +413,17 @@ pub fn execute_accept_proposal(
     // TODO: pay_oracles already loads all the transmitters, avoid calling TRANSMITTERS.keys
     // https://github.com/smartcontractkit/chainlink-terra/issues/27
     // Clear out oracles
-    let keys: Vec<_> = TRANSMITTERS
+    let keys: Result<Vec<_>, _> = TRANSMITTERS
         .keys(deps.storage, None, None, Order::Ascending)
         .collect();
+    let keys = keys?;
     for key in keys {
-        TRANSMITTERS.remove(deps.storage, &to_addr(key));
+        TRANSMITTERS.remove(deps.storage, &key);
     }
-    let keys: Vec<_> = SIGNERS
+    let keys: Result<Vec<_>, _> = SIGNERS
         .keys(deps.storage, None, None, Order::Ascending)
         .collect();
+    let keys = keys?;
     for key in keys {
         SIGNERS.remove(deps.storage, &key);
     }
@@ -531,7 +528,7 @@ pub fn execute_accept_proposal(
     CONFIG.save(deps.storage, &config)?;
 
     // Clear out proposal
-    PROPOSALS.remove(deps.storage, id.u128().into());
+    PROPOSALS.remove(deps.storage, id.u128());
 
     Ok(response)
 }
@@ -549,7 +546,7 @@ pub fn execute_propose_config(
     onchain_config: Vec<u8>,
 ) -> Result<Response, ContractError> {
     let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
-    let mut proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
+    let mut proposal = PROPOSALS.load(deps.storage, id.u128())?;
 
     // Only contract owner or proposal owner allowed
     require!(is_owner || proposal.owner == info.sender, Unauthorized);
@@ -580,7 +577,7 @@ pub fn execute_propose_config(
         .map(|((signers, transmitters), payees)| (signers, transmitters, payees))
         .collect();
 
-    PROPOSALS.save(deps.storage, id.u128().into(), &proposal)?;
+    PROPOSALS.save(deps.storage, id.u128(), &proposal)?;
 
     Ok(Response::default())
 }
@@ -594,7 +591,7 @@ pub fn execute_propose_offchain_config(
     offchain_config: Binary,
 ) -> Result<Response, ContractError> {
     let is_owner = OWNER.is_owner(deps.as_ref(), &info.sender)?;
-    let mut proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
+    let mut proposal = PROPOSALS.load(deps.storage, id.u128())?;
 
     // Only contract owner or proposal owner allowed
     require!(is_owner || proposal.owner == info.sender, Unauthorized);
@@ -610,13 +607,13 @@ pub fn execute_propose_offchain_config(
     proposal.offchain_config_version = offchain_config_version;
     proposal.offchain_config = offchain_config;
 
-    PROPOSALS.save(deps.storage, id.u128().into(), &proposal)?;
+    PROPOSALS.save(deps.storage, id.u128(), &proposal)?;
 
     Ok(Response::default())
 }
 
 pub fn query_proposal(deps: Deps, id: ProposalId) -> StdResult<Proposal> {
-    let proposal = PROPOSALS.load(deps.storage, id.u128().into())?;
+    let proposal = PROPOSALS.load(deps.storage, id.u128())?;
     Ok(proposal)
 }
 
@@ -630,11 +627,12 @@ pub fn query_latest_config_details(deps: Deps) -> StdResult<LatestConfigDetailsR
 }
 
 pub fn query_transmitters(deps: Deps) -> StdResult<TransmittersResponse> {
-    let addresses: Vec<_> = TRANSMITTERS
+    let addresses: Result<Vec<_>, _> = TRANSMITTERS
         .keys(deps.storage, None, None, Order::Ascending)
-        .map(to_addr)
         .collect();
-    Ok(TransmittersResponse { addresses })
+    Ok(TransmittersResponse {
+        addresses: addresses?,
+    })
 }
 
 // ---
@@ -678,7 +676,7 @@ fn validate_answer(deps: Deps, config: &Config, round_id: u32, answer: i128) -> 
     let validator = config.validator.as_ref()?;
     let previous_round_id = round_id.checked_sub(1)?;
     let previous_answer = TRANSMISSIONS
-        .load(deps.storage, previous_round_id.into())
+        .load(deps.storage, previous_round_id)
         .ok()?
         .answer;
 
@@ -810,8 +808,8 @@ pub fn execute_transmit(
     );
 
     // Verify signatures attached to report
-    use blake2::{Blake2s, Digest};
-    let mut hasher = Blake2s::default();
+    use blake2::{Blake2s256, Digest};
+    let mut hasher = Blake2s256::default();
     hasher.update(
         u32::try_from(raw_report.len())
             .map_err(|_| ContractError::InvalidInput)?
@@ -1000,7 +998,7 @@ fn report(
 
     TRANSMISSIONS.save(
         deps.storage,
-        config.latest_aggregator_round_id.into(),
+        config.latest_aggregator_round_id,
         &Transmission {
             answer: median,
             observations_timestamp: report.observations_timestamp,
@@ -1027,8 +1025,7 @@ pub fn query_latest_transmission_details(
     deps: Deps,
 ) -> StdResult<LatestTransmissionDetailsResponse> {
     let config = CONFIG.load(deps.storage)?;
-    let transmission =
-        TRANSMISSIONS.load(deps.storage, config.latest_aggregator_round_id.into())?;
+    let transmission = TRANSMISSIONS.load(deps.storage, config.latest_aggregator_round_id)?;
     Ok(LatestTransmissionDetailsResponse {
         latest_config_digest: config.latest_config_digest,
         epoch: config.epoch,
@@ -1064,7 +1061,7 @@ pub fn query_decimals(deps: Deps) -> StdResult<u8> {
 }
 
 pub fn query_round_data(deps: Deps, round_id: u32) -> StdResult<Round> {
-    let transmission = TRANSMISSIONS.load(deps.storage, round_id.into())?;
+    let transmission = TRANSMISSIONS.load(deps.storage, round_id)?;
 
     Ok(Round {
         round_id,
@@ -1076,8 +1073,7 @@ pub fn query_round_data(deps: Deps, round_id: u32) -> StdResult<Round> {
 
 pub fn query_latest_round_data(deps: Deps) -> StdResult<Round> {
     let config = CONFIG.load(deps.storage)?;
-    let transmission =
-        TRANSMISSIONS.load(deps.storage, config.latest_aggregator_round_id.into())?;
+    let transmission = TRANSMISSIONS.load(deps.storage, config.latest_aggregator_round_id)?;
 
     Ok(Round {
         round_id: config.latest_aggregator_round_id,
@@ -1340,9 +1336,7 @@ fn pay_oracles(
 
     let mut total = Uint128::zero();
 
-    for (raw_key, state) in transmitters {
-        let transmitter = to_addr(raw_key);
-
+    for (transmitter, state) in transmitters {
         let amount = owed_payment(config, &state)?;
 
         if amount.is_zero() {
@@ -1600,7 +1594,7 @@ pub(crate) mod tests {
     use cosmwasm_std::OwnedDeps;
 
     fn setup() -> OwnedDeps<MockStorage, MockApi, MockQuerier> {
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
 
         let msg = InstantiateMsg {
             link_token: "LINK".to_string(),

@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn initialize_owner() {
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
         let control = Auth::new("foo");
 
         // initialize and check
@@ -135,7 +135,7 @@ mod tests {
 
     #[test]
     fn owner_checks() {
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
 
         let control = Auth::new("foo");
         let owner = Addr::unchecked("big boss");
@@ -154,7 +154,7 @@ mod tests {
 
     #[test]
     fn transfer_accept_ownership() {
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
 
         // initial setup
         let control = Auth::new("foo");

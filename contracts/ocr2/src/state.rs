@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use access_controller::AccessControllerContract;
 use cosmwasm_std::{Addr, Binary, Uint128};
 use cw20::Cw20Contract;
-use cw_storage_plus::{Item, Map, U128Key, U32Key};
+use cw_storage_plus::{Item, Map};
 use owned::Auth;
 use std::convert::TryFrom;
 
@@ -221,7 +221,7 @@ pub const OWNER: Auth = Auth::new("owner");
 pub const CONFIG: Item<Config> = Item::new("config");
 
 pub type ProposalId = Uint128;
-pub const PROPOSALS: Map<U128Key, Proposal> = Map::new("proposals");
+pub const PROPOSALS: Map<u128, Proposal> = Map::new("proposals");
 pub const NEXT_PROPOSAL_ID: Item<ProposalId> = Item::new("next_proposal_id");
 
 // An addr currently can't be converted to pubkey: https://docs.cosmos.network/master/architecture/adr-028-public-key-addresses.html
@@ -232,7 +232,7 @@ pub const TRANSMITTERS: Map<&Addr, Transmitter> = Map::new("transmitters");
 pub const SIGNERS: Map<&[u8], ()> = Map::new("signers");
 
 // round ID -> transmission
-pub const TRANSMISSIONS: Map<U32Key, Transmission> = Map::new("transmissions");
+pub const TRANSMISSIONS: Map<u32, Transmission> = Map::new("transmissions");
 
 // Addresses at which oracles want to receive payments.
 // transmitter -> payment address

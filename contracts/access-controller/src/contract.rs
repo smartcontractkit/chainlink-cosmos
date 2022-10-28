@@ -113,7 +113,7 @@ mod tests {
     use cosmwasm_std::{from_binary, OwnedDeps};
 
     fn setup() -> OwnedDeps<MockStorage, MockApi, MockQuerier> {
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
 
         let msg = InstantiateMsg {};
         let info = mock_info("owner", &[]);
