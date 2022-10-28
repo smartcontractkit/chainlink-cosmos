@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"regexp"
@@ -132,7 +131,7 @@ func (rt *responseRoundTripper) RoundTrip(r *http.Request) (resp *http.Response,
 		return nil, errors.Wrap(err, "failed to read response")
 	}
 	go rt.respFn(b)
-	resp.Body = ioutil.NopCloser(bytes.NewReader(b))
+	resp.Body = io.NopCloser(bytes.NewReader(b))
 	return
 }
 

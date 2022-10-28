@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
@@ -21,7 +20,7 @@ func main() {
 	}
 	defer func() {
 		if serr := l.Sync(); serr != nil {
-			log.Println(fmt.Sprintf("Error while closing Logger: %v", serr))
+			log.Printf("Error while closing Logger: %v\n", serr)
 		}
 	}()
 

@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"os/exec"
@@ -45,7 +44,7 @@ var minGasPrice = msg.NewDecCoinFromDec("uluna", msg.NewDecWithPrec(1, 3))
 // SetupLocalTerraNode sets up a local terra node via terrad, and returns pre-funded accounts, the test directory, and the url.
 func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string, string) {
 	t.Skip("depends on terrad")
-	testdir, err := ioutil.TempDir("", "integration-test")
+	testdir, err := os.MkdirTemp("", "integration-test")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, os.RemoveAll(testdir))

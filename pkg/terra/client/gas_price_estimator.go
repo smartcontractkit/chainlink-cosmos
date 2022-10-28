@@ -3,7 +3,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -105,7 +105,7 @@ func (gpe *FCDGasPriceEstimator) request() (map[string]sdk.DecCoin, error) {
 	}
 	source := http.MaxBytesReader(nil, resp.Body, httpResponseLimit)
 	defer source.Close()
-	b, err := ioutil.ReadAll(source)
+	b, err := io.ReadAll(source)
 	if err != nil {
 		gpe.lggr.Errorf("error reading body from %s, err %v", fcdURL, err)
 		return nil, err
