@@ -3,7 +3,7 @@ package e2e
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -41,7 +41,8 @@ type InspectionResult struct {
 }
 
 // GetDefaultGauntletConfig gets the default config gauntlet will need to start making commands
-// 	against the environment
+//
+//	against the environment
 func GetDefaultGauntletConfig(nodeUrl *url.URL) map[string]string {
 	networkConfig := map[string]string{
 		"NODE_URL":          nodeUrl.String(),
@@ -61,7 +62,8 @@ func UpdateReportName(reportName string, g *gauntlet.Gauntlet) {
 }
 
 // GetInspectionResultsFromOutput parses the inpsectiond data from the output
-//  TODO we should really update the inspection command to just output json in the future
+//
+//	TODO we should really update the inspection command to just output json in the future
 func GetInspectionResultsFromOutput(output string) (map[string]InspectionResult, error) {
 	lines := strings.Split(output, "\n")
 	passRegex, err := regexp.Compile("✅  (.+) matches: (.+)$")
@@ -104,7 +106,7 @@ func LoadReportJson(file string) (map[string]interface{}, error) {
 	}
 	defer jsonFile.Close()
 
-	byteValue, err := ioutil.ReadAll(jsonFile)
+	byteValue, err := io.ReadAll(jsonFile)
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
