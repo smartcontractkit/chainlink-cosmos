@@ -19,7 +19,7 @@ pkgs.mkShell {
 
     # Golang
     # Keep this golang version in sync with the version in .tool-versions please
-    go_1_18
+    go_1_19
     gopls
     delve
     golangci-lint
@@ -28,12 +28,12 @@ pkgs.mkShell {
     # NodeJS + TS
     nodePackages.typescript-language-server
     # Keep this nodejs version in sync with the version in .tool-versions please
-    nodejs-14_x
-    (yarn.override { nodejs = nodejs-14_x; })
+    nodejs-18_x
+    (yarn.override { nodejs = nodejs-18_x; })
     libusb1
   ];
   RUST_BACKTRACE = "1";
-  GOROOT="${pkgs.go_1_18}/share/go";
+  GOROOT="${pkgs.go_1_19}/share/go";
 
   # Avoids issues with delve
   CGO_CPPFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0";
