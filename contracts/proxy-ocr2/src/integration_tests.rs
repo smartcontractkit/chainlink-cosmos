@@ -1,14 +1,14 @@
 #![cfg(test)]
 #![cfg(not(tarpaulin_include))]
 use cosmwasm_std::{Addr, Empty};
-use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, Contract, ContractWrapper, Executor};
 
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::Round;
 use crate::{execute, instantiate, parse_round_id, query};
 
 fn mock_app() -> App {
-    AppBuilder::new().build()
+    App::default()
 }
 
 pub fn contract_proxy() -> Box<dyn Contract<Empty>> {

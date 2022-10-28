@@ -9,7 +9,7 @@ use crate::Decimal;
 use anyhow::Result as AnyResult;
 use cosmwasm_std::{to_binary, Addr, Binary, Empty, Uint128};
 use cw20::Cw20Coin;
-use cw_multi_test::{App, AppBuilder, AppResponse, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 use deviation_flagging_validator as validator;
 use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes};
 use rand::thread_rng;
@@ -19,7 +19,7 @@ use std::str::FromStr;
 const GIGA: u128 = 10u128.pow(9);
 
 fn mock_app() -> App {
-    AppBuilder::new().build()
+    App::default()
 }
 
 pub fn contract_ocr2() -> Box<dyn Contract<Empty>> {
