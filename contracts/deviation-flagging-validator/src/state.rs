@@ -6,7 +6,7 @@ use cw_storage_plus::Item;
 
 use owned::Auth;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct State {
     pub flagging_threshold: u32,
     pub flags: Addr,

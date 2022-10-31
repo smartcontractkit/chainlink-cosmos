@@ -17,7 +17,7 @@ pub enum Error {
     Unauthorized,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct State {
     pub owner: Addr,
     pub proposed_owner: Option<Addr>,
