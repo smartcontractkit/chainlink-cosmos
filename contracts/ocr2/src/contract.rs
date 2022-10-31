@@ -1597,7 +1597,7 @@ pub(crate) mod tests {
         let mut deps = mock_dependencies();
 
         let msg = InstantiateMsg {
-            link_token: "LINK".to_string(),
+            link_token: "link".to_string(),
             min_answer: 1i128,
             max_answer: 1_000_000_000i128,
             billing_access_controller: "billing_controller".to_string(),
