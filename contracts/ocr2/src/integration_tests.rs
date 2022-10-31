@@ -170,7 +170,7 @@ fn setup() -> Env {
 
     let main_balance = Cw20Coin {
         address: owner.clone().into(),
-        amount: Decimal::from_str("1000").unwrap().0,
+        amount: Decimal::from_str("1000").unwrap().atomics(),
     };
 
     let billing_access_controller_addr = router
@@ -232,7 +232,7 @@ fn setup() -> Env {
         )
         .unwrap();
 
-    let deposit = Decimal::from_str("1000").unwrap().0;
+    let deposit = Decimal::from_str("1000").unwrap().atomics();
     // Supply contract with funds
     router
         .execute_contract(
@@ -400,10 +400,10 @@ fn migrate() {
 // cw3 multisig account can control cw20 admin actions
 fn transmit_happy_path() {
     let mut env = setup();
-    let deposit = Decimal::from_str("1000").unwrap().0;
+    let deposit = Decimal::from_str("1000").unwrap().atomics();
     // expected in juels
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().atomics();
 
     // -- set billing
 
@@ -711,10 +711,10 @@ fn transmit_happy_path() {
 #[test]
 fn set_link_token() {
     let mut env = setup();
-    let deposit = Decimal::from_str("1000").unwrap().0;
+    let deposit = Decimal::from_str("1000").unwrap().atomics();
     // expected in juels
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().atomics();
 
     // -- set billing
 
@@ -877,10 +877,13 @@ fn set_link_token() {
             },
         )
         .unwrap();
-    let expected_balance = Decimal(deposit)
-        - (Decimal(Uint128::new(env.transmitters.len() as u128) * observation_payment)
-            + Decimal(reimbursement));
-    assert_eq!(Decimal(balance).to_string(), expected_balance.to_string());
+    let expected_balance = Decimal::new(deposit)
+        - (Decimal::new(Uint128::new(env.transmitters.len() as u128) * observation_payment)
+            + Decimal::new(reimbursement));
+    assert_eq!(
+        Decimal::new(balance).to_string(),
+        expected_balance.to_string()
+    );
 
     // token address should be changed
     let token_addr: Addr = env
@@ -897,7 +900,7 @@ fn revert_payouts_correctly() {
 
     // set billing
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().atomics();
     let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
@@ -1145,7 +1148,7 @@ fn set_billing_payout() {
     let mut env = setup();
     // expected in juels
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().atomics();
 
     // -- set billing
     // price in uLUNA
