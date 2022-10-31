@@ -7,7 +7,7 @@ use cw_storage_plus::{Item, Map};
 use access_controller::AccessControllerContract;
 use owned::Auth;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Config {
     pub raising_access_controller: AccessControllerContract,
     pub lowering_access_controller: AccessControllerContract,

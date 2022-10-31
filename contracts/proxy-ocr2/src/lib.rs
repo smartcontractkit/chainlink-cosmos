@@ -32,7 +32,7 @@ pub enum ContractError {
     CannotMigrate { previous_contract: String },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Phase {
     pub id: u16,
     pub contract_address: Addr,
@@ -46,7 +46,7 @@ pub const PHASES: Map<u16, Addr> = Map::new("phases");
 pub mod state {
     use super::*;
     /// Identical to [ocr2::state::Round], but modified to use a larger round_id to account for phase_id.
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
     pub struct Round {
         pub round_id: u64,
         #[serde(with = "ocr2::state::bignum")]
@@ -60,12 +60,12 @@ pub mod state {
 pub mod msg {
     use super::*;
 
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
     pub struct InstantiateMsg {
         pub contract_address: String,
     }
 
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub enum ExecuteMsg {
         ProposeContract {
@@ -84,7 +84,7 @@ pub mod msg {
         AcceptOwnership,
     }
 
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub enum QueryMsg {
         Decimals,

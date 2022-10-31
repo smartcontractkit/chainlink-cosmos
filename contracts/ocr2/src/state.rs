@@ -33,13 +33,13 @@ pub mod bignum {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Validator {
     pub address: Addr,
     pub gas_limit: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Billing {
     /// Should match <https://fcd.terra.dev/v1/txs/gas_prices>.
     /// For example if reports contain juels_per_luna, then recommended_gas_price is in uLUNA.
@@ -119,7 +119,7 @@ impl Config {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Proposal {
     pub owner: Addr,
     pub finalized: bool,
@@ -189,7 +189,7 @@ pub fn config_digest_from_data(
     result
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Transmitter {
     /// Reimbursement in juels
     pub payment: Uint128,
@@ -197,7 +197,7 @@ pub struct Transmitter {
     pub from_round_id: u32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Transmission {
     #[serde(with = "bignum")]
     #[schemars(with = "String")]
@@ -206,7 +206,7 @@ pub struct Transmission {
     pub transmission_timestamp: u32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Round {
     pub round_id: u32,
     #[serde(with = "bignum")]
