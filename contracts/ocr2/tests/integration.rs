@@ -25,7 +25,7 @@ fn setup() -> Instance<MockApi, MockStorage, MockQuerier> {
     let mut deps = mock_instance(WASM, &[]);
 
     let msg = InstantiateMsg {
-        link_token: "LINK".to_string(),
+        link_token: "link".to_string(),
         min_answer: 0i128,
         max_answer: 100_000_000_000i128,
         billing_access_controller: "billing_controller".to_string(),
