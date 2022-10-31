@@ -18,7 +18,6 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
-	"github.com/cosmos/cosmos-sdk/codec/legacy"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -27,7 +26,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	"github.com/terra-money/core/app"
 	"github.com/terra-money/core/app/params"
 
 	"github.com/smartcontractkit/terra.go/key"
@@ -43,13 +41,6 @@ func init() {
 	// Extracted from app.MakeEncodingConfig() to ensure that we only call them once, since they race and can panic.
 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	app.ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
-	app.ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-
-	// authz module use this codec to get signbytes.
-	// authz MsgExec can execute all message types,
-	// so legacy.Cdc need to register all amino messages to get proper signature
-	app.ModuleBasics.RegisterLegacyAminoCodec(legacy.Cdc)
 }
 
 //go:generate mockery --name ReaderWriter --output ./mocks/
