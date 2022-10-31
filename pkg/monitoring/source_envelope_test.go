@@ -51,7 +51,7 @@ func TestEnvelopeSource(t *testing.T) {
 		fcdclient.GetTxListParams{Account: feedConfig.ContractAddress, Limit: 10},
 	).Return(getTxsRes, nil).Once()
 	// Configuration
-	rpcClient.On("ContractStore",
+	rpcClient.On("ContractState",
 		mock.Anything, // context
 		feedConfig.ContractAddress,
 		[]byte(`"latest_config_details"`),
@@ -61,13 +61,13 @@ func TestEnvelopeSource(t *testing.T) {
 		uint64(6805892), // See ./fixtures/set_config-block.json
 	).Return(getBlockRes, nil).Once()
 	// LINK Balance
-	rpcClient.On("ContractStore",
+	rpcClient.On("ContractState",
 		mock.Anything, // context
 		chainConfig.LinkTokenAddress,
 		[]byte(`{"balance":{"address":"terra10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"}}`),
 	).Return(balanceRes, nil).Once()
 	// LINK available for payment.
-	rpcClient.On("ContractStore",
+	rpcClient.On("ContractState",
 		mock.Anything, // context
 		feedConfig.ContractAddress,
 		[]byte(`"link_available_for_payment"`),
@@ -149,7 +149,7 @@ func TestEnvelopeSource(t *testing.T) {
 
 	// Setup required mocks.
 	// Configuration
-	rpcClient.On("ContractStore",
+	rpcClient.On("ContractState",
 		mock.Anything, // context
 		feedConfig.ContractAddress,
 		[]byte(`"latest_config_details"`),
@@ -160,13 +160,13 @@ func TestEnvelopeSource(t *testing.T) {
 		fcdclient.GetTxListParams{Account: feedConfig.ContractAddress, Limit: 10},
 	).Return(getTxsRes, nil).Once()
 	// LINK Balance
-	rpcClient.On("ContractStore",
+	rpcClient.On("ContractState",
 		mock.Anything, // context
 		chainConfig.LinkTokenAddress,
 		[]byte(`{"balance":{"address":"terra10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"}}`),
 	).Return(balanceRes, nil).Once()
 	// LINK available for payment.
-	rpcClient.On("ContractStore",
+	rpcClient.On("ContractState",
 		mock.Anything, // context
 		feedConfig.ContractAddress,
 		[]byte(`"link_available_for_payment"`),

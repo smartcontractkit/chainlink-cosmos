@@ -142,8 +142,8 @@ func (_m *ReaderWriter) Broadcast(txBytes []byte, mode tx.BroadcastMode) (*tx.Br
 	return r0, r1
 }
 
-// ContractStore provides a mock function with given fields: contractAddress, queryMsg
-func (_m *ReaderWriter) ContractStore(contractAddress types.AccAddress, queryMsg []byte) ([]byte, error) {
+// ContractState provides a mock function with given fields: contractAddress, queryMsg
+func (_m *ReaderWriter) ContractState(contractAddress types.AccAddress, queryMsg []byte) ([]byte, error) {
 	ret := _m.Called(contractAddress, queryMsg)
 
 	var r0 []byte

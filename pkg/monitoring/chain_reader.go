@@ -18,7 +18,7 @@ import (
 // ChainReader is a subset of the pkg/terra/client.Reader interface enhanced with context support.
 type ChainReader interface {
 	TxsEvents(ctx context.Context, events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error)
-	ContractStore(ctx context.Context, contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
+	ContractState(ctx context.Context, contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
 }
 
 // NewChainReader produces a ChainReader that issues requests to the Terra RPC
@@ -61,7 +61,7 @@ func (c *chainReader) TxsEvents(_ context.Context, events []string, paginationPa
 	return client.TxsEvents(events, paginationParams)
 }
 
-func (c *chainReader) ContractStore(_ context.Context, contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
+func (c *chainReader) ContractState(_ context.Context, contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
 	c.globalSequencer.Lock()
 	defer c.globalSequencer.Unlock()
 	client, err := pkgClient.NewClient(
@@ -74,5 +74,5 @@ func (c *chainReader) ContractStore(_ context.Context, contractAddress sdk.AccAd
 		return nil, fmt.Errorf("failed to create a terra client: %w", err)
 	}
 	_ = c.rateLimiter.Take()
-	return client.ContractStore(contractAddress, queryMsg)
+	return client.ContractState(contractAddress, queryMsg)
 }

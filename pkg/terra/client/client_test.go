@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
@@ -12,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/abci/types"
-	wasmtypes "github.com/terra-money/core/x/wasm/types"
 	"go.uber.org/zap"
 
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
@@ -50,8 +50,8 @@ func TestBatchSim(t *testing.T) {
 	}
 
 	contract := DeployTestContract(t, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
-	var succeed sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), ExecuteMsg: []byte(`{"reset":{"count":5}}`)}
-	var fail sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), ExecuteMsg: []byte(`{"blah":{"count":5}}`)}
+	var succeed sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), Msg: []byte(`{"reset":{"count":5}}`)}
+	var fail sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), Msg: []byte(`{"blah":{"count":5}}`)}
 
 	t.Run("single success", func(t *testing.T) {
 		_, sn, err := tc.Account(accounts[0].Address)
@@ -188,14 +188,14 @@ func TestTerraClient(t *testing.T) {
 
 	t.Run("contract event querying", func(t *testing.T) {
 		// Query initial contract state
-		count, err := tc.ContractStore(
+		count, err := tc.ContractState(
 			contract,
 			[]byte(`{"get_count":{}}`),
 		)
 		require.NoError(t, err)
 		assert.Equal(t, `{"count":0}`, string(count))
 		// Query invalid state should give an error
-		count, err = tc.ContractStore(
+		count, err = tc.ContractState(
 			contract,
 			[]byte(`{"blah":{}}`),
 		)
@@ -203,7 +203,12 @@ func TestTerraClient(t *testing.T) {
 		require.Nil(t, count)
 
 		// Change the contract state
-		rawMsg := wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
+		rawMsg := &wasmtypes.MsgExecuteContract{
+			Sender:   accounts[0].Address.String(),
+			Contract: contract.String(),
+			Msg:      []byte(`{"reset":{"count":5}}`),
+			Funds:    sdk.Coins{},
+		}
 		an, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
 		gasPrices, err := gpe.GasPrices()
@@ -212,7 +217,12 @@ func TestTerraClient(t *testing.T) {
 		require.NoError(t, err)
 		time.Sleep(1 * time.Second)
 		// Do it again so there are multiple executions
-		rawMsg = wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":4}}`), sdk.Coins{})
+		rawMsg = &wasmtypes.MsgExecuteContract{
+			Sender:   accounts[0].Address.String(),
+			Contract: contract.String(),
+			Msg:      []byte(`{"reset":{"count":4}}`),
+			Funds:    sdk.Coins{},
+		}
 		an, sn, err = tc.Account(accounts[0].Address)
 		require.NoError(t, err)
 		_, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, gasPrices["uluna"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
@@ -220,7 +230,7 @@ func TestTerraClient(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Observe changed contract state
-		count, err = tc.ContractStore(
+		count, err = tc.ContractState(
 			contract,
 			[]byte(`{"get_count":{}}`),
 		)
@@ -269,7 +279,12 @@ func TestTerraClient(t *testing.T) {
 	})
 
 	t.Run("gasprice", func(t *testing.T) {
-		rawMsg := wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
+		rawMsg := &wasmtypes.MsgExecuteContract{
+			Sender:   accounts[0].Address.String(),
+			Contract: contract.String(),
+			Msg:      []byte(`{"reset":{"count":5}}`),
+			Funds:    sdk.Coins{},
+		}
 		const expCodespace = sdkerrors.RootCodespace
 		gasPrices, err := gpe.GasPrices()
 		require.NoError(t, err)

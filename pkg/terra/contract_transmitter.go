@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
-	terraSDK "github.com/terra-money/core/x/wasm/types"
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/chains/evmutil"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
@@ -65,7 +65,12 @@ func (ct *ContractTransmitter) Transmit(
 	if err != nil {
 		return err
 	}
-	m := terraSDK.NewMsgExecuteContract(ct.sender, ct.contract, msgBytes, cosmosSDK.Coins{})
+	m := &wasmtypes.MsgExecuteContract{
+		Sender:   ct.sender.String(),
+		Contract: ct.contract.String(),
+		Msg:      msgBytes,
+		Funds:    cosmosSDK.Coins{},
+	}
 	_, err = ct.msgEnqueuer.Enqueue(ct.contract.String(), m)
 	return err
 }

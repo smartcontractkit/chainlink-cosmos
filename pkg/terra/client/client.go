@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/codec/legacy"
@@ -28,7 +29,6 @@ import (
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	"github.com/terra-money/core/app"
 	"github.com/terra-money/core/app/params"
-	wasmtypes "github.com/terra-money/core/x/wasm/types"
 
 	"github.com/smartcontractkit/terra.go/key"
 	"github.com/smartcontractkit/terra.go/msg"
@@ -61,7 +61,7 @@ type ReaderWriter interface {
 // Reader provides methods for reading from a terra chain.
 type Reader interface {
 	Account(address sdk.AccAddress) (uint64, uint64, error)
-	ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
+	ContractState(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
 	TxsEvents(events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error)
 	Tx(hash string) (*txtypes.GetTxResponse, error)
 	LatestBlock() (*tmtypes.GetLatestBlockResponse, error)
@@ -215,17 +215,17 @@ func (c *Client) Account(addr sdk.AccAddress) (uint64, uint64, error) {
 	return a.GetAccountNumber(), a.GetSequence(), nil
 }
 
-// ContractStore reads from a WASM contract store
-func (c *Client) ContractStore(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
-	s, err := c.wasmClient.ContractStore(context.Background(), &wasmtypes.QueryContractStoreRequest{
-		ContractAddress: contractAddress.String(),
-		QueryMsg:        queryMsg,
+// ContractState reads from a WASM contract store
+func (c *Client) ContractState(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
+	s, err := c.wasmClient.SmartContractState(context.Background(), &wasmtypes.QuerySmartContractStateRequest{
+		Address:   contractAddress.String(),
+		QueryData: queryMsg,
 	})
 	if err != nil {
 		return nil, err
 	}
 	//  Note s will be nil on err
-	return s.QueryResult, err
+	return s.Data, err
 }
 
 // TxsEvents returns in tx events in descending order (latest txes first).

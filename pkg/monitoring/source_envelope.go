@@ -245,7 +245,7 @@ func (e *envelopeSource) fetchLatestConfig(ctx context.Context) (types.ContractC
 }
 
 func (e *envelopeSource) fetchLatestConfigBlock(ctx context.Context) (uint64, error) {
-	resp, err := e.rpcClient.ContractStore(
+	resp, err := e.rpcClient.ContractState(
 		ctx,
 		e.terraFeedConfig.ContractAddress,
 		[]byte(`"latest_config_details"`),
@@ -324,7 +324,7 @@ type linkBalanceResponse struct {
 
 func (e *envelopeSource) fetchLinkBalance(ctx context.Context) (*big.Int, error) {
 	query := fmt.Sprintf(`{"balance":{"address":"%s"}}`, e.terraFeedConfig.ContractAddressBech32)
-	res, err := e.rpcClient.ContractStore(
+	res, err := e.rpcClient.ContractState(
 		ctx,
 		e.terraConfig.LinkTokenAddress,
 		[]byte(query),
@@ -348,7 +348,7 @@ type linkAvailableForPaymentRes struct {
 }
 
 func (e *envelopeSource) fetchLinkAvailableForPayment(ctx context.Context) (*big.Int, error) {
-	res, err := e.rpcClient.ContractStore(
+	res, err := e.rpcClient.ContractState(
 		ctx,
 		e.terraFeedConfig.ContractAddress,
 		[]byte(`"link_available_for_payment"`),

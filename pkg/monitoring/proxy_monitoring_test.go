@@ -41,7 +41,7 @@ func TestProxyMonitoring(t *testing.T) {
 		require.NoError(t, err)
 
 		// Setup claims.
-		chainReader.On("ContractStore",
+		chainReader.On("ContractState",
 			mock.Anything, // context
 			feedConfig.ProxyAddress,
 			[]byte(`"latest_round_data"`),

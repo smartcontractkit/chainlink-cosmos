@@ -73,7 +73,7 @@ type latestRoundDataRes struct {
 }
 
 func (p *proxySource) fetchLatestRoundFromProxy(ctx context.Context) (*big.Int, error) {
-	res, err := p.client.ContractStore(
+	res, err := p.client.ContractState(
 		ctx,
 		p.terraFeedConfig.ProxyAddress,
 		[]byte(`"latest_round_data"`),
