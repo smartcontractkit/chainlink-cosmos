@@ -1499,20 +1499,20 @@ fn calculate_reimbursement(
     // so the actual transaction uses more. Gas allocated ends up being almost exactly 1.4x of gas used.
     let gas_adjustment = Decimal::percent(u64::from(config.gas_adjustment.unwrap_or(140)));
 
-    let micro = Decimal::from_ratio(1u128, 10u128.pow(6));
     // total gas spent
     let gas = gas_per_signature * signature_count + gas_base;
+    let gas = Decimal::raw(gas as u128 * 10u128.pow(Decimal::DECIMAL_PLACES));
     // gas allocated seems to be about 1.4 of gas used
-    let gas = Uint128::new(gas as u128) * gas_adjustment;
+    let gas = gas * gas_adjustment;
     // scale uLUNA to LUNA
-    let recommended_gas_price = config.recommended_gas_price_micro * micro;
+    const MICRO: Uint128 = Uint128::new(10u128.pow(6));
+    let recommended_gas_price = config.recommended_gas_price_micro / MICRO;
     // gas cost in LUNA
     let gas_cost = recommended_gas_price * gas;
     // total in juels
-    let total = gas_cost * Decimal(Uint128::new(juels_per_fee_coin));
+    let total = gas_cost * Decimal::raw(juels_per_fee_coin);
     // NOTE: no stability tax is charged on transactions in LUNA
-
-    total.0
+    total.atomics()
 }
 
 // ---
