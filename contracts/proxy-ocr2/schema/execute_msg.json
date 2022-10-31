@@ -3,12 +3,6 @@
   "title": "ExecuteMsg",
   "oneOf": [
     {
-      "type": "string",
-      "enum": [
-        "accept_ownership"
-      ]
-    },
-    {
       "type": "object",
       "required": [
         "propose_contract"
@@ -69,6 +63,13 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "description": "Finish contract ownership transfer. Can be used only by pending owner",
+      "type": "string",
+      "enum": [
+        "accept_ownership"
+      ]
     }
   ]
 }
