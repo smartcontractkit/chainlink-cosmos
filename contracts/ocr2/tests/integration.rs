@@ -200,8 +200,8 @@ fn gas_test() {
     epoch_and_round[31] = 1;
 
     // determine hash to sign
-    use blake2::{Blake2s, Digest};
-    let mut hasher = Blake2s::default();
+    use blake2::{Blake2s256, Digest};
+    let mut hasher = Blake2s256::default();
     hasher.update((report.len() as u32).to_be_bytes());
     hasher.update(&report);
     hasher.update(&report_context);
