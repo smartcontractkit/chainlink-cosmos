@@ -451,7 +451,10 @@ fn transmit_happy_path() {
     // Should revert
     let res = transmit_report(&mut env, 1, 1, ANSWER, false);
     assert!(res.is_err());
-    assert_eq!(res.err().unwrap().to_string(), "invalid signature");
+    assert_eq!(
+        res.err().unwrap().source().unwrap().to_string(),
+        "invalid signature"
+    );
 
     // -- call transmit
     let res = transmit_report(&mut env, 1, 1, ANSWER, true);
