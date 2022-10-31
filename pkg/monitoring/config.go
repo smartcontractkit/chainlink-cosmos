@@ -9,7 +9,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	"github.com/smartcontractkit/terra.go/msg"
 )
 
 // TerraConfig contains configuration for connecting to a terra client.
@@ -114,7 +113,7 @@ func parseEnvVars(cfg *TerraConfig) error {
 		cfg.PollInterval = pollInterval
 	}
 	if value, isPresent := os.LookupEnv("TERRA_LINK_TOKEN_ADDRESS"); isPresent {
-		address, err := msg.AccAddressFromBech32(value)
+		address, err := sdk.AccAddressFromBech32(value)
 		if err != nil {
 			return fmt.Errorf("failed to parse the bech32-encoded link token address from '%s': %w", value, err)
 		}

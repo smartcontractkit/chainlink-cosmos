@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
 	fcdclientmocks "github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient/mocks"
 	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/mocks"
 	ocr2types "github.com/smartcontractkit/libocr/offchainreporting2/types"
-	"github.com/smartcontractkit/terra.go/msg"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -39,7 +39,7 @@ func TestEnvelopeSource(t *testing.T) {
 	// Configurations.
 	feedConfig := generateFeedConfig()
 	feedConfig.ContractAddressBech32 = "terra10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"
-	feedConfig.ContractAddress, _ = msg.AccAddressFromBech32("terra10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf")
+	feedConfig.ContractAddress, _ = sdk.AccAddressFromBech32("terra10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf")
 	chainConfig := generateChainConfig()
 
 	// Setup mocks.

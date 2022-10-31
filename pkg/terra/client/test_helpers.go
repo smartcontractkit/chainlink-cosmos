@@ -12,34 +12,35 @@ import (
 	"testing"
 	"time"
 
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/pelletier/go-toml"
 	"github.com/smartcontractkit/terra.go/key"
-	"github.com/smartcontractkit/terra.go/msg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func createKeyFromMnemonic(t *testing.T, mnemonic string) (key.PrivKey, sdk.AccAddress) {
+func createKeyFromMnemonic(t *testing.T, mnemonic string) (cryptotypes.PrivKey, sdk.AccAddress) {
 	// Derive Raw Private Key
 	privKeyBz, err := key.DerivePrivKeyBz(mnemonic, key.CreateHDPath(0, 0))
 	assert.NoError(t, err)
 	// Generate StdPrivKey
 	privKey, err := key.PrivKeyGen(privKeyBz)
 	assert.NoError(t, err)
-	addr := msg.AccAddress(privKey.PubKey().Address())
+	addr := sdk.AccAddress(privKey.PubKey().Address())
 	return privKey, addr
 }
 
 type Account struct {
 	Name       string
-	PrivateKey key.PrivKey
+	PrivateKey cryptotypes.PrivKey
 	Address    sdk.AccAddress
 }
 
 // 0.001
-var minGasPrice = msg.NewDecCoinFromDec("uluna", msg.NewDecWithPrec(1, 3))
+var minGasPrice = sdk.NewDecCoinFromDec("uluna", sdk.NewDecWithPrec(1, 3))
 
 // SetupLocalTerraNode sets up a local terra node via terrad, and returns pre-funded accounts, the test directory, and the url.
 func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string, string) {
@@ -150,8 +151,15 @@ func DeployTestContract(t *testing.T, tendermintURL string, deployAccount, owner
 	require.NoError(t, err, string(out))
 	an, sn, err2 := tc.Account(ownerAccount.Address)
 	require.NoError(t, err2)
-	r, err3 := tc.SignAndBroadcast([]msg.Msg{
-		msg.NewMsgInstantiateContract(ownerAccount.Address, nil, 1, []byte(`{"count":0}`), nil)}, an, sn, minGasPrice, ownerAccount.PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+	r, err3 := tc.SignAndBroadcast([]sdk.Msg{
+		&wasmtypes.MsgInstantiateContract{
+			Sender: ownerAccount.Address.String(),
+			Admin:  "",
+			CodeID: 1,
+			Msg:    []byte(`{"count":0}`),
+			Funds:  sdk.Coins{},
+		},
+	}, an, sn, minGasPrice, ownerAccount.PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 	require.NoError(t, err3)
 	return GetContractAddr(t, tc, r.TxResponse.TxHash)
 }

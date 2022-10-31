@@ -19,18 +19,18 @@ import (
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	"github.com/terra-money/core/app/params"
 
-	"github.com/smartcontractkit/terra.go/key"
-	"github.com/smartcontractkit/terra.go/msg"
-	"github.com/smartcontractkit/terra.go/tx"
+	terraTx "github.com/smartcontractkit/terra.go/tx"
 )
 
 const httpResponseLimit = 10_000_000 // 10MB
@@ -64,12 +64,12 @@ type Reader interface {
 // Assumes all msgs are for the same from address.
 // We may want to support multiple from addresses + signers if a use case arises.
 type Writer interface {
-	SignAndBroadcast(msgs []sdk.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
+	SignAndBroadcast(msgs []sdk.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Simulate(txBytes []byte) (*txtypes.SimulateResponse, error)
 	BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSimResults, error)
 	SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error)
-	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error)
+	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error)
 }
 
 var _ ReaderWriter = (*Client)(nil)
@@ -161,6 +161,7 @@ func NewClient(chainID string,
 		return nil, err
 	}
 	ec := encodingConfig
+	// TODO: extract this cosmosclient.Context{} creation so we can change it per chain
 	// Note should terra nodes start exposing grpc, its preferable
 	// to connect directly with grpc.Dial to avoid using clientCtx (according to tendermint team).
 	// If so then we would start putting timeouts on the ctx we pass in to the generate grpc client calls.
@@ -251,19 +252,20 @@ func (c *Client) BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse,
 }
 
 // CreateAndSign creates and signs a transaction
-func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error) {
-	txbuilder := tx.NewTxBuilder(encodingConfig.TxConfig)
-	err := txbuilder.SetMsgs(msgs...)
+func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error) {
+	txBuilder := terraTx.NewTxBuilder(encodingConfig.TxConfig)
+	err := txBuilder.SetMsgs(msgs...)
 	if err != nil {
 		return nil, err
 	}
 	gasLimitBuffered := uint64(math.Ceil(float64(gasLimit) * float64(gasLimitMultiplier)))
-	txbuilder.SetGasLimit(gasLimitBuffered)
-	gasFee := msg.NewCoin(gasPrice.Denom, gasPrice.Amount.MulInt64(int64(gasLimitBuffered)).Ceil().RoundInt())
-	txbuilder.SetFeeAmount(sdk.NewCoins(gasFee))
+	txBuilder.SetGasLimit(gasLimitBuffered)
+	gasFee := sdk.NewCoin(gasPrice.Denom, gasPrice.Amount.MulInt64(int64(gasLimitBuffered)).Ceil().RoundInt())
+	txBuilder.SetFeeAmount(sdk.NewCoins(gasFee))
 	// 0 timeout height means unset.
-	txbuilder.SetTimeoutHeight(timeoutHeight)
-	err = txbuilder.Sign(tx.SignModeDirect, tx.SignerData{
+	txBuilder.SetTimeoutHeight(timeoutHeight)
+	// TODO: replace with Sign(factory, ...)?
+	err = txBuilder.Sign(signing.SignMode_SIGN_MODE_DIRECT, authsigning.SignerData{
 		AccountNumber: account,
 		ChainID:       c.chainID,
 		Sequence:      sequence,
@@ -271,7 +273,7 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 	if err != nil {
 		return nil, err
 	}
-	signedTx, err := txbuilder.GetTxBytes()
+	signedTx, err := txBuilder.GetTxBytes()
 	if err != nil {
 		return nil, err
 	}
@@ -373,8 +375,8 @@ func (c *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSim
 
 // SimulateUnsigned simulates an unsigned msg
 func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error) {
-	txbuilder := tx.NewTxBuilder(encodingConfig.TxConfig)
-	if err := txbuilder.SetMsgs(msgs...); err != nil {
+	txBuilder := encodingConfig.TxConfig.NewTxBuilder()
+	if err := txBuilder.SetMsgs(msgs...); err != nil {
 		return nil, err
 	}
 	// Create an empty signature literal as the ante handler will populate with a
@@ -383,14 +385,14 @@ func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.Sim
 	sig := signing.SignatureV2{
 		PubKey: &secp256k1.PubKey{},
 		Data: &signing.SingleSignatureData{
-			SignMode: tx.SignModeDirect,
+			SignMode: signing.SignMode_SIGN_MODE_DIRECT,
 		},
 		Sequence: sequence,
 	}
-	if err := txbuilder.SetSignatures(sig); err != nil {
+	if err := txBuilder.SetSignatures(sig); err != nil {
 		return nil, err
 	}
-	txBytes, err := txbuilder.GetTxBytes()
+	txBytes, err := encodingConfig.TxConfig.TxEncoder()(txBuilder.GetTx())
 	if err != nil {
 		return nil, err
 	}
@@ -427,11 +429,12 @@ func (c *Client) Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes
 }
 
 // SignAndBroadcast signs and broadcasts a group of msgs.
-func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint64, gasPrice sdk.DecCoin, signer key.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
+func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
 	sim, err := c.SimulateUnsigned(msgs, sequence)
 	if err != nil {
 		return nil, err
 	}
+	// TODO: replace with BroadcastTx()?
 	txBytes, err := c.CreateAndSign(msgs, account, sequence, sim.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrice, signer, 0)
 	if err != nil {
 		return nil, err

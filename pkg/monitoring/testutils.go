@@ -8,15 +8,15 @@ import (
 	"math/rand"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	"github.com/smartcontractkit/terra.go/msg"
 )
 
 // Generators
 
 func generateChainConfig() TerraConfig {
-	address, _ := msg.AccAddressFromBech32("terra106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
+	address, _ := sdk.AccAddressFromBech32("terra106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
 	return TerraConfig{
 		TendermintURL:    "https://some-tendermint-url.com",
 		FCDURL:           "https://fcd.terra.dev",
@@ -32,8 +32,8 @@ func generateChainConfig() TerraConfig {
 func generateFeedConfig() TerraFeedConfig {
 	coins := []string{"btc", "eth", "matic", "link", "avax", "ftt", "srm", "usdc", "sol", "ray"}
 	coin := coins[rand.Intn(len(coins))]
-	address, _ := msg.AccAddressFromBech32("terra106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
-	proxyAddress, _ := msg.AccAddressFromBech32("terra106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
+	address, _ := sdk.AccAddressFromBech32("terra106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
+	proxyAddress, _ := sdk.AccAddressFromBech32("terra106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
 	return TerraFeedConfig{
 		Name:           fmt.Sprintf("%s / usd", coin),
 		Path:           fmt.Sprintf("%s-usd", coin),
