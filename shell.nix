@@ -26,10 +26,17 @@ pkgs.mkShell {
     gotools
 
     # NodeJS + TS
+    nodePackages.typescript
     nodePackages.typescript-language-server
     # Keep this nodejs version in sync with the version in .tool-versions please
     nodejs-18_x
     (yarn.override { nodejs = nodejs-18_x; })
+
+    python3
+
+  ] ++ lib.optionals stdenv.isLinux [
+    # ledger specific packages
+    libudev-zero
     libusb1
   ];
   RUST_BACKTRACE = "1";
