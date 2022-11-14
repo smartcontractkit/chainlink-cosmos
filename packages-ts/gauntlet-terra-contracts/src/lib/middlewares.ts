@@ -1,7 +1,7 @@
 import { TerraCommand, logger } from '@chainlink/gauntlet-terra'
 import { Middleware, Next, AddressBook } from '@chainlink/gauntlet-core'
 import { CONTRACT_LIST } from './contracts'
-import { AccAddress } from '@terra-money/terra.js'
+import { AccAddress } from '@chainlink/gauntlet-terra'
 
 const addressBooks = new Map<string, AddressBook>()
 

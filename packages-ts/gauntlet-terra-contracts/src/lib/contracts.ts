@@ -4,7 +4,6 @@ import { existsSync, readFileSync } from 'fs'
 import path from 'path'
 import fetch from 'node-fetch'
 import { DEFAULT_RELEASE_VERSION, DEFAULT_CWPLUS_VERSION } from './constants'
-import { AccAddress } from '@terra-money/terra.js'
 import { assertions } from '@chainlink/gauntlet-core/dist/utils'
 
 export type CONTRACT_LIST = typeof CONTRACT_LIST[keyof typeof CONTRACT_LIST]

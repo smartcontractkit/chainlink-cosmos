@@ -1,10 +1,9 @@
 import { inspection, logger } from '@chainlink/gauntlet-core/dist/utils'
 import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
-import { RDD } from '@chainlink/gauntlet-terra'
+import { RDD, LCDClient } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { dateFromUnix } from '../../../../lib/utils'
-import { LCDClient } from '@terra-money/terra.js'
 import { RoundData } from '../../../../lib/inspection'
 
 type CommandInput = {

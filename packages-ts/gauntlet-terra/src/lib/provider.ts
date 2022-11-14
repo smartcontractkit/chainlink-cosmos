@@ -1,5 +1,6 @@
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
-import { AccAddress, EventsByType, LCDClient, TxInfo } from '@terra-money/terra.js'
+import { EventsByType, LCDClient, TxInfo } from '@terra-money/terra.js'
+import { AccAddress } from '../index'
 
 export const filterTxsByEvent = (txs: TxInfo[], event: string): TxInfo | undefined => {
   const filteredTx = txs.filter((tx) => tx.logs?.some((log) => log.eventsByType[event]))?.[0]

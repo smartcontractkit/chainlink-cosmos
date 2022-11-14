@@ -1,9 +1,9 @@
 import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { CATEGORIES } from '../../../../lib/constants'
-import { LCDClient } from '@terra-money/terra.js'
+import { LCDClient } from '@chainlink/gauntlet-terra'
 import { getLatestOCRNewTransmissionEvents } from '../../../../lib/inspection'
-import { BN, logger } from '@chainlink/gauntlet-core/dist/utils'
+import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { providerUtils } from '@chainlink/gauntlet-terra'
 import { dateFromUnix } from '../../../../lib/utils'
 

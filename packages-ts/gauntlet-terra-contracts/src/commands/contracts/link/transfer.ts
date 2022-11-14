@@ -2,7 +2,7 @@ import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { logger } from '@chainlink/gauntlet-terra'
 import { CATEGORIES, TOKEN_DECIMALS } from '../../../lib/constants'
 import { AbstractInstruction, BeforeExecute, instructionToCommand } from '../../abstract/executionWrapper'
-import { AccAddress } from '@terra-money/terra.js'
+import { AccAddress } from '@chainlink/gauntlet-terra'
 
 type CommandInput = {
   to: string

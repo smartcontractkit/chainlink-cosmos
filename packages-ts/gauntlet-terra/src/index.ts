@@ -8,3 +8,4 @@ import { AddressBook } from '@chainlink/gauntlet-core'
 import logger from './commands/logger'
 
 export { TerraCommand, waitExecute, TransactionResponse, constants, providerUtils, RDD, AddressBook, logger }
+export { AccAddress, LCDClient } from "@terra-money/terra.js";

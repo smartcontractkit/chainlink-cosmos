@@ -1,5 +1,5 @@
 import { BN } from '@chainlink/gauntlet-core/dist/utils'
-import { AccAddress } from '@terra-money/terra.js'
+import { AccAddress } from '@chainlink/gauntlet-terra'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'

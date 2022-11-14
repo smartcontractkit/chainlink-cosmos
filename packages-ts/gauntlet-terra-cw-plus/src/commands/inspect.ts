@@ -1,7 +1,8 @@
 import { TerraCommand, TransactionResponse, logger } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 import { Action, State, Vote } from '../lib/types'
-import { LCDClient, AccAddress } from '@terra-money/terra.js'
+import { LCDClient } from '@terra-money/terra.js'
+import { AccAddress } from '@chainlink/gauntlet-terra'
 
 export default class Inspect extends TerraCommand {
   static id = 'cw3_flex_multisig:inspect'

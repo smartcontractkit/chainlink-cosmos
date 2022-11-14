@@ -1,5 +1,4 @@
-import { AccAddress } from '@terra-money/terra.js'
-import { RDD, logger } from '@chainlink/gauntlet-terra'
+import { RDD, logger, AccAddress } from '@chainlink/gauntlet-terra'
 import { AbstractInstruction, BeforeExecute } from '../../abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'

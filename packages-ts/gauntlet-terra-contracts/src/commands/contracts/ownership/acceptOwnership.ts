@@ -2,7 +2,7 @@ import { AbstractInstruction, BeforeExecute } from '../../abstract/executionWrap
 import { RDD, logger } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'
-import { AccAddress } from '@terra-money/terra.js'
+import { AccAddress } from '@chainlink/gauntlet-terra'
 
 type CommandInput = {}
 

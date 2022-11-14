@@ -1,5 +1,6 @@
 import { BN, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { AccAddress, MsgSend } from '@terra-money/terra.js'
+import { MsgSend } from '@terra-money/terra.js'
+import { AccAddress } from '@chainlink/gauntlet-terra'
 import { CATEGORIES, ULUNA_DECIMALS } from '../../lib/constants'
 import { TerraCommand, TransactionResponse, logger } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'

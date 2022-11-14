@@ -1,4 +1,5 @@
-import { AccAddress, EventsByType, LCDClient } from '@terra-money/terra.js'
+import { EventsByType } from '@terra-money/terra.js'
+import { AccAddress, LCDClient } from '@chainlink/gauntlet-terra'
 import { providerUtils } from '@chainlink/gauntlet-terra'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 

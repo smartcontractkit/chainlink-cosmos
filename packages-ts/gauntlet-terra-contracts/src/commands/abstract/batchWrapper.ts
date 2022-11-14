@@ -1,6 +1,7 @@
 import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse, logger } from '@chainlink/gauntlet-terra'
-import { AccAddress, MsgExecuteContract, MsgSend } from '@terra-money/terra.js'
+import { MsgExecuteContract, MsgSend } from '@terra-money/terra.js'
+import { AccAddress } from '@chainlink/gauntlet-terra'
 import { prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { RDD } from '@chainlink/gauntlet-terra'
 

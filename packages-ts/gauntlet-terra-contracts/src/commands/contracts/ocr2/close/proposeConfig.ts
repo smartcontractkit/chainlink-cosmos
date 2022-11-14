@@ -1,4 +1,4 @@
-import { AccAddress } from '@terra-money/terra.js'
+import { AccAddress } from '@chainlink/gauntlet-terra'
 import { EMPTY_TRANSMITTERS } from '../../../../lib/constants'
 import { extendCommandInstruction, instructionToCommand } from '../../../abstract/executionWrapper'
 import ProposeConfig, { CommandInput, instruction } from '../proposeConfig'

@@ -1,12 +1,11 @@
 import { BN, inspection, logger, longs } from '@chainlink/gauntlet-core/dist/utils'
-import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
+import { RDD, LCDClient } from '@chainlink/gauntlet-terra'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { CATEGORIES, TOKEN_UNIT } from '../../../../lib/constants'
 import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
 import { deserializeConfig } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
 import { getLatestOCRConfigEvent } from '../../../../lib/inspection'
-import { LCDClient } from '@terra-money/terra.js'
 
 // Command input and expected info is the same here
 type ContractExpectedInfo = {

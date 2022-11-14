@@ -1,5 +1,5 @@
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
-import { AccAddress } from '@terra-money/terra.js'
+import { AccAddress } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 

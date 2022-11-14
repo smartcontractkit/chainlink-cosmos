@@ -6,7 +6,7 @@ import {
   instructionToCommand,
 } from '../../abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
-import { AccAddress } from '@terra-money/terra.js'
+import { AccAddress } from '@chainlink/gauntlet-terra'
 
 type CommandInput = {
   amount?: string

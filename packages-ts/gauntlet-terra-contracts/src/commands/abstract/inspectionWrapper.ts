@@ -4,7 +4,7 @@ import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { CATEGORIES } from '../../lib/constants'
 import { CONTRACT_LIST } from '../../lib/contracts'
-import { LCDClient } from '@terra-money/terra.js'
+import { LCDClient } from '@chainlink/gauntlet-terra'
 import { withAddressBook } from '../../lib/middlewares'
 
 /**
