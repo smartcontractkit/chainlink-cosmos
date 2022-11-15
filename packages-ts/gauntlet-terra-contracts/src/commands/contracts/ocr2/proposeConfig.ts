@@ -76,10 +76,10 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
   logger.loading(`Executing ${context.id} from contract ${context.contract}`)
 
   const contractConfig = {
-    f: event?.f[0],
-    transmitters: event?.transmitters,
-    signers: event?.signers.map((s) => Buffer.from(s, 'hex').toString('base64')),
-    payees: event?.payees,
+    f: event?.attributes?.find(({ key }) => key === "f")?.value,
+    transmitters: event?.attributes?.find(({ key }) => key === "transmitters")?.value,
+    signers: event?.attributes?.filter(({ key }) => key === "signers")?.map((s) => Buffer.from(s.value, 'hex').toString('base64')),
+    payees: event?.attributes?.find(({ key }) => key === "payees")?.value,
   }
 
   const proposedConfig = {

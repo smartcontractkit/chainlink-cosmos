@@ -1,4 +1,4 @@
-import { RDD, LCDClient } from '@chainlink/gauntlet-terra'
+import { RDD, Client } from '@chainlink/gauntlet-terra'
 import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { CATEGORIES } from '../../../../lib/constants'
@@ -60,7 +60,7 @@ const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   }
 }
 
-const makeOnchainData = (provider: LCDClient) => async (
+const makeOnchainData = (provider: Client) => async (
   instructionsData: any[],
   input: CommandInput,
   aggregator: string,

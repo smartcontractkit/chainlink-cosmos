@@ -1,10 +1,7 @@
 import { FlowCommand } from '@chainlink/gauntlet-core'
 import { CATEGORIES } from '../../../lib/constants'
 import { waitExecute, TransactionResponse } from '@chainlink/gauntlet-terra'
-import { MnemonicKey } from '@terra-money/terra.js'
 import { makeAbstractCommand } from '../../abstract'
-import UploadContractCode from '../../tooling/upload'
-import DeployLink from '../link/deploy'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import DeployOCR2 from './deploy'
 import SetBilling from './setBilling'
@@ -28,8 +25,10 @@ export default class DeployOCR2Flow extends FlowCommand<TransactionResponse> {
       peerId: 'DxRwKpwNBuMzKf5YEG1vLpnRbWeKo1Z4tKHfFGt8vUkj',
       configPublicKey: '5cd10bf991c8b0db7bee3ec371c7795a69297b6bccf7b4d738e0920b56131772',
       signer: new Array(64).fill(i.toString(16)).join(''),
-      payee: new MnemonicKey().publicKey?.address(),
-      transmitter: new MnemonicKey().publicKey?.address(),
+      // payee: new MnemonicKey().publicKey?.address(),
+      // transmitter: new MnemonicKey().publicKey?.address(),
+      payee: '',
+      transmitter: '', // TODO
     }))
 
     this.stepIds = {

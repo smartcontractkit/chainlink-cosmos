@@ -1,10 +1,12 @@
 import { BN, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { MsgSend } from '@terra-money/terra.js'
 import { AccAddress } from '@chainlink/gauntlet-terra'
 import { CATEGORIES, ULUNA_DECIMALS } from '../../lib/constants'
 import { TerraCommand, TransactionResponse, logger } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 import { withAddressBook } from '../../lib/middlewares'
+
+import { MsgSendEncodeObject } from '@cosmjs/stargate'
+import { MsgSend } from 'cosmjs-types/cosmos/bank/v1beta1/tx'
 
 type CommandInput = {
   destination: string
@@ -44,11 +46,20 @@ export default class TransferLuna extends TerraCommand {
 
   makeRawTransaction = async (signer: AccAddress) => {
     if (!AccAddress.validate(this.input.destination)) throw new Error('Invalid destination address')
-    return [new MsgSend(signer, this.input.destination, `${this.input.amount}uluna`)]
+
+    const sendMsg: MsgSendEncodeObject = {
+      typeUrl: "/cosmos.bank.v1beta1.MsgSend",
+      value: MsgSend.fromPartial({
+        fromAddress: signer,
+        toAddress: this.input.destination,
+        amount: [{ denom: 'uluna', amount: this.input.amount }],
+      }),
+    };
+    return [sendMsg]
   }
 
   execute = async () => {
-    const message = await this.makeRawTransaction(this.wallet.key.accAddress)
+    const message = await this.makeRawTransaction(this.signer.address)
     await this.beforeExecute()
     await prompt(`Continue?`)
     const tx = await this.signAndSend(message)

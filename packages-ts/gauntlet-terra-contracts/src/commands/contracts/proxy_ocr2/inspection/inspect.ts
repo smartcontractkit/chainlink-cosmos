@@ -1,6 +1,6 @@
 import { inspection, logger } from '@chainlink/gauntlet-core/dist/utils'
 import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
-import { RDD, LCDClient } from '@chainlink/gauntlet-terra'
+import { RDD, Client } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { dateFromUnix } from '../../../../lib/utils'
@@ -36,7 +36,7 @@ const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   }
 }
 
-const makeOnchainData = (provider: LCDClient) => async (
+const makeOnchainData = (provider: Client) => async (
   instructionsData: any[],
   input: CommandInput,
   proxyContract: string,

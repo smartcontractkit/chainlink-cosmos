@@ -1,9 +1,10 @@
 import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse, logger } from '@chainlink/gauntlet-terra'
-import { MsgExecuteContract, MsgSend } from '@terra-money/terra.js'
+// import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx";
 import { AccAddress } from '@chainlink/gauntlet-terra'
 import { prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { RDD } from '@chainlink/gauntlet-terra'
+import { EncodeObject } from '@cosmjs/proto-signing'
 
 export const wrapCommand = (command) => {
   return class BatchCommand extends TerraCommand {
@@ -87,8 +88,8 @@ export const wrapCommand = (command) => {
       }
     }
 
-    simulateExecute = async (msgs: (MsgExecuteContract | MsgSend)[]) => {
-      const signer = this.wallet.key.accAddress // signer is the default loaded wallet
+    simulateExecute = async (msgs: EncodeObject[]) => {
+      const signer = this.signer.address // signer is the default loaded wallet
       logger.loading(`Executing batch ${command.id} tx simulation`)
 
       const estimatedGas = await this.simulate(signer, msgs)
@@ -106,10 +107,10 @@ export const wrapCommand = (command) => {
     execute = async (): Promise<Result<TransactionResponse>> => {
       await this.buildCommand(this.flags, this.args)
 
-      const msgs = await this.makeRawTransaction(this.wallet.key.accAddress)
+      const msgs = await this.makeRawTransaction(this.signer.address)
       await this.simulateExecute(msgs)
 
-      await this.beforeExecute(this.wallet.key.accAddress)
+      await this.beforeExecute(this.signer.address)
       await prompt(`Continue?`)
 
       const tx = await this.signAndSend(msgs)

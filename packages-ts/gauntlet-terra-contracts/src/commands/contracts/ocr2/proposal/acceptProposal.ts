@@ -46,7 +46,7 @@ const validateOffchainConfig: ValidateFn<CommandInput> = async (input, context) 
     process.env.SECRET!,
     input.randomSecret,
   )
-  const proposal: any = await context.provider.wasm.contractQuery(context.contract, {
+  const proposal: any = await context.provider.queryContractSmart(context.contract, {
     proposal: {
       id: input.proposalId,
     },
@@ -88,7 +88,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
   logger.loading(`Executing ${context.id} from contract ${context.contract}`)
   const { proposalId } = input.user
 
-  const proposal: any = await context.provider.wasm.contractQuery(context.contract, {
+  const proposal: any = await context.provider.queryContractSmart(context.contract, {
     proposal: {
       id: proposalId,
     },

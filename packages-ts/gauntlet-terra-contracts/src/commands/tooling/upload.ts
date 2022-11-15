@@ -29,10 +29,6 @@ export default class UploadContractCode extends TerraCommand {
     throw new Error('Upload command: makeRawTransaction method not implemented')
   }
 
-  getCodeId(response): number | undefined {
-    return Number(this.parseResponseValue(response, 'store_code', 'code_id'))
-  }
-
   execute = async () => {
     const askedContracts = !!this.args.length
       ? Object.keys(CONTRACT_LIST)
@@ -60,7 +56,7 @@ export default class UploadContractCode extends TerraCommand {
           const res = await this.upload(contract.bytecode, contractName)
 
           logger.success(`Contract ${contractName} code uploaded succesfully`)
-          contractReceipts[contractName] = res.tx
+          contractReceipts[contractName] = res
           responses.push({
             tx: res,
             contract: null,
@@ -82,7 +78,7 @@ export default class UploadContractCode extends TerraCommand {
     const codeIds = Object.keys(contractReceipts).reduce(
       (agg, contractName) => ({
         ...agg,
-        [contractName]: this.getCodeId(contractReceipts[contractName]) || this.codeIds[contractName] || '',
+        [contractName]: contractReceipts[contractName]?.codeId || this.codeIds[contractName] || '',
       }),
       this.codeIds,
     )

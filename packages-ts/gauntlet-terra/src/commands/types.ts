@@ -1,9 +1,9 @@
-import { BlockTxBroadcastResult, EventsByType } from '@terra-money/terra.js'
+import { Events } from '../lib/provider'
 
 export type TransactionResponse = {
   hash: string
   address?: string
   wait: () => { success: boolean }
-  tx?: BlockTxBroadcastResult
-  events?: EventsByType[]
+  tx?: any // TODO
+  events?: Events[]
 }

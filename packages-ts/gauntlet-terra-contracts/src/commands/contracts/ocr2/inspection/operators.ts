@@ -1,10 +1,9 @@
 import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { CATEGORIES } from '../../../../lib/constants'
-import { LCDClient } from '@chainlink/gauntlet-terra'
+import { Client, providerUtils } from '@chainlink/gauntlet-terra'
 import { getLatestOCRNewTransmissionEvents } from '../../../../lib/inspection'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
-import { providerUtils } from '@chainlink/gauntlet-terra'
 import { dateFromUnix } from '../../../../lib/utils'
 
 type CommandInput = {}
@@ -20,20 +19,20 @@ type ContractExpectedInfo = {
   }
 }
 
-const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
+const makeInput = async (flags: any, _args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
   return {}
 }
 
-const makeOnchainData = (provider: LCDClient) => async (
+const makeOnchainData = (provider: Client) => async (
   instructionsData: any[],
-  input: CommandInput,
+  _input: CommandInput,
   aggregator: string,
 ): Promise<ContractExpectedInfo> => {
   const transmitters = instructionsData[0]
 
   logger.loading('Fetching latest transmission events...')
-  const events = await getLatestOCRNewTransmissionEvents(provider, aggregator, 100)
+  const events = await getLatestOCRNewTransmissionEvents(provider, aggregator)
 
   const transmissionsPerTransmitter = events.reduce(
     (agg, e) => {
@@ -57,7 +56,7 @@ const makeOnchainData = (provider: LCDClient) => async (
 
   logger.loading('Fetching transmitters balances...')
   const balances: (string | null)[] = await Promise.all(
-    transmitters.addresses.map((t) => providerUtils.getBalance(provider, t)),
+    transmitters.addresses.map((t) => providerUtils.getBalance(provider, t, "uluna")),
   )
 
   return {

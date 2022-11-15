@@ -2,14 +2,16 @@ import AbstractCommand, { makeAbstractCommand } from '.'
 import { Result } from '@chainlink/gauntlet-core'
 import { TerraCommand, TransactionResponse, logger } from '@chainlink/gauntlet-terra'
 import { prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { Wallet } from '@terra-money/terra.js'
-import { AccAddress, LCDClient } from '@chainlink/gauntlet-terra'
+import { AccAddress } from '@chainlink/gauntlet-terra'
+import { AccountData, OfflineSigner } from '@cosmjs/proto-signing'
+import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 
 export type ExecutionContext = {
   id: string
   contract: string
-  wallet: Wallet
-  provider: LCDClient
+  wallet: OfflineSigner
+  provider: CosmWasmClient
+  signer: AccountData
   flags: any
 }
 
@@ -147,6 +149,7 @@ export const instructionToCommand = <UserInput, ContractInput>(
         contract,
         provider: this.provider,
         wallet: this.wallet,
+        signer: this.signer,
         flags,
       }
 
@@ -190,8 +193,8 @@ export const instructionToCommand = <UserInput, ContractInput>(
     execute = async (): Promise<Result<TransactionResponse>> => {
       // TODO: Command should be built from gauntet-core
       await this.buildCommand(this.flags, this.args)
-      await this.command.simulateExecute()
-      await this.beforeExecute(this.wallet.key.accAddress)
+      await this.command.simulateExecute_()
+      await this.beforeExecute(this.signer.address)
       await prompt(`Continue?`)
 
       let response = await this.command.execute()

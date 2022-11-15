@@ -1,7 +1,6 @@
-import { TerraCommand, TransactionResponse, logger } from '@chainlink/gauntlet-terra'
+import { TerraCommand, TransactionResponse, logger, Client } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 import { Action, State, Vote } from '../lib/types'
-import { LCDClient } from '@terra-money/terra.js'
 import { AccAddress } from '@chainlink/gauntlet-terra'
 
 export default class Inspect extends TerraCommand {
@@ -32,12 +31,12 @@ export default class Inspect extends TerraCommand {
   }
 }
 
-export const fetchProposalState = (provider: LCDClient) => async (
+export const fetchProposalState = (provider: Client) => async (
   multisig: string,
   proposalId?: number,
 ): Promise<State> => {
-  const _queryMultisig = (params) => (): Promise<any> => provider.wasm.contractQuery(multisig, params)
-  const _queryContractInfo = (): Promise<any> => provider.wasm.contractInfo(multisig)
+  const _queryMultisig = (params) => (): Promise<any> => provider.queryContractSmart(multisig, params)
+  const _queryContractInfo = (): Promise<any> => provider.getContract(multisig)
 
   const multisigQueries = [
     _queryContractInfo,
@@ -64,7 +63,7 @@ export const fetchProposalState = (provider: LCDClient) => async (
 
   const [contractInfo, groupState, thresholdState, proposalState, votes] = await Promise.all(queries.map((q) => q()))
 
-  const admin = (await provider.wasm.contractQuery(contractInfo.init_msg.group_addr, { admin: {} })) as any
+  const admin = (await provider.queryContractSmart(contractInfo.init_msg.group_addr, { admin: {} })) as any
   const multisigState = {
     address: multisig,
     threshold: thresholdState.absolute_count.weight,

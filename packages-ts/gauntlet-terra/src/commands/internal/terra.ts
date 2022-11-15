@@ -1,36 +1,26 @@
 import { Result, WriteCommand, AddressBook } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
-import { SignMode } from '@terra-money/terra.proto/cosmos/tx/signing/v1beta1/signing'
-import { withProvider, withWallet, withCodeIds, withNetwork } from '../middlewares'
-import {
-  EventsByType,
-  MsgStoreCode,
-  AccAddress,
-  TxLog,
-  MsgSend,
-  BlockTxBroadcastResult,
-  LCDClient,
-  MsgExecuteContract,
-  MsgInstantiateContract,
-  TxError,
-  Wallet,
-  Msg,
-  SignerData,
-} from '@terra-money/terra.js'
+import { withProvider, withCodeIds, withNetwork } from '../middlewares'
+import { toUtf8 } from "@cosmjs/encoding";
+import { ExecuteResult, InstantiateResult, MsgExecuteContractEncodeObject, SigningCosmWasmClient, UploadResult } from '@cosmjs/cosmwasm-stargate'
+import { MsgExecuteContract, Msg } from "cosmjs-types/cosmwasm/wasm/v1/tx";
 import { TransactionResponse } from '../types'
-import { LedgerKey } from '../ledgerKey'
+import { AccountData, EncodeObject, OfflineSigner } from '@cosmjs/proto-signing'
+import { AccAddress } from '../..';
+import { assertIsDeliverTxSuccess } from '@cosmjs/stargate';
 
 type CodeIds = Record<string, number>
 
 export default abstract class TerraCommand extends WriteCommand<TransactionResponse> {
-  wallet: Wallet
-  provider: LCDClient
+  provider: SigningCosmWasmClient
+  wallet: OfflineSigner
+  signer: AccountData
   addressBook: AddressBook
   contracts: string[]
   public codeIds: CodeIds
 
   abstract execute: () => Promise<Result<TransactionResponse>>
-  abstract makeRawTransaction: (signer: AccAddress) => Promise<(MsgExecuteContract | MsgSend)[]>
+  abstract makeRawTransaction: (signer: AccAddress) => Promise<EncodeObject[]>
   // Preferable option to initialize the command instead of new TerraCommand. This should be an static option to construct the command
   buildCommand?: (flags, args) => Promise<TerraCommand>
   beforeExecute: (context?: any) => Promise<void>
@@ -41,7 +31,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
 
   constructor(flags, args) {
     super(flags, args)
-    this.use(withNetwork, withProvider, withWallet, withCodeIds)
+    this.use(withNetwork, withProvider, withCodeIds)
   }
 
   parseResponseValue(receipt: any, eventType: string, attributeType: string) {
@@ -62,113 +52,95 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
     }
   }
 
-  makeEventsFromLogs = (logs: TxLog.Data[]): EventsByType[] => {
-    if (!logs) return []
-    return logs.map((log) => TxLog.fromData(log).eventsByType)
-  }
-
   // TODO: need to add type of tx, address is parsed only for intantiation
-  wrapResponse = (tx: BlockTxBroadcastResult): TransactionResponse => ({
+  wrapResponse = (tx: any): TransactionResponse => ({
     hash: tx.txhash,
-    address: this.parseResponseValue(tx, 'instantiate_contract', 'contract_address'),
+    address: this.parseResponseValue(tx, 'instantiate_contract', 'contract_address'), // TODO: handle insufficient funds logs
     wait: () => ({
-      success: tx.logs.length > 0 && !(tx as TxError)?.code,
+      success: tx.events.length > 0 && !tx.code,
     }),
     tx,
-    events: this.makeEventsFromLogs(tx.logs),
+    events: tx.events,
   })
 
-  async query(address, input, params?): Promise<any> {
-    return await this.provider.wasm.contractQuery(address, input, params)
+  signAndSend = async (messages: EncodeObject[]): Promise<TransactionResponse> => {
+    let senderAddress = this.signer.address
+    logger.loading('Signing and sending transaction...')
+    const result = await this.provider.signAndBroadcast(senderAddress, messages, "auto")
+    assertIsDeliverTxSuccess(result)
+    return
+    // return this.wrapResponse(result)
   }
 
-  signAndSend = async (messages: Msg[]): Promise<TransactionResponse> => {
-    try {
-      logger.loading('Signing transaction...')
-      const tx = await this.wallet.createAndSignTx({
-        msgs: messages,
-        ...(this.wallet.key instanceof LedgerKey && {
-          signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
-        }),
-      })
-
-      logger.loading('Sending transaction...')
-      const res = await this.provider.tx.broadcast(tx)
-      return this.wrapResponse(res)
-    } catch (e) {
-      const message = e?.response?.data?.message || e.message
-      throw new Error(message)
-    }
-  }
-
-  async call(address, input) {
-    const msg = new MsgExecuteContract(this.wallet.key.accAddress, address, input)
-
-    const tx = await this.wallet.createAndSignTx({
-      msgs: [msg],
-      ...(this.wallet.key instanceof LedgerKey && {
-        signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
-      }),
-    })
-
-    const res = await this.provider.tx.broadcast(tx)
-    return this.wrapResponse(res)
-  }
-
-  async deploy(codeId, instantiateMsg, migrationContract = undefined) {
-    const instantiate = new MsgInstantiateContract(
-      this.wallet.key.accAddress,
-      migrationContract || this.wallet.key.accAddress,
-      codeId,
-      instantiateMsg,
+  // "call" is execute
+  async call(contractAddress: string, msg: any): Promise<ExecuteResult> {
+    let senderAddress = (await this.wallet.getAccounts())[0].address
+    
+    const result = await this.provider.execute(
+      senderAddress,
+      contractAddress,
+      msg,
+      "auto"
     )
-    const instantiateTx = await this.wallet.createAndSignTx({
-      msgs: [instantiate],
-      memo: 'Instantiating',
-      ...(this.wallet.key instanceof LedgerKey && {
-        signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
-      }),
-    })
+
+    return result
+  }
+
+  
+  /// TODO: rename this.signer into sender
+
+  // "deploy" is instantiate
+  async deploy(codeId: number, msg: any): Promise<InstantiateResult> {
+    let senderAddress = this.signer.address
+    let label = "Label"
+
     logger.loading(`Deploying contract...`)
-    const res = await this.provider.tx.broadcast(instantiateTx)
-
-    return this.wrapResponse(res)
-  }
-
-  async upload(wasm, contractName) {
-    const code = new MsgStoreCode(this.wallet.key.accAddress, wasm)
-
-    const tx = await this.wallet.createAndSignTx({
-      msgs: [code],
-      memo: `Storing ${contractName}`,
-      ...(this.wallet.key instanceof LedgerKey && {
-        signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
-      }),
+    const result = await this.provider.instantiate(senderAddress, codeId, msg, label, "auto", {
+      memo: 'Instantiating',
+      admin: senderAddress
     })
 
-    logger.loading(`Uploading ${contractName} contract code...`)
-    const res = await this.provider.tx.broadcast(tx)
-
-    return this.wrapResponse(res)
+    return result
   }
 
-  async simulate(signer: AccAddress, msgs: (MsgExecuteContract | MsgSend)[]): Promise<Number> {
-    const account = await this.provider.auth.accountInfo(signer)
+  async upload(wasmCode: Uint8Array, contractName: string): Promise<UploadResult> {
+    let senderAddress = this.signer.address
+    let memo =  `Storing ${contractName}`
+    logger.loading(`Uploading ${contractName} contract code...`)
+    const response = await this.provider.upload(senderAddress, wasmCode, 'auto', memo)
+    // TODO: custom wrapResponse for upload
+    return response
+  }
 
-    const signerData: SignerData = {
-      sequenceNumber: account.getSequenceNumber(),
-      publicKey: account.getPublicKey(),
-    }
-
+  // TODO: replace simulate with relying on `gas: "auto"` on transmit?
+  async simulate(signer: AccAddress, msgs: EncodeObject[]): Promise<Number> {
     // gas estimation successful => tx is valid (simulation is run under the hood)
     try {
-      const tx = await this.provider.tx.create([{ ...signerData, address: signer }], { msgs })
-      return await this.provider.tx.estimateGas(tx, {
-        signers: [signerData],
-      })
+      return await this.provider.simulate(signer, msgs, '')
     } catch (e) {
-      const message = e.response?.data?.message || e.message || e
-      throw new Error(`Simulation Failed: ${message}`)
+      // TODO: parse message
+      // const message = e.response?.data?.message || e.message || e
+      throw new Error(`Simulation Failed: ${e}`)
     }
+  }
+  // TODO: accept a cosmjs-types Msg type
+  async simulateExecute(contractAddress: string, inputs: any[]): Promise<Number> {
+    const signer = this.signer.address
+    
+    const msgs = inputs.map((input) => {
+      const msg: MsgExecuteContractEncodeObject = {
+        typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+        value: MsgExecuteContract.fromPartial({
+          sender: signer,
+          contract: contractAddress,
+          msg: toUtf8(JSON.stringify(input)),
+          funds: [],
+        }),
+      };
+      return msg
+    })
+
+
+    return await this.simulate(signer, msgs)
   }
 }

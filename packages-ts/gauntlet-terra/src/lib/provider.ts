@@ -1,67 +1,41 @@
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
-import { EventsByType, LCDClient, TxInfo } from '@terra-money/terra.js'
-import { AccAddress } from '../index'
+import { AccAddress, Client } from '../index'
+import { Event, IndexedTx } from '@cosmjs/cosmwasm-stargate';
 
-export const filterTxsByEvent = (txs: TxInfo[], event: string): TxInfo | undefined => {
-  const filteredTx = txs.filter((tx) => tx.logs?.some((log) => log.eventsByType[event]))?.[0]
-  return filteredTx
+export const filterTxsByEvent = (txs: readonly IndexedTx[], type: string): IndexedTx | undefined => {
+  const filteredTxs = txs.filter((tx) => tx.events.some((event) => event.type === type) )
+  return filteredTxs?.[0]
 }
 
-export const getBlockTxs = async (provider: LCDClient, block: number, offset = 0): Promise<TxInfo[]> => {
-  // recursive call to get every tx in the block. API has a 100 tx limit. Increasing the offset 100 every time
-  try {
-    const txs = await provider.tx.search({
-      events: [
-        {
-          key: 'tx.height',
-          value: String(block),
-        },
-      ],
-      'pagination.offset': String(offset),
-    })
-    return txs.txs.concat(await getBlockTxs(provider, block, offset + 100))
-  } catch (e) {
-    const expectedError = 'page should be within'
-    if (!((e.response?.data?.message as string) || '').includes(expectedError)) {
-      logger.error(`Error fetching block ${block} and offset ${offset}: ${e.response?.data?.message || e.message}`)
-      return []
-    }
-    logger.debug(`No more txs in block ${block}. Last offset ${offset}`)
-  }
-
-  return []
-}
+export type Events = { [type: string]: Event[] }[]
 
 export const getLatestContractEvents = async (
-  provider: LCDClient,
+  provider: Client,
   event: string,
   contract: AccAddress,
-  paginationLimit = 1,
-): Promise<EventsByType[]> => {
-  const txs: TxInfo[] = (
-    await provider.tx.search({
-      events: [
-        {
-          key: `${event}.contract_address`,
-          value: contract,
-        },
-      ],
-      'pagination.limit': String(paginationLimit),
-      order_by: 'ORDER_BY_DESC',
-    })
-  ).txs
+): Promise<Events> => {
+  let txs = await provider.searchTx({
+    tags: [
+      {
+        key: `${event}.contract_address`,
+        value: contract,
+      },
+    ]
+  }) // TODO: ORDER_BY_DESC
 
   if (txs.length === 0) return []
   const events = txs
-    .map(({ logs }) => logs?.map(({ eventsByType }) => eventsByType) || [])
-    .reduce((acc, eventsByType) => [...acc, ...eventsByType], [])
+    .map(({ events }) => events.reduce((acc, event) => {
+      (acc[event.type] = acc[event.type] || []).push(event);
+      return acc;
+    }, {}))
 
   return events
 }
 
-export const getBalance = async (provider: LCDClient, address: AccAddress): Promise<string | null> => {
+export const getBalance = async (provider: Client, address: AccAddress, denom: string): Promise<string | null> => {
   try {
-    return (await provider.bank.balance(address))[0].toString()
+    return (await provider.getBalance(address, denom)).amount.toString()
   } catch (e) {
     logger.error(`Error fetching ${address} balance: ${e.message}`)
     return null
