@@ -4,11 +4,11 @@ import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import TerraCommand from './internal/terra'
 import path from 'path'
 import { existsSync } from 'fs'
-import { BIP44_LUNA_PATH } from '../lib/constants'
 import { DirectSecp256k1HdWallet, OfflineSigner } from '@cosmjs/proto-signing'
 import { LedgerSigner } from "@cosmjs/ledger-amino";
 import TransportNodeHid from '@ledgerhq/hw-transport-node-hid'
 import { makeCosmoshubPath } from '@cosmjs/proto-signing';
+import { GasPrice } from '@cosmjs/stargate'
 
 const isValidURL = (a) => true
 
@@ -21,35 +21,33 @@ export const withProvider: Middleware = async (c: TerraCommand, next: Next) => {
 
   let wallet: OfflineSigner
   if (c.flags.withLedger || !!process.env.WITH_LEDGER) {
-    const rawPath = c.flags.ledgerPath || BIP44_LUNA_PATH
+    // TODO: allow specifying custom path, using stringToPath. BIP44_LUNA_PATH was different for example
+    // const rawPath = c.flags.ledgerPath || BIP44_LUNA_PATH
     const transport = await TransportNodeHid.create()
-    const BIP44_REGEX = /^(44)\'\s*\/\s*(\d+)\'\s*\/\s*([0,1]+)\'\s*\/\s*(\d+)\s*\/\s*(\d+)$/
-    const match = BIP44_REGEX.exec(rawPath)
-    if (!match) throw new Error('Invalid BIP44 path!')
-    const path = match.slice(1).map((i) => makeCosmoshubPath(Number(i)))
 
+    const accounts = [0] // we only use the first account?
+    const paths = accounts.map((account) => makeCosmoshubPath(account))
+    
     wallet = new LedgerSigner(transport, {
       // testModeAllowed: true,
-      hdPaths: path,
+      hdPaths: paths,
     });    
   } else {
     const mnemonic = process.env.MNEMONIC
     assertions.assert(!!mnemonic, `Missing MNEMONIC, please add one`)
-    wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic);
+    wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, { prefix: "wasm" }); // TODO customizable, in sync with Addr
+    // TODO: set hdPaths too, if using different path
   }
   let [signer] = await wallet.getAccounts();
 
-  logger.debug(`Operator address is ${c.signer.address}`)
-  
   c.wallet = wallet;
   c.signer = signer;
 
-  c.provider = await SigningCosmWasmClient.connectWithSigner(nodeURL, wallet)
-  // c.oldProvider = new LCDClient({
-  //   URL: nodeURL,
-  //   chainID: process.env.CHAIN_ID,
-  //   gasPrices: { ucosm: process.env.DEFAULT_GAS_PRICE },
-  // })
+  logger.info(`Operator address is ${c.signer.address}`)
+
+  c.provider = await SigningCosmWasmClient.connectWithSigner(nodeURL, wallet, {
+    gasPrice: GasPrice.fromString(process.env.DEFAULT_GAS_PRICE)
+  })
   return next()
 }
 

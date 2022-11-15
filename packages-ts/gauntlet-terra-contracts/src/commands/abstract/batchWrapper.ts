@@ -88,7 +88,7 @@ export const wrapCommand = (command) => {
       }
     }
 
-    simulateExecute = async (msgs: EncodeObject[]) => {
+    simulateExecute_ = async (msgs: EncodeObject[]) => {
       const signer = this.signer.address // signer is the default loaded wallet
       logger.loading(`Executing batch ${command.id} tx simulation`)
 
@@ -108,7 +108,7 @@ export const wrapCommand = (command) => {
       await this.buildCommand(this.flags, this.args)
 
       const msgs = await this.makeRawTransaction(this.signer.address)
-      await this.simulateExecute(msgs)
+      await this.simulateExecute_(msgs)
 
       await this.beforeExecute(this.signer.address)
       await prompt(`Continue?`)

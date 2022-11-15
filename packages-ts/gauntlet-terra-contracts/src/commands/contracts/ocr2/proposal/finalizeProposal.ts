@@ -39,14 +39,14 @@ const afterExecute = (context) => async (
     return
   }
 
-  var responseWasm = events.filter((element) => element.wasm.contract_address[0] == context.contract)[0].wasm
+  var responseWasm = events.filter((element) => element.wasm[0].contract_address == context.contract)[0].wasm[0]
 
   if (!responseWasm) {
     throw new Error('Response data for the given contract does not exist inside events')
   }
 
-  const proposalId = responseWasm.proposal_id[0]
-  const digest = responseWasm.digest[0]
+  const proposalId = responseWasm.proposal_id
+  const digest = responseWasm.digest
   logger.success(`Config Proposal ${proposalId} finalized`)
   logger.line()
   logger.info('Important: Save the config proposal DIGEST to accept the proposal in the future:')

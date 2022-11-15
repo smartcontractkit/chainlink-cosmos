@@ -15,7 +15,7 @@ export const enum CATEGORIES {
 }
 
 export const DEFAULT_RELEASE_VERSION = 'local'
-export const DEFAULT_CWPLUS_VERSION = 'v0.9.1'
+export const DEFAULT_CWPLUS_VERSION = 'v0.16.0'
 
 export const ORACLES_MAX_LENGTH = 31
 

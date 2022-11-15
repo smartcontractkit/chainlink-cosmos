@@ -51,6 +51,6 @@ export default class DeployLink extends TerraCommand {
           contract: deploy.contractAddress,
         },
       ],
-    } as Result<TransactionResponse>
+    } as Result<any>
   }
 }

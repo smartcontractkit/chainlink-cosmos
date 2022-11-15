@@ -36,13 +36,13 @@ const makeOnchainData = (provider: Client) => async (
 
   const transmissionsPerTransmitter = events.reduce(
     (agg, e) => {
-      const transmitter = e['wasm-new_transmission'].transmitter[0]
+      const transmitter = e['wasm-new_transmission'][0].transmitter
       if (agg[transmitter]) return agg
       return {
         ...agg,
         [transmitter]: {
-          answer: e['wasm-new_transmission'].answer[0],
-          timestamp: Number(e['wasm-new_transmission'].observations_timestamp[0]),
+          answer: e['wasm-new_transmission'][0].answer,
+          timestamp: Number(e['wasm-new_transmission'][0].observations_timestamp),
         },
       }
     },

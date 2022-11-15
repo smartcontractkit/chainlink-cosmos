@@ -157,7 +157,7 @@ export default class AbstractCommand extends TerraCommand {
           contract: deploy.contractAddress,
         },
       ],
-    } as Result<TransactionResponse>
+    } as Result<any>
   }
 
   abstractExecute: AbstractExecute = async (params: any, address: string) => {
@@ -171,7 +171,7 @@ export default class AbstractCommand extends TerraCommand {
           contract: address,
         },
       ],
-    } as Result<TransactionResponse>
+    } as Result<any>
   }
 
   abstractQuery: AbstractExecute = async (params: any, address: string) => {
@@ -185,7 +185,7 @@ export default class AbstractCommand extends TerraCommand {
           contract: address,
         },
       ],
-    } as Result<TransactionResponse>
+    } as Result<any>
   }
 
   abstractHelp: AbstractExecute = async () => {

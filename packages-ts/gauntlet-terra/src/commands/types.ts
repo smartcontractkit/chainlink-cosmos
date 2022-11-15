@@ -5,5 +5,5 @@ export type TransactionResponse = {
   address?: string
   wait: () => { success: boolean }
   tx?: any // TODO
-  events?: Events[]
+  events?: Events
 }

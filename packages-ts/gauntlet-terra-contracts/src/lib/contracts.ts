@@ -59,6 +59,7 @@ export abstract class Contract {
       // Possible paths depending on how/where gauntlet is being executed
       const possibleContractPaths = [
         path.join(__dirname, '../../artifacts/bin'),
+        path.join(process.cwd(), './artifacts'),
         path.join(process.cwd(), './artifacts/bin'),
         path.join(process.cwd(), './tests/e2e/common_artifacts'),
         path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts/bin'),

@@ -230,7 +230,8 @@ export const wrapCommand = (command) => {
         }
 
         if (state.proposal.nextAction === Action.CREATE) {
-          const proposalFromEvent = tx.events[0].wasm.proposal_id[0]
+          // const proposalFromEvent = tx.events[0].wasm.proposal_id[0] TODO
+          const proposalFromEvent = "a"
           logger.success(`New proposal created with multisig proposal ID: ${proposalFromEvent}`)
           proposalId = Number(proposalFromEvent)
         }

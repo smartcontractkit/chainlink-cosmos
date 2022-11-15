@@ -7,7 +7,19 @@ export const filterTxsByEvent = (txs: readonly IndexedTx[], type: string): Index
   return filteredTxs?.[0]
 }
 
-export type Events = { [type: string]: Event[] }[]
+export type Events = { [type: string]: any[] }[]
+
+export const toEvent = (event: Event): any => {
+  event.attributes.reduce((acc, attr) => {
+    if (acc[attr.key] === undefined) {
+      acc[attr.key] = attr.value
+    } else {
+      let array = Array.isArray(acc[attr.key]) ? acc[attr.key] : [acc[attr.key]]
+      acc[attr.key] = array.push(attr.value)
+    }
+    return acc
+  }, {})
+}
 
 export const getLatestContractEvents = async (
   provider: Client,
@@ -26,7 +38,7 @@ export const getLatestContractEvents = async (
   if (txs.length === 0) return []
   const events = txs
     .map(({ events }) => events.reduce((acc, event) => {
-      (acc[event.type] = acc[event.type] || []).push(event);
+      (acc[event.type] = acc[event.type] || []).push(toEvent(event));
       return acc;
     }, {}))
 

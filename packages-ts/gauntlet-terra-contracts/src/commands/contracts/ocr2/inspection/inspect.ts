@@ -80,11 +80,12 @@ const makeOnchainData = (provider: Client) => async (
   )
 
   const event = await getLatestOCRConfigEvent(provider, aggregator)
+  const offchain_config = event?.attributes.find(({ key }) => key === 'offchain_config')?.value
   let offchainConfig = {} as OffchainConfig
 
-  if (event?.offchain_config) {
+  if (offchain_config) {
     try {
-      offchainConfig = deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
+      offchainConfig = deserializeConfig(Buffer.from(offchain_config, 'base64'))
     } catch (e) {
       logger.warn('Could not deserialize offchain config')
     }
