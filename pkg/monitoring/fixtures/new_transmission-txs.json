@@ -12,7 +12,7 @@
             "gas": "241278",
             "amount": [
               {
-                "denom": "uluna",
+                "denom": "ucosm",
                 "amount": "2734"
               }
             ]
@@ -275,7 +275,7 @@
             "gas": "240765",
             "amount": [
               {
-                "denom": "uluna",
+                "denom": "ucosm",
                 "amount": "2728"
               }
             ]
@@ -534,7 +534,7 @@
             "gas": "240243",
             "amount": [
               {
-                "denom": "uluna",
+                "denom": "ucosm",
                 "amount": "2722"
               }
             ]
@@ -789,7 +789,7 @@
             "gas": "240194",
             "amount": [
               {
-                "denom": "uluna",
+                "denom": "ucosm",
                 "amount": "2722"
               }
             ]
@@ -1044,7 +1044,7 @@
             "gas": "240770",
             "amount": [
               {
-                "denom": "uluna",
+                "denom": "ucosm",
                 "amount": "2728"
               }
             ]
@@ -1303,7 +1303,7 @@
             "gas": "241280",
             "amount": [
               {
-                "denom": "uluna",
+                "denom": "ucosm",
                 "amount": "2734"
               }
             ]
@@ -1566,7 +1566,7 @@
             "gas": "241329",
             "amount": [
               {
-                "denom": "uluna",
+                "denom": "ucosm",
                 "amount": "2735"
               }
             ]
@@ -1829,7 +1829,7 @@
             "gas": "241280",
             "amount": [
               {
-                "denom": "uluna",
+                "denom": "ucosm",
                 "amount": "2734"
               }
             ]
@@ -2092,7 +2092,7 @@
             "gas": "241328",
             "amount": [
               {
-                "denom": "uluna",
+                "denom": "ucosm",
                 "amount": "2735"
               }
             ]
@@ -2355,7 +2355,7 @@
             "gas": "241278",
             "amount": [
               {
-                "denom": "uluna",
+                "denom": "ucosm",
                 "amount": "2734"
               }
             ]

@@ -56,7 +56,7 @@ const makeOnchainData = (provider: Client) => async (
 
   logger.loading('Fetching transmitters balances...')
   const balances: (string | null)[] = await Promise.all(
-    transmitters.addresses.map((t) => providerUtils.getBalance(provider, t, "uluna")),
+    transmitters.addresses.map((t) => providerUtils.getBalance(provider, t, "ucosm")),
   )
 
   return {

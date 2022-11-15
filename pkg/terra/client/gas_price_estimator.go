@@ -67,7 +67,7 @@ func NewFCDGasPriceEstimator(cfg Config, requestTimeout time.Duration, lggr logg
 }
 
 type pricesFCD struct {
-	Uluna string `json:"uluna"`
+	Ucosm string `json:"ucosm"`
 	Usdr  string `json:"usdr"`
 	Uusd  string `json:"uusd"`
 	Ukrw  string `json:"ukrw"`

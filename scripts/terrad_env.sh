@@ -11,5 +11,5 @@ export CHAIN_ID="bombay-12"
 export RPC=https://terra-testnet-1.simply-vc.com.mt:443/345DKJ45F6G5/rpc/
 
 export NODE="--node $RPC"
-export TXFLAG="${NODE} --chain-id $CHAIN_ID --fees 100000uluna --gas auto --gas-adjustment 1.2 --broadcast-mode=block"
+export TXFLAG="${NODE} --chain-id $CHAIN_ID --fees 100000ucosm --gas auto --gas-adjustment 1.2 --broadcast-mode=block"
 #export TXFLAG="${NODE} --chain-id $CHAIN_ID --gas-prices 0.50luna --gas auto --gas-adjustment 1.2"

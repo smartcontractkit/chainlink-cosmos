@@ -52,7 +52,7 @@ export default class TransferLuna extends TerraCommand {
       value: MsgSend.fromPartial({
         fromAddress: signer,
         toAddress: this.input.destination,
-        amount: [{ denom: 'uluna', amount: this.input.amount }],
+        amount: [{ denom: 'ucosm', amount: this.input.amount }],
       }),
     };
     return [sendMsg]

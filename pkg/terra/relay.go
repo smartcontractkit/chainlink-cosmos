@@ -36,7 +36,7 @@ type TxManager interface {
 
 	// GetMsgs returns any messages matching ids.
 	GetMsgs(ids ...int64) (Msgs, error)
-	// GasPrice returns the gas price in uluna.
+	// GasPrice returns the gas price in ucosm.
 	GasPrice() (cosmosSDK.DecCoin, error)
 }
 

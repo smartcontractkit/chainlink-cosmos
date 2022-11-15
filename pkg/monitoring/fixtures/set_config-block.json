@@ -17,7 +17,7 @@
             "gas": "300000",
             "amount": [
               {
-                "denom": "uluna",
+                "denom": "ucosm",
                 "amount": "5000"
               }
             ]
@@ -28,7 +28,7 @@
               "value": {
                 "amount": [
                   {
-                    "denom": "uluna",
+                    "denom": "ucosm",
                     "amount": "2711286"
                   }
                 ],
@@ -65,7 +65,7 @@
                 },
                 {
                   "key": "amount",
-                  "value": "2711286uluna"
+                  "value": "2711286ucosm"
                 }
               ]
             },
@@ -78,7 +78,7 @@
                 },
                 {
                   "key": "amount",
-                  "value": "2711286uluna"
+                  "value": "2711286ucosm"
                 }
               ]
             },
@@ -112,7 +112,7 @@
                 },
                 {
                   "key": "amount",
-                  "value": "2711286uluna"
+                  "value": "2711286ucosm"
                 }
               ]
             }
@@ -122,7 +122,7 @@
       ],
       "height": "6805892",
       "txhash": "E2D4DBF17E2385C90FAEE2C8A3EB9A1FBA2ED64C664DE3DFFDC785DF849B975B",
-      "raw_log": "[{\"events\":[{\"type\":\"coin_received\",\"attributes\":[{\"key\":\"receiver\",\"value\":\"terra1j435gkgg8d0qadjcn09s73rtk5k3ftrx7mc4a8\"},{\"key\":\"amount\",\"value\":\"2711286uluna\"}]},{\"type\":\"coin_spent\",\"attributes\":[{\"key\":\"spender\",\"value\":\"terra1sftswkhvg3w6vnju642zld7hfm0semlk9mtfef\"},{\"key\":\"amount\",\"value\":\"2711286uluna\"}]},{\"type\":\"message\",\"attributes\":[{\"key\":\"action\",\"value\":\"/cosmos.bank.v1beta1.MsgSend\"},{\"key\":\"sender\",\"value\":\"terra1sftswkhvg3w6vnju642zld7hfm0semlk9mtfef\"},{\"key\":\"module\",\"value\":\"bank\"}]},{\"type\":\"transfer\",\"attributes\":[{\"key\":\"recipient\",\"value\":\"terra1j435gkgg8d0qadjcn09s73rtk5k3ftrx7mc4a8\"},{\"key\":\"sender\",\"value\":\"terra1sftswkhvg3w6vnju642zld7hfm0semlk9mtfef\"},{\"key\":\"amount\",\"value\":\"2711286uluna\"}]}]}]",
+      "raw_log": "[{\"events\":[{\"type\":\"coin_received\",\"attributes\":[{\"key\":\"receiver\",\"value\":\"terra1j435gkgg8d0qadjcn09s73rtk5k3ftrx7mc4a8\"},{\"key\":\"amount\",\"value\":\"2711286ucosm\"}]},{\"type\":\"coin_spent\",\"attributes\":[{\"key\":\"spender\",\"value\":\"terra1sftswkhvg3w6vnju642zld7hfm0semlk9mtfef\"},{\"key\":\"amount\",\"value\":\"2711286ucosm\"}]},{\"type\":\"message\",\"attributes\":[{\"key\":\"action\",\"value\":\"/cosmos.bank.v1beta1.MsgSend\"},{\"key\":\"sender\",\"value\":\"terra1sftswkhvg3w6vnju642zld7hfm0semlk9mtfef\"},{\"key\":\"module\",\"value\":\"bank\"}]},{\"type\":\"transfer\",\"attributes\":[{\"key\":\"recipient\",\"value\":\"terra1j435gkgg8d0qadjcn09s73rtk5k3ftrx7mc4a8\"},{\"key\":\"sender\",\"value\":\"terra1sftswkhvg3w6vnju642zld7hfm0semlk9mtfef\"},{\"key\":\"amount\",\"value\":\"2711286ucosm\"}]}]}]",
       "gas_used": "61512",
       "timestamp": "2022-03-11T17:30:27Z",
       "gas_wanted": "300000"
@@ -136,7 +136,7 @@
             "gas": "825153",
             "amount": [
               {
-                "denom": "uluna",
+                "denom": "ucosm",
                 "amount": "412577"
               }
             ]

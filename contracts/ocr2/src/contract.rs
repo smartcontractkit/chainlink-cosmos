@@ -1784,7 +1784,7 @@ pub(crate) mod tests {
             juels_per_fee_coin,
             1,
         );
-        // juels = ((gas_per_sig*sigcount + gas_base)*gas_price_uluna/1e6)*juels_per_fee_coin
+        // juels = ((gas_per_sig*sigcount + gas_base)*gas_price_ucosm/1e6)*juels_per_fee_coin
         // juels = ((1 * 17000 + 84000)*1.4*0.011/1e6)*6e18 = 9332400000000000
         assert_eq!(Uint128::from_str("9332400000000000").unwrap(), r);
     }

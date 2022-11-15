@@ -48,7 +48,7 @@ export const withProvider: Middleware = async (c: TerraCommand, next: Next) => {
   // c.oldProvider = new LCDClient({
   //   URL: nodeURL,
   //   chainID: process.env.CHAIN_ID,
-  //   gasPrices: { uluna: process.env.DEFAULT_GAS_PRICE },
+  //   gasPrices: { ucosm: process.env.DEFAULT_GAS_PRICE },
   // })
   return next()
 }

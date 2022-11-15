@@ -130,25 +130,25 @@ func TestTerraClient(t *testing.T) {
 		lggr)
 	require.NoError(t, err)
 	gpe := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
-		"uluna": sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("0.01")),
+		"ucosm": sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.01")),
 	})
 	contract := DeployTestContract(t, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 
 	t.Run("send tx between accounts", func(t *testing.T) {
 		// Assert balance before
-		b, err := tc.Balance(accounts[1].Address, "uluna")
+		b, err := tc.Balance(accounts[1].Address, "ucosm")
 		require.NoError(t, err)
 		assert.Equal(t, "100000000", b.Amount.String())
 
-		// Send a uluna from one account to another and ensure balances update
+		// Send a ucosm from one account to another and ensure balances update
 		an, sn, err := tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		fund := banktypes.NewMsgSend(accounts[0].Address, accounts[1].Address, sdk.NewCoins(sdk.NewInt64Coin("uluna", 1)))
+		fund := banktypes.NewMsgSend(accounts[0].Address, accounts[1].Address, sdk.NewCoins(sdk.NewInt64Coin("ucosm", 1)))
 		gasLimit, err := tc.SimulateUnsigned([]sdk.Msg{fund}, sn)
 		require.NoError(t, err)
 		gasPrices, err := gpe.GasPrices()
 		require.NoError(t, err)
-		txBytes, err := tc.CreateAndSign([]sdk.Msg{fund}, an, sn, gasLimit.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrices["uluna"], accounts[0].PrivateKey, 0)
+		txBytes, err := tc.CreateAndSign([]sdk.Msg{fund}, an, sn, gasLimit.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrices["ucosm"], accounts[0].PrivateKey, 0)
 		require.NoError(t, err)
 		_, err = tc.Simulate(txBytes)
 		require.NoError(t, err)
@@ -160,7 +160,7 @@ func TestTerraClient(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert balance changed
-		b, err = tc.Balance(accounts[1].Address, "uluna")
+		b, err = tc.Balance(accounts[1].Address, "ucosm")
 		require.NoError(t, err)
 		assert.Equal(t, "100000001", b.Amount.String())
 
@@ -213,7 +213,7 @@ func TestTerraClient(t *testing.T) {
 		require.NoError(t, err)
 		gasPrices, err := gpe.GasPrices()
 		require.NoError(t, err)
-		resp1, err := tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, gasPrices["uluna"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		resp1, err := tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 		require.NoError(t, err)
 		time.Sleep(1 * time.Second)
 		// Do it again so there are multiple executions
@@ -225,7 +225,7 @@ func TestTerraClient(t *testing.T) {
 		}
 		an, sn, err = tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		_, err = tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, gasPrices["uluna"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		_, err = tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 		require.NoError(t, err)
 		time.Sleep(1 * time.Second)
 
@@ -295,12 +295,12 @@ func TestTerraClient(t *testing.T) {
 		}{
 			{
 				"zero",
-				sdk.NewInt64DecCoin("uluna", 0),
+				sdk.NewInt64DecCoin("ucosm", 0),
 				sdkerrors.ErrInsufficientFee.ABCICode(),
 			},
 			{
 				"below-min",
-				sdk.NewDecCoinFromDec("uluna", sdk.NewDecWithPrec(1, 4)),
+				sdk.NewDecCoinFromDec("ucosm", sdk.NewDecWithPrec(1, 4)),
 				sdkerrors.ErrInsufficientFee.ABCICode(),
 			},
 			{
@@ -310,7 +310,7 @@ func TestTerraClient(t *testing.T) {
 			},
 			{
 				"recommended",
-				gasPrices["uluna"],
+				gasPrices["ucosm"],
 				0,
 			},
 		} {

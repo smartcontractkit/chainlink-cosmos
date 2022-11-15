@@ -70,7 +70,7 @@ func New(ctx *pulumi.Context) (Terrad, error) {
 		chainID:  chainID,
 		keyID:    keyID,
 		addr:     deployerAddr.Address,
-		args:     []string{"--from", keyID, "--chain-id", chainID, "--gas=auto", "--gas-adjustment=1.25", "--fees=100000uluna", "--broadcast-mode=block", "-y", "-o=json"},
+		args:     []string{"--from", keyID, "--chain-id", chainID, "--gas=auto", "--gas-adjustment=1.25", "--fees=100000ucosm", "--broadcast-mode=block", "-y", "-o=json"},
 		Uploaded: map[int]string{},
 		Deployed: map[int]string{},
 	}, err
@@ -528,7 +528,7 @@ func (t Terrad) Addresses() map[int]string {
 func (t Terrad) Fund(addresses []string) error {
 	for _, a := range addresses {
 		msg := utils.LogStatus(fmt.Sprintf("Funded %s", a))
-		args := append([]string{"tx", "bank", "send", t.keyID, a, "1000000000uluna"}, t.args...)
+		args := append([]string{"tx", "bank", "send", t.keyID, a, "1000000000ucosm"}, t.args...)
 		if _, err := exec.Command("terrad", args...).Output(); msg.Check(err) != nil {
 			return err
 		}

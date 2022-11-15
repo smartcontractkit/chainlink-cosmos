@@ -6,7 +6,7 @@ networks:
     retry_attempts: 30
     retry_delay: 1s
     type: terra
-    currency: uluna
+    currency: ucosm
     contracts_deployed: false
     mnemonics:
       # prefunded default LocalTerra mnemonics

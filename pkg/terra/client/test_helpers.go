@@ -40,7 +40,7 @@ type Account struct {
 }
 
 // 0.001
-var minGasPrice = sdk.NewDecCoinFromDec("uluna", sdk.NewDecWithPrec(1, 3))
+var minGasPrice = sdk.NewDecCoinFromDec("ucosm", sdk.NewDecWithPrec(1, 3))
 
 // SetupLocalTerraNode sets up a local terra node via terrad, and returns pre-funded accounts, the test directory, and the url.
 func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string, string) {
@@ -80,7 +80,7 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string, strin
 		privateKey, address := createKeyFromMnemonic(t, k.Mnemonic)
 		require.Equal(t, expAcctAddr, address)
 		// Give it 100 luna
-		out2, err2 := exec.Command("terrad", "add-genesis-account", k.Address, "100000000uluna", "--home", testdir).Output() //nolint:gosec
+		out2, err2 := exec.Command("terrad", "add-genesis-account", k.Address, "100000000ucosm", "--home", testdir).Output() //nolint:gosec
 		require.NoError(t, err2, string(out2))
 		accounts = append(accounts, Account{
 			Name:       account,
@@ -89,7 +89,7 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string, strin
 		})
 	}
 	// Stake 10 luna in first acct
-	out, err = exec.Command("terrad", "gentx", accounts[0].Name, "10000000uluna", fmt.Sprintf("--chain-id=%s", chainID), "--keyring-backend", "test", "--keyring-dir", testdir, "--home", testdir).CombinedOutput() //nolint:gosec
+	out, err = exec.Command("terrad", "gentx", accounts[0].Name, "10000000ucosm", fmt.Sprintf("--chain-id=%s", chainID), "--keyring-backend", "test", "--keyring-dir", testdir, "--home", testdir).CombinedOutput() //nolint:gosec
 	require.NoError(t, err, string(out))
 	out, err = exec.Command("terrad", "collect-gentxs", "--home", testdir).CombinedOutput()
 	require.NoError(t, err, string(out))
@@ -147,7 +147,7 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string, strin
 func DeployTestContract(t *testing.T, tendermintURL string, deployAccount, ownerAccount Account, tc *Client, testdir, wasmTestContractPath string) sdk.AccAddress {
 	//nolint:gosec
 	out, err := exec.Command("terrad", "tx", "wasm", "store", wasmTestContractPath, "--node", tendermintURL,
-		"--from", deployAccount.Name, "--gas", "auto", "--fees", "100000uluna", "--chain-id", "42", "--broadcast-mode", "block", "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes").CombinedOutput()
+		"--from", deployAccount.Name, "--gas", "auto", "--fees", "100000ucosm", "--chain-id", "42", "--broadcast-mode", "block", "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes").CombinedOutput()
 	require.NoError(t, err, string(out))
 	an, sn, err2 := tc.Account(ownerAccount.Address)
 	require.NoError(t, err2)
