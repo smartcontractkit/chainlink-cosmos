@@ -5,6 +5,7 @@ import (
 
 	"github.com/smartcontractkit/chainlink-testing-framework/blockchain"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/actypes"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/cw20types"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/flagstypes"
@@ -12,7 +13,6 @@ import (
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/ocr2types"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/validatortypes"
-	"github.com/smartcontractkit/terra.go/msg"
 )
 
 // ContractDeployer provides the implementations for deploying Terra based contracts
@@ -31,7 +31,7 @@ func (t *ContractDeployer) DeployOCRv2Validator(threshold uint32, flags string, 
 	if err != nil {
 		return nil, err
 	}
-	ca, err := msg.AccAddressFromBech32(contractAddr)
+	ca, err := sdk.AccAddressFromBech32(contractAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (t *ContractDeployer) DeployOCRv2Proxy(addr string, contractsDir string) (*
 	if err != nil {
 		return nil, err
 	}
-	proxAddr, err := msg.AccAddressFromBech32(proxyAddr)
+	proxAddr, err := sdk.AccAddressFromBech32(proxyAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (t *ContractDeployer) DeployOCRv2Flags(lowAC string, raiseAC string, contra
 	if err != nil {
 		return nil, err
 	}
-	ca, err := msg.AccAddressFromBech32(contractAddr)
+	ca, err := sdk.AccAddressFromBech32(contractAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (t *ContractDeployer) DeployOCRv2ValidatorProxy(addr string, contractsDir s
 	if err != nil {
 		return nil, err
 	}
-	proxAddr, err := msg.AccAddressFromBech32(proxyAddr)
+	proxAddr, err := sdk.AccAddressFromBech32(proxyAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (t *ContractDeployer) DeployLinkTokenContract() (*LinkToken, error) {
 	if err != nil {
 		return nil, err
 	}
-	addr, err := msg.AccAddressFromBech32(linkAddr)
+	addr, err := sdk.AccAddressFromBech32(linkAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (t *ContractDeployer) DeployOCRv2(paymentControllerAddr string, requesterCo
 	if err != nil {
 		return nil, err
 	}
-	addr, err := msg.AccAddressFromBech32(ocr2)
+	addr, err := sdk.AccAddressFromBech32(ocr2)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func (t *ContractDeployer) DeployOCRv2AccessController(contractsDir string) (*Ac
 	if err != nil {
 		return nil, err
 	}
-	addr, err := msg.AccAddressFromBech32(acAddr)
+	addr, err := sdk.AccAddressFromBech32(acAddr)
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,7 @@ package ocr2types
 import (
 	"math/big"
 
-	"github.com/smartcontractkit/terra.go/msg"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const (
@@ -35,7 +35,7 @@ type QueryOwedPaymentMsg struct {
 }
 
 type QueryOwedPaymentTypeMsg struct {
-	Transmitter msg.AccAddress `json:"transmitter"`
+	Transmitter sdk.AccAddress `json:"transmitter"`
 }
 
 type QueryRoundDataMsg struct {
@@ -102,7 +102,7 @@ type ExecuteTransferOwnershipMsg struct {
 }
 
 type ExecuteTransferOwnershipMsgType struct {
-	To msg.AccAddress `json:"to"`
+	To sdk.AccAddress `json:"to"`
 }
 
 var BeginProposal = "begin_proposal"

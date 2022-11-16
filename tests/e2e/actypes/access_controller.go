@@ -1,6 +1,8 @@
 package actypes
 
-import "github.com/smartcontractkit/terra.go/msg"
+import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+)
 
 type InstantiateMsg struct{}
 
@@ -9,7 +11,7 @@ type ExecuteAddAccessMsg struct {
 }
 
 type ExecuteAddAccessTypeMsg struct {
-	Address msg.AccAddress `json:"address"`
+	Address sdk.AccAddress `json:"address"`
 }
 
 type ExecuteRemoveAccessMsg struct {
@@ -17,7 +19,7 @@ type ExecuteRemoveAccessMsg struct {
 }
 
 type ExecuteRemoveAccessTypeMsg struct {
-	Address msg.AccAddress `json:"address"`
+	Address sdk.AccAddress `json:"address"`
 }
 
 type QueryHasAccessMsg struct {
@@ -25,7 +27,7 @@ type QueryHasAccessMsg struct {
 }
 
 type QueryHasAccessTypeMsg struct {
-	Address msg.AccAddress `json:"address"`
+	Address sdk.AccAddress `json:"address"`
 }
 
 type QueryHasAccessResponse struct {

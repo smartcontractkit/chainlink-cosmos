@@ -3,14 +3,15 @@ package e2e
 import (
 	"encoding/json"
 
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/actypes"
 	terraClient "github.com/smartcontractkit/terra.go/client"
-	"github.com/smartcontractkit/terra.go/msg"
 )
 
 type AccessController struct {
 	client  *TerraLCDClient
-	address msg.AccAddress
+	address sdk.AccAddress
 }
 
 func (t *AccessController) AddAccess(addr string) error {
@@ -24,13 +25,13 @@ func (t *AccessController) AddAccess(addr string) error {
 		return err
 	}
 	_, err = t.client.SendTX(terraClient.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgExecuteContract(
-				sender,
-				t.address,
-				executeMsgBytes,
-				msg.NewCoins(),
-			),
+		Msgs: []sdk.Msg{
+			&wasmtypes.MsgExecuteContract{
+				Sender:   sender.String(),
+				Contract: t.address.String(),
+				Msg:      executeMsgBytes,
+				Funds:    sdk.NewCoins(),
+			},
 		},
 	}, true)
 	if err != nil {
@@ -41,7 +42,7 @@ func (t *AccessController) AddAccess(addr string) error {
 
 func (t *AccessController) RemoveAccess(addr string) error {
 	fromAddr := t.client.DefaultWallet.AccAddress
-	toAddr, _ := msg.AccAddressFromHex(addr)
+	toAddr, _ := sdk.AccAddressFromHex(addr)
 	executeMsg := actypes.ExecuteRemoveAccessMsg{
 		RemoveAccess: actypes.ExecuteRemoveAccessTypeMsg{
 			Address: toAddr,
@@ -51,13 +52,13 @@ func (t *AccessController) RemoveAccess(addr string) error {
 		return err
 	}
 	_, err = t.client.SendTX(terraClient.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgExecuteContract(
-				fromAddr,
-				t.address,
-				executeMsgBytes,
-				msg.NewCoins(),
-			),
+		Msgs: []sdk.Msg{
+			&wasmtypes.MsgExecuteContract{
+				Sender:   fromAddr.String(),
+				Contract: t.address.String(),
+				Msg:      executeMsgBytes,
+				Funds:    sdk.NewCoins(),
+			},
 		},
 	}, true)
 	if err != nil {

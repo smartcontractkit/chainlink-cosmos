@@ -6,19 +6,20 @@ import (
 	"encoding/json"
 	"strconv"
 
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/rs/zerolog/log"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/ocr2types"
 	"github.com/smartcontractkit/chainlink-testing-framework/contracts"
 	"github.com/smartcontractkit/libocr/offchainreporting2/confighelper"
 	terraClient "github.com/smartcontractkit/terra.go/client"
-	"github.com/smartcontractkit/terra.go/msg"
 )
 
 // OCRv2 represents a OVR v2 contract deployed on terra as WASM
 type OCRv2 struct {
 	Client *TerraLCDClient
-	Addr   msg.AccAddress
+	Addr   sdk.AccAddress
 }
 
 // SetValidatorConfig sets validator config
@@ -36,13 +37,13 @@ func (t *OCRv2) SetValidatorConfig(gasLimit uint64, validatorAddr string) error 
 		return err
 	}
 	_, err = t.Client.SendTX(terraClient.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgExecuteContract(
-				sender,
-				t.Addr,
-				executeMsgBytes,
-				msg.NewCoins(),
-			),
+		Msgs: []sdk.Msg{
+			&wasmtypes.MsgExecuteContract{
+				Sender:   sender.String(),
+				Contract: t.Addr.String(),
+				Msg:      executeMsgBytes,
+				Funds:    sdk.NewCoins(),
+			},
 		},
 	}, true)
 	if err != nil {
@@ -68,13 +69,13 @@ func (t *OCRv2) SetBilling(baseGas uint64, op uint64, tp uint64, recommendedGasP
 		return err
 	}
 	_, err = t.Client.SendTX(terraClient.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgExecuteContract(
-				sender,
-				t.Addr,
-				executeMsgBytes,
-				msg.NewCoins(),
-			),
+		Msgs: []sdk.Msg{
+			&wasmtypes.MsgExecuteContract{
+				Sender:   sender.String(),
+				Contract: t.Addr.String(),
+				Msg:      executeMsgBytes,
+				Funds:    sdk.NewCoins(),
+			},
 		},
 	}, true)
 	if err != nil {
@@ -130,13 +131,13 @@ func (t *OCRv2) SetOffChainConfig(cfg contracts.OffChainAggregatorV2Config) ([]s
 		return nil, err
 	}
 	txResp, err := t.Client.SendTX(terraClient.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgExecuteContract(
-				sender,
-				t.Addr,
-				msgBytes,
-				msg.NewCoins(),
-			),
+		Msgs: []sdk.Msg{
+			&wasmtypes.MsgExecuteContract{
+				Sender:   sender.String(),
+				Contract: t.Addr.String(),
+				Msg:      msgBytes,
+				Funds:    sdk.NewCoins(),
+			},
 		},
 	}, true)
 	if err != nil {
@@ -164,13 +165,13 @@ func (t *OCRv2) SetOffChainConfig(cfg contracts.OffChainAggregatorV2Config) ([]s
 		return nil, err
 	}
 	_, err = t.Client.SendTX(terraClient.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgExecuteContract(
-				sender,
-				t.Addr,
-				proposeConfigBytes,
-				msg.NewCoins(),
-			),
+		Msgs: []sdk.Msg{
+			&wasmtypes.MsgExecuteContract{
+				Sender:   sender.String(),
+				Contract: t.Addr.String(),
+				Msg:      proposeConfigBytes,
+				Funds:    sdk.NewCoins(),
+			},
 		},
 	}, true)
 	if err != nil {
@@ -187,13 +188,13 @@ func (t *OCRv2) SetOffChainConfig(cfg contracts.OffChainAggregatorV2Config) ([]s
 		return nil, err
 	}
 	_, err = t.Client.SendTX(terraClient.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgExecuteContract(
-				sender,
-				t.Addr,
-				proposeOffchainCfgBytes,
-				msg.NewCoins(),
-			),
+		Msgs: []sdk.Msg{
+			&wasmtypes.MsgExecuteContract{
+				Sender:   sender.String(),
+				Contract: t.Addr.String(),
+				Msg:      proposeOffchainCfgBytes,
+				Funds:    sdk.NewCoins(),
+			},
 		},
 	}, true)
 	if err != nil {
@@ -208,13 +209,13 @@ func (t *OCRv2) SetOffChainConfig(cfg contracts.OffChainAggregatorV2Config) ([]s
 		return nil, err
 	}
 	respWithDigest, err := t.Client.SendTX(terraClient.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgExecuteContract(
-				sender,
-				t.Addr,
-				finalizeBytes,
-				msg.NewCoins(),
-			),
+		Msgs: []sdk.Msg{
+			&wasmtypes.MsgExecuteContract{
+				Sender:   sender.String(),
+				Contract: t.Addr.String(),
+				Msg:      finalizeBytes,
+				Funds:    sdk.NewCoins(),
+			},
 		},
 	}, true)
 	if err != nil {
@@ -238,13 +239,13 @@ func (t *OCRv2) SetOffChainConfig(cfg contracts.OffChainAggregatorV2Config) ([]s
 		return nil, err
 	}
 	_, err = t.Client.SendTX(terraClient.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgExecuteContract(
-				sender,
-				t.Addr,
-				acceptProposalBytes,
-				msg.NewCoins(),
-			),
+		Msgs: []sdk.Msg{
+			&wasmtypes.MsgExecuteContract{
+				Sender:   sender.String(),
+				Contract: t.Addr.String(),
+				Msg:      acceptProposalBytes,
+				Funds:    sdk.NewCoins(),
+			},
 		},
 	}, true)
 	if err != nil {
@@ -258,7 +259,7 @@ func (t *OCRv2) RequestNewRound() error {
 }
 
 func (t *OCRv2) GetOwedPayment(transmitter string) (map[string]interface{}, error) {
-	transmitterAddr, _ := msg.AccAddressFromBech32(transmitter)
+	transmitterAddr, _ := sdk.AccAddressFromBech32(transmitter)
 	resp := make(map[string]interface{})
 	if err := t.Client.QuerySmart(
 		context.Background(),
@@ -302,7 +303,7 @@ func (t *OCRv2) GetLatestConfigDetails() (map[string]interface{}, error) {
 
 func (t *OCRv2) TransferOwnership(to string) error {
 	sender := t.Client.DefaultWallet.AccAddress
-	toAddr, _ := msg.AccAddressFromHex(to)
+	toAddr, _ := sdk.AccAddressFromHex(to)
 	executeMsg := ocr2types.ExecuteTransferOwnershipMsg{
 		TransferOwnership: ocr2types.ExecuteTransferOwnershipMsgType{
 			To: toAddr,
@@ -312,13 +313,13 @@ func (t *OCRv2) TransferOwnership(to string) error {
 		return err
 	}
 	_, err = t.Client.SendTX(terraClient.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgExecuteContract(
-				sender,
-				t.Addr,
-				executeMsgBytes,
-				msg.NewCoins(),
-			),
+		Msgs: []sdk.Msg{
+			&wasmtypes.MsgExecuteContract{
+				Sender:   sender.String(),
+				Contract: t.Addr.String(),
+				Msg:      executeMsgBytes,
+				Funds:    sdk.NewCoins(),
+			},
 		},
 	}, true)
 	if err != nil {

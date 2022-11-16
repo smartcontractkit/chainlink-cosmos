@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"math/big"
 
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/cw20types"
 	terraClient "github.com/smartcontractkit/terra.go/client"
-	"github.com/smartcontractkit/terra.go/msg"
 )
 
 type LinkToken struct {
 	client  *TerraLCDClient
-	address msg.AccAddress
+	address sdk.AccAddress
 }
 
 func (t *LinkToken) Approve(to string, amount *big.Int) error {
@@ -21,11 +22,11 @@ func (t *LinkToken) Approve(to string, amount *big.Int) error {
 
 func (t *LinkToken) Transfer(to string, amount *big.Int) error {
 	sender := t.client.DefaultWallet.AccAddress
-	linkAddrBech32, err := msg.AccAddressFromBech32(t.Address())
+	linkAddrBech32, err := sdk.AccAddressFromBech32(t.Address())
 	if err != nil {
 		return err
 	}
-	toAddr, err := msg.AccAddressFromBech32(to)
+	toAddr, err := sdk.AccAddressFromBech32(to)
 	if err != nil {
 		return err
 	}
@@ -40,13 +41,13 @@ func (t *LinkToken) Transfer(to string, amount *big.Int) error {
 
 	}
 	_, err = t.client.SendTX(terraClient.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgExecuteContract(
-				sender,
-				linkAddrBech32,
-				executeMsgBytes,
-				msg.NewCoins(),
-			),
+		Msgs: []sdk.Msg{
+			&wasmtypes.MsgExecuteContract{
+				Sender:   sender.String(),
+				Contract: linkAddrBech32.String(),
+				Msg:      executeMsgBytes,
+				Funds:    sdk.NewCoins(),
+			},
 		},
 	}, true)
 	if err != nil {

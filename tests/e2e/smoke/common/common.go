@@ -12,6 +12,7 @@ import (
 
 	"github.com/neilotoole/errgroup"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rs/zerolog/log"
@@ -20,7 +21,6 @@ import (
 	"github.com/smartcontractkit/chainlink-testing-framework/client"
 	"github.com/smartcontractkit/helmenv/environment"
 	"github.com/smartcontractkit/helmenv/tools"
-	"github.com/smartcontractkit/terra.go/msg"
 )
 
 const (
@@ -282,7 +282,7 @@ func (m *OCRv2State) LoadContracts() error {
 		if err = json.Unmarshal(d, &contractsState); err != nil {
 			return err
 		}
-		accAddr, err := msg.AccAddressFromBech32(contractsState.OCR)
+		accAddr, err := sdk.AccAddressFromBech32(contractsState.OCR)
 		if err != nil {
 			return err
 		}

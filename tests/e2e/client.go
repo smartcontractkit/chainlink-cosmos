@@ -19,12 +19,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/rs/zerolog/log"
 	"github.com/smartcontractkit/helmenv/environment"
 	"github.com/smartcontractkit/terra.go/client"
 	"github.com/smartcontractkit/terra.go/key"
-	"github.com/smartcontractkit/terra.go/msg"
 	"gopkg.in/yaml.v2"
 )
 
@@ -60,7 +60,7 @@ type NetworkConfig struct {
 type TerraWallet struct {
 	Mnemonic   string
 	PrivateKey key.PrivKey
-	AccAddress msg.AccAddress
+	AccAddress sdk.AccAddress
 }
 
 // LoadWallet returns the instantiated Terra wallet based on a given Mnemonic with 0,0 derivation path
@@ -73,7 +73,7 @@ func LoadWallet(mnemonic string) (*TerraWallet, error) {
 	if err != nil {
 		return nil, err
 	}
-	accAddr, err := msg.AccAddressFromHex(privKey.PubKey().Address().String())
+	accAddr, err := sdk.AccAddressFromHex(privKey.PubKey().Address().String())
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +160,7 @@ func NewEphemeralWallet() (*TerraWallet, error) {
 	if err != nil {
 		return nil, err
 	}
-	accAddr, err := msg.AccAddressFromHex(privKey.PubKey().Address().String())
+	accAddr, err := sdk.AccAddressFromHex(privKey.PubKey().Address().String())
 	if err != nil {
 		return nil, err
 	}
@@ -243,8 +243,8 @@ func NewClient(cfg *NetworkConfig) (*TerraLCDClient, error) {
 		LCDClient: client.NewLCDClient(
 			cfg.URLs[0],
 			cfg.Name,
-			msg.NewDecCoinFromDec(cfg.Currency, msg.NewDecFromIntWithPrec(msg.NewInt(15), 2)),
-			msg.NewDecFromIntWithPrec(msg.NewInt(15), 1),
+			sdk.NewDecCoinFromDec(cfg.Currency, sdk.NewDecFromIntWithPrec(sdk.NewInt(15), 2)),
+			sdk.NewDecFromIntWithPrec(sdk.NewInt(15), 1),
 			nil,
 			DefaultTerraTXTimeout,
 		),

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/rs/zerolog/log"
 	"github.com/smartcontractkit/terra.go/key"
-	"github.com/smartcontractkit/terra.go/msg"
 )
 
 type RddConfig struct {
@@ -126,7 +126,7 @@ func newOperator(nodeName string, index int) map[string]interface{} {
 	mnemonic, _ := key.CreateMnemonic()
 	privKeyBz, _ := key.DerivePrivKeyBz(mnemonic, key.CreateHDPath(0, 0))
 	privKey, _ := key.PrivKeyGen(privKeyBz)
-	addr := msg.AccAddress(privKey.PubKey().Address())
+	addr := sdk.AccAddress(privKey.PubKey().Address())
 
 	return map[string]interface{}{
 		"displayName":  nodeName,

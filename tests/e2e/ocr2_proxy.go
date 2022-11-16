@@ -5,16 +5,17 @@ import (
 	"encoding/json"
 	"strconv"
 
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/rs/zerolog/log"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/ocr2proxytypes"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/ocr2types"
 	terraClient "github.com/smartcontractkit/terra.go/client"
-	"github.com/smartcontractkit/terra.go/msg"
 )
 
 type OCRv2Proxy struct {
 	client  *TerraLCDClient
-	address msg.AccAddress
+	address sdk.AccAddress
 }
 
 func (m *OCRv2Proxy) Address() string {
@@ -57,13 +58,13 @@ func (m *OCRv2Proxy) TransferOwnership(to string) error {
 func (m *OCRv2Proxy) send(executeMsgBytes []byte) error {
 	sender := m.client.DefaultWallet.AccAddress
 	_, err := m.client.SendTX(terraClient.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgExecuteContract(
-				sender,
-				m.address,
-				executeMsgBytes,
-				msg.NewCoins(),
-			),
+		Msgs: []sdk.Msg{
+			&wasmtypes.MsgExecuteContract{
+				Sender:   sender.String(),
+				Contract: m.address.String(),
+				Msg:      executeMsgBytes,
+				Funds:    sdk.NewCoins(),
+			},
 		},
 	}, true)
 	return err

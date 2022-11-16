@@ -26,7 +26,7 @@ func main() {
 	panicErr(err)
 
 	// Double check its the expected key
-	addr := msg.AccAddress(privKey.PubKey().Address())
+	addr := sdk.AccAddress(privKey.PubKey().Address())
 	if addr.String() != "TODO PAYEE ADDRESS" {
 		panic(addr.String())
 	}
@@ -37,8 +37,8 @@ func main() {
 		"TODO CHAINID e.g. bombay-12 etc",
 		// See prices https://fcd.terra.dev/v1/txs/gas_prices
 		// Can use other prices if desired (assuming the wallet holds those funds)
-		msg.NewDecCoinFromDec("ucosm", msg.NewDecFromIntWithPrec(msg.NewInt(1133), 5)), // gas price of 0.01133ucosm
-		msg.NewDecFromIntWithPrec(msg.NewInt(15), 1),                                   // Gas multiplier of 1.5
+		sdk.NewDecCoinFromDec("ucosm", sdk.NewDecFromIntWithPrec(sdk.NewInt(1133), 5)), // gas price of 0.01133ucosm
+		sdk.NewDecFromIntWithPrec(sdk.NewInt(15), 1),                                   // Gas multiplier of 1.5
 		privKey,
 		5*time.Second,
 	)
@@ -49,17 +49,17 @@ func main() {
 	// Note must be transmitter associated with payee
 	execute := msg.NewMsgExecuteContract(addr, contractAddress, []byte(`{"withdraw_payment":{"transmitter":"TODO TRANSMITTER ADDRESS"}}`), sdk.Coins{})
 	tx, err := c.CreateAndSignTx(context.Background(), client.CreateTxOptions{
-		Msgs: []msg.Msg{
+		Msgs: []sdk.Msg{
 			execute,
 		},
 		Memo: "",
 		// Options Paramters (if empty, load chain info)
-		// AccountNumber: msg.NewInt(33),
-		// Sequence:      msg.NewInt(1),
+		// AccountNumber: sdk.NewInt(33),
+		// Sequence:      sdk.NewInt(1),
 		// Options Paramters (if empty, simulate gas & fee)
-		// FeeAmount: msg.NewCoins(),
+		// FeeAmount: sdk.NewCoins(),
 		// GasLimit: 1000000,
-		// FeeGranter: msg.AccAddress{},
+		// FeeGranter: sdk.AccAddress{},
 		// SignMode: tx.SignModeDirect,
 	})
 	panicErr(err)

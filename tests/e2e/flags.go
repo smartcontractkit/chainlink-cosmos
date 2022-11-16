@@ -1,12 +1,12 @@
 package e2e
 
 import (
-	"github.com/smartcontractkit/terra.go/msg"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type OCRv2Flags struct {
 	client  *TerraLCDClient
-	address msg.AccAddress
+	address sdk.AccAddress
 }
 
 func (m *OCRv2Flags) Address() string {

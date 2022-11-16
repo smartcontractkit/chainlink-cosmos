@@ -1,6 +1,8 @@
 package cw20types
 
-import "github.com/smartcontractkit/terra.go/msg"
+import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+)
 
 type InstantiateMsg struct {
 	Name            string              `json:"name"`
@@ -10,7 +12,7 @@ type InstantiateMsg struct {
 }
 
 type InitialBalanceMsg struct {
-	Address msg.AccAddress `json:"address"`
+	Address sdk.AccAddress `json:"address"`
 	Amount  string         `json:"amount"`
 }
 
@@ -19,7 +21,7 @@ type ExecuteSendMsg struct {
 }
 
 type ExecuteSendTypeMsg struct {
-	Contract msg.AccAddress `json:"contract"`
+	Contract sdk.AccAddress `json:"contract"`
 	Amount   string         `json:"amount"`
 	Msg      []byte         `json:"msg"`
 }
@@ -30,5 +32,5 @@ type ExecuteTransferMsg struct {
 
 type ExecuteTransferTypeMsg struct {
 	Amount    string         `json:"amount"`
-	Recipient msg.AccAddress `json:"recipient"`
+	Recipient sdk.AccAddress `json:"recipient"`
 }
