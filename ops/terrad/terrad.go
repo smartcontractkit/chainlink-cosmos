@@ -308,7 +308,7 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	helperOracles := []confighelper.OracleIdentityExtra{}
 	for _, k := range keys {
 		S = append(S, 1)
-		offchainPKByte, err := hex.DecodeString(k.OCR2OffchainPublicKey)
+		offchainPK, err := hex.DecodeString(k.OCR2OffchainPublicKey)
 		if err != nil {
 			return err
 		}
@@ -316,20 +316,22 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		if err != nil {
 			return err
 		}
-		configPKByteTemp, err := hex.DecodeString(k.OCR2ConfigPublicKey)
+		configPK, err := hex.DecodeString(k.OCR2ConfigPublicKey)
 		if err != nil {
 			return err
 		}
-		configPKByte := [32]byte{}
-		copy(configPKByte[:], configPKByteTemp)
+		configPKByte := types.ConfigEncryptionPublicKey{}
+		copy(configPKByte[:], configPK)
+		offchainPKByte := types.OffchainPublicKey{}
+		copy(offchainPKByte[:], offchainPK)
 		helperOracles = append(helperOracles, confighelper.OracleIdentityExtra{
 			OracleIdentity: confighelper.OracleIdentity{
-				OffchainPublicKey: types.OffchainPublicKey(offchainPKByte),
+				OffchainPublicKey: offchainPKByte,
 				OnchainPublicKey:  types.OnchainPublicKey(onchainPKByte),
 				PeerID:            k.P2PID,
 				TransmitAccount:   types.Account(k.OCR2Transmitter),
 			},
-			ConfigEncryptionPublicKey: types.ConfigEncryptionPublicKey(configPKByte),
+			ConfigEncryptionPublicKey: configPKByte,
 		})
 	}
 
