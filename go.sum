@@ -1024,8 +1024,8 @@ github.com/smartcontractkit/chainlink-relay v0.1.6-0.20220824173548-dab4ac0a6595
 github.com/smartcontractkit/chainlink-relay v0.1.6-0.20220824173548-dab4ac0a6595/go.mod h1:f6ju2ncT/Q1loAdiT2/8M7dtpkXwCaZvhfddyeBESXE=
 github.com/smartcontractkit/ed25519consensus v0.0.1 h1:Ta23Y6YJTACLCpKWSWAwgHCtkmWrGGfrUAV8Ns5r4z0=
 github.com/smartcontractkit/ed25519consensus v0.0.1/go.mod h1:8Wf0F4mu3B5DdEOFKMMLgSoZ8EyaA2Cmf4YMUsNHXzE=
-github.com/smartcontractkit/libocr v0.0.0-20220812191430-db92a9fdaa52 h1:Nac1UCKJwt0AY15bAaorscflOcBs/FnmO7NoCh8Tons=
-github.com/smartcontractkit/libocr v0.0.0-20220812191430-db92a9fdaa52/go.mod h1:5JnCHuYgmIP9ZyXzgAfI5Iwu0WxBtBKp+ApeT5o1Cjw=
+github.com/smartcontractkit/libocr v0.0.0-20221121171434-482da3ed36d8 h1:KcTNxuP5g3GGUqn3WJe7KKnTixqfVZjmHnMAnKkLGJw=
+github.com/smartcontractkit/libocr v0.0.0-20221121171434-482da3ed36d8/go.mod h1:5JnCHuYgmIP9ZyXzgAfI5Iwu0WxBtBKp+ApeT5o1Cjw=
 github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16 h1:k+E0RKzVSG1QpxXakNUtcGUhq4ZMe0MAJ5Awg/l9oSc=
 github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16/go.mod h1:48ia8cZcgAEKED8yTNp09Dtb4VWlLrOSSPC7U89W3n4=
 github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d/go.mod h1:OnSkiWE9lh6wB0YB77sQom3nweQdgAjqCqsofrRNTgc=

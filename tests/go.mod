@@ -13,7 +13,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/smartcontractkit/chainlink-testing-framework v1.1.19-0.20220509150418-cfc7513b9506
 	github.com/smartcontractkit/helmenv v1.0.68
-	github.com/smartcontractkit/libocr v0.0.0-20220414173908-cdfa6bef133a
+	github.com/smartcontractkit/libocr v0.0.0-20221121171434-482da3ed36d8
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	golang.org/x/crypto v0.0.0-20220210151621-f4118a5b28e2
 	gopkg.in/yaml.v2 v2.4.0

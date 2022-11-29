@@ -6,7 +6,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.44.5
 	github.com/pulumi/pulumi/sdk/v3 v3.17.0
 	github.com/smartcontractkit/chainlink-relay/ops v0.0.0-20220405205522-cb8e5cd6bb3f
-	github.com/smartcontractkit/libocr v0.0.0-20220125200954-5b957c834276
+	github.com/smartcontractkit/libocr v0.0.0-20221121171434-482da3ed36d8
 )
 
 require (
@@ -209,7 +209,7 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220107163113-42d7afdf6368 // indirect
 	google.golang.org/grpc v1.43.0 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/gorp.v1 v1.7.2 // indirect
 	gopkg.in/guregu/null.v4 v4.0.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
