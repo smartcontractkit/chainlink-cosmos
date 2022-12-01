@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/rs/zerolog/log"
-	"github.com/smartcontractkit/terra.go/key"
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/testutil"
 )
 
 type RddConfig struct {
@@ -123,10 +122,8 @@ func NewRddContract(contractId string) *RddConfig {
 
 func newOperator(nodeName string, index int) map[string]interface{} {
 	// create a public key node address
-	mnemonic, _ := key.CreateMnemonic()
-	privKeyBz, _ := key.DerivePrivKeyBz(mnemonic, key.CreateHDPath(0, 0))
-	privKey, _ := key.PrivKeyGen(privKeyBz)
-	addr := sdk.AccAddress(privKey.PubKey().Address())
+	mnemonic, _ := testutil.CreateMnemonic()
+	_, addr, _ := testutil.CreateKeyFromMnemonic(mnemonic)
 
 	return map[string]interface{}{
 		"displayName":  nodeName,

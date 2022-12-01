@@ -8,8 +8,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/testutil"
 	"github.com/smartcontractkit/terra.go/client"
-	"github.com/smartcontractkit/terra.go/key"
 	"github.com/smartcontractkit/terra.go/msg"
 )
 
@@ -20,13 +20,10 @@ func panicErr(err error) {
 }
 
 func main() {
-	privKeyBz, err := key.DerivePrivKeyBz("TODO TERRA WALLET MNEMONIC", key.CreateHDPath(0, 0))
-	panicErr(err)
-	privKey, err := key.PrivKeyGen(privKeyBz)
+	privKey, addr, err := testutil.CreateKeyFromMnemonic("TODO TERRA WALLET MNEMONIC")
 	panicErr(err)
 
 	// Double check its the expected key
-	addr := sdk.AccAddress(privKey.PubKey().Address())
 	if addr.String() != "TODO PAYEE ADDRESS" {
 		panic(addr.String())
 	}

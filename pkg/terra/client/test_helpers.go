@@ -12,26 +12,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/smartcontractkit/chainlink-terra/pkg/terra/testutil"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/pelletier/go-toml"
-	"github.com/smartcontractkit/terra.go/key"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func createKeyFromMnemonic(t *testing.T, mnemonic string) (cryptotypes.PrivKey, sdk.AccAddress) {
-	// Derive Raw Private Key
-	privKeyBz, err := key.DerivePrivKeyBz(mnemonic, key.CreateHDPath(0, 0))
-	assert.NoError(t, err)
-	// Generate StdPrivKey
-	privKey, err := key.PrivKeyGen(privKeyBz)
-	assert.NoError(t, err)
-	addr := sdk.AccAddress(privKey.PubKey().Address())
-	return privKey, addr
-}
 
 type Account struct {
 	Name       string
@@ -77,7 +67,8 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string, strin
 		require.NoError(t, json.Unmarshal(key, &k))
 		expAcctAddr, err3 := sdk.AccAddressFromBech32(k.Address)
 		require.NoError(t, err3)
-		privateKey, address := createKeyFromMnemonic(t, k.Mnemonic)
+		privateKey, address, err := testutil.CreateKeyFromMnemonic(k.Mnemonic)
+		require.NoError(t, err)
 		require.Equal(t, expAcctAddr, address)
 		// Give it 100 luna
 		out2, err2 := exec.Command("terrad", "add-genesis-account", k.Address, "100000000ucosm", "--home", testdir).Output() //nolint:gosec

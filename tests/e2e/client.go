@@ -24,7 +24,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/smartcontractkit/helmenv/environment"
 	"github.com/smartcontractkit/terra.go/client"
-	"github.com/smartcontractkit/terra.go/key"
 	"gopkg.in/yaml.v2"
 )
 
@@ -59,21 +58,13 @@ type NetworkConfig struct {
 // only first derived key for each Mnemonic is used now (PrivateKey)
 type TerraWallet struct {
 	Mnemonic   string
-	PrivateKey key.PrivKey
+	PrivateKey cryptotypes.PrivKey
 	AccAddress sdk.AccAddress
 }
 
 // LoadWallet returns the instantiated Terra wallet based on a given Mnemonic with 0,0 derivation path
 func LoadWallet(mnemonic string) (*TerraWallet, error) {
-	privKeyBz, err := key.DerivePrivKeyBz(mnemonic, key.CreateHDPath(0, 0))
-	if err != nil {
-		return nil, err
-	}
-	privKey, err := key.PrivKeyGen(privKeyBz)
-	if err != nil {
-		return nil, err
-	}
-	accAddr, err := sdk.AccAddressFromHex(privKey.PubKey().Address().String())
+	privKey, accAddr, err := testutil.CreateKeyFromMnemonic(mnemonic)
 	if err != nil {
 		return nil, err
 	}
@@ -152,15 +143,11 @@ func (t *TerraLCDClient) AddHeaderEventSubscription(key string, subscriber block
 }
 
 func NewEphemeralWallet() (*TerraWallet, error) {
-	m, err := key.CreateMnemonic()
+	m, err := testutil.CreateMnemonic()
 	if err != nil {
 		return nil, err
 	}
-	privKey, err := key.PrivKeyGen([]byte(m))
-	if err != nil {
-		return nil, err
-	}
-	accAddr, err := sdk.AccAddressFromHex(privKey.PubKey().Address().String())
+	privKey, accAddr, err := testutil.CreateKeyFromMnemonic(m)
 	if err != nil {
 		return nil, err
 	}
