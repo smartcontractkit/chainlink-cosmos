@@ -18,6 +18,7 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/std"
@@ -29,8 +30,6 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	"github.com/terra-money/core/app/params"
-
-	terraTx "github.com/smartcontractkit/terra.go/tx"
 )
 
 const httpResponseLimit = 10_000_000 // 10MB
@@ -253,7 +252,10 @@ func (c *Client) BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse,
 
 // CreateAndSign creates and signs a transaction
 func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error) {
-	txBuilder := terraTx.NewTxBuilder(encodingConfig.TxConfig)
+	// https://github.com/cosmos/cosmos-sdk/blob/a785bf5af602525cf7a5c5ea097056597e2eb7ef/client/tx/tx.go#L63-L117
+	// https://docs.cosmos.network/main/run-node/txs#signing-a-transaction-1
+	txConfig := encodingConfig.TxConfig
+	txBuilder := txConfig.NewTxBuilder()
 	err := txBuilder.SetMsgs(msgs...)
 	if err != nil {
 		return nil, err
@@ -264,20 +266,57 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 	txBuilder.SetFeeAmount(sdk.NewCoins(gasFee))
 	// 0 timeout height means unset.
 	txBuilder.SetTimeoutHeight(timeoutHeight)
-	// TODO: replace with Sign(factory, ...)?
-	err = txBuilder.Sign(signing.SignMode_SIGN_MODE_DIRECT, authsigning.SignerData{
+
+	// Sign
+	// https://github.com/cosmos/cosmos-sdk/blob/a785bf5af602525cf7a5c5ea097056597e2eb7ef/client/tx/tx.go#L230-L337
+
+	pubKey := signer.PubKey()
+
+	// signMode := txConfig.SignModeHandler().DefaultMode()
+	signMode := signing.SignMode_SIGN_MODE_DIRECT
+
+	signerData := authsigning.SignerData{
 		AccountNumber: account,
 		ChainID:       c.chainID,
 		Sequence:      sequence,
-	}, signer, true)
-	if err != nil {
+	}
+
+	// For SIGN_MODE_DIRECT, calling SetSignatures calls setSignerInfos on
+	// TxBuilder under the hood, and SignerInfos is needed to generated the
+	// sign bytes. This is the reason for setting SetSignatures here, with a
+	// nil signature.
+	//
+	// Note: this line is not needed for SIGN_MODE_LEGACY_AMINO, but putting it
+	// also doesn't affect its generated sign bytes, so for code's simplicity
+	// sake, we put it here.
+	sigData := signing.SingleSignatureData{
+		SignMode:  signMode,
+		Signature: nil,
+	}
+	sig := signing.SignatureV2{
+		PubKey:   pubKey,
+		Data:     &sigData,
+		Sequence: sequence,
+	}
+	if err := txBuilder.SetSignatures(sig); err != nil {
 		return nil, err
 	}
-	signedTx, err := txBuilder.GetTxBytes()
-	if err != nil {
-		return nil, err
-	}
-	return signedTx, nil
+
+	// Sign those bytes
+	signature, err := tx.SignWithPrivKey(
+		signMode,
+		signerData,
+		txBuilder,
+		signer,
+		txConfig,
+		sequence,
+	)
+
+	txBuilder.SetSignatures(signature)
+
+	// TODO: return txBuilder.GetTx() for more flexibility
+
+	return txConfig.TxEncoder()(txBuilder.GetTx())
 }
 
 // SimMsg binds an ID to a msg
