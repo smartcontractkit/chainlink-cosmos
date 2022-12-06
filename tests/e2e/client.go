@@ -19,7 +19,6 @@ import (
 	"github.com/pkg/errors"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
