@@ -355,8 +355,11 @@ func (t *TerraLCDClient) Instantiate(path string, instMsg interface{}) (string, 
 		return "", err
 	}
 	txBlockResp, err := t.SendTX(client.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgStoreCode(sender, dat),
+		Msgs: []sdk.Msg{
+			&wasmtypes.MsgStoreCode{
+				Sender:       sender.String(),
+				WASMByteCode: dat,
+			},
 		},
 	}, false)
 	if err != nil {
@@ -375,14 +378,14 @@ func (t *TerraLCDClient) Instantiate(path string, instMsg interface{}) (string, 
 		Int("CodeID", cID).
 		Msg("Instantiating contract")
 	txBlockResp, err = t.SendTX(client.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgInstantiateContract(
-				sender,
-				sender,
-				uint64(cID),
-				instMsgBytes,
-				msg.NewCoins(msg.NewInt64Coin(t.Config.Currency, 1e8)),
-			),
+		Msgs: []sdk.Msg{
+			&wasmtypes.MsgInstantiateContract{
+				Sender: sender.String(),
+				Admin:  sender.String(),
+				CodeID: uint64(cID),
+				Msg:    instMsgBytes,
+				Funds:  sdk.NewCoins(sdk.NewInt64Coin(t.Config.Currency, 1e8)),
+			},
 		},
 	}, false)
 	if err != nil {
@@ -396,8 +399,8 @@ func (t *TerraLCDClient) Instantiate(path string, instMsg interface{}) (string, 
 }
 
 // SendTX signs and broadcast tx using default broadcast mode
-func (t *TerraLCDClient) SendTX(txOpts client.CreateTxOptions, logMsgs bool) (*types.TxResponse, error) {
-	var txBlockResp *types.TxResponse
+func (t *TerraLCDClient) SendTX(txOpts client.CreateTxOptions, logMsgs bool) (*sdk.TxResponse, error) {
+	var txBlockResp *sdk.TxResponse
 	if logMsgs {
 		log.Info().Interface("Msgs", txOpts.Msgs).Msg("Sending TX")
 	}
@@ -427,7 +430,7 @@ func (t *TerraLCDClient) SendTX(txOpts client.CreateTxOptions, logMsgs bool) (*t
 }
 
 // GetEventAttrValue gets attr value by key from sdkTypes.TxResponse
-func (t *TerraLCDClient) GetEventAttrValue(tx *types.TxResponse, attrKey string) (string, error) {
+func (t *TerraLCDClient) GetEventAttrValue(tx *sdk.TxResponse, attrKey string) (string, error) {
 	if tx == nil {
 		return "", errors.New("tx is nil")
 	}
@@ -446,17 +449,18 @@ func (t *TerraLCDClient) GetEventAttrValue(tx *types.TxResponse, attrKey string)
 // Fund funds a contracts with both native currency and LINK token
 func (t *TerraLCDClient) Fund(toAddress string, nativeAmount *big.Float) error {
 	sender := t.DefaultWallet.AccAddress
-	toAddrBech32, err := msg.AccAddressFromBech32(toAddress)
+	toAddrBech32, err := sdk.AccAddressFromBech32(toAddress)
 	if err != nil {
 		return err
 	}
 	amount, _ := nativeAmount.Int64()
 	_, err = t.SendTX(client.CreateTxOptions{
-		Msgs: []msg.Msg{
-			msg.NewMsgSend(
-				sender,
-				toAddrBech32,
-				msg.NewCoins(msg.NewInt64Coin(t.Config.Currency, amount))),
+		Msgs: []sdk.Msg{
+			&banktypes.MsgSend{
+				FromAddress: sender.String(),
+				ToAddress:   toAddrBech32.String(),
+				Amount:      sdk.NewCoins(sdk.NewInt64Coin(t.Config.Currency, amount)),
+			},
 		},
 	}, true)
 	if err != nil {
