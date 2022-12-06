@@ -12,12 +12,11 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.27.0
 	github.com/satori/go.uuid v1.2.0
-	github.com/smartcontractkit/chainlink-testing-framework v1.2.9
-	github.com/smartcontractkit/helmenv v1.2.7
+	github.com/smartcontractkit/chainlink-env v0.2.24
+	github.com/smartcontractkit/chainlink-testing-framework v1.4.6
 	github.com/smartcontractkit/libocr v0.0.0-20220812191430-db92a9fdaa52
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	golang.org/x/crypto v0.1.0
-	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (

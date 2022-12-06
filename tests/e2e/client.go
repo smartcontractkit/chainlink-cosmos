@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -14,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	types2 "github.com/ethereum/go-ethereum/core/types"
 	"github.com/smartcontractkit/chainlink-testing-framework/blockchain"
-	"github.com/smartcontractkit/chainlink-testing-framework/config"
 
 	"github.com/pkg/errors"
 
@@ -25,9 +23,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/rs/zerolog/log"
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/testutil"
-	"github.com/smartcontractkit/helmenv/environment"
 	"github.com/smartcontractkit/terra.go/client"
-	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -40,22 +36,6 @@ const (
 	// EventAttrKeyContractAddress contract Address as bech32
 	EventAttrKeyContractAddress = "contract_address"
 )
-
-type NetworkConfig struct {
-	ContractDeployed bool          `mapstructure:"contracts_deployed" yaml:"contracts_deployed"`
-	External         bool          `mapstructure:"external" yaml:"external"`
-	RetryAttempts    uint          `mapstructure:"retry_attempts" yaml:"retry_attempts"`
-	RetryDelay       time.Duration `mapstructure:"retry_delay" yaml:"retry_delay"`
-	Currency         string        `mapstructure:"currency" yaml:"currency"`
-	Name             string        `mapstructure:"name" yaml:"name"`
-	ID               string        `mapstructure:"id" yaml:"id"`
-	ChainID          int64         `mapstructure:"chain_id" yaml:"chain_id"`
-	URL              string        `mapstructure:"url" yaml:"url"`
-	URLs             []string      `mapstructure:"urls" yaml:"urls"`
-	Type             string        `mapstructure:"type" yaml:"type"`
-	Mnemonics        []string      `mapstructure:"mnemonics" yaml:"mnemonics"`
-	Timeout          time.Duration `mapstructure:"transaction_timeout" yaml:"transaction_timeout"`
-}
 
 // TerraWallet is the implementation to allow testing with Terra based wallets
 // only first derived key for each Mnemonic is used now (PrivateKey)
@@ -78,6 +58,22 @@ func LoadWallet(mnemonic string) (*TerraWallet, error) {
 	}, nil
 }
 
+type TerraNetwork struct {
+	ContractsDeployed bool          `mapstructure:"contracts_deployed" yaml:"contracts_deployed"`
+	External          bool          `mapstructure:"external" yaml:"external"`
+	RetryAttempts     uint          `mapstructure:"retry_attempts" yaml:"retry_attempts"`
+	RetryDelay        time.Duration `mapstructure:"retry_delay" yaml:"retry_delay"`
+	Currency          string        `mapstructure:"currency" yaml:"currency"`
+	Name              string        `mapstructure:"name" yaml:"name"`
+	ID                string        `mapstructure:"id" yaml:"id"`
+	ChainID           int64         `mapstructure:"chain_id" yaml:"chain_id"`
+	URL               string        `mapstructure:"url" yaml:"url"`
+	URLs              []string      `mapstructure:"urls" yaml:"urls"`
+	Type              string        `mapstructure:"type" yaml:"type"`
+	Mnemonics         []string      `mapstructure:"mnemonics" yaml:"mnemonics"`
+	Timeout           time.Duration `mapstructure:"transaction_timeout" yaml:"transaction_timeout"`
+}
+
 // TerraLCDClient is terra lite chain client allowing to upload and interact with the contracts
 type TerraLCDClient struct {
 	*client.LCDClient
@@ -86,7 +82,7 @@ type TerraLCDClient struct {
 	DefaultWallet *TerraWallet
 	BroadcastMode tx.BroadcastMode
 	ID            int
-	Config        *NetworkConfig
+	Config        *TerraNetwork
 }
 
 func (t *TerraLCDClient) GetChainID() *big.Int {
@@ -102,10 +98,6 @@ func (t *TerraLCDClient) GetDefaultWallet() *blockchain.EthereumWallet {
 }
 
 func (t *TerraLCDClient) GetWallets() []*blockchain.EthereumWallet {
-	panic("implement me")
-}
-
-func (t *TerraLCDClient) GetNetworkConfig() *config.ETHNetwork {
 	panic("implement me")
 }
 
@@ -174,70 +166,12 @@ func (t *TerraLCDClient) GetNetworkType() string {
 }
 
 func (t *TerraLCDClient) ContractsDeployed() bool {
-	return t.Config.ContractDeployed
-}
-
-func ClientURLSFunc() func(e *environment.Environment) ([]*url.URL, error) {
-	return func(e *environment.Environment) ([]*url.URL, error) {
-		urls := make([]*url.URL, 0)
-		wsURL, err := e.Charts.Connections("localterra").LocalURLByPort("lcd", environment.HTTP)
-		if err != nil {
-			return nil, err
-		}
-		log.Debug().Interface("HTTP_URL", wsURL).Msg("URLS loaded")
-		urls = append(urls, wsURL)
-		return urls, nil
-	}
-}
-
-func ClientInitFunc(contracts int) func(networkName string, networkConfig map[string]interface{}, urls []*url.URL) (blockchain.EVMClient, error) {
-	return func(networkName string, networkConfig map[string]interface{}, urls []*url.URL) (blockchain.EVMClient, error) {
-		d, err := yaml.Marshal(networkConfig)
-		if err != nil {
-			return nil, err
-		}
-		var cfg *NetworkConfig
-		if err = yaml.Unmarshal(d, &cfg); err != nil {
-			return nil, err
-		}
-		cfg.ID = networkName
-		urlStrings := make([]string, 0)
-		for _, u := range urls {
-			urlStrings = append(urlStrings, u.String())
-		}
-		cfg.URLs = urlStrings
-		rootClient, err := NewClient(cfg)
-		if err != nil {
-			return nil, err
-		}
-		if err := rootClient.LoadWallets(cfg); err != nil {
-			return nil, err
-		}
-		rootClient.LCDClient.PrivKey = rootClient.Wallets[0].PrivateKey
-		rootClient.DefaultWallet = rootClient.Wallets[0]
-		for i := 0; i < contracts; i++ {
-			c, err := NewClient(cfg)
-			if err != nil {
-				return nil, err
-			}
-			w, err := NewEphemeralWallet()
-			if err != nil {
-				return nil, err
-			}
-			if err := rootClient.Fund(w.AccAddress.String(), big.NewFloat(1e10)); err != nil {
-				return nil, err
-			}
-			c.LCDClient.PrivKey = w.PrivateKey
-			c.DefaultWallet = w
-			rootClient.Clients = append(rootClient.Clients, c)
-		}
-		return rootClient, nil
-	}
+	return t.Config.ContractsDeployed
 }
 
 // NewClient derives deployer key and creates new LCD client for Terra
-func NewClient(cfg *NetworkConfig) (*TerraLCDClient, error) {
-	return &TerraLCDClient{
+func NewClient(cfg *TerraNetwork) (*TerraLCDClient, error) {
+	client := &TerraLCDClient{
 		LCDClient: client.NewLCDClient(
 			cfg.URLs[0],
 			cfg.Name,
@@ -248,11 +182,15 @@ func NewClient(cfg *NetworkConfig) (*TerraLCDClient, error) {
 		),
 		Config:        cfg,
 		BroadcastMode: DefaultBroadcastMode,
-	}, nil
+	}
+	if err := client.LoadWallets(cfg); err != nil {
+		return nil, err
+	}
+	return client, nil
 }
 
 func (t *TerraLCDClient) LoadWallets(nc interface{}) error {
-	cfg := nc.(*NetworkConfig)
+	cfg := nc.(*TerraNetwork)
 	for _, mnemonic := range cfg.Mnemonics {
 		w, err := LoadWallet(mnemonic)
 		if err != nil {

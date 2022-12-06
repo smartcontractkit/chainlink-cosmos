@@ -3,8 +3,6 @@ package e2e
 import (
 	"path/filepath"
 
-	"github.com/smartcontractkit/chainlink-testing-framework/blockchain"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/actypes"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/cw20types"
@@ -98,9 +96,9 @@ func (t *ContractDeployer) DeployOCRv2ValidatorProxy(addr string, contractsDir s
 	}, nil
 }
 
-func NewTerraContractDeployer(client blockchain.EVMClient) *ContractDeployer {
+func NewTerraContractDeployer(client *TerraLCDClient) *ContractDeployer {
 	return &ContractDeployer{
-		client.(*TerraLCDClient),
+		client,
 	}
 }
 

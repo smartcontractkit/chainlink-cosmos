@@ -9,11 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/smartcontractkit/chainlink-testing-framework/blockchain"
-
 	"github.com/rs/zerolog/log"
 	uuid "github.com/satori/go.uuid"
 
+	"github.com/smartcontractkit/chainlink-terra/tests/e2e"
 	"github.com/smartcontractkit/chainlink-testing-framework/client"
 	"github.com/smartcontractkit/chainlink-testing-framework/contracts"
 	"github.com/smartcontractkit/libocr/offchainreporting2/confighelper"
@@ -135,7 +134,7 @@ func createOracleIdentities(nkb []NodeKeysBundle) ([]confighelper.OracleIdentity
 	return oracleIdentities, nil
 }
 
-func FundOracles(c blockchain.EVMClient, nkb []NodeKeysBundle, amount *big.Float) error {
+func FundOracles(c *e2e.TerraLCDClient, nkb []NodeKeysBundle, amount *big.Float) error {
 	for _, nk := range nkb {
 		addr := nk.TXKey.Data.Attributes.PublicKey
 		if err := c.Fund(addr, amount); err != nil {

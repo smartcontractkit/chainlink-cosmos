@@ -8,18 +8,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/smartcontractkit/chainlink-testing-framework/blockchain"
-
 	"github.com/neilotoole/errgroup"
+
+	"github.com/smartcontractkit/chainlink-env/pkg/helm/chainlink"
+	"github.com/smartcontractkit/chainlink-env/pkg/helm/mockserver"
+	mockservercfg "github.com/smartcontractkit/chainlink-env/pkg/helm/mockserver-cfg"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rs/zerolog/log"
+	"github.com/smartcontractkit/chainlink-env/environment"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
 	"github.com/smartcontractkit/chainlink-testing-framework/client"
-	"github.com/smartcontractkit/helmenv/environment"
 )
 
 const (
@@ -84,7 +86,7 @@ type OCRv2State struct {
 	Addresses          *ContractsAddresses
 	MockServer         *client.MockserverClient
 	Nodes              []client.Chainlink
-	Nets               *blockchain.Networks
+	C                  *e2e.TerraLCDClient
 	Contracts          []Contracts
 	ContractsNodeSetup map[int]*common.ContractNodeInfo
 	NodeKeysBundle     []common.NodeKeysBundle
@@ -127,23 +129,56 @@ func (m *OCRv2State) DeployCluster(nodes int, blockTime string, stateful bool, c
 
 // DeployEnv deploys and connects OCR environment
 func (m *OCRv2State) DeployEnv(nodes int, blockTime string, stateful bool) {
-	m.Env, m.Err = environment.DeployOrLoadEnvironment(
-		e2e.NewChainlinkTerraEnv(nodes, blockTime, stateful),
-	)
-	Expect(m.Err).ShouldNot(HaveOccurred())
-	m.Err = m.Env.ConnectAll()
-	Expect(m.Err).ShouldNot(HaveOccurred())
+	m.Env = environment.New(&environment.Config{
+		NamespacePrefix: "chainlink-test-terra",
+		TTL:             3 * time.Hour,
+	}).
+		AddHelm(mockservercfg.New(nil)).
+		AddHelm(mockserver.New(nil)).
+		// AddHelm(sol.New(nil)). // TODO:
+		AddHelm(chainlink.New(0, map[string]interface{}{
+			"replicas": nodes,
+			"env": map[string]interface{}{
+				"TERRA_ENABLED":               "true",
+				"EVM_ENABLED":                 "false",
+				"EVM_RPC_ENABLED":             "false",
+				"CHAINLINK_DEV":               "false", // TODO
+				"USE_LEGACY_ETH_ENV_VARS":     "false",
+				"FEATURE_OFFCHAIN_REPORTING2": "true",
+				"P2P_NETWORKING_STACK":        "V2",
+				"P2PV2_LISTEN_ADDRESSES":      "0.0.0.0:6690",
+				"P2PV2_DELTA_DIAL":            "5s",
+				"P2PV2_DELTA_RECONCILE":       "5s",
+				"p2p_listen_port":             "0",
+			},
+		}))
+	err := m.Env.Run()
+	Expect(err).ShouldNot(HaveOccurred())
+}
+
+func NewTerraClientSetup(networkSettings *e2e.TerraNetwork) func(e *environment.Environment) (*e2e.TerraLCDClient, error) {
+	return func(env *environment.Environment) (*e2e.TerraLCDClient, error) {
+		networkSettings.URLs = env.URLs[networkSettings.Name]
+		// wsURL, err := e.Charts.Connections("localterra").LocalURLByPort("lcd", environment.HTTP)
+		client, err := e2e.NewClient(networkSettings)
+		if err != nil {
+			return nil, err
+		}
+		return client, nil
+	}
 }
 
 // SetupClients setting up clients
 func (m *OCRv2State) SetupClients() {
-	networkRegistry := blockchain.NewDefaultNetworkRegistry()
-	networkRegistry.RegisterNetwork(
-		"terra",
-		e2e.ClientInitFunc(len(m.ContractsNodeSetup)),
-		e2e.ClientURLSFunc(),
-	)
-	m.Nets, m.Err = networkRegistry.GetNetworks(m.Env)
+	m.C, m.Err = NewTerraClientSetup(
+		&e2e.TerraNetwork{
+			Name:              "terra",
+			Type:              "terra",
+			ContractsDeployed: false,
+			Mnemonics:         []string{},
+			URLs:              []string{},
+		},
+	)(m.Env)
 	Expect(m.Err).ShouldNot(HaveOccurred())
 	m.MockServer, m.Err = client.ConnectMockServer(m.Env)
 	Expect(m.Err).ShouldNot(HaveOccurred())
@@ -164,16 +199,13 @@ func (m *OCRv2State) initializeNodesInContractsMap() {
 
 // DeployContracts deploys contracts
 func (m *OCRv2State) DeployContracts(contractsDir string) {
-	defaultNetwork := m.Nets.Default
-
 	m.NodeKeysBundle, m.Err = common.CreateNodeKeysBundle(m.Nodes)
 	Expect(m.Err).ShouldNot(HaveOccurred())
 
-	m.Err = common.FundOracles(defaultNetwork, m.NodeKeysBundle, big.NewFloat(5e8))
+	m.Err = common.FundOracles(m.C, m.NodeKeysBundle, big.NewFloat(5e8))
 	Expect(m.Err).ShouldNot(HaveOccurred())
 
-	c := defaultNetwork.GetClients()[0]
-	cd := e2e.NewTerraContractDeployer(c)
+	cd := e2e.NewTerraContractDeployer(m.C)
 	lt, err := cd.DeployLinkTokenContract()
 	Expect(err).ShouldNot(HaveOccurred())
 
@@ -183,8 +215,7 @@ func (m *OCRv2State) DeployContracts(contractsDir string) {
 		i := i
 		g.Go(func() error {
 			defer ginkgo.GinkgoRecover()
-			c := defaultNetwork.GetClients()[i]
-			cd := e2e.NewTerraContractDeployer(c)
+			cd := e2e.NewTerraContractDeployer(m.C)
 
 			bac, err := cd.DeployOCRv2AccessController(contractsDir)
 			Expect(err).ShouldNot(HaveOccurred())
@@ -285,7 +316,7 @@ func (m *OCRv2State) LoadContracts() error {
 			return err
 		}
 		m.Contracts = append(m.Contracts, Contracts{OCR2: &e2e.OCRv2{
-			Client: m.Nets.Default.(*e2e.TerraLCDClient),
+			Client: m.C,
 			Addr:   accAddr,
 		}})
 	}
@@ -303,8 +334,9 @@ func (m *OCRv2State) UpdateChainlinkVersion(image string, version string) {
 	}
 	err = chart.Upgrade()
 	Expect(err).ShouldNot(HaveOccurred())
-	err = m.Env.ConnectAll()
-	Expect(err).ShouldNot(HaveOccurred())
+	// TODO:
+	// err = m.Env.ConnectAll()
+	// Expect(err).ShouldNot(HaveOccurred())
 }
 
 // DumpContracts dumps contracts to a file

@@ -46,7 +46,7 @@ var _ = Describe("Terra OCRv2 @ocr-spec-migration", func() {
 
 	AfterEach(func() {
 		By("Tearing down the environment", func() {
-			err := actions.TeardownSuite(state.Env, nil, "logs", nil, nil)
+			err := actions.TeardownSuite(state.Env, "logs", state.Nodes, nil, nil)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 	})

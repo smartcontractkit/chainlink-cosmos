@@ -29,7 +29,7 @@ var _ = Describe("Terra OCRv2 Proxy @ocr_proxy", func() {
 			expectedDecimals := 8
 			expectedDescription := "ETH/USD"
 
-			cd := e2e.NewTerraContractDeployer(state.Nets.Default)
+			cd := e2e.NewTerraContractDeployer(state.c)
 
 			// deploy the proxy pointing at the ocr2 address
 			ocrProxy, err := cd.DeployOCRv2Proxy(state.Contracts[0].OCR2.Address(), utils.ContractsDir)
@@ -52,7 +52,7 @@ var _ = Describe("Terra OCRv2 Proxy @ocr_proxy", func() {
 
 	AfterEach(func() {
 		By("Tearing down the environment", func() {
-			err := actions.TeardownSuite(state.Env, nil, "logs", nil, nil)
+			err := actions.TeardownSuite(state.Env, "logs", state.Nodes, nil, nil)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 	})

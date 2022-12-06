@@ -12,9 +12,9 @@ import (
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
 	tc "github.com/smartcontractkit/chainlink-terra/tests/e2e/smoke/common"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
-	"github.com/smartcontractkit/helmenv/environment"
 	"github.com/smartcontractkit/chainlink-testing-framework/actions"
 	"github.com/smartcontractkit/chainlink-testing-framework/gauntlet"
+	"github.com/smartcontractkit/helmenv/environment"
 )
 
 var _ = Describe("Terra Gauntlet @gauntlet", func() {
@@ -38,11 +38,11 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			Expect(state.Err).ShouldNot(HaveOccurred())
 
 			// Remove the stuff below when the token:deploy command is fixed to work for automated testing
-			cd := e2e.NewTerraContractDeployer(state.Nets.Default)
+			cd := e2e.NewTerraContractDeployer(state.c)
 			linkToken, err := cd.DeployLinkTokenContract()
 			Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy link token")
 			gd.LinkToken = linkToken.Address()
-			err = common.FundOracles(state.Nets.Default, state.NodeKeysBundle, big.NewFloat(5e12))
+			err = common.FundOracles(state.C, state.NodeKeysBundle, big.NewFloat(5e12))
 			Expect(err).ShouldNot(HaveOccurred())
 			//
 		})
