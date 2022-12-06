@@ -29,7 +29,7 @@ var _ = Describe("Terra OCRv2 Proxy @ocr_proxy", func() {
 			expectedDecimals := 8
 			expectedDescription := "ETH/USD"
 
-			cd := e2e.NewTerraContractDeployer(state.c)
+			cd := e2e.NewTerraContractDeployer(state.C)
 
 			// deploy the proxy pointing at the ocr2 address
 			ocrProxy, err := cd.DeployOCRv2Proxy(state.Contracts[0].OCR2.Address(), utils.ContractsDir)

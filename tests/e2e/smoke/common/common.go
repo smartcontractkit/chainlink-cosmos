@@ -324,17 +324,17 @@ func (m *OCRv2State) LoadContracts() error {
 }
 
 func (m *OCRv2State) UpdateChainlinkVersion(image string, version string) {
-	chart, err := m.Env.Charts.Get("chainlink")
-	Expect(err).ShouldNot(HaveOccurred())
-	chart.Values["chainlink"] = map[string]interface{}{
-		"image": map[string]interface{}{
-			"image":   image,
-			"version": version,
-		},
-	}
-	err = chart.Upgrade()
-	Expect(err).ShouldNot(HaveOccurred())
 	// TODO:
+	// chart, err := m.Env.Charts.Get("chainlink")
+	// Expect(err).ShouldNot(HaveOccurred())
+	// chart.Values["chainlink"] = map[string]interface{}{
+	// 	"image": map[string]interface{}{
+	// 		"image":   image,
+	// 		"version": version,
+	// 	},
+	// }
+	// err = chart.Upgrade()
+	// Expect(err).ShouldNot(HaveOccurred())
 	// err = m.Env.ConnectAll()
 	// Expect(err).ShouldNot(HaveOccurred())
 }

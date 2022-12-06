@@ -3,6 +3,7 @@ package smoke_test
 import (
 	"fmt"
 	"math/big"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
 	"github.com/smartcontractkit/chainlink-testing-framework/actions"
 	"github.com/smartcontractkit/chainlink-testing-framework/gauntlet"
-	"github.com/smartcontractkit/helmenv/environment"
 )
 
 var _ = Describe("Terra Gauntlet @gauntlet", func() {
@@ -38,7 +38,7 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			Expect(state.Err).ShouldNot(HaveOccurred())
 
 			// Remove the stuff below when the token:deploy command is fixed to work for automated testing
-			cd := e2e.NewTerraContractDeployer(state.c)
+			cd := e2e.NewTerraContractDeployer(state.C)
 			linkToken, err := cd.DeployLinkTokenContract()
 			Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy link token")
 			gd.LinkToken = linkToken.Address()
@@ -55,7 +55,10 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			gd.Cli, err = gauntlet.NewGauntlet()
 			Expect(err).ShouldNot(HaveOccurred())
 
-			terraNodeUrl, err := state.Env.Charts.Connections("localterra").LocalURLByPort("lcd", environment.HTTP)
+			// terraNodeUrl, err := state.Env.Charts.Connections("localterra").LocalURLByPort("lcd", environment.HTTP)
+			// TODO: this needs to be supported by the helm chart
+			lcdUri := state.Env.URLs["localterra"][0]
+			terraNodeUrl, err := url.Parse(lcdUri)
 			Expect(err).ShouldNot(HaveOccurred())
 			gd.Cli.NetworkConfig = e2e.GetDefaultGauntletConfig(terraNodeUrl)
 			err = gd.Cli.WriteNetworkConfigMap(utils.Networks)
@@ -124,7 +127,7 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 
 	AfterEach(func() {
 		By("Tearing down the environment", func() {
-			err := actions.TeardownSuite(state.Env, nil, "logs", nil, nil)
+			err := actions.TeardownSuite(state.Env, "logs", state.Nodes, nil, nil)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 	})
