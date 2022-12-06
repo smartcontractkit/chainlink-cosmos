@@ -5,15 +5,15 @@ go 1.18
 require (
 	github.com/CosmWasm/wasmd v0.29.1
 	github.com/cosmos/cosmos-sdk v0.45.9
-	github.com/ethereum/go-ethereum v1.10.18
+	github.com/ethereum/go-ethereum v1.10.19
 	github.com/neilotoole/errgroup v0.1.5
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/onsi/gomega v1.19.0
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.27.0
 	github.com/satori/go.uuid v1.2.0
-	github.com/smartcontractkit/chainlink-testing-framework v1.2.5-0.20220530125243-164797d0e11c
-	github.com/smartcontractkit/helmenv v1.2.2
+	github.com/smartcontractkit/chainlink-testing-framework v1.2.9
+	github.com/smartcontractkit/helmenv v1.2.7
 	github.com/smartcontractkit/libocr v0.0.0-20220812191430-db92a9fdaa52
 	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	golang.org/x/crypto v0.1.0
