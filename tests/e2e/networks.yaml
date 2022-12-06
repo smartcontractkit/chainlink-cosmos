@@ -1,5 +1,5 @@
 selected_networks:
-  localterra:
+  - localterra
 networks:
   localterra:
     name: "localterra"

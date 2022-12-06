@@ -20,7 +20,6 @@ import (
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
 	"github.com/smartcontractkit/chainlink-testing-framework/client"
 	"github.com/smartcontractkit/helmenv/environment"
-	"github.com/smartcontractkit/helmenv/tools"
 )
 
 const (
@@ -130,7 +129,6 @@ func (m *OCRv2State) DeployCluster(nodes int, blockTime string, stateful bool, c
 func (m *OCRv2State) DeployEnv(nodes int, blockTime string, stateful bool) {
 	m.Env, m.Err = environment.DeployOrLoadEnvironment(
 		e2e.NewChainlinkTerraEnv(nodes, blockTime, stateful),
-		tools.ChartsRoot,
 	)
 	Expect(m.Err).ShouldNot(HaveOccurred())
 	m.Err = m.Env.ConnectAll()

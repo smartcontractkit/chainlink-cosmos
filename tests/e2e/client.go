@@ -162,6 +162,14 @@ func NewEphemeralWallet() (*TerraWallet, error) {
 	}, nil
 }
 
+func (t *TerraLCDClient) BalanceAt(ctx context.Context, address common.Address) (*big.Int, error) {
+	panic("implement me")
+}
+
+func (t *TerraLCDClient) GetTxReceipt(txHash common.Hash) (*types2.Receipt, error) {
+	panic("implement me")
+}
+
 func (t *TerraLCDClient) GetNetworkType() string {
 	return t.Config.Type
 }
