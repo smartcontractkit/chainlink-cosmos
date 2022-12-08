@@ -13,8 +13,8 @@ import (
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
 	tc "github.com/smartcontractkit/chainlink-terra/tests/e2e/smoke/common"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
-	"github.com/smartcontractkit/chainlink-testing-framework/actions"
 	"github.com/smartcontractkit/chainlink-testing-framework/gauntlet"
+	"github.com/smartcontractkit/chainlink/integration-tests/actions"
 )
 
 var _ = Describe("Terra Gauntlet @gauntlet", func() {

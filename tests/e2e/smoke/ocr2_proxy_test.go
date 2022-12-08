@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e"
 	tc "github.com/smartcontractkit/chainlink-terra/tests/e2e/smoke/common"
-	"github.com/smartcontractkit/chainlink-testing-framework/actions"
+	"github.com/smartcontractkit/chainlink/integration-tests/actions"
 )
 
 var _ = Describe("Terra OCRv2 Proxy @ocr_proxy", func() {

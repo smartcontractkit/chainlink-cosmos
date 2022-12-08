@@ -21,7 +21,8 @@ import (
 	"github.com/smartcontractkit/chainlink-env/environment"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e"
 	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
-	"github.com/smartcontractkit/chainlink-testing-framework/client"
+	ctfClient "github.com/smartcontractkit/chainlink-testing-framework/client"
+	"github.com/smartcontractkit/chainlink/integration-tests/client"
 )
 
 const (
@@ -84,7 +85,7 @@ type OCRv2State struct {
 	Mu                 *sync.Mutex
 	Env                *environment.Environment
 	Addresses          *ContractsAddresses
-	MockServer         *client.MockserverClient
+	MockServer         *ctfClient.MockserverClient
 	Nodes              []client.Chainlink
 	C                  *e2e.TerraLCDClient
 	Contracts          []Contracts
@@ -180,7 +181,7 @@ func (m *OCRv2State) SetupClients() {
 		},
 	)(m.Env)
 	Expect(m.Err).ShouldNot(HaveOccurred())
-	m.MockServer, m.Err = client.ConnectMockServer(m.Env)
+	m.MockServer, m.Err = ctfClient.ConnectMockServer(m.Env)
 	Expect(m.Err).ShouldNot(HaveOccurred())
 	m.Nodes, m.Err = client.ConnectChainlinkNodes(m.Env)
 	Expect(m.Err).ShouldNot(HaveOccurred())
