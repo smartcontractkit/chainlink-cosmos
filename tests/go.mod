@@ -5,18 +5,18 @@ go 1.19
 require (
 	github.com/CosmWasm/wasmd v0.29.1
 	github.com/cosmos/cosmos-sdk v0.45.9
-	github.com/ethereum/go-ethereum v1.10.20
+	github.com/ethereum/go-ethereum v1.10.25
 	github.com/neilotoole/errgroup v0.1.5
-	github.com/onsi/ginkgo/v2 v2.1.4
-	github.com/onsi/gomega v1.19.0
+	github.com/onsi/ginkgo/v2 v2.4.0
+	github.com/onsi/gomega v1.22.1
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.27.0
 	github.com/satori/go.uuid v1.2.0
-	github.com/smartcontractkit/chainlink-env v0.2.31
-	github.com/smartcontractkit/chainlink-testing-framework v1.5.2-0.20220726165703-ed4e6cabca38
-	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20220727205731-7d3de7be1c70
+	// github.com/smartcontractkit/chainlink v1.9.0
+	github.com/smartcontractkit/chainlink-env v0.2.46
+	github.com/smartcontractkit/chainlink-testing-framework v1.7.5
+	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20221108194954-9075d1844d90
 	github.com/smartcontractkit/libocr v0.0.0-20220812191430-db92a9fdaa52
-	github.com/smartcontractkit/terra.go v1.0.3-0.20220108002221-62b39252ee16
 	golang.org/x/crypto v0.1.0
 )
 
@@ -212,7 +212,8 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace (
-	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	github.com/hdevalence/ed25519consensus => github.com/smartcontractkit/ed25519consensus v0.0.1
-)
+replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+
+// Fix go mod tidy issue for ambiguous imports from go-ethereum
+// See https://github.com/ugorji/go/issues/279
+replace github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1

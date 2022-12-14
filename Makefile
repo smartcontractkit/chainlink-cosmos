@@ -88,19 +88,19 @@ test_relay_unit:
 	go test -v ./pkg/terra/...
 
 test_smoke:
-	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo -p -procs=3 tests/e2e/smoke
+	CGO_ENABLED=1 SELECTED_NETWORKS=localterra ginkgo -p -procs=3 tests/e2e/smoke
 
 test_ocr:
-	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo --focus=@ocr2 tests/e2e/smoke
+	CGO_ENABLED=1 SELECTED_NETWORKS=localterra ginkgo --focus=@ocr2 tests/e2e/smoke
 
 test_ocr_soak:
-	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo --focus=@ocr2-soak tests/e2e/soak
+	CGO_ENABLED=1 SELECTED_NETWORKS=localterra ginkgo --focus=@ocr2-soak tests/e2e/soak
 
 test_ocr_proxy:
-	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo --focus=@ocr_proxy tests/e2e/smoke
+	CGO_ENABLED=1 SELECTED_NETWORKS=localterra ginkgo --focus=@ocr_proxy tests/e2e/smoke
 
 test_migration:
-	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo tests/e2e/migration
+	CGO_ENABLED=1 SELECTED_NETWORKS=localterra ginkgo tests/e2e/migration
 
 test_gauntlet:
-	SELECTED_NETWORKS=localterra NETWORK_SETTINGS=$(shell pwd)/tests/e2e/networks.yaml ginkgo --focus=@gauntlet tests/e2e/smoke
+	CGO_ENABLED=1 SELECTED_NETWORKS=localterra ginkgo --focus=@gauntlet tests/e2e/smoke
