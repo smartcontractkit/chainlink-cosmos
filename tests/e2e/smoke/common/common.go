@@ -86,7 +86,7 @@ type OCRv2State struct {
 	Env                *environment.Environment
 	Addresses          *ContractsAddresses
 	MockServer         *ctfClient.MockserverClient
-	Nodes              []client.Chainlink
+	Nodes              []*client.Chainlink
 	C                  *e2e.TerraLCDClient
 	Contracts          []Contracts
 	ContractsNodeSetup map[int]*common.ContractNodeInfo
@@ -106,7 +106,7 @@ func NewOCRv2State(contracts int, nodes int) *OCRv2State {
 		state.ContractsNodeSetup[i] = &common.ContractNodeInfo{
 			OCR2Address:    "",
 			NodesIdx:       []int{},
-			Nodes:          []client.Chainlink{},
+			Nodes:          []*client.Chainlink{},
 			NodeKeysBundle: []common.NodeKeysBundle{},
 			BridgeInfos:    []common.BridgeInfo{},
 		}
