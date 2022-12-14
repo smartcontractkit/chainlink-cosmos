@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/neilotoole/errgroup"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/smartcontractkit/chainlink-env/pkg/helm/chainlink"
 	"github.com/smartcontractkit/chainlink-env/pkg/helm/mockserver"

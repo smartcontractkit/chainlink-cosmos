@@ -1,9 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"net/url"
 
-	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"go.uber.org/multierr"
 
@@ -46,7 +46,7 @@ func (c *Chain) SetFromDB(cfg *db.ChainCfg) error {
 		s := cfg.FallbackGasPriceULuna.String
 		d, err := decimal.NewFromString(s)
 		if err != nil {
-			return errors.Wrapf(err, "invalid decimal FallbackGasPriceULuna: %s", s)
+			return fmt.Errorf("invalid decimal FallbackGasPriceULuna: %s", s)
 		}
 		c.FallbackGasPriceULuna = &d
 	}
@@ -54,7 +54,7 @@ func (c *Chain) SetFromDB(cfg *db.ChainCfg) error {
 		s := cfg.FCDURL.String
 		d, err := url.Parse(s)
 		if err != nil {
-			return errors.Wrapf(err, "invalid FCDURL: %s", s)
+			return fmt.Errorf("invalid FCDURL: %s", s)
 		}
 		c.FCDURL = (*utils.URL)(d)
 	}

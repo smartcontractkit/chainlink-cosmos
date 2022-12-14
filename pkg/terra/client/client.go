@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/pkg/errors"
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -29,12 +29,13 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	"github.com/terra-money/core/app/params"
 )
 
 const httpResponseLimit = 10_000_000 // 10MB
 
-var encodingConfig = params.MakeEncodingConfig()
+// "github.com/terra-money/core/app/params"
+// TODO: import as params.MakeEncoding config
+var encodingConfig = MakeEncodingConfig()
 
 func init() {
 	// Extracted from app.MakeEncodingConfig() to ensure that we only call them once, since they race and can panic.
@@ -118,7 +119,7 @@ func (rt *responseRoundTripper) RoundTrip(r *http.Request) (resp *http.Response,
 	b, err := io.ReadAll(resp.Body)
 	source.Close()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read response")
+		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 	go rt.respFn(b)
 	resp.Body = io.NopCloser(bytes.NewReader(b))
@@ -459,10 +460,10 @@ func (c *Client) Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes
 		return nil, err
 	}
 	if res.TxResponse == nil {
-		return nil, errors.Errorf("got nil tx response")
+		return nil, fmt.Errorf("got nil tx response")
 	}
 	if res.TxResponse.Code != 0 {
-		return res, errors.Errorf("tx failed with error code: %d, resp %v", res.TxResponse.Code, res.TxResponse)
+		return res, fmt.Errorf("tx failed with error code: %d, resp %v", res.TxResponse.Code, res.TxResponse)
 	}
 	return res, err
 }

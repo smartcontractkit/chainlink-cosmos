@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
@@ -98,7 +96,7 @@ func (cc *ContractCache) poll() {
 func (cc *ContractCache) updateConfig(ctx context.Context) error {
 	changedInBlock, configDigest, err := cc.reader.LatestConfigDetails(ctx)
 	if err != nil {
-		return errors.Wrap(err, "fetch latest config details")
+		return fmt.Errorf("fetch latest config details: %w", err)
 	}
 	if err = ctx.Err(); err != nil { // b/c client doesn't use ctx
 		return err
@@ -115,7 +113,7 @@ func (cc *ContractCache) updateConfig(ctx context.Context) error {
 	}
 	contractConfig, err := cc.reader.LatestConfig(ctx, changedInBlock)
 	if err != nil {
-		return errors.Wrapf(err, "fetch latest config, block %d", changedInBlock)
+		return fmt.Errorf("fetch latest config, block %d %w", changedInBlock, err)
 	}
 	now = time.Now()
 	cc.configMu.Lock()
@@ -131,7 +129,7 @@ func (cc *ContractCache) updateConfig(ctx context.Context) error {
 func (cc *ContractCache) updateTransmission(ctx context.Context) error {
 	digest, epoch, round, latestAnswer, latestTimestamp, err := cc.reader.LatestTransmissionDetails(ctx)
 	if err != nil {
-		return errors.Wrap(err, "fetch latest transmission")
+		return fmt.Errorf("fetch latest transmission: %w", err)
 	}
 	now := time.Now()
 	cc.transMu.Lock()
@@ -149,7 +147,7 @@ func (cc *ContractCache) updateTransmission(ctx context.Context) error {
 
 func (cc *ContractCache) checkTS(ts time.Time) error {
 	if ts.IsZero() {
-		return errors.New("contract cache not yet initialized")
+		return fmt.Errorf("contract cache not yet initialized")
 	} else if since := time.Since(ts); since > cc.cfg.OCR2CacheTTL() {
 		return fmt.Errorf("contract cache expired: value cached %s ago", since)
 	}

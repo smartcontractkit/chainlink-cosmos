@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"go.uber.org/multierr"
 
@@ -93,7 +92,7 @@ type pricesFCD struct {
 func (gpe *FCDGasPriceEstimator) request() (map[string]sdk.DecCoin, error) {
 	fcdURL := gpe.cfg.FCDURL()
 	if fcdURL == (url.URL{}) {
-		return nil, errors.New("fcd url missing from chain config")
+		return nil, fmt.Errorf("fcd url missing from chain config")
 	}
 	req, err := http.NewRequest(http.MethodGet, fcdURL.String(), nil)
 	if err != nil {
@@ -148,7 +147,7 @@ func (gpe *CachingGasPriceEstimator) GasPrices() (map[string]sdk.DecCoin, error)
 	latestPrices, err := gpe.estimator.GasPrices()
 	if err != nil {
 		if gpe.lastPrices == nil {
-			return nil, errors.Errorf("unable to get gas prices and cache is empty, err %v", err)
+			return nil, fmt.Errorf("unable to get gas prices and cache is empty: %w", err)
 		}
 		gpe.lggr.Warnf("error %v getting latest prices, using cached value %v", err, gpe.lastPrices)
 		return gpe.lastPrices, nil
