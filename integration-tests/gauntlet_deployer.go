@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	. "github.com/onsi/gomega"
-	"github.com/smartcontractkit/chainlink-terra/tests/e2e/utils"
+	"github.com/smartcontractkit/chainlink-terra/integration-tests/utils"
 	"github.com/smartcontractkit/chainlink-testing-framework/gauntlet"
 )
 

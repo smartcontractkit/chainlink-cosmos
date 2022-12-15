@@ -11,8 +11,8 @@ var (
 	ProjectRoot = filepath.Join(filepath.Dir(b), "/../../..")
 	// ContractsDir contracts dir with wasm artifacts
 	ContractsDir = filepath.Join(ProjectRoot, "artifacts")
-	// TestsDir path to e2e tests dir
-	TestsDir = filepath.Join(ProjectRoot, "tests", "e2e")
+	// TestsDir path to tests dir
+	TestsDir = filepath.Join(ProjectRoot, "tests")
 	// CommonContractsDir is common artifacts dir, for example cw20_base.wasm
 	CommonContractsDir = filepath.Join(TestsDir, "common_artifacts")
 	// Reports path to the gauntlet reports directory

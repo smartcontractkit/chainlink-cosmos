@@ -12,7 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 	uuid "github.com/satori/go.uuid"
 
-	"github.com/smartcontractkit/chainlink-terra/tests/e2e"
+	"github.com/smartcontractkit/chainlink-terra/integration-tests"
 	ctfClient "github.com/smartcontractkit/chainlink-testing-framework/client"
 	"github.com/smartcontractkit/chainlink/integration-tests/client"
 	"github.com/smartcontractkit/chainlink/integration-tests/contracts"

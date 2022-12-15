@@ -1,4 +1,4 @@
-module github.com/smartcontractkit/chainlink-terra/tests
+module github.com/smartcontractkit/chainlink-terra/integration-tests
 
 go 1.19
 

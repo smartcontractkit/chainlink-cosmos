@@ -19,8 +19,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/rs/zerolog/log"
 	"github.com/smartcontractkit/chainlink-env/environment"
-	"github.com/smartcontractkit/chainlink-terra/tests/e2e"
-	"github.com/smartcontractkit/chainlink-terra/tests/e2e/common"
+	"github.com/smartcontractkit/chainlink-terra/integration-tests"
+	"github.com/smartcontractkit/chainlink-terra/integration-tests/common"
 	ctfClient "github.com/smartcontractkit/chainlink-testing-framework/client"
 	"github.com/smartcontractkit/chainlink/integration-tests/client"
 )
