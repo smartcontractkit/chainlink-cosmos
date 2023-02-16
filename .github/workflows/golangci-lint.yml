@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@f25a3a9f25bd5f4c5d77189cab02ff357b5aedeb # v2.4.1
       - uses: smartcontractkit/tool-versions-to-env-action@v1.0.7
         id: tool-versions
-      - name: Setup go ${{ steps.tool-versions.outputs.golang_version }}
+      - name: Setup go
         uses: actions/setup-go@v3
         with:
           go-version-file: 'go.mod'
@@ -19,7 +19,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
-          version: v${{ steps.tool-versions.outputs.golangci-lint_version }}
+          version: latest
 
           # Optional: working directory, useful for monorepos
           # working-directory: somedir
