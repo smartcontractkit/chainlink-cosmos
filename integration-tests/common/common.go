@@ -9,11 +9,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/rs/zerolog/log"
 	uuid "github.com/satori/go.uuid"
+	"gopkg.in/guregu/null.v4"
 
-	"github.com/smartcontractkit/chainlink-terra/integration-tests"
 	ctfClient "github.com/smartcontractkit/chainlink-testing-framework/client"
+	"github.com/smartcontractkit/chainlink/core/services/job"
 	"github.com/smartcontractkit/chainlink/integration-tests/client"
 	"github.com/smartcontractkit/chainlink/integration-tests/contracts"
 	"github.com/smartcontractkit/libocr/offchainreporting2/confighelper"
@@ -26,6 +28,7 @@ import (
 
 const (
 	ChainName          = "terra"
+	ChainID            = "wasmd"
 	ChainBlockTime     = "200ms"
 	ChainBlockTimeSoak = "2s"
 )
@@ -82,7 +85,7 @@ func CreateNodeKeysBundle(nodes []*client.Chainlink) ([]NodeKeysBundle, error) {
 		}
 
 		peerID := p2pkeys.Data[0].Attributes.PeerID
-		txKey, _, err := n.CreateTxKey(ChainName)
+		txKey, _, err := n.CreateTxKey(ChainName, ChainID)
 		if err != nil {
 			return nil, err
 		}
@@ -135,13 +138,14 @@ func createOracleIdentities(nkb []NodeKeysBundle) ([]confighelper.OracleIdentity
 	return oracleIdentities, nil
 }
 
-func FundOracles(c *e2e.TerraLCDClient, nkb []NodeKeysBundle, amount *big.Float) error {
-	for _, nk := range nkb {
-		addr := nk.TXKey.Data.Attributes.PublicKey
-		if err := c.Fund(addr, amount); err != nil {
-			return err
-		}
-	}
+func FundOracles(nkb []NodeKeysBundle, amount *big.Float) error {
+	// TODO:
+	// for _, nk := range nkb {
+	// 	addr := nk.TXKey.Data.Attributes.PublicKey
+	// 	if err := c.Fund(addr, amount); err != nil {
+	// 		return err
+	// 	}
+	// }
 	return nil
 }
 
@@ -276,35 +280,56 @@ func CreateJobs(contractNodeInfo *ContractNodeInfo) error {
 			PeerID:     contractNodeInfo.BootstrapNodeKeysBundle.PeerID,
 		},
 	}
+
+	var p2pBootstrappers []string
+
+	for i := range bootstrapPeers {
+		p2pBootstrappers = append(p2pBootstrappers, bootstrapPeers[i].P2PV2Bootstrapper())
+	}
+
+	// TODO: convert contractNodeInfo.BootstrapBridgeInfo.RelayConfig
+	// and contractNodeInfo.BridgeInfos[nIdx].RelayConfig,
+	relayConfig := job.JSONConfig{}
+
+	oracleSpec := job.OCR2OracleSpec{
+		ContractID:         contractNodeInfo.OCR2Address,
+		Relay:              ChainName,
+		RelayConfig:        relayConfig,
+		PluginType:         "median",
+		P2PV2Bootstrappers: pq.StringArray{strings.Join(p2pBootstrappers, ",")},
+		OCRKeyBundleID:     null.StringFrom(contractNodeInfo.BootstrapNodeKeysBundle.OCR2Key.Data.ID),
+		TransmitterID:      null.StringFrom(contractNodeInfo.BootstrapNodeKeysBundle.TXKey.Data.ID),
+		PluginConfig: job.JSONConfig{
+			"juelsPerFeeCoinSource": contractNodeInfo.BootstrapBridgeInfo.JuelsSource,
+		},
+	}
 	jobSpec := &client.OCR2TaskJobSpec{
-		Name:                  fmt.Sprintf("terra-OCRv2-%s-%s", "bootstrap", uuid.NewV4().String()),
-		JobType:               "bootstrap",
-		ContractID:            contractNodeInfo.OCR2Address,
-		Relay:                 ChainName,
-		RelayConfig:           contractNodeInfo.BootstrapBridgeInfo.RelayConfig,
-		PluginType:            "median",
-		P2PV2Bootstrappers:    bootstrapPeers,
-		OCRKeyBundleID:        contractNodeInfo.BootstrapNodeKeysBundle.OCR2Key.Data.ID,
-		TransmitterID:         contractNodeInfo.BootstrapNodeKeysBundle.TXKey.Data.ID,
-		ObservationSource:     contractNodeInfo.BootstrapBridgeInfo.ObservationSource,
-		JuelsPerFeeCoinSource: contractNodeInfo.BootstrapBridgeInfo.JuelsSource,
+		Name:              fmt.Sprintf("terra-OCRv2-%s-%s", "bootstrap", uuid.NewV4().String()),
+		JobType:           "bootstrap",
+		OCR2OracleSpec:    oracleSpec,
+		ObservationSource: contractNodeInfo.BootstrapBridgeInfo.ObservationSource,
 	}
 	if _, err := contractNodeInfo.BootstrapNode.MustCreateJob(jobSpec); err != nil {
 		return fmt.Errorf("failed creating job for boostrap node: %w", err)
 	}
 	for nIdx, n := range contractNodeInfo.Nodes {
+		oracleSpec := job.OCR2OracleSpec{
+			ContractID:         contractNodeInfo.OCR2Address,
+			Relay:              ChainName,
+			RelayConfig:        relayConfig,
+			PluginType:         "median",
+			P2PV2Bootstrappers: pq.StringArray{strings.Join(p2pBootstrappers, ",")},
+			OCRKeyBundleID:     null.StringFrom(contractNodeInfo.NodeKeysBundle[nIdx].OCR2Key.Data.ID),
+			TransmitterID:      null.StringFrom(contractNodeInfo.NodeKeysBundle[nIdx].TXKey.Data.ID),
+			PluginConfig: job.JSONConfig{
+				"juelsPerFeeCoinSource": contractNodeInfo.BridgeInfos[nIdx].JuelsSource,
+			},
+		}
 		jobSpec := &client.OCR2TaskJobSpec{
-			Name:                  fmt.Sprintf("terra-OCRv2-%d-%s", nIdx, uuid.NewV4().String()),
-			JobType:               "offchainreporting2",
-			ContractID:            contractNodeInfo.OCR2Address,
-			Relay:                 ChainName,
-			RelayConfig:           contractNodeInfo.BridgeInfos[nIdx].RelayConfig,
-			PluginType:            "median",
-			P2PV2Bootstrappers:    bootstrapPeers,
-			OCRKeyBundleID:        contractNodeInfo.NodeKeysBundle[nIdx].OCR2Key.Data.ID,
-			TransmitterID:         contractNodeInfo.NodeKeysBundle[nIdx].TXKey.Data.ID,
-			ObservationSource:     contractNodeInfo.BridgeInfos[nIdx].ObservationSource,
-			JuelsPerFeeCoinSource: contractNodeInfo.BridgeInfos[nIdx].JuelsSource,
+			Name:              fmt.Sprintf("terra-OCRv2-%d-%s", nIdx, uuid.NewV4().String()),
+			JobType:           "offchainreporting2",
+			OCR2OracleSpec:    oracleSpec,
+			ObservationSource: contractNodeInfo.BridgeInfos[nIdx].ObservationSource,
 		}
 		if _, err := n.MustCreateJob(jobSpec); err != nil {
 			return fmt.Errorf("failed creating job for node %s: %w", n.URL(), err)

@@ -1,11 +1,8 @@
 package common
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/big"
-	"os"
-	"sync"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -14,12 +11,10 @@ import (
 	"github.com/smartcontractkit/chainlink-env/pkg/helm/mockserver"
 	mockservercfg "github.com/smartcontractkit/chainlink-env/pkg/helm/mockserver-cfg"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rs/zerolog/log"
 	"github.com/smartcontractkit/chainlink-env/environment"
-	"github.com/smartcontractkit/chainlink-terra/integration-tests"
 	"github.com/smartcontractkit/chainlink-terra/integration-tests/common"
 	ctfClient "github.com/smartcontractkit/chainlink-testing-framework/client"
 	"github.com/smartcontractkit/chainlink/integration-tests/client"
@@ -59,17 +54,6 @@ const (
 	UntilStop = 666 * time.Hour
 )
 
-type Contracts struct {
-	LinkToken      *e2e.LinkToken
-	BAC            *e2e.AccessController
-	RAC            *e2e.AccessController
-	Flags          *e2e.OCRv2Flags
-	OCR2           *e2e.OCRv2
-	Validator      *e2e.OCRv2Validator
-	OCR2Proxy      *e2e.OCRv2Proxy
-	ValidatorProxy *e2e.OCRv2Proxy
-}
-
 // ContractsAddresses deployed contract addresses
 type ContractsAddresses struct {
 	OCR       string `json:"ocr"`
@@ -82,13 +66,10 @@ type ContractsAddresses struct {
 
 // OCRv2State OCR test state
 type OCRv2State struct {
-	Mu                 *sync.Mutex
 	Env                *environment.Environment
 	Addresses          *ContractsAddresses
 	MockServer         *ctfClient.MockserverClient
 	Nodes              []*client.Chainlink
-	C                  *e2e.TerraLCDClient
-	Contracts          []Contracts
 	ContractsNodeSetup map[int]*common.ContractNodeInfo
 	NodeKeysBundle     []common.NodeKeysBundle
 	RoundsFound        int
@@ -98,7 +79,6 @@ type OCRv2State struct {
 
 func NewOCRv2State(contracts int, nodes int) *OCRv2State {
 	state := &OCRv2State{
-		Mu:                 &sync.Mutex{},
 		LastRoundTime:      make(map[string]time.Time),
 		ContractsNodeSetup: make(map[int]*common.ContractNodeInfo),
 	}
@@ -157,30 +137,8 @@ func (m *OCRv2State) DeployEnv(nodes int, blockTime string, stateful bool) {
 	Expect(err).ShouldNot(HaveOccurred())
 }
 
-func NewTerraClientSetup(networkSettings *e2e.TerraNetwork) func(e *environment.Environment) (*e2e.TerraLCDClient, error) {
-	return func(env *environment.Environment) (*e2e.TerraLCDClient, error) {
-		networkSettings.URLs = env.URLs[networkSettings.Name]
-		// wsURL, err := e.Charts.Connections("localterra").LocalURLByPort("lcd", environment.HTTP)
-		client, err := e2e.NewClient(networkSettings)
-		if err != nil {
-			return nil, err
-		}
-		return client, nil
-	}
-}
-
 // SetupClients setting up clients
 func (m *OCRv2State) SetupClients() {
-	m.C, m.Err = NewTerraClientSetup(
-		&e2e.TerraNetwork{
-			Name:              "terra",
-			Type:              "terra",
-			ContractsDeployed: false,
-			Mnemonics:         []string{},
-			URLs:              []string{},
-		},
-	)(m.Env)
-	Expect(m.Err).ShouldNot(HaveOccurred())
 	m.MockServer, m.Err = ctfClient.ConnectMockServer(m.Env)
 	Expect(m.Err).ShouldNot(HaveOccurred())
 	m.Nodes, m.Err = client.ConnectChainlinkNodes(m.Env)
@@ -203,10 +161,10 @@ func (m *OCRv2State) DeployContracts(contractsDir string) {
 	m.NodeKeysBundle, m.Err = common.CreateNodeKeysBundle(m.Nodes)
 	Expect(m.Err).ShouldNot(HaveOccurred())
 
-	m.Err = common.FundOracles(m.C, m.NodeKeysBundle, big.NewFloat(5e8))
+	m.Err = common.FundOracles(m.NodeKeysBundle, big.NewFloat(5e8))
 	Expect(m.Err).ShouldNot(HaveOccurred())
 
-	cd := e2e.NewTerraContractDeployer(m.C)
+	cd := e2e.NewTerraContractDeployer()
 	lt, err := cd.DeployLinkTokenContract()
 	Expect(err).ShouldNot(HaveOccurred())
 
@@ -216,7 +174,7 @@ func (m *OCRv2State) DeployContracts(contractsDir string) {
 		i := i
 		g.Go(func() error {
 			defer ginkgo.GinkgoRecover()
-			cd := e2e.NewTerraContractDeployer(m.C)
+			cd := e2e.NewTerraContractDeployer()
 
 			bac, err := cd.DeployOCRv2AccessController(contractsDir)
 			Expect(err).ShouldNot(HaveOccurred())
@@ -245,18 +203,6 @@ func (m *OCRv2State) DeployContracts(contractsDir string) {
 			validatorProxy, err := cd.DeployOCRv2Proxy(validator.Address(), contractsDir)
 			Expect(err).ShouldNot(HaveOccurred())
 
-			m.Mu.Lock()
-			m.Contracts = append(m.Contracts, Contracts{
-				LinkToken:      lt,
-				BAC:            bac,
-				RAC:            rac,
-				Flags:          flags,
-				OCR2:           ocr2,
-				Validator:      validator,
-				OCR2Proxy:      ocrProxy,
-				ValidatorProxy: validatorProxy,
-			})
-			m.Mu.Unlock()
 			return nil
 		})
 	}
@@ -302,27 +248,26 @@ func (m *OCRv2State) CreateJobs() {
 }
 
 // LoadContracts loads contracts if they are already deployed
-func (m *OCRv2State) LoadContracts() error {
-	for range m.ContractsNodeSetup {
-		d, err := os.ReadFile(ContractsStateFile)
-		if err != nil {
-			return err
-		}
-		var contractsState *ContractsAddresses
-		if err = json.Unmarshal(d, &contractsState); err != nil {
-			return err
-		}
-		accAddr, err := sdk.AccAddressFromBech32(contractsState.OCR)
-		if err != nil {
-			return err
-		}
-		m.Contracts = append(m.Contracts, Contracts{OCR2: &e2e.OCRv2{
-			Client: m.C,
-			Addr:   accAddr,
-		}})
-	}
-	return nil
-}
+// func (m *OCRv2State) LoadContracts() error {
+// 	for range m.ContractsNodeSetup {
+// 		d, err := os.ReadFile(ContractsStateFile)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		var contractsState *ContractsAddresses
+// 		if err = json.Unmarshal(d, &contractsState); err != nil {
+// 			return err
+// 		}
+// 		accAddr, err := sdk.AccAddressFromBech32(contractsState.OCR)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		m.Contracts = append(m.Contracts, Contracts{OCR2: &e2e.OCRv2{
+// 			Addr: accAddr,
+// 		}})
+// 	}
+// 	return nil
+// }
 
 func (m *OCRv2State) UpdateChainlinkVersion(image string, version string) {
 	// TODO:

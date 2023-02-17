@@ -19,13 +19,13 @@ import (
 
 var _ = Describe("Terra Gauntlet @gauntlet", func() {
 	var (
-		gd    *e2e.GauntletDeployer
+		gd    *integration_tests.GauntletDeployer
 		state *tc.OCRv2State
 	)
 
 	BeforeEach(func() {
 		By("Deploying the environment", func() {
-			gd = &e2e.GauntletDeployer{
+			gd = &integration_tests.GauntletDeployer{
 				Version: "local",
 			}
 			state = tc.NewOCRv2State(1, 1)
@@ -36,15 +36,6 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 
 			_, state.Err = common.OffChainConfigParamsFromNodes(state.Nodes, state.NodeKeysBundle)
 			Expect(state.Err).ShouldNot(HaveOccurred())
-
-			// Remove the stuff below when the token:deploy command is fixed to work for automated testing
-			cd := e2e.NewTerraContractDeployer(state.C)
-			linkToken, err := cd.DeployLinkTokenContract()
-			Expect(err).ShouldNot(HaveOccurred(), "Failed to deploy link token")
-			gd.LinkToken = linkToken.Address()
-			err = common.FundOracles(state.C, state.NodeKeysBundle, big.NewFloat(5e12))
-			Expect(err).ShouldNot(HaveOccurred())
-			//
 		})
 		By("Setup Gauntlet", func() {
 			cwd, err := os.Getwd()
@@ -60,7 +51,7 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			lcdUri := state.Env.URLs["localterra"][0]
 			terraNodeUrl, err := url.Parse(lcdUri)
 			Expect(err).ShouldNot(HaveOccurred())
-			gd.Cli.NetworkConfig = e2e.GetDefaultGauntletConfig(terraNodeUrl)
+			gd.Cli.NetworkConfig = integration_tests.GetDefaultGauntletConfig(terraNodeUrl)
 			err = gd.Cli.WriteNetworkConfigMap(utils.Networks)
 			Expect(err).ShouldNot(HaveOccurred(), "failed to write the .env file")
 			gd.Cli.NetworkConfig["LINK"] = gd.LinkToken
@@ -72,20 +63,17 @@ var _ = Describe("Terra Gauntlet @gauntlet", func() {
 			// upload artifacts
 			gd.Upload()
 
-			// Uncomment the below when token:deploy command is fixed for automated testing
-			// token:deploy
-			// gd.LinkToken = gd.DeployToken()
-			// gd.Cli.NetworkConfig["LINK"] = gd.LinkToken
-			// err := common.FundOracles(state.Nets.Default, state.NodeKeysBundle, big.NewFloat(5e12))
-			// Expect(err).ShouldNot(HaveOccurred())
-			//
+			gd.LinkToken = gd.DeployToken()
+			gd.Cli.NetworkConfig["LINK"] = gd.LinkToken
+			err := common.FundOracles(state.NodeKeysBundle, big.NewFloat(5e12))
+			Expect(err).ShouldNot(HaveOccurred())
 
 			// deploy access controllers
 			gd.BillingAccessController = gd.DeployBillingAccessController()
 			gd.RequesterAccessController = gd.DeployRequesterAccessController()
 
 			// write the updated values for link and access controllers to the .env file
-			err := gd.Cli.WriteNetworkConfigMap(utils.Networks)
+			err = gd.Cli.WriteNetworkConfigMap(utils.Networks)
 			Expect(err).ShouldNot(HaveOccurred(), "Failed to write the updated .env file")
 
 			// flags:deploy
