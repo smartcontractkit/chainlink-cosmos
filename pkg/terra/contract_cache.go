@@ -42,7 +42,7 @@ func NewContractCache(cfg Config, reader *OCR2Reader, lggr logger.Logger) *Contr
 	return &ContractCache{
 		cfg:    cfg,
 		reader: reader,
-		lggr:   lggr,
+		lggr:   lggr.Named("ContractCache"),
 		stop:   make(chan struct{}),
 		done:   make(chan struct{}),
 	}

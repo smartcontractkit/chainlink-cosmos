@@ -59,11 +59,15 @@ type Relayer struct {
 func NewRelayer(lggr logger.Logger, chainSet ChainSet) *Relayer {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Relayer{
-		lggr:     lggr,
+		lggr:     lggr.Named("TerraRelayer"),
 		chainSet: chainSet,
 		ctx:      ctx,
 		cancel:   cancel,
 	}
+}
+
+func (r *Relayer) Name() string {
+	return r.lggr.Name()
 }
 
 // Start starts the relayer respecting the given context.
@@ -86,6 +90,11 @@ func (r *Relayer) Ready() error {
 // Healthy only if all subservices are healthy
 func (r *Relayer) Healthy() error {
 	return r.chainSet.Healthy()
+}
+
+// HealthReport returns a map where key is subservice and value is nil if healthy, error message otherwise.
+func (r *Relayer) HealthReport() map[string]error {
+	return r.chainSet.HealthReport()
 }
 
 func (r *Relayer) NewConfigProvider(args relaytypes.RelayArgs) (relaytypes.ConfigProvider, error) {
@@ -142,6 +151,7 @@ type configProvider struct {
 
 func newConfigProvider(ctx context.Context, lggr logger.Logger, chainSet ChainSet, args relaytypes.RelayArgs) (*configProvider, error) {
 	var relayConfig RelayConfig
+	lggr = lggr.Named("configProvider")
 	err := json.Unmarshal(args.RelayConfig, &relayConfig)
 	if err != nil {
 		return nil, err
@@ -173,6 +183,10 @@ func newConfigProvider(ctx context.Context, lggr logger.Logger, chainSet ChainSe
 	}, nil
 }
 
+func (p *configProvider) Name() string {
+	return p.lggr.Name()
+}
+
 // Start starts OCR2Provider respecting the given context.
 func (p *configProvider) Start(context.Context) error {
 	return p.StartOnce("TerraRelay", func() error {
@@ -186,6 +200,14 @@ func (p *configProvider) Close() error {
 		p.lggr.Debugf("Stopping")
 		return p.contractCache.Close()
 	})
+}
+
+// HealthReport returns a map where key is subservice and value is nil if healthy, error message otherwise.
+func (p *configProvider) HealthReport() map[string]error {
+	report := map[string]error{
+		p.Name(): p.Healthy(),
+	}
+	return report
 }
 
 func (p *configProvider) ContractConfigTracker() types.ContractConfigTracker {
