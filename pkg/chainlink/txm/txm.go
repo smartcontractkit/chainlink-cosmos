@@ -17,13 +17,13 @@ import (
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	wasmtypes "github.com/terra-money/core/x/wasm/types"
 
+	"github.com/smartcontractkit/chainlink-terra/pkg/chainlink/keys"
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra"
 	terraclient "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
 	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
 
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/chainlink/core/services"
-	"github.com/smartcontractkit/chainlink/core/services/keystore"
 	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/terrakey"
 	"github.com/smartcontractkit/chainlink/core/services/pg"
 	"github.com/smartcontractkit/chainlink/core/utils"
@@ -42,14 +42,14 @@ type Txm struct {
 	orm        *ORM
 	lggr       logger.Logger
 	tc         func() (terraclient.ReaderWriter, error)
-	ks         keystore.Terra
+	ks         keys.Keystore
 	stop, done chan struct{}
 	cfg        terra.Config
 	gpe        terraclient.ComposedGasPriceEstimator
 }
 
 // NewTxm creates a txm. Uses simulation so should only be used to send txes to trusted contracts i.e. OCR.
-func NewTxm(db *sqlx.DB, tc func() (terraclient.ReaderWriter, error), gpe terraclient.ComposedGasPriceEstimator, chainID string, cfg terra.Config, ks keystore.Terra, lggr logger.Logger, logCfg pg.QConfig, eb pg.EventBroadcaster) *Txm {
+func NewTxm(db *sqlx.DB, tc func() (terraclient.ReaderWriter, error), gpe terraclient.ComposedGasPriceEstimator, chainID string, cfg terra.Config, ks keys.Keystore, lggr logger.Logger, logCfg pg.QConfig, eb pg.EventBroadcaster) *Txm {
 	lggr = lggr.Named("Txm")
 	return &Txm{
 		starter: utils.StartStopOnce{},
