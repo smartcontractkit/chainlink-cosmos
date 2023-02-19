@@ -1,22 +1,20 @@
-package keystore
+package keys
 
 import (
 	"fmt"
 
 	"github.com/pkg/errors"
-
-	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/terrakey"
 )
 
 //go:generate mockery --name Keystore --output ./mocks/ --case=underscore --filename keystore.go
 
 type Keystore interface {
-	Get(id string) (terrakey.Key, error)
-	GetAll() ([]terrakey.Key, error)
-	Create() (terrakey.Key, error)
-	Add(key terrakey.Key) error
-	Delete(id string) (terrakey.Key, error)
-	Import(keyJSON []byte, password string) (terrakey.Key, error)
+	Get(id string) (Key, error)
+	GetAll() ([]Key, error)
+	Create() (Key, error)
+	Add(key Key) error
+	Delete(id string) (Key, error)
+	Import(keyJSON []byte, password string) (Key, error)
 	Export(id string, password string) ([]byte, error)
 	EnsureKey() error
 }

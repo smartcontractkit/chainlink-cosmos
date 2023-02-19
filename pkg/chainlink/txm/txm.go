@@ -24,7 +24,6 @@ import (
 
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/chainlink/core/services"
-	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/terrakey"
 	"github.com/smartcontractkit/chainlink/core/services/pg"
 	"github.com/smartcontractkit/chainlink/core/utils"
 )
@@ -270,7 +269,7 @@ func (txm *Txm) sendMsgBatch(ctx context.Context) {
 
 }
 
-func (txm *Txm) sendMsgBatchFromAddress(ctx context.Context, gasPrice sdk.DecCoin, sender sdk.AccAddress, key terrakey.Key, msgs terra.Msgs) {
+func (txm *Txm) sendMsgBatchFromAddress(ctx context.Context, gasPrice sdk.DecCoin, sender sdk.AccAddress, key keys.Key, msgs terra.Msgs) {
 	tc, err := txm.tc()
 	if err != nil {
 		txm.lggr.Criticalw("unable to get client", "err", err)
