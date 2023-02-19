@@ -24,13 +24,11 @@ import (
 
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
-	"github.com/smartcontractkit/chainlink/core/services"
 	"github.com/smartcontractkit/chainlink/core/services/pg"
 )
 
 var (
-	_ services.ServiceCtx = (*Txm)(nil)
-	_ terra.TxManager     = (*Txm)(nil)
+	_ terra.TxManager = (*Txm)(nil)
 )
 
 // Txm manages transactions for the terra blockchain.
@@ -503,7 +501,7 @@ func (txm *Txm) GasPrice() (sdk.DecCoin, error) {
 	return gasPrice, nil
 }
 
-// Close close service
+// Close closes service
 func (txm *Txm) Close() error {
 	txm.sub.Close()
 	close(txm.stop)
