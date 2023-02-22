@@ -12,8 +12,8 @@ import (
 	"github.com/smartcontractkit/chainlink-relay/pkg/config"
 	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra"
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
+	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos"
+	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/db"
 )
 
 type Chain struct {
@@ -79,36 +79,36 @@ func (c *Chain) SetFromDB(cfg *db.ChainCfg) error {
 
 func (c *Chain) SetDefaults() {
 	if c.BlockRate == nil {
-		c.BlockRate = utils.MustNewDuration(terra.DefaultConfigSet.BlockRate)
+		c.BlockRate = utils.MustNewDuration(cosmos.DefaultConfigSet.BlockRate)
 	}
 	if c.BlocksUntilTxTimeout == nil {
-		c.BlocksUntilTxTimeout = &terra.DefaultConfigSet.BlocksUntilTxTimeout
+		c.BlocksUntilTxTimeout = &cosmos.DefaultConfigSet.BlocksUntilTxTimeout
 	}
 	if c.ConfirmPollPeriod == nil {
-		c.ConfirmPollPeriod = utils.MustNewDuration(terra.DefaultConfigSet.ConfirmPollPeriod)
+		c.ConfirmPollPeriod = utils.MustNewDuration(cosmos.DefaultConfigSet.ConfirmPollPeriod)
 	}
 	if c.FallbackGasPriceULuna == nil {
-		d := decimal.NewFromBigInt(terra.DefaultConfigSet.FallbackGasPriceULuna.BigInt(), -sdk.Precision)
+		d := decimal.NewFromBigInt(cosmos.DefaultConfigSet.FallbackGasPriceULuna.BigInt(), -sdk.Precision)
 		c.FallbackGasPriceULuna = &d
 	}
 	if c.FCDURL == nil {
-		c.FCDURL = (*utils.URL)(&terra.DefaultConfigSet.FCDURL)
+		c.FCDURL = (*utils.URL)(&cosmos.DefaultConfigSet.FCDURL)
 	}
 	if c.GasLimitMultiplier == nil {
-		d := decimal.NewFromFloat(terra.DefaultConfigSet.GasLimitMultiplier)
+		d := decimal.NewFromFloat(cosmos.DefaultConfigSet.GasLimitMultiplier)
 		c.GasLimitMultiplier = &d
 	}
 	if c.MaxMsgsPerBatch == nil {
-		c.MaxMsgsPerBatch = &terra.DefaultConfigSet.MaxMsgsPerBatch
+		c.MaxMsgsPerBatch = &cosmos.DefaultConfigSet.MaxMsgsPerBatch
 	}
 	if c.OCR2CachePollPeriod == nil {
-		c.OCR2CachePollPeriod = utils.MustNewDuration(terra.DefaultConfigSet.OCR2CachePollPeriod)
+		c.OCR2CachePollPeriod = utils.MustNewDuration(cosmos.DefaultConfigSet.OCR2CachePollPeriod)
 	}
 	if c.OCR2CacheTTL == nil {
-		c.OCR2CacheTTL = utils.MustNewDuration(terra.DefaultConfigSet.OCR2CacheTTL)
+		c.OCR2CacheTTL = utils.MustNewDuration(cosmos.DefaultConfigSet.OCR2CacheTTL)
 	}
 	if c.TxMsgTimeout == nil {
-		c.TxMsgTimeout = utils.MustNewDuration(terra.DefaultConfigSet.TxMsgTimeout)
+		c.TxMsgTimeout = utils.MustNewDuration(cosmos.DefaultConfigSet.TxMsgTimeout)
 	}
 }
 

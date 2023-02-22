@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/testutil"
+	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/testutil"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"

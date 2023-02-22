@@ -1,11 +1,11 @@
-package terra
+package cosmos
 
 import (
 	"context"
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/client"
 )
 
 var _ types.ContractConfigTracker = (*ContractTracker)(nil)

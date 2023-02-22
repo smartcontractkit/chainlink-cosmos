@@ -24,14 +24,14 @@ func main() {
 		}
 	}()
 
-	terraConfig, err := monitoring.ParseTerraConfig()
+	cosmosConfig, err := monitoring.ParseCosmosConfig()
 	if err != nil {
-		l.Fatalw("failed to parse terra specific configuration", "error", err)
+		l.Fatalw("failed to parse cosmos specific configuration", "error", err)
 		return
 	}
 
-	chainReader := monitoring.NewChainReader(terraConfig, l)
-	fcdClient := fcdclient.New(terraConfig.FCDURL, terraConfig.FCDReqsPerSec)
+	chainReader := monitoring.NewChainReader(cosmosConfig, l)
+	fcdClient := fcdclient.New(cosmosConfig.FCDURL, cosmosConfig.FCDReqsPerSec)
 
 	envelopeSourceFactory := monitoring.NewEnvelopeSourceFactory(
 		chainReader,
@@ -45,11 +45,11 @@ func main() {
 	monitor, err := relayMonitoring.NewMonitor(
 		ctx,
 		l,
-		terraConfig,
+		cosmosConfig,
 		envelopeSourceFactory,
 		txResultsFactory,
-		monitoring.TerraFeedsParser,
-		monitoring.TerraNodesParser,
+		monitoring.CosmosFeedsParser,
+		monitoring.CosmosNodesParser,
 	)
 	if err != nil {
 		l.Fatalw("failed to build monitor", "error", err)
@@ -63,8 +63,8 @@ func main() {
 	monitor.SourceFactories = append(monitor.SourceFactories, proxySourceFactory)
 
 	prometheusExporterFactory := monitoring.NewPrometheusExporterFactory(
-		logger.With(l, "component", "terra-prometheus-exporter"),
-		monitoring.NewMetrics(logger.With(l, "component", "terra-metrics")),
+		logger.With(l, "component", "cosmos-prometheus-exporter"),
+		monitoring.NewMetrics(logger.With(l, "component", "cosmos-metrics")),
 	)
 	monitor.ExporterFactories = append(monitor.ExporterFactories, prometheusExporterFactory)
 

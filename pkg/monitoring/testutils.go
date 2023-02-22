@@ -15,9 +15,9 @@ import (
 
 // Generators
 
-func generateChainConfig() TerraConfig {
+func generateChainConfig() CosmosConfig {
 	address, _ := sdk.AccAddressFromBech32("terra106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
-	return TerraConfig{
+	return CosmosConfig{
 		TendermintURL:    "https://some-tendermint-url.com",
 		FCDURL:           "https://fcd.terra.dev",
 		NetworkName:      "terra",
@@ -29,12 +29,12 @@ func generateChainConfig() TerraConfig {
 	}
 }
 
-func generateFeedConfig() TerraFeedConfig {
+func generateFeedConfig() CosmosFeedConfig {
 	coins := []string{"btc", "eth", "matic", "link", "avax", "ftt", "srm", "usdc", "sol", "ray"}
 	coin := coins[rand.Intn(len(coins))]
 	address, _ := sdk.AccAddressFromBech32("terra106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
 	proxyAddress, _ := sdk.AccAddressFromBech32("terra106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
-	return TerraFeedConfig{
+	return CosmosFeedConfig{
 		Name:           fmt.Sprintf("%s / usd", coin),
 		Path:           fmt.Sprintf("%s-usd", coin),
 		Symbol:         "$",

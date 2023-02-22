@@ -1,7 +1,7 @@
 //go:build go1.18
 // +build go1.18
 
-package terra
+package cosmos
 
 import (
 	"math/big"

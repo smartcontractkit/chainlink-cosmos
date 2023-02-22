@@ -13,14 +13,14 @@ import (
 	"time"
 
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
+	pkgCosmos "github.com/smartcontractkit/chainlink-terra/pkg/cosmos"
 	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
-	pkgTerra "github.com/smartcontractkit/chainlink-terra/pkg/terra"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"go.uber.org/multierr"
 )
 
 // NewEnvelopeSourceFactory build a new object that reads observations and
-// configurations from the Terra chain.
+// configurations from the Cosmos chain.
 func NewEnvelopeSourceFactory(
 	rpcClient ChainReader,
 	fcdClient fcdclient.Client,
@@ -39,20 +39,20 @@ func (e *envelopeSourceFactory) NewSource(
 	chainConfig relayMonitoring.ChainConfig,
 	feedConfig relayMonitoring.FeedConfig,
 ) (relayMonitoring.Source, error) {
-	terraConfig, ok := chainConfig.(TerraConfig)
+	cosmosConfig, ok := chainConfig.(CosmosConfig)
 	if !ok {
-		return nil, fmt.Errorf("expected chainConfig to be of type TerraConfig not %T", chainConfig)
+		return nil, fmt.Errorf("expected chainConfig to be of type CosmosConfig not %T", chainConfig)
 	}
-	terraFeedConfig, ok := feedConfig.(TerraFeedConfig)
+	cosmosFeedConfig, ok := feedConfig.(CosmosFeedConfig)
 	if !ok {
-		return nil, fmt.Errorf("expected feedConfig to be of type TerraFeedConfig not %T", feedConfig)
+		return nil, fmt.Errorf("expected feedConfig to be of type CosmosFeedConfig not %T", feedConfig)
 	}
 	return &envelopeSource{
 		e.rpcClient,
 		e.fcdClient,
 		e.log,
-		terraConfig,
-		terraFeedConfig,
+		cosmosConfig,
+		cosmosFeedConfig,
 
 		sync.Mutex{},
 		types.ContractConfig{}, // initial value for cached ContractConfig
@@ -65,11 +65,11 @@ func (e *envelopeSourceFactory) GetType() string {
 }
 
 type envelopeSource struct {
-	rpcClient       ChainReader
-	fcdClient       fcdclient.Client
-	log             relayMonitoring.Logger
-	terraConfig     TerraConfig
-	terraFeedConfig TerraFeedConfig
+	rpcClient        ChainReader
+	fcdClient        fcdclient.Client
+	log              relayMonitoring.Logger
+	cosmosConfig     CosmosConfig
+	cosmosFeedConfig CosmosFeedConfig
 
 	cachedConfigMu    sync.Mutex
 	cachedConfig      types.ContractConfig
@@ -154,16 +154,16 @@ type transmissionData struct {
 
 func (e *envelopeSource) fetchLatestTransmission(ctx context.Context) (transmissionData, error) {
 	res, err := e.fcdClient.GetTxList(ctx, fcdclient.GetTxListParams{
-		Account: e.terraFeedConfig.ContractAddress,
+		Account: e.cosmosFeedConfig.ContractAddress,
 		Limit:   10, // there should be a new transmission in the last 10 blocks
 	})
 	if err != nil {
 		return transmissionData{}, fmt.Errorf("failed to fetch latest 'new_transmission' event: %w", err)
 	}
 	data := transmissionData{}
-	err = e.extractDataFromTxResponse("wasm-new_transmission", e.terraFeedConfig.ContractAddressBech32, res, map[string]func(string) error{
+	err = e.extractDataFromTxResponse("wasm-new_transmission", e.cosmosFeedConfig.ContractAddressBech32, res, map[string]func(string) error{
 		"config_digest": func(value string) error {
-			return pkgTerra.HexToConfigDigest(value, &data.configDigest)
+			return pkgCosmos.HexToConfigDigest(value, &data.configDigest)
 		},
 		"epoch": func(value string) error {
 			rawEpoch, parseErr := strconv.ParseUint(value, 10, 32)
@@ -247,10 +247,10 @@ func (e *envelopeSource) fetchLatestConfig(ctx context.Context) (types.ContractC
 func (e *envelopeSource) fetchLatestConfigBlock(ctx context.Context) (uint64, error) {
 	resp, err := e.rpcClient.ContractState(
 		ctx,
-		e.terraFeedConfig.ContractAddress,
+		e.cosmosFeedConfig.ContractAddress,
 		[]byte(`"latest_config_details"`),
 	)
-	var details pkgTerra.ConfigDetails
+	var details pkgCosmos.ConfigDetails
 	if err != nil {
 		return 0, fmt.Errorf("failed to fetch config details: %w", err)
 	}
@@ -266,10 +266,10 @@ func (e *envelopeSource) fetchLatestConfigFromLogs(ctx context.Context, blockHei
 		return types.ContractConfig{}, fmt.Errorf("failed to fetch block at height: %w", err)
 	}
 	output := types.ContractConfig{}
-	err = e.extractDataFromTxResponse("wasm-set_config", e.terraFeedConfig.ContractAddressBech32, res, map[string]func(string) error{
+	err = e.extractDataFromTxResponse("wasm-set_config", e.cosmosFeedConfig.ContractAddressBech32, res, map[string]func(string) error{
 		"latest_config_digest": func(value string) error {
 			// parse byte array encoded as hex string
-			return pkgTerra.HexToConfigDigest(value, &output.ConfigDigest)
+			return pkgCosmos.HexToConfigDigest(value, &output.ConfigDigest)
 		},
 		"config_count": func(value string) error {
 			i, parseErr := strconv.ParseInt(value, 10, 64)
@@ -280,7 +280,7 @@ func (e *envelopeSource) fetchLatestConfigFromLogs(ctx context.Context, blockHei
 			// this assumes the value will be a hex encoded string which each signer
 			// 32 bytes and each signer will be a separate parameter
 			var v []byte
-			convertErr := pkgTerra.HexToByteArray(value, &v)
+			convertErr := pkgCosmos.HexToByteArray(value, &v)
 			output.Signers = append(output.Signers, v)
 			return convertErr
 		},
@@ -323,10 +323,10 @@ type linkBalanceResponse struct {
 }
 
 func (e *envelopeSource) fetchLinkBalance(ctx context.Context) (*big.Int, error) {
-	query := fmt.Sprintf(`{"balance":{"address":"%s"}}`, e.terraFeedConfig.ContractAddressBech32)
+	query := fmt.Sprintf(`{"balance":{"address":"%s"}}`, e.cosmosFeedConfig.ContractAddressBech32)
 	res, err := e.rpcClient.ContractState(
 		ctx,
-		e.terraConfig.LinkTokenAddress,
+		e.cosmosConfig.LinkTokenAddress,
 		[]byte(query),
 	)
 	if err != nil {
@@ -350,7 +350,7 @@ type linkAvailableForPaymentRes struct {
 func (e *envelopeSource) fetchLinkAvailableForPayment(ctx context.Context) (*big.Int, error) {
 	res, err := e.rpcClient.ContractState(
 		ctx,
-		e.terraFeedConfig.ContractAddress,
+		e.cosmosFeedConfig.ContractAddress,
 		[]byte(`"link_available_for_payment"`),
 	)
 	if err != nil {

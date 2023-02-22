@@ -1,4 +1,4 @@
-package terra
+package cosmos
 
 import (
 	"testing"
@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/guregu/null.v4"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
+	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/db"
 )
 
 func TestConfig(t *testing.T) {

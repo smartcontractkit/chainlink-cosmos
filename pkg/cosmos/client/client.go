@@ -49,7 +49,7 @@ type ReaderWriter interface {
 	Reader
 }
 
-// Reader provides methods for reading from a terra chain.
+// Reader provides methods for reading from a cosmos chain.
 type Reader interface {
 	Account(address sdk.AccAddress) (uint64, uint64, error)
 	ContractState(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
@@ -60,7 +60,7 @@ type Reader interface {
 	Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error)
 }
 
-// Writer provides methods for writing to a terra chain.
+// Writer provides methods for writing to a cosmos chain.
 // Assumes all msgs are for the same from address.
 // We may want to support multiple from addresses + signers if a use case arises.
 type Writer interface {
@@ -75,8 +75,8 @@ type Writer interface {
 var _ ReaderWriter = (*Client)(nil)
 
 const (
-	// DefaultTimeout is the default Terra client timeout.
-	// Note that while the terra node is processing a heavy block,
+	// DefaultTimeout is the default Cosmos client timeout.
+	// Note that while the cosmos node is processing a heavy block,
 	// requests can be delayed significantly (https://github.com/tendermint/tendermint/issues/6899),
 	// however there's nothing we can do but wait until the block is processed.
 	// So we set a fairly high timeout here.
@@ -92,7 +92,7 @@ const (
 	DefaultGasLimitMultiplier = 1.5
 )
 
-// Client is a terra client
+// Client is a cosmos client
 type Client struct {
 	chainID                 string
 	clientCtx               cosmosclient.Context
@@ -126,7 +126,7 @@ func (rt *responseRoundTripper) RoundTrip(r *http.Request) (resp *http.Response,
 	return
 }
 
-// NewClient creates a new terra client
+// NewClient creates a new cosmos client
 func NewClient(chainID string,
 	tendermintURL string,
 	requestTimeout time.Duration,
@@ -162,7 +162,7 @@ func NewClient(chainID string,
 	}
 	ec := encodingConfig
 	// TODO: extract this cosmosclient.Context{} creation so we can change it per chain
-	// Note should terra nodes start exposing grpc, its preferable
+	// Note should cosmos nodes start exposing grpc, its preferable
 	// to connect directly with grpc.Dial to avoid using clientCtx (according to tendermint team).
 	// If so then we would start putting timeouts on the ctx we pass in to the generate grpc client calls.
 	clientCtx := cosmosclient.Context{}.

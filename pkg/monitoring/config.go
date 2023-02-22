@@ -11,8 +11,8 @@ import (
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 )
 
-// TerraConfig contains configuration for connecting to a terra client.
-type TerraConfig struct {
+// CosmosConfig contains configuration for connecting to a cosmos RPC client.
+type CosmosConfig struct {
 	TendermintURL        string
 	TendermintReqsPerSec int
 	FCDURL               string
@@ -25,28 +25,28 @@ type TerraConfig struct {
 	LinkTokenAddress     sdk.AccAddress
 }
 
-var _ relayMonitoring.ChainConfig = TerraConfig{}
+var _ relayMonitoring.ChainConfig = CosmosConfig{}
 
-// GetRPCEndpoint return the tendermint url of a terra client.
-func (t TerraConfig) GetRPCEndpoint() string { return t.TendermintURL }
+// GetRPCEndpoint return the tendermint url of a Cosmos client.
+func (t CosmosConfig) GetRPCEndpoint() string { return t.TendermintURL }
 
 // GetNetworkName returns the network name.
-func (t TerraConfig) GetNetworkName() string { return t.NetworkName }
+func (t CosmosConfig) GetNetworkName() string { return t.NetworkName }
 
 // GetNetworkID returns the network id.
-func (t TerraConfig) GetNetworkID() string { return t.NetworkID }
+func (t CosmosConfig) GetNetworkID() string { return t.NetworkID }
 
 // GetChainID returns the chain id.
-func (t TerraConfig) GetChainID() string { return t.ChainID }
+func (t CosmosConfig) GetChainID() string { return t.ChainID }
 
-// GetReadTimeout returns the max allowed duration of a request to a Terra client.
-func (t TerraConfig) GetReadTimeout() time.Duration { return t.ReadTimeout }
+// GetReadTimeout returns the max allowed duration of a request to a Cosmos client.
+func (t CosmosConfig) GetReadTimeout() time.Duration { return t.ReadTimeout }
 
 // GetPollInterval returns the interval at which data from the chain is read.
-func (t TerraConfig) GetPollInterval() time.Duration { return t.PollInterval }
+func (t CosmosConfig) GetPollInterval() time.Duration { return t.PollInterval }
 
 // ToMapping returns a data structure expected by the Avro schema encoders.
-func (t TerraConfig) ToMapping() map[string]interface{} {
+func (t CosmosConfig) ToMapping() map[string]interface{} {
 	return map[string]interface{}{
 		"network_name": t.NetworkName,
 		"network_id":   t.NetworkID,
@@ -54,9 +54,9 @@ func (t TerraConfig) ToMapping() map[string]interface{} {
 	}
 }
 
-// ParseTerraConfig extracts chain specific configuration from env vars.
-func ParseTerraConfig() (TerraConfig, error) {
-	cfg := TerraConfig{}
+// ParseCosmosConfig extracts chain specific configuration from env vars.
+func ParseCosmosConfig() (CosmosConfig, error) {
+	cfg := CosmosConfig{}
 
 	if err := parseEnvVars(&cfg); err != nil {
 		return cfg, err
@@ -68,7 +68,7 @@ func ParseTerraConfig() (TerraConfig, error) {
 	return cfg, err
 }
 
-func parseEnvVars(cfg *TerraConfig) error {
+func parseEnvVars(cfg *CosmosConfig) error {
 	if value, isPresent := os.LookupEnv("TERRA_TENDERMINT_URL"); isPresent {
 		cfg.TendermintURL = value
 	}
@@ -122,7 +122,7 @@ func parseEnvVars(cfg *TerraConfig) error {
 	return nil
 }
 
-func validateConfig(cfg TerraConfig) error {
+func validateConfig(cfg CosmosConfig) error {
 	// Required config
 	for envVarName, currentValue := range map[string]string{
 		"TERRA_TENDERMINT_URL": cfg.TendermintURL,
@@ -147,7 +147,7 @@ func validateConfig(cfg TerraConfig) error {
 	return nil
 }
 
-func applyDefaults(cfg *TerraConfig) {
+func applyDefaults(cfg *CosmosConfig) {
 	if cfg.TendermintReqsPerSec == 0 {
 		cfg.TendermintReqsPerSec = 1
 	}

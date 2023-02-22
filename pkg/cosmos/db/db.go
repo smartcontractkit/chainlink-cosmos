@@ -22,7 +22,7 @@ type Chain struct {
 type Node struct {
 	ID            int32
 	Name          string
-	TerraChainID  string
+	CosmosChainID string
 	TendermintURL string `db:"tendermint_url"`
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
@@ -54,7 +54,7 @@ func (c *ChainCfg) Value() (driver.Value, error) {
 	return json.Marshal(c)
 }
 
-// State represents the state of a given terra msg
+// State represents the state of a given cosmos msg
 // Happy path: Unstarted->Broadcasted->Confirmed
 type State string
 
@@ -82,7 +82,7 @@ var (
 
 type Msg struct {
 	ID         int64
-	ChainID    string `db:"terra_chain_id"`
+	ChainID    string `db:"cosmos_chain_id"`
 	ContractID string
 	State      State
 	Type       string // cosmos-sdk/types.MsgTypeURL()

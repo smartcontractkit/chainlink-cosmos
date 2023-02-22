@@ -1,4 +1,4 @@
-package terra
+package cosmos
 
 import (
 	"testing"

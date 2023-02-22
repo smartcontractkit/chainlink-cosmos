@@ -1,4 +1,4 @@
-package terra
+package cosmos
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/client"
 )
 
 type OCR2Reader struct {

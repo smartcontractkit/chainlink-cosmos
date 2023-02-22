@@ -4,7 +4,7 @@ package mocks
 
 import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	client "github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+	client "github.com/smartcontractkit/chainlink-terra/pkg/cosmos/client"
 
 	mock "github.com/stretchr/testify/mock"
 

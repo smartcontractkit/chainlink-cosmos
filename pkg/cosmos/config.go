@@ -1,4 +1,4 @@
-package terra
+package cosmos
 
 import (
 	"net/url"
@@ -7,14 +7,14 @@ import (
 
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/client"
+	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/client"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/terra/db"
+	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/db"
 )
 
-// Global terra defaults.
+// Global defaults.
 var DefaultConfigSet = configSet{
 	BlockRate: 6 * time.Second,
 	// ~6s per block, so ~3m until we give up on the tx getting confirmed

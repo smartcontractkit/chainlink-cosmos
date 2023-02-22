@@ -10,8 +10,8 @@ import (
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 )
 
-// TerraFeedConfig holds data extracted from the RDD
-type TerraFeedConfig struct {
+// CosmosFeedConfig holds data extracted from the RDD
+type CosmosFeedConfig struct {
 	Name           string   `json:"name,omitempty"`
 	Path           string   `json:"path,omitempty"`
 	Symbol         string   `json:"symbol,omitempty"`
@@ -29,60 +29,60 @@ type TerraFeedConfig struct {
 	ProxyAddress       sdk.AccAddress `json:"-"`
 }
 
-var _ relayMonitoring.FeedConfig = TerraFeedConfig{}
+var _ relayMonitoring.FeedConfig = CosmosFeedConfig{}
 
-// GetID returns the feed's contract address encoded as Bech32 which is the feed identifier on Terra.
-func (t TerraFeedConfig) GetID() string {
+// GetID returns the feed's contract address encoded as Bech32 which is the feed identifier on Cosmos.
+func (t CosmosFeedConfig) GetID() string {
 	return t.ContractAddressBech32
 }
 
 // GetName returns the feed's name.
-func (t TerraFeedConfig) GetName() string {
+func (t CosmosFeedConfig) GetName() string {
 	return t.Name
 }
 
 // GetPath returns the feed's path.
-func (t TerraFeedConfig) GetPath() string {
+func (t CosmosFeedConfig) GetPath() string {
 	return t.Path
 }
 
 // GetSymbol returns the feed's symbol.
-func (t TerraFeedConfig) GetSymbol() string {
+func (t CosmosFeedConfig) GetSymbol() string {
 	return t.Symbol
 }
 
 // GetHeartbeatSec returns the feed's heartbeat in seconds.
-func (t TerraFeedConfig) GetHeartbeatSec() int64 {
+func (t CosmosFeedConfig) GetHeartbeatSec() int64 {
 	return t.HeartbeatSec
 }
 
 // GetContractType returns the feed's contract type.
-func (t TerraFeedConfig) GetContractType() string {
+func (t CosmosFeedConfig) GetContractType() string {
 	return t.ContractType
 }
 
 // GetContractStatus returns the feed's contract status.
-func (t TerraFeedConfig) GetContractStatus() string {
+func (t CosmosFeedConfig) GetContractStatus() string {
 	return t.ContractStatus
 }
 
 // GetContractAddress returns the feed's contract address encoded as Bech32.
-func (t TerraFeedConfig) GetContractAddress() string {
+func (t CosmosFeedConfig) GetContractAddress() string {
 	return t.ContractAddressBech32
 }
 
 // GetContractAddressBytes returns the feed's contract address in raw bytes.
-func (t TerraFeedConfig) GetContractAddressBytes() []byte {
+func (t CosmosFeedConfig) GetContractAddressBytes() []byte {
 	return t.ContractAddress.Bytes()
 }
 
 // GetMultiply returns the feed's multiplication factor for updates.
-func (t TerraFeedConfig) GetMultiply() *big.Int {
+func (t CosmosFeedConfig) GetMultiply() *big.Int {
 	return t.Multiply
 }
 
 // ToMapping returns the feed's configuration mapped to a data structure expected by the Avro schema encoders.
-func (t TerraFeedConfig) ToMapping() map[string]interface{} {
+func (t CosmosFeedConfig) ToMapping() map[string]interface{} {
 	return map[string]interface{}{
 		"feed_name":               t.Name,
 		"feed_path":               t.Path,
@@ -100,9 +100,9 @@ func (t TerraFeedConfig) ToMapping() map[string]interface{} {
 	}
 }
 
-// TerraFeedsParser decodes a JSON-encoded list of terra-specific feed configurations.
-func TerraFeedsParser(buf io.ReadCloser) ([]relayMonitoring.FeedConfig, error) {
-	rawFeeds := []TerraFeedConfig{}
+// CosmosFeedsParser decodes a JSON-encoded list of cosmos-specific feed configurations.
+func CosmosFeedsParser(buf io.ReadCloser) ([]relayMonitoring.FeedConfig, error) {
+	rawFeeds := []CosmosFeedConfig{}
 	decoder := json.NewDecoder(buf)
 	if err := decoder.Decode(&rawFeeds); err != nil {
 		return nil, fmt.Errorf("unable to unmarshal feeds config data: %w", err)
@@ -126,7 +126,7 @@ func TerraFeedsParser(buf io.ReadCloser) ([]relayMonitoring.FeedConfig, error) {
 			return nil, fmt.Errorf("failed to parse multiply '%s' into a big.Int", rawFeed.MultiplyRaw)
 		}
 		// NOTE: multiply is not required so if a parse error occurs, we'll use 0.
-		feeds[i] = relayMonitoring.FeedConfig(TerraFeedConfig{
+		feeds[i] = relayMonitoring.FeedConfig(CosmosFeedConfig{
 			rawFeed.Name,
 			rawFeed.Path,
 			rawFeed.Symbol,

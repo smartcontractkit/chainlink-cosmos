@@ -56,7 +56,7 @@ type FCDGasPriceEstimator struct {
 	lggr   logger.Logger
 }
 
-// Config is a subset of pkg/terra.Config, which cannot be imported here.
+// Config is a subset of pkg/cosmos.Config, which cannot be imported here.
 type Config interface{ FCDURL() url.URL }
 
 func NewFCDGasPriceEstimator(cfg Config, requestTimeout time.Duration, lggr logger.Logger) *FCDGasPriceEstimator {

@@ -56,11 +56,11 @@ func (c *client) GetTxList(ctx context.Context, params GetTxListParams) (Respons
 	getTxsURL.RawQuery = query.Encode()
 	getTxsReq, err := http.NewRequestWithContext(ctx, http.MethodGet, getTxsURL.String(), nil)
 	if err != nil {
-		return Response{}, fmt.Errorf("unable to build a request to the terra FCD: %w", err)
+		return Response{}, fmt.Errorf("unable to build a request to the cosmos FCD: %w", err)
 	}
 	res, err := c.httpClient.Do(getTxsReq)
 	if err != nil {
-		return Response{}, fmt.Errorf("unable to fetch transactions from terra FCD: %w", err)
+		return Response{}, fmt.Errorf("unable to fetch transactions from cosmos FCD: %w", err)
 	}
 	defer res.Body.Close()
 	resBody, _ := io.ReadAll(res.Body)
@@ -84,11 +84,11 @@ func (c *client) GetBlockAtHeight(ctx context.Context, height uint64) (Response,
 	getBlockURL.Path = fmt.Sprintf("/v1/blocks/%d", height)
 	getBlockReq, err := http.NewRequestWithContext(ctx, http.MethodGet, getBlockURL.String(), nil)
 	if err != nil {
-		return Response{}, fmt.Errorf("unable to build a request to the terra FCD: %w", err)
+		return Response{}, fmt.Errorf("unable to build a request to the cosmos FCD: %w", err)
 	}
 	res, err := c.httpClient.Do(getBlockReq)
 	if err != nil {
-		return Response{}, fmt.Errorf("unable to fetch block from terra FCD: %w", err)
+		return Response{}, fmt.Errorf("unable to fetch block from cosmos FCD: %w", err)
 	}
 	defer res.Body.Close()
 	resBody, _ := io.ReadAll(res.Body)
