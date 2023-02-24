@@ -106,7 +106,7 @@ fn transmit_report(
     for _ in 0..len {
         report.extend_from_slice(&bytes); // observation
     }
-    report.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0]); // juels per luna (1 with 18 decimal places)
+    report.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0]); // juels per atom (1 with 18 decimal places)
 
     // Generate report context
     let mut report_context = vec![0; 96];
@@ -407,7 +407,7 @@ fn transmit_happy_path() {
 
     // -- set billing
 
-    // price in uLUNA
+    // price in uATOM
     let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
 
     let msg = ExecuteMsg::SetBilling {
@@ -718,7 +718,7 @@ fn set_link_token() {
 
     // -- set billing
 
-    // price in uLUNA
+    // price in uATOM
     let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
 
     let msg = ExecuteMsg::SetBilling {
@@ -1151,7 +1151,7 @@ fn set_billing_payout() {
     let reimbursement = Decimal::from_str("0.002445793504").unwrap().atomics();
 
     // -- set billing
-    // price in uLUNA
+    // price in uATOM
     let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
     let msg = ExecuteMsg::SetBilling {
         config: Billing {

@@ -16,7 +16,7 @@ import (
 )
 
 func TestChain_SetFromDB(t *testing.T) {
-	gasPriceULuna := decimal.RequireFromString("0.015")
+	gasPriceUAtom := decimal.RequireFromString("0.015")
 	gasLimitMultiplier := decimal.RequireFromString("1.5")
 	for _, tt := range []struct {
 		name  string
@@ -29,7 +29,7 @@ func TestChain_SetFromDB(t *testing.T) {
 			BlockRate:             utils.MustNewDuration(6 * time.Second),
 			BlocksUntilTxTimeout:  null.IntFrom(30),
 			ConfirmPollPeriod:     utils.MustNewDuration(time.Second),
-			FallbackGasPriceULuna: null.StringFrom("0.015"),
+			FallbackGasPriceUAtom: null.StringFrom("0.015"),
 			FCDURL:                null.StringFrom("http://fake.test"),
 			GasLimitMultiplier:    null.FloatFrom(1.5),
 			MaxMsgsPerBatch:       null.IntFrom(100),
@@ -40,7 +40,7 @@ func TestChain_SetFromDB(t *testing.T) {
 			BlockRate:             utils.MustNewDuration(6 * time.Second),
 			BlocksUntilTxTimeout:  ptr[int64](30),
 			ConfirmPollPeriod:     utils.MustNewDuration(time.Second),
-			FallbackGasPriceULuna: &gasPriceULuna,
+			FallbackGasPriceUAtom: &gasPriceUAtom,
 			FCDURL:                utils.MustParseURL("http://fake.test"),
 			GasLimitMultiplier:    &gasLimitMultiplier,
 			MaxMsgsPerBatch:       ptr[int64](100),

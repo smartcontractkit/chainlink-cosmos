@@ -1,6 +1,6 @@
 import { BN, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress } from '@chainlink/gauntlet-terra'
-import { CATEGORIES, ULUNA_DECIMALS } from '../../lib/constants'
+import { CATEGORIES, UATOM_DECIMALS } from '../../lib/constants'
 import { TerraCommand, TransactionResponse, logger } from '@chainlink/gauntlet-terra'
 import { Result } from '@chainlink/gauntlet-core'
 import { withAddressBook } from '../../lib/middlewares'
@@ -10,12 +10,12 @@ import { MsgSend } from 'cosmjs-types/cosmos/bank/v1beta1/tx'
 
 type CommandInput = {
   destination: string
-  // Units in LUNA
+  // Units in ATOM
   amount: string
 }
 
-export default class TransferLuna extends TerraCommand {
-  static description = 'Transfer Luna'
+export default class TransferAtom extends TerraCommand {
+  static description = 'Transfer Atom'
   static examples = [`yarn gauntlet wallet:transfer --network=bombay-testnet`]
 
   static id = 'wallet:transfer'
@@ -34,13 +34,13 @@ export default class TransferLuna extends TerraCommand {
   }
 
   beforeExecute = async () => {
-    logger.info(`Sending ${this.input.amount} uLUNA to ${logger.styleAddress(this.input.destination)}`)
+    logger.info(`Sending ${this.input.amount} uATOM to ${logger.styleAddress(this.input.destination)}`)
   }
 
   makeInput = (flags, _) => {
     return {
       destination: flags.to,
-      amount: new BN(flags.amount).mul(new BN(10).pow(new BN(ULUNA_DECIMALS))).toString(),
+      amount: new BN(flags.amount).mul(new BN(10).pow(new BN(UATOM_DECIMALS))).toString(),
     } as CommandInput
   }
 

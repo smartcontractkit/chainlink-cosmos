@@ -21,8 +21,8 @@ export const withProvider: Middleware = async (c: TerraCommand, next: Next) => {
 
   let wallet: OfflineSigner
   if (c.flags.withLedger || !!process.env.WITH_LEDGER) {
-    // TODO: allow specifying custom path, using stringToPath. BIP44_LUNA_PATH was different for example
-    // const rawPath = c.flags.ledgerPath || BIP44_LUNA_PATH
+    // TODO: allow specifying custom path, using stringToPath. BIP44_ATOM_PATH was different for example
+    // const rawPath = c.flags.ledgerPath || BIP44_ATOM_PATH
     const transport = await TransportNodeHid.create()
 
     const accounts = [0] // we only use the first account?

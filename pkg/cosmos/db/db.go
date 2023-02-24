@@ -32,7 +32,7 @@ type ChainCfg struct {
 	BlockRate             *utils.Duration
 	BlocksUntilTxTimeout  null.Int
 	ConfirmPollPeriod     *utils.Duration
-	FallbackGasPriceULuna null.String
+	FallbackGasPriceUAtom null.String
 	FCDURL                null.String `db:"fcd_url"`
 	GasLimitMultiplier    null.Float
 	MaxMsgsPerBatch       null.Int

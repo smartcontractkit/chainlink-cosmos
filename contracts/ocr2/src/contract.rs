@@ -916,7 +916,7 @@ fn decode_report(raw_report: &[u8]) -> Result<Report, ContractError> {
         .map(|raw| i128::from_be_bytes(raw.try_into().unwrap())) // guaranteed to be [u8; 16]
         .collect::<Vec<_>>();
 
-    // juels per luna = u128
+    // juels per atom = u128
     let juels_per_fee_coin = u128::from_be_bytes(
         raw_report
             .try_into()
@@ -1504,14 +1504,14 @@ fn calculate_reimbursement(
     let gas = Decimal::raw(gas as u128 * 10u128.pow(Decimal::DECIMAL_PLACES));
     // gas allocated seems to be about 1.4 of gas used
     let gas = gas * gas_adjustment;
-    // scale uLUNA to LUNA
+    // scale uATOM to ATOM
     const MICRO: Uint128 = Uint128::new(10u128.pow(6));
     let recommended_gas_price = config.recommended_gas_price_micro / MICRO;
-    // gas cost in LUNA
+    // gas cost in ATOM
     let gas_cost = recommended_gas_price * gas;
     // total in juels
     let total = gas_cost * Decimal::raw(juels_per_fee_coin);
-    // NOTE: no stability tax is charged on transactions in LUNA
+    // NOTE: no stability tax is charged on transactions in ATOM
     total.atomics()
 }
 
@@ -1708,7 +1708,7 @@ pub(crate) mod tests {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 73, 150, 2, 210, // observation 3
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 73, 150, 2, 210, // observation 4
         0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0,
-        0, // juels per luna (1 with 18 decimal places)
+        0, // juels per atom (1 with 18 decimal places)
     ];
 
     #[test]
@@ -1769,7 +1769,7 @@ pub(crate) mod tests {
     fn test_calculate_reimbursement() {
         use std::str::FromStr;
         let recommended_gas_price = Decimal::from_str("0.011000").unwrap();
-        let juels_per_fee_coin = u128::from_str("6000000000000000000").unwrap(); // 6e18 juels in 1 luna (i.e. 6 link)
+        let juels_per_fee_coin = u128::from_str("6000000000000000000").unwrap(); // 6e18 juels in 1 atom (i.e. 6 link)
 
         // Sanity check
         let r = calculate_reimbursement(

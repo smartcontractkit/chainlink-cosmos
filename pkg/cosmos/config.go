@@ -23,7 +23,7 @@ var DefaultConfigSet = configSet{
 	// ~16 block FIFO lineups.
 	BlocksUntilTxTimeout:  30,
 	ConfirmPollPeriod:     time.Second,
-	FallbackGasPriceULuna: sdk.MustNewDecFromStr("0.015"),
+	FallbackGasPriceUAtom: sdk.MustNewDecFromStr("0.015"),
 	// This is high since we simulate before signing the transaction.
 	// There's a chicken and egg problem: need to sign to simulate accurately
 	// but you need to specify a gas limit when signing.
@@ -49,7 +49,7 @@ type Config interface {
 	BlockRate() time.Duration
 	BlocksUntilTxTimeout() int64
 	ConfirmPollPeriod() time.Duration
-	FallbackGasPriceULuna() sdk.Dec
+	FallbackGasPriceUAtom() sdk.Dec
 	FCDURL() url.URL
 	GasLimitMultiplier() float64
 	MaxMsgsPerBatch() int64
@@ -65,7 +65,7 @@ type configSet struct {
 	BlockRate             time.Duration
 	BlocksUntilTxTimeout  int64
 	ConfirmPollPeriod     time.Duration
-	FallbackGasPriceULuna sdk.Dec
+	FallbackGasPriceUAtom sdk.Dec
 	FCDURL                url.URL
 	GasLimitMultiplier    float64
 	MaxMsgsPerBatch       int64
@@ -128,9 +128,9 @@ func (c *config) ConfirmPollPeriod() time.Duration {
 	return c.defaults.ConfirmPollPeriod
 }
 
-func (c *config) FallbackGasPriceULuna() sdk.Dec {
+func (c *config) FallbackGasPriceUAtom() sdk.Dec {
 	c.chainMu.RLock()
-	ch := c.chain.FallbackGasPriceULuna
+	ch := c.chain.FallbackGasPriceUAtom
 	c.chainMu.RUnlock()
 	if ch.Valid {
 		str := ch.String
@@ -138,9 +138,9 @@ func (c *config) FallbackGasPriceULuna() sdk.Dec {
 		if err == nil {
 			return dec
 		}
-		c.lggr.Warnf(invalidFallbackMsg, "FallbackGasPriceULuna", str, c.defaults.FallbackGasPriceULuna, err)
+		c.lggr.Warnf(invalidFallbackMsg, "FallbackGasPriceUAtom", str, c.defaults.FallbackGasPriceUAtom, err)
 	}
-	return c.defaults.FallbackGasPriceULuna
+	return c.defaults.FallbackGasPriceUAtom
 }
 
 func (c *config) FCDURL() url.URL {

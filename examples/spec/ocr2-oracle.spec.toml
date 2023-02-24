@@ -43,17 +43,17 @@ juelsPerFeeCoinSource = """
     ds3_link_parse    [type="jsonparse" path="result"]
     ds3_link -> ds3_link_parse -> median_link
 
-    // Fetch the LUNA price from three data sources
+    // Fetch the ATOM price from three data sources
     // data source 1
-    ds1_coin          [type="bridge" name="bridge-tiingo" requestData=<{"data": {"from":"LUNA","to":"USD"}}>]
+    ds1_coin          [type="bridge" name="bridge-tiingo" requestData=<{"data": {"from":"ATOM","to":"USD"}}>]
     ds1_coin_parse    [type="jsonparse" path="result"]
     ds1_coin -> ds1_coin_parse -> median_coin
     // data source 2
-    ds2_coin          [type="bridge" name="bridge-nomics" requestData=<{"data": {"from":"LUNA","to":"USD"}}>]
+    ds2_coin          [type="bridge" name="bridge-nomics" requestData=<{"data": {"from":"ATOM","to":"USD"}}>]
     ds2_coin_parse    [type="jsonparse" path="result"]
     ds2_coin -> ds2_coin_parse -> median_coin
     // data source 3
-    ds3_coin          [type="bridge" name="bridge-coinmarketcap" requestData=<{"data": {"from":"LUNA","to":"USD"}}>]
+    ds3_coin          [type="bridge" name="bridge-coinmarketcap" requestData=<{"data": {"from":"ATOM","to":"USD"}}>]
     ds3_coin_parse    [type="jsonparse" path="result"]
     ds3_coin -> ds3_coin_parse -> median_coin
 
@@ -63,8 +63,8 @@ juelsPerFeeCoinSource = """
 
     // Divide and scale appropriately
     // median_link (dollars/LINK)
-    // median_coin (dollars/LUNA)
-    // median_coin / median_link = LINK/LUNA
+    // median_coin (dollars/ATOM)
+    // median_coin / median_link = LINK/ATOM
     divide [type="divide" input="$(median_coin)" divisor="$(median_link)" precision="18"]
     scale  [type="multiply" times=1000000000000000000]
 

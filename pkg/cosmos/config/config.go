@@ -20,7 +20,7 @@ type Chain struct {
 	BlockRate             *utils.Duration
 	BlocksUntilTxTimeout  *int64
 	ConfirmPollPeriod     *utils.Duration
-	FallbackGasPriceULuna *decimal.Decimal
+	FallbackGasPriceUAtom *decimal.Decimal
 	FCDURL                *utils.URL
 	GasLimitMultiplier    *decimal.Decimal
 	MaxMsgsPerBatch       *int64
@@ -42,13 +42,13 @@ func (c *Chain) SetFromDB(cfg *db.ChainCfg) error {
 	if cfg.ConfirmPollPeriod != nil {
 		c.ConfirmPollPeriod = utils.MustNewDuration(cfg.ConfirmPollPeriod.Duration())
 	}
-	if cfg.FallbackGasPriceULuna.Valid {
-		s := cfg.FallbackGasPriceULuna.String
+	if cfg.FallbackGasPriceUAtom.Valid {
+		s := cfg.FallbackGasPriceUAtom.String
 		d, err := decimal.NewFromString(s)
 		if err != nil {
-			return fmt.Errorf("invalid decimal FallbackGasPriceULuna: %s", s)
+			return fmt.Errorf("invalid decimal FallbackGasPriceUAtom: %s", s)
 		}
-		c.FallbackGasPriceULuna = &d
+		c.FallbackGasPriceUAtom = &d
 	}
 	if cfg.FCDURL.Valid {
 		s := cfg.FCDURL.String
@@ -87,9 +87,9 @@ func (c *Chain) SetDefaults() {
 	if c.ConfirmPollPeriod == nil {
 		c.ConfirmPollPeriod = utils.MustNewDuration(cosmos.DefaultConfigSet.ConfirmPollPeriod)
 	}
-	if c.FallbackGasPriceULuna == nil {
-		d := decimal.NewFromBigInt(cosmos.DefaultConfigSet.FallbackGasPriceULuna.BigInt(), -sdk.Precision)
-		c.FallbackGasPriceULuna = &d
+	if c.FallbackGasPriceUAtom == nil {
+		d := decimal.NewFromBigInt(cosmos.DefaultConfigSet.FallbackGasPriceUAtom.BigInt(), -sdk.Precision)
+		c.FallbackGasPriceUAtom = &d
 	}
 	if c.FCDURL == nil {
 		c.FCDURL = (*utils.URL)(&cosmos.DefaultConfigSet.FCDURL)

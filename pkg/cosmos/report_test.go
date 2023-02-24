@@ -72,7 +72,7 @@ func TestMedianFromOnChainReport(t *testing.T) {
 		2,                                                   // len
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 73, 150, 2, 210, // observation 1
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 73, 150, 2, 210, // observation 2
-		0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0, // juels per luna (1 with 18 decimal places)
+		0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0, // juels per atom (1 with 18 decimal places)
 	}
 	res, err := c.MedianFromReport(report)
 	assert.NoError(t, err)

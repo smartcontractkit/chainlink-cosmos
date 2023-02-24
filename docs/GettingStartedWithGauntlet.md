@@ -7,7 +7,7 @@
 - Transfer ownership of contracts using multisig
 - Update allow list in access controller contracts
 - Query any contract on Terra
-- Send Luna
+- Send ATOM
 - And more!
 
 ## Quickstart
