@@ -66,6 +66,10 @@ func NewRelayer(lggr logger.Logger, chainSet ChainSet) *Relayer {
 	}
 }
 
+func (r *Relayer) Name() string {
+	return r.lggr.Name()
+}
+
 // Start starts the relayer respecting the given context.
 func (r *Relayer) Start(context.Context) error {
 	if r.chainSet == nil {
@@ -86,6 +90,14 @@ func (r *Relayer) Ready() error {
 // Healthy only if all subservices are healthy
 func (r *Relayer) Healthy() error {
 	return r.chainSet.Healthy()
+}
+
+func (r *Relayer) HealthReport() map[string]error {
+	return map[string]error{r.Name(): r.Healthy()}
+}
+
+func (r *Relayer) NewMercuryProvider(rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MercuryProvider, error) {
+	return nil, errors.New("mercury is not supported for cosmos")
 }
 
 func (r *Relayer) NewConfigProvider(args relaytypes.RelayArgs) (relaytypes.ConfigProvider, error) {
@@ -173,6 +185,10 @@ func newConfigProvider(ctx context.Context, lggr logger.Logger, chainSet ChainSe
 	}, nil
 }
 
+func (c *configProvider) Name() string {
+	return c.lggr.Name()
+}
+
 // Start starts OCR2Provider respecting the given context.
 func (p *configProvider) Start(context.Context) error {
 	return p.StartOnce("TerraRelay", func() error {
@@ -186,6 +202,10 @@ func (p *configProvider) Close() error {
 		p.lggr.Debugf("Stopping")
 		return p.contractCache.Close()
 	})
+}
+
+func (c *configProvider) HealthReport() map[string]error {
+	return map[string]error{c.Name(): c.Healthy()}
 }
 
 func (p *configProvider) ContractConfigTracker() types.ContractConfigTracker {
