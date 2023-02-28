@@ -48,13 +48,13 @@ export default class TransferAtom extends TerraCommand {
     if (!AccAddress.validate(this.input.destination)) throw new Error('Invalid destination address')
 
     const sendMsg: MsgSendEncodeObject = {
-      typeUrl: "/cosmos.bank.v1beta1.MsgSend",
+      typeUrl: '/cosmos.bank.v1beta1.MsgSend',
       value: MsgSend.fromPartial({
         fromAddress: signer,
         toAddress: this.input.destination,
         amount: [{ denom: 'ucosm', amount: this.input.amount }],
       }),
-    };
+    }
     return [sendMsg]
   }
 

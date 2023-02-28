@@ -6,19 +6,15 @@ import { isDeepEqual } from '../lib/utils'
 import { fetchProposalState, makeInspectionMessage } from './inspect'
 import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg, Expiration } from '../lib/types'
 
-import { toUtf8 } from "@cosmjs/encoding";
-import { EncodeObject } from "@cosmjs/proto-signing";
+import { toUtf8 } from '@cosmjs/encoding'
+import { EncodeObject } from '@cosmjs/proto-signing'
 import { MsgExecuteContractEncodeObject } from '@cosmjs/cosmwasm-stargate'
-import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx";
-import { MsgSend } from 'cosmjs-types/cosmos/bank/v1beta1/tx';
+import { MsgExecuteContract } from 'cosmjs-types/cosmwasm/wasm/v1/tx'
+import { MsgSend } from 'cosmjs-types/cosmos/bank/v1beta1/tx'
 
 export const DEFAULT_VOTING_PERIOD_IN_SECS = 24 * 60 * 60
 
-type ProposalAction = (
-  signer: AccAddress,
-  proposalId: number,
-  message: EncodeObject[],
-) => Promise<object>
+type ProposalAction = (signer: AccAddress, proposalId: number, message: EncodeObject[]) => Promise<object>
 
 export const wrapCommand = (command) => {
   return class Multisig extends TerraCommand {
@@ -67,16 +63,16 @@ export const wrapCommand = (command) => {
       }
 
       const proposal_id = Number(this.flags.proposal || this.flags.multisigProposal) // alias requested by eng ops
-      let input =  operations[state.proposal.nextAction](signer, Number(proposal_id), messages)
+      let input = operations[state.proposal.nextAction](signer, Number(proposal_id), messages)
 
       const msg: MsgExecuteContractEncodeObject = {
-        typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+        typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
         value: MsgExecuteContract.fromPartial({
           sender: signer,
           contract: this.multisig,
           msg: toUtf8(JSON.stringify(input)),
           funds: [],
-        })
+        }),
       }
       return [msg]
     }
@@ -86,8 +82,8 @@ export const wrapCommand = (command) => {
     }
 
     toMsg = (message: EncodeObject): Cw3BankMsg | Cw3WasmMsg => {
-      if ("amount" in message.value) return this.toBankMsg(message.value as MsgSend)
-      if ("contract" in message.value) return this.toWasmMsg(message.value as MsgExecuteContract)
+      if ('amount' in message.value) return this.toBankMsg(message.value as MsgSend)
+      if ('contract' in message.value) return this.toWasmMsg(message.value as MsgExecuteContract)
     }
 
     toBankMsg = (message: MsgSend): Cw3BankMsg => {
@@ -231,7 +227,7 @@ export const wrapCommand = (command) => {
 
         if (state.proposal.nextAction === Action.CREATE) {
           // const proposalFromEvent = tx.events[0].wasm.proposal_id[0] TODO
-          const proposalFromEvent = "a"
+          const proposalFromEvent = 'a'
           logger.success(`New proposal created with multisig proposal ID: ${proposalFromEvent}`)
           proposalId = Number(proposalFromEvent)
         }

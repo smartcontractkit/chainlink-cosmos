@@ -129,7 +129,9 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
   const attr = event?.attributes.find(({ key }) => key === 'offchain_config')?.value
   const offchainConfigInContract = attr ? tryDeserialize(attr) : ({} as OffchainConfig)
-  const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, { f: event?.attributes.find(({ key }) => key ==='f')?.value })
+  const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, {
+    f: event?.attributes.find(({ key }) => key === 'f')?.value,
+  })
 
   // Proposed config
   const proposedOffchainConfig = tryDeserialize(input.contract.offchain_config)

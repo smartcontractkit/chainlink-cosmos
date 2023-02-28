@@ -133,14 +133,14 @@ export default class AbstractCommand extends TerraCommand {
   makeRawTransaction = async (signer: AccAddress): Promise<EncodeObject[]> => {
     const contractAddress = this.args[0]
     const msg: MsgExecuteContractEncodeObject = {
-      typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+      typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
       value: MsgExecuteContract.fromPartial({
         sender: signer,
         contract: contractAddress,
         msg: toUtf8(JSON.stringify(this.params)),
         funds: [],
       }),
-    };
+    }
     return [msg]
   }
 

@@ -1,13 +1,19 @@
 import { Result, WriteCommand, AddressBook } from '@chainlink/gauntlet-core'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { withProvider, withCodeIds, withNetwork } from '../middlewares'
-import { toUtf8 } from "@cosmjs/encoding";
-import { ExecuteResult, InstantiateResult, MsgExecuteContractEncodeObject, SigningCosmWasmClient, UploadResult } from '@cosmjs/cosmwasm-stargate'
-import { MsgExecuteContract, Msg } from "cosmjs-types/cosmwasm/wasm/v1/tx";
+import { toUtf8 } from '@cosmjs/encoding'
+import {
+  ExecuteResult,
+  InstantiateResult,
+  MsgExecuteContractEncodeObject,
+  SigningCosmWasmClient,
+  UploadResult,
+} from '@cosmjs/cosmwasm-stargate'
+import { MsgExecuteContract, Msg } from 'cosmjs-types/cosmwasm/wasm/v1/tx'
 import { TransactionResponse } from '../types'
 import { AccountData, EncodeObject, OfflineSigner } from '@cosmjs/proto-signing'
-import { AccAddress } from '../..';
-import { assertIsDeliverTxSuccess } from '@cosmjs/stargate';
+import { AccAddress } from '../..'
+import { assertIsDeliverTxSuccess } from '@cosmjs/stargate'
 
 type CodeIds = Record<string, number>
 
@@ -66,7 +72,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   signAndSend = async (messages: EncodeObject[]): Promise<TransactionResponse> => {
     let senderAddress = this.signer.address
     logger.loading('Signing and sending transaction...')
-    const result = await this.provider.signAndBroadcast(senderAddress, messages, "auto")
+    const result = await this.provider.signAndBroadcast(senderAddress, messages, 'auto')
     assertIsDeliverTxSuccess(result)
     return
     // return this.wrapResponse(result)
@@ -75,29 +81,23 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   // "call" is execute
   async call(contractAddress: string, msg: any): Promise<ExecuteResult> {
     let senderAddress = (await this.wallet.getAccounts())[0].address
-    
-    const result = await this.provider.execute(
-      senderAddress,
-      contractAddress,
-      msg,
-      "auto"
-    )
+
+    const result = await this.provider.execute(senderAddress, contractAddress, msg, 'auto')
 
     return result
   }
 
-  
   /// TODO: rename this.signer into sender
 
   // "deploy" is instantiate
   async deploy(codeId: number, msg: any): Promise<InstantiateResult> {
     let senderAddress = this.signer.address
-    let label = "Label"
+    let label = 'Label'
 
     logger.loading(`Deploying contract...`)
-    const result = await this.provider.instantiate(senderAddress, codeId, msg, label, "auto", {
+    const result = await this.provider.instantiate(senderAddress, codeId, msg, label, 'auto', {
       memo: 'Instantiating',
-      admin: senderAddress
+      admin: senderAddress,
     })
 
     return result
@@ -105,7 +105,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
 
   async upload(wasmCode: Uint8Array, contractName: string): Promise<UploadResult> {
     let senderAddress = this.signer.address
-    let memo =  `Storing ${contractName}`
+    let memo = `Storing ${contractName}`
     logger.loading(`Uploading ${contractName} contract code...`)
     const response = await this.provider.upload(senderAddress, wasmCode, 'auto', memo)
     // TODO: custom wrapResponse for upload
@@ -126,20 +126,19 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   // TODO: accept a cosmjs-types Msg type
   async simulateExecute(contractAddress: string, inputs: any[]): Promise<Number> {
     const signer = this.signer.address
-    
+
     const msgs = inputs.map((input) => {
       const msg: MsgExecuteContractEncodeObject = {
-        typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+        typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
         value: MsgExecuteContract.fromPartial({
           sender: signer,
           contract: contractAddress,
           msg: toUtf8(JSON.stringify(input)),
           funds: [],
         }),
-      };
+      }
       return msg
     })
-
 
     return await this.simulate(signer, msgs)
   }

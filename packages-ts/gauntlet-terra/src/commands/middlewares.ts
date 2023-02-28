@@ -5,9 +5,9 @@ import TerraCommand from './internal/terra'
 import path from 'path'
 import { existsSync } from 'fs'
 import { DirectSecp256k1HdWallet, OfflineSigner } from '@cosmjs/proto-signing'
-import { LedgerSigner } from "@cosmjs/ledger-amino";
+import { LedgerSigner } from '@cosmjs/ledger-amino'
 import TransportNodeHid from '@ledgerhq/hw-transport-node-hid'
-import { makeCosmoshubPath } from '@cosmjs/proto-signing';
+import { makeCosmoshubPath } from '@cosmjs/proto-signing'
 import { GasPrice } from '@cosmjs/stargate'
 
 const isValidURL = (a) => true
@@ -27,26 +27,26 @@ export const withProvider: Middleware = async (c: TerraCommand, next: Next) => {
 
     const accounts = [0] // we only use the first account?
     const paths = accounts.map((account) => makeCosmoshubPath(account))
-    
+
     wallet = new LedgerSigner(transport, {
       // testModeAllowed: true,
       hdPaths: paths,
-    });    
+    })
   } else {
     const mnemonic = process.env.MNEMONIC
     assertions.assert(!!mnemonic, `Missing MNEMONIC, please add one`)
-    wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, { prefix: "wasm" }); // TODO customizable, in sync with Addr
+    wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, { prefix: 'wasm' }) // TODO customizable, in sync with Addr
     // TODO: set hdPaths too, if using different path
   }
-  let [signer] = await wallet.getAccounts();
+  let [signer] = await wallet.getAccounts()
 
-  c.wallet = wallet;
-  c.signer = signer;
+  c.wallet = wallet
+  c.signer = signer
 
   logger.info(`Operator address is ${c.signer.address}`)
 
   c.provider = await SigningCosmWasmClient.connectWithSigner(nodeURL, wallet, {
-    gasPrice: GasPrice.fromString(process.env.DEFAULT_GAS_PRICE)
+    gasPrice: GasPrice.fromString(process.env.DEFAULT_GAS_PRICE),
   })
   return next()
 }
