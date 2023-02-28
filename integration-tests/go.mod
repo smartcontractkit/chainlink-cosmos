@@ -3,7 +3,7 @@ module github.com/smartcontractkit/chainlink-terra/integration-tests
 go 1.19
 
 require (
-	github.com/cosmos/cosmos-sdk v0.45.11
+	github.com/cosmos/cosmos-sdk v0.45.11 // indirect
 	github.com/onsi/ginkgo/v2 v2.4.0
 	github.com/onsi/gomega v1.23.0
 	github.com/rs/zerolog v1.28.0
@@ -13,7 +13,7 @@ require (
 	// github.com/smartcontractkit/chainlink-terra v0.1.4-0.20220824174951-d1e2bcd51e46
 	github.com/smartcontractkit/chainlink-testing-framework v1.7.10
 	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20221102233518-1e61a9b970a2
-	github.com/smartcontractkit/libocr v0.0.0-20220812191430-db92a9fdaa52
+	github.com/smartcontractkit/libocr v0.0.0-20221121171434-482da3ed36d8
 	golang.org/x/crypto v0.1.0
 	golang.org/x/sync v0.1.0
 )
@@ -170,7 +170,6 @@ require (
 	github.com/koron/go-ssdp v0.0.2 // indirect
 	github.com/leanovate/gopter v0.2.10-0.20210127095200-9abe2343507a // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/lib/pq v1.10.7 // indirect
 	github.com/libp2p/go-addr-util v0.0.2 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/libp2p/go-cidranger v1.1.0 // indirect
@@ -272,7 +271,7 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/slack-go/slack v0.11.3 // indirect
-	github.com/smartcontractkit/chainlink-relay v0.1.6-0.20221025223751-9b407cff57eb // indirect
+	github.com/smartcontractkit/chainlink-relay v0.1.7-0.20230220202756-c2609b4f5b00 // indirect
 	github.com/smartcontractkit/chainlink-starknet/relayer v0.0.0-20220930034704-572ac07611cb // indirect
 	github.com/smartcontractkit/ocr2vrf v0.0.0-20221101142607-77f2fe1d1723 // indirect
 	github.com/smartcontractkit/sqlx v1.3.5-0.20210805004948-4be295aacbeb // indirect
