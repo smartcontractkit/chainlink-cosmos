@@ -11,8 +11,9 @@ import (
 	"strings"
 
 	. "github.com/onsi/gomega"
-	"github.com/smartcontractkit/chainlink-terra/integration-tests/utils"
 	"github.com/smartcontractkit/chainlink-testing-framework/gauntlet"
+
+	"github.com/smartcontractkit/chainlink-terra/integration-tests/utils"
 )
 
 const TERRA_COMMAND_ERROR = "Terra Command execution error"

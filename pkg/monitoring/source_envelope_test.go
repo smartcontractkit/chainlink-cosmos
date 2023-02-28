@@ -11,12 +11,13 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
-	fcdclientmocks "github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient/mocks"
-	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/mocks"
 	ocr2types "github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
+	fcdclientmocks "github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient/mocks"
+	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/mocks"
 )
 
 func TestEnvelopeSource(t *testing.T) {

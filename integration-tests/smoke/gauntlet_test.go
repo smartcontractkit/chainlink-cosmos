@@ -9,12 +9,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/smartcontractkit/chainlink-terra/integration-tests"
+	"github.com/smartcontractkit/chainlink-testing-framework/gauntlet"
+	"github.com/smartcontractkit/chainlink/integration-tests/actions"
+
 	"github.com/smartcontractkit/chainlink-terra/integration-tests/common"
 	tc "github.com/smartcontractkit/chainlink-terra/integration-tests/smoke/common"
 	"github.com/smartcontractkit/chainlink-terra/integration-tests/utils"
-	"github.com/smartcontractkit/chainlink-testing-framework/gauntlet"
-	"github.com/smartcontractkit/chainlink/integration-tests/actions"
 )
 
 var _ = Describe("Terra Gauntlet @gauntlet", func() {

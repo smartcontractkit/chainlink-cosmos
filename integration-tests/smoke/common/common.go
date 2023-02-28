@@ -15,9 +15,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/rs/zerolog/log"
 	"github.com/smartcontractkit/chainlink-env/environment"
-	"github.com/smartcontractkit/chainlink-terra/integration-tests/common"
 	ctfClient "github.com/smartcontractkit/chainlink-testing-framework/client"
 	"github.com/smartcontractkit/chainlink/integration-tests/client"
+
+	"github.com/smartcontractkit/chainlink-terra/integration-tests/common"
 )
 
 const (

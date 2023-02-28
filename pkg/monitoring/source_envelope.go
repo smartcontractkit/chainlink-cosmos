@@ -13,10 +13,11 @@ import (
 	"time"
 
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	pkgCosmos "github.com/smartcontractkit/chainlink-terra/pkg/cosmos"
-	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"go.uber.org/multierr"
+
+	pkgCosmos "github.com/smartcontractkit/chainlink-terra/pkg/cosmos"
+	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
 )
 
 // NewEnvelopeSourceFactory build a new object that reads observations and

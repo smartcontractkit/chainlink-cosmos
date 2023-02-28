@@ -50,10 +50,10 @@ func main() {
 	// 			execute,
 	// 		},
 	// 		Memo: "",
-	// 		// Options Paramters (if empty, load chain info)
+	// 		// Options Parameters (if empty, load chain info)
 	// 		// AccountNumber: sdk.NewInt(33),
 	// 		// Sequence:      sdk.NewInt(1),
-	// 		// Options Paramters (if empty, simulate gas & fee)
+	// 		// Options Parameters (if empty, simulate gas & fee)
 	// 		// FeeAmount: sdk.NewCoins(),
 	// 		// GasLimit: 1000000,
 	// 		// FeeGranter: sdk.AccAddress{},

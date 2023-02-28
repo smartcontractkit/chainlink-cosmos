@@ -299,7 +299,7 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 		Data:     &sigData,
 		Sequence: sequence,
 	}
-	if err := txBuilder.SetSignatures(sig); err != nil {
+	if err = txBuilder.SetSignatures(sig); err != nil {
 		return nil, err
 	}
 
@@ -312,8 +312,13 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 		txConfig,
 		sequence,
 	)
+	if err != nil {
+		return nil, err
+	}
 
-	txBuilder.SetSignatures(signature)
+	if err = txBuilder.SetSignatures(signature); err != nil {
+		return nil, err
+	}
 
 	// TODO: return txBuilder.GetTx() for more flexibility
 

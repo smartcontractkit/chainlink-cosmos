@@ -8,8 +8,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	tc "github.com/smartcontractkit/chainlink-terra/integration-tests/smoke/common"
 	"github.com/smartcontractkit/chainlink/integration-tests/actions"
+
+	tc "github.com/smartcontractkit/chainlink-terra/integration-tests/smoke/common"
 )
 
 var _ = Describe("Terra OCRv2 @ocr2", func() {

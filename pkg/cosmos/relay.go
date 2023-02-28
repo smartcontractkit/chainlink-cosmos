@@ -140,11 +140,11 @@ var _ relaytypes.ConfigProvider = &configProvider{}
 type configProvider struct {
 	utils.StartStopOnce
 	digester    types.OffchainConfigDigester
-	reportCodec median.ReportCodec
+	reportCodec median.ReportCodec //nolint:unused
 	lggr        logger.Logger
 
 	tracker     types.ContractConfigTracker
-	transmitter types.ContractTransmitter
+	transmitter types.ContractTransmitter //nolint:unused
 
 	chain         Chain
 	contractCache *ContractCache
@@ -190,17 +190,17 @@ func (c *configProvider) Name() string {
 }
 
 // Start starts OCR2Provider respecting the given context.
-func (p *configProvider) Start(context.Context) error {
-	return p.StartOnce("TerraRelay", func() error {
-		p.lggr.Debugf("Starting")
-		return p.contractCache.Start()
+func (c *configProvider) Start(context.Context) error {
+	return c.StartOnce("TerraRelay", func() error {
+		c.lggr.Debugf("Starting")
+		return c.contractCache.Start()
 	})
 }
 
-func (p *configProvider) Close() error {
-	return p.StopOnce("TerraRelay", func() error {
-		p.lggr.Debugf("Stopping")
-		return p.contractCache.Close()
+func (c *configProvider) Close() error {
+	return c.StopOnce("TerraRelay", func() error {
+		c.lggr.Debugf("Stopping")
+		return c.contractCache.Close()
 	})
 }
 
@@ -208,12 +208,12 @@ func (c *configProvider) HealthReport() map[string]error {
 	return map[string]error{c.Name(): c.Healthy()}
 }
 
-func (p *configProvider) ContractConfigTracker() types.ContractConfigTracker {
-	return p.tracker
+func (c *configProvider) ContractConfigTracker() types.ContractConfigTracker {
+	return c.tracker
 }
 
-func (p *configProvider) OffchainConfigDigester() types.OffchainConfigDigester {
-	return p.digester
+func (c *configProvider) OffchainConfigDigester() types.OffchainConfigDigester {
+	return c.digester
 }
 
 type medianProvider struct {

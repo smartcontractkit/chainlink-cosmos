@@ -8,10 +8,11 @@ import (
 	"time"
 
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
-	fcdclientmocks "github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
+	fcdclientmocks "github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient/mocks"
 )
 
 func TestTxResultsSource(t *testing.T) {

@@ -67,8 +67,8 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string, strin
 		require.NoError(t, json.Unmarshal(key, &k))
 		expAcctAddr, err3 := sdk.AccAddressFromBech32(k.Address)
 		require.NoError(t, err3)
-		privateKey, address, err := testutil.CreateKeyFromMnemonic(k.Mnemonic)
-		require.NoError(t, err)
+		privateKey, address, err4 := testutil.CreateKeyFromMnemonic(k.Mnemonic)
+		require.NoError(t, err4)
 		require.Equal(t, expAcctAddr, address)
 		// Give it 100 luna
 		out2, err2 := exec.Command("terrad", "add-genesis-account", k.Address, "100000000ucosm", "--home", testdir).Output() //nolint:gosec
