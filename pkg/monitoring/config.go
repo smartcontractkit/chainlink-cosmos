@@ -69,50 +69,50 @@ func ParseCosmosConfig() (CosmosConfig, error) {
 }
 
 func parseEnvVars(cfg *CosmosConfig) error {
-	if value, isPresent := os.LookupEnv("TERRA_TENDERMINT_URL"); isPresent {
+	if value, isPresent := os.LookupEnv("COSMOS_TENDERMINT_URL"); isPresent {
 		cfg.TendermintURL = value
 	}
-	if value, isPresent := os.LookupEnv("TERRA_TENDERMINT_REQS_PER_SEC"); isPresent {
+	if value, isPresent := os.LookupEnv("COSMOS_TENDERMINT_REQS_PER_SEC"); isPresent {
 		rps, err := strconv.Atoi(value)
 		if err != nil {
-			return fmt.Errorf("failed to parse env var TERRA_TENDERMINT_REQS_PER_SEC '%s' as int: %w", value, err)
+			return fmt.Errorf("failed to parse env var COSMOS_TENDERMINT_REQS_PER_SEC '%s' as int: %w", value, err)
 		}
 		cfg.TendermintReqsPerSec = rps
 	}
-	if value, isPresent := os.LookupEnv("TERRA_FCD_URL"); isPresent {
+	if value, isPresent := os.LookupEnv("COSMOS_FCD_URL"); isPresent {
 		cfg.FCDURL = value
 	}
-	if value, isPresent := os.LookupEnv("TERRA_FCD_REQS_PER_SEC"); isPresent {
+	if value, isPresent := os.LookupEnv("COSMOS_FCD_REQS_PER_SEC"); isPresent {
 		rps, err := strconv.Atoi(value)
 		if err != nil {
-			return fmt.Errorf("failed to parse env var TERRA_FCD_REQS_PER_SEC '%s' as int: %w", value, err)
+			return fmt.Errorf("failed to parse env var COSMOS_FCD_REQS_PER_SEC '%s' as int: %w", value, err)
 		}
 		cfg.FCDReqsPerSec = rps
 	}
-	if value, isPresent := os.LookupEnv("TERRA_NETWORK_NAME"); isPresent {
+	if value, isPresent := os.LookupEnv("COSMOS_NETWORK_NAME"); isPresent {
 		cfg.NetworkName = value
 	}
-	if value, isPresent := os.LookupEnv("TERRA_NETWORK_ID"); isPresent {
+	if value, isPresent := os.LookupEnv("COSMOS_NETWORK_ID"); isPresent {
 		cfg.NetworkID = value
 	}
-	if value, isPresent := os.LookupEnv("TERRA_CHAIN_ID"); isPresent {
+	if value, isPresent := os.LookupEnv("COSMOS_CHAIN_ID"); isPresent {
 		cfg.ChainID = value
 	}
-	if value, isPresent := os.LookupEnv("TERRA_READ_TIMEOUT"); isPresent {
+	if value, isPresent := os.LookupEnv("COSMOS_READ_TIMEOUT"); isPresent {
 		readTimeout, err := time.ParseDuration(value)
 		if err != nil {
-			return fmt.Errorf("failed to parse env var TERRA_READ_TIMEOUT, see https://pkg.go.dev/time#ParseDuration: %w", err)
+			return fmt.Errorf("failed to parse env var COSMOS_READ_TIMEOUT, see https://pkg.go.dev/time#ParseDuration: %w", err)
 		}
 		cfg.ReadTimeout = readTimeout
 	}
-	if value, isPresent := os.LookupEnv("TERRA_POLL_INTERVAL"); isPresent {
+	if value, isPresent := os.LookupEnv("COSMOS_POLL_INTERVAL"); isPresent {
 		pollInterval, err := time.ParseDuration(value)
 		if err != nil {
-			return fmt.Errorf("failed to parse env var TERRA_POLL_INTERVAL, see https://pkg.go.dev/time#ParseDuration: %w", err)
+			return fmt.Errorf("failed to parse env var COSMOS_POLL_INTERVAL, see https://pkg.go.dev/time#ParseDuration: %w", err)
 		}
 		cfg.PollInterval = pollInterval
 	}
-	if value, isPresent := os.LookupEnv("TERRA_LINK_TOKEN_ADDRESS"); isPresent {
+	if value, isPresent := os.LookupEnv("COSMOS_LINK_TOKEN_ADDRESS"); isPresent {
 		address, err := sdk.AccAddressFromBech32(value)
 		if err != nil {
 			return fmt.Errorf("failed to parse the bech32-encoded link token address from '%s': %w", value, err)
@@ -125,11 +125,11 @@ func parseEnvVars(cfg *CosmosConfig) error {
 func validateConfig(cfg CosmosConfig) error {
 	// Required config
 	for envVarName, currentValue := range map[string]string{
-		"TERRA_TENDERMINT_URL": cfg.TendermintURL,
-		"TERRA_FCD_URL":        cfg.FCDURL,
-		"TERRA_NETWORK_NAME":   cfg.NetworkName,
-		"TERRA_NETWORK_ID":     cfg.NetworkID,
-		"TERRA_CHAIN_ID":       cfg.ChainID,
+		"COSMOS_TENDERMINT_URL": cfg.TendermintURL,
+		"COSMOS_FCD_URL":        cfg.FCDURL,
+		"COSMOS_NETWORK_NAME":   cfg.NetworkName,
+		"COSMOS_NETWORK_ID":     cfg.NetworkID,
+		"COSMOS_CHAIN_ID":       cfg.ChainID,
 	} {
 		if currentValue == "" {
 			return fmt.Errorf("'%s' env var is required", envVarName)
@@ -137,8 +137,8 @@ func validateConfig(cfg CosmosConfig) error {
 	}
 	// Validate URLs.
 	for envVarName, currentValue := range map[string]string{
-		"TERRA_TENDERMINT_URL": cfg.TendermintURL,
-		"TERRA_FCD_URL":        cfg.FCDURL,
+		"COSMOS_TENDERMINT_URL": cfg.TendermintURL,
+		"COSMOS_FCD_URL":        cfg.FCDURL,
 	} {
 		if _, err := url.ParseRequestURI(currentValue); currentValue != "" && err != nil {
 			return fmt.Errorf("%s='%s' is not a valid URL: %w", envVarName, currentValue, err)
