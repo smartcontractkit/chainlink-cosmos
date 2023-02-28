@@ -560,6 +560,7 @@ github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/me
 github.com/go-stack/stack v1.8.1 h1:ntEHSVwIt7PNXNpgPmVfMrNhLtgjlmnZha2kOpuRiDw=
 github.com/go-stack/stack v1.8.1/go.mod h1:dcoOX6HbPZSZptuspn9bctJ+N/CnF5gGygcUP3XYfe4=
 github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0/go.mod h1:fyg7847qk6SyHyPtNmDHnmrv/HOrqktSC+C9fM+CJOE=
+github.com/go-test/deep v1.0.4 h1:u2CU3YKy9I2pmu9pX0eq50wCgjfGIt539SqR7FbHiho=
 github.com/go-test/deep v1.0.4/go.mod h1:wGDj63lr65AM2AQyKZd/NYHGb0R+1RLqB8NKt3aSFNA=
 github.com/go-test/deep v1.0.7 h1:/VSMRlnY/JSyqxQUzQLKVMAskpY/NZKFA5j2P+0pP2M=
 github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee/go.mod h1:L0fX3K22YWvt/FAX9NnzrNzcI4wNYi9Yku4O0LKYflo=
@@ -1674,8 +1675,8 @@ github.com/smartcontractkit/chainlink-testing-framework v1.7.9-0.20221103145957-
 github.com/smartcontractkit/chainlink-testing-framework v1.7.10/go.mod h1:zSaK0d4zNwM7AFn2xOF1eovlm2JyOAFmlVdAmVR25Kg=
 github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20221102233518-1e61a9b970a2 h1:BMcOHjIQuXfaVRhMM1fSXRDl+dwHDbk6QNaBWtH7FGQ=
 github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20221102233518-1e61a9b970a2/go.mod h1:FoN2ChQ/P+MJeAqB+tf+1rps4NhzT8mz5BeiP0yj39I=
-github.com/smartcontractkit/libocr v0.0.0-20220812191430-db92a9fdaa52 h1:Nac1UCKJwt0AY15bAaorscflOcBs/FnmO7NoCh8Tons=
-github.com/smartcontractkit/libocr v0.0.0-20220812191430-db92a9fdaa52/go.mod h1:5JnCHuYgmIP9ZyXzgAfI5Iwu0WxBtBKp+ApeT5o1Cjw=
+github.com/smartcontractkit/libocr v0.0.0-20220414173908-cdfa6bef133a h1:j5v0DlqdteLKgCB7My1On+KOO4levVV51byFGt3DoNA=
+github.com/smartcontractkit/libocr v0.0.0-20220414173908-cdfa6bef133a/go.mod h1:tHNcoCeQdbRfjvVZjvd3n8yNTKUdnM+NmlWgSHhfceY=
 github.com/smartcontractkit/ocr2vrf v0.0.0-20221101142607-77f2fe1d1723 h1:gCLsqDIQ0/QhW+vBZygDLKoTX6MzCRsPiYOPmaVginE=
 github.com/smartcontractkit/ocr2vrf v0.0.0-20221101142607-77f2fe1d1723/go.mod h1:60/WayFm5nOAPIHtSThJ0DAd4sMKtytPQsjHAwYxGfU=
 github.com/smartcontractkit/sqlx v1.3.5-0.20210805004948-4be295aacbeb h1:OMaBUb4X9IFPLbGbCHsMU+kw/BPCrewaVwWGIBc0I4A=

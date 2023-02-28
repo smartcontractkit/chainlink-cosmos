@@ -10,7 +10,7 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/shopspring/decimal v1.3.1
 	github.com/smartcontractkit/chainlink-relay v0.1.6-0.20221025223751-9b407cff57eb
-	github.com/smartcontractkit/libocr v0.0.0-20220812191430-db92a9fdaa52
+	github.com/smartcontractkit/libocr v0.0.0-20221121171434-482da3ed36d8
 	github.com/stretchr/testify v1.8.1
 	github.com/tendermint/tendermint v0.34.23
 	go.uber.org/multierr v1.8.0
