@@ -1,6 +1,6 @@
 module github.com/smartcontractkit/chainlink-terra/integration-tests
 
-go 1.19
+go 1.20
 
 require (
 	github.com/cosmos/cosmos-sdk v0.45.11 // indirect
