@@ -32,10 +32,10 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
 
       - name: Compile relay
-        run: nix develop -c go build -v ./pkg/terra/...
+        run: nix develop -c go build -v ./pkg/cosmos/...
 
       - name: Run unit tests
-        run: nix develop -c go test -v ./pkg/terra/...
+        run: nix develop -c go test -v ./pkg/cosmos/...
 
       - name: Run tests with the race detector enabled
-        run: nix develop -c go test -v ./pkg/terra/... -race -count=10
+        run: nix develop -c go test -v ./pkg/cosmos/... -race -count=10
