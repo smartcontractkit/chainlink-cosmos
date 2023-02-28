@@ -202,7 +202,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
             let contract_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
             let decimals: u8 = deps
                 .querier
-                .query_wasm_smart(&contract_address, &ocr2::msg::QueryMsg::Decimals)?;
+                .query_wasm_smart(contract_address, &ocr2::msg::QueryMsg::Decimals)?;
             Ok(to_binary(&decimals)?)
         }
         QueryMsg::Version => {

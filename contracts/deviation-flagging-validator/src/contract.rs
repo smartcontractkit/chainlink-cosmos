@@ -381,10 +381,10 @@ mod tests {
         let info = mock_info("creator", &coins(1000, "earth"));
 
         // we can just call .unwrap() to assert this was a success
-        let res = instantiate(deps.as_mut(), mock_env(), info.clone(), msg).unwrap();
+        let res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
         assert_eq!(0, res.messages.len());
 
         let flagging_threshold: u32 = query_flagging_threshold(deps.as_ref()).unwrap().threshold;
-        assert_eq!(80000 as u32, flagging_threshold);
+        assert_eq!(80000_u32, flagging_threshold);
     }
 }

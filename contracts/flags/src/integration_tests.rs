@@ -141,7 +141,7 @@ fn raise_flag() {
     assert_eq!(
         vec![
             attr("action", "already raised flag"),
-            attr("subject", sender.clone())
+            attr("subject", sender)
         ],
         res.custom_attrs(1)
     );
@@ -196,7 +196,7 @@ fn raise_flags() {
     assert_eq!(
         vec![
             attr("action", "already raised flag"),
-            attr("subject", sender.clone())
+            attr("subject", sender)
         ],
         res.custom_attrs(1)
     );

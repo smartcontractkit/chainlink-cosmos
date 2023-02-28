@@ -139,8 +139,8 @@ impl Proposal {
             hasher.update(transmitter.as_bytes());
             hasher.update(payee.as_bytes());
         }
-        hasher.update(&[self.f]);
-        hasher.update(&self.offchain_config_version.to_be_bytes());
+        hasher.update([self.f]);
+        hasher.update(self.offchain_config_version.to_be_bytes());
         hasher.update((self.offchain_config.len() as u32).to_be_bytes());
         hasher.update(&self.offchain_config.0);
         let result = hasher.finalize();
@@ -165,9 +165,9 @@ pub fn config_digest_from_data(
     use blake2::{Blake2s, Digest};
     let mut hasher = Blake2s::default();
     hasher.update(chain_id_length.to_be_bytes());
-    hasher.update(&chain_id.as_bytes());
+    hasher.update(chain_id.as_bytes());
     hasher.update(contract_address.as_bytes());
-    hasher.update(&config_count.to_be_bytes());
+    hasher.update(config_count.to_be_bytes());
     hasher.update([(oracles.len() as u8)]);
     for (signer, _) in oracles {
         hasher.update(&signer.0);
@@ -175,12 +175,12 @@ pub fn config_digest_from_data(
     for (_, transmitter) in oracles {
         hasher.update(transmitter.as_bytes());
     }
-    hasher.update(&[f]);
+    hasher.update([f]);
     hasher.update((onchain_config.len() as u32).to_be_bytes());
-    hasher.update(&onchain_config);
-    hasher.update(&offchain_config_version.to_be_bytes());
+    hasher.update(onchain_config);
+    hasher.update(offchain_config_version.to_be_bytes());
     hasher.update((offchain_config.len() as u32).to_be_bytes());
-    hasher.update(&offchain_config);
+    hasher.update(offchain_config);
     let result = hasher.finalize();
     let mut result: [u8; 32] = result.into();
     // prefix masking

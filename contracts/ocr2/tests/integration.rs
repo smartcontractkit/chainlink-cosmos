@@ -107,7 +107,7 @@ fn gas_test() {
     };
 
     let execute_info = mock_info(OWNER, &[]);
-    let response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
+    let _response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
 
     let msg = ExecuteMsg::ProposeOffchainConfig {
         id,
@@ -116,7 +116,7 @@ fn gas_test() {
     };
 
     let execute_info = mock_info(OWNER, &[]);
-    let response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
+    let _response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
 
     let msg = ExecuteMsg::FinalizeProposal { id };
     let execute_info = mock_info(OWNER, &[]);
@@ -223,7 +223,7 @@ fn gas_test() {
         })
         .collect();
 
-    let n = signatures.len();
+    let _n = signatures.len();
 
     let gas_before = deps.get_gas_left();
 
@@ -237,7 +237,7 @@ fn gas_test() {
     let execute_info = mock_info(transmitter.as_str(), &[]);
     let _response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
 
-    let gas_used = gas_before - deps.get_gas_left();
+    let _gas_used = gas_before - deps.get_gas_left();
     // unimplemented!("gas used: {} for {} signatures", gas_used, n);
     // 1 = 403574 / 406205 / 405237
     // 2 = 447190 / 445798 / 448000

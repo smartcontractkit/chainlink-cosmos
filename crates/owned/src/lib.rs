@@ -171,7 +171,7 @@ mod tests {
 
         // imposter cannot initiate transfer
         let info = mock_info(imposter.as_ref(), &[]);
-        let new_owner = friend.clone();
+        let new_owner = friend;
         let err = control
             .execute_transfer_ownership(deps.as_mut(), info, new_owner.clone())
             .unwrap_err();

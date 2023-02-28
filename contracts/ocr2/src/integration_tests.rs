@@ -156,7 +156,7 @@ fn transmit_report(
     };
 
     env.router
-        .execute_contract(transmitter.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .execute_contract(transmitter, env.ocr2_addr.clone(), &msg, &[])
 }
 
 fn setup() -> Env {
@@ -458,7 +458,7 @@ fn transmit_happy_path() {
 
     // -- call transmit
     let res = transmit_report(&mut env, 1, 1, ANSWER, true);
-    assert!(!res.is_err());
+    assert!(res.is_ok());
 
     let transmitter = Addr::unchecked(env.transmitters.first().cloned().unwrap());
 
@@ -960,7 +960,7 @@ fn revert_payouts_correctly() {
     };
     assert!(env
         .router
-        .execute_contract(payee.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .execute_contract(payee, env.ocr2_addr.clone(), &msg, &[])
         .is_err());
 
     // owed balance should not have changed
@@ -1092,7 +1092,7 @@ fn transmit_failing_validation() {
             env.ocr2_addr.clone(),
             &ExecuteMsg::SetValidatorConfig {
                 config: Some(Validator {
-                    address: validator_addr.clone(),
+                    address: validator_addr,
                     gas_limit: u64::MAX,
                 }),
             },
