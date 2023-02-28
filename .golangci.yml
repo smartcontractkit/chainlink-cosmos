@@ -1,3 +1,5 @@
+run:
+  timeout: 15m0s
 linters:
   enable:
     - exhaustive
@@ -5,16 +7,14 @@ linters:
     - revive
     - goimports
     - gosec
+    - misspell
     - rowserrcheck
-  disable:
-    # These are all considered deprecated: https://github.com/golangci/golangci-lint/issues/1841
-    - deadcode
-    - structcheck
-    - unused
-    - varcheck
+    - errorlint
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
+  goimports:
+    local-prefixes: github.com/smartcontractkit/chainlink-terra
   golint:
     min-confidence: 1.0
   gosec:
@@ -27,6 +27,9 @@ linters-settings:
   govet:
     # report about shadowed variables
     check-shadowing: true
+  errorlint:
+    # Allow formatting of errors without %w
+    errorf: false
   revive:
     confidence: 0.8
     rules:
@@ -37,7 +40,6 @@ linters-settings:
       - name: error-return
       - name: error-strings
       - name: error-naming
-      # - name: exported
       - name: if-return
       - name: increment-decrement
       # - name: var-naming
@@ -79,13 +81,3 @@ issues:
       text: "^G404:"
       linters:
         - gosec
-    - path: tests
-      linters:
-        - revive
-  include:
-    # Enable GoDoc comment checks.
-    - EXC0002
-    - EXC0011
-    - EXC0012
-    - EXC0013
-    - EXC0014
