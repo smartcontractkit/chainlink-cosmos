@@ -6,8 +6,8 @@ use crate::error::ContractError;
 use crate::msg::*;
 use crate::state::*;
 
-use chainlink_terra::msg::QueryMsg as ChainlinkQueryMsg;
-use chainlink_terra::state::Round;
+use chainlink_cosmos::msg::QueryMsg as ChainlinkQueryMsg;
+use chainlink_cosmos::state::Round;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:hello-world";
