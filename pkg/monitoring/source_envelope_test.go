@@ -39,8 +39,8 @@ func TestEnvelopeSource(t *testing.T) {
 
 	// Configurations.
 	feedConfig := generateFeedConfig()
-	feedConfig.ContractAddressBech32 = "terra10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"
-	feedConfig.ContractAddress, _ = sdk.AccAddressFromBech32("terra10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf")
+	feedConfig.ContractAddressBech32 = "wasm10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"
+	feedConfig.ContractAddress, _ = sdk.AccAddressFromBech32("wasm10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf")
 	chainConfig := generateChainConfig()
 
 	// Setup mocks.
@@ -65,7 +65,7 @@ func TestEnvelopeSource(t *testing.T) {
 	rpcClient.On("ContractState",
 		mock.Anything, // context
 		chainConfig.LinkTokenAddress,
-		[]byte(`{"balance":{"address":"terra10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"}}`),
+		[]byte(`{"balance":{"address":"wasm10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"}}`),
 	).Return(balanceRes, nil).Once()
 	// LINK available for payment.
 	rpcClient.On("ContractState",
@@ -91,7 +91,7 @@ func TestEnvelopeSource(t *testing.T) {
 	require.Equal(t, big.NewInt(295998430000), envelope.LatestAnswer)
 	require.Equal(t, time.Unix(1650737158, 0), envelope.LatestTimestamp)
 	require.Equal(t, uint64(7364948), envelope.BlockNumber) // This is the latest transmission block! See ./fixtures/new_transmission-txs.json
-	require.Equal(t, ocr2types.Account("terra1tfx3q08q780u9uu4qlw0drn375uktfka7kgh93"), envelope.Transmitter)
+	require.Equal(t, ocr2types.Account("wasm1tfx3q08q780u9uu4qlw0drn375uktfka7kgh93"), envelope.Transmitter)
 	require.Equal(t, big.NewInt(6795709425983940047), envelope.JuelsPerFeeCoin)
 	require.Equal(t, uint32(77517), envelope.AggregatorRoundID)
 
@@ -117,22 +117,22 @@ func TestEnvelopeSource(t *testing.T) {
 		mustHexaToByteArr("efdee2a3454a0a94449ed70a4e4a2d4fd113de4d56efe198d18adfa89a960dd1"),
 	}, envelope.ContractConfig.Signers)
 	require.Equal(t, []ocr2types.Account{
-		"terra1rfazrm4r657r0u00uq50g8hehxewqq32zzhf9p",
-		"terra1tfx3q08q780u9uu4qlw0drn375uktfka7kgh93",
-		"terra14wxk4hy63wa5punxehvc3wg2wr64hhcdnz3qm0",
-		"terra17tdm630tz3u5a47pxpysd4ktltycjlckew0g3a",
-		"terra14va5jfwuuqs9pls379c5dc2d7lyvv2yul9nrnq",
-		"terra1q2l2ep768vrrjfmxacpa6kl8e8aezeru9646pw",
-		"terra1rmt28lv8cs50wtxy7qpuvwlmphdjsm2lyvtqhh",
-		"terra1509tez324mdevqsh7ucm3er53lfz44tl6rddur",
-		"terra16mk5h5ma7ksr2vqpxcsaqxjny2ea68jap8mf6a",
-		"terra14szqs99f0jap3f4lwqvavnct23gq2jrj9qg6nf",
-		"terra1x2hgypr08vf466sej4zqc5wzwdfh7mw7j8lwqc",
-		"terra167h3sh8c4pgs8grxz24pam2x764flydv3h9pd8",
-		"terra13cxfg5awyscnj7c7u4ycwgplf528krf8c90cp6",
-		"terra1h0ygh9tr8t8sc97ntq5tnams9vprchxmgl9ame",
-		"terra1umertd64cf0ajfn7apcqs3xg476etcu0959cjy",
-		"terra16vueyxmul8kczd0nxvw0ge7kzfzpmtsgqc9tup",
+		"wasm1rfazrm4r657r0u00uq50g8hehxewqq32zzhf9p",
+		"wasm1tfx3q08q780u9uu4qlw0drn375uktfka7kgh93",
+		"wasm14wxk4hy63wa5punxehvc3wg2wr64hhcdnz3qm0",
+		"wasm17tdm630tz3u5a47pxpysd4ktltycjlckew0g3a",
+		"wasm14va5jfwuuqs9pls379c5dc2d7lyvv2yul9nrnq",
+		"wasm1q2l2ep768vrrjfmxacpa6kl8e8aezeru9646pw",
+		"wasm1rmt28lv8cs50wtxy7qpuvwlmphdjsm2lyvtqhh",
+		"wasm1509tez324mdevqsh7ucm3er53lfz44tl6rddur",
+		"wasm16mk5h5ma7ksr2vqpxcsaqxjny2ea68jap8mf6a",
+		"wasm14szqs99f0jap3f4lwqvavnct23gq2jrj9qg6nf",
+		"wasm1x2hgypr08vf466sej4zqc5wzwdfh7mw7j8lwqc",
+		"wasm167h3sh8c4pgs8grxz24pam2x764flydv3h9pd8",
+		"wasm13cxfg5awyscnj7c7u4ycwgplf528krf8c90cp6",
+		"wasm1h0ygh9tr8t8sc97ntq5tnams9vprchxmgl9ame",
+		"wasm1umertd64cf0ajfn7apcqs3xg476etcu0959cjy",
+		"wasm16vueyxmul8kczd0nxvw0ge7kzfzpmtsgqc9tup",
 	}, envelope.ContractConfig.Transmitters)
 	require.Equal(t, uint8(5), envelope.ContractConfig.F)
 	require.Equal(t, []byte{0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x3b, 0x9a, 0xca, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x5a, 0xf3, 0x10, 0x7a, 0x40, 0x0}, envelope.ContractConfig.OnchainConfig)
@@ -164,7 +164,7 @@ func TestEnvelopeSource(t *testing.T) {
 	rpcClient.On("ContractState",
 		mock.Anything, // context
 		chainConfig.LinkTokenAddress,
-		[]byte(`{"balance":{"address":"terra10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"}}`),
+		[]byte(`{"balance":{"address":"wasm10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"}}`),
 	).Return(balanceRes, nil).Once()
 	// LINK available for payment.
 	rpcClient.On("ContractState",
