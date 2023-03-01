@@ -40,7 +40,7 @@ type TxManager interface {
 	GasPrice() (cosmosSDK.DecCoin, error)
 }
 
-// CL Core OCR2 job spec RelayConfig member for Terra
+// CL Core OCR2 job spec RelayConfig member for Cosmos
 type RelayConfig struct {
 	ChainID  string `json:"chainID"`  // required
 	NodeName string `json:"nodeName"` // optional, defaults to a random node with ChainID
@@ -73,7 +73,7 @@ func (r *Relayer) Name() string {
 // Start starts the relayer respecting the given context.
 func (r *Relayer) Start(context.Context) error {
 	if r.chainSet == nil {
-		return errors.New("Terra unavailable")
+		return errors.New("Cosmos unavailable")
 	}
 	return nil
 }
@@ -191,14 +191,14 @@ func (c *configProvider) Name() string {
 
 // Start starts OCR2Provider respecting the given context.
 func (c *configProvider) Start(context.Context) error {
-	return c.StartOnce("TerraRelay", func() error {
+	return c.StartOnce("CosmosRelay", func() error {
 		c.lggr.Debugf("Starting")
 		return c.contractCache.Start()
 	})
 }
 
 func (c *configProvider) Close() error {
-	return c.StopOnce("TerraRelay", func() error {
+	return c.StopOnce("CosmosRelay", func() error {
 		c.lggr.Debugf("Stopping")
 		return c.contractCache.Close()
 	})

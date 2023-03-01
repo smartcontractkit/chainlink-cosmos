@@ -36,7 +36,7 @@ func TestErrMatch(t *testing.T) {
 }
 
 func TestBatchSim(t *testing.T) {
-	accounts, testdir, tendermintURL := SetupLocalTerraNode(t, "42")
+	accounts, testdir, tendermintURL := SetupLocalCosmosNode(t, "42")
 
 	lggr, logs := logger.TestObserved(t, zap.WarnLevel)
 	tc, err := NewClient(
@@ -119,9 +119,9 @@ func TestBatchSim(t *testing.T) {
 	})
 }
 
-func TestTerraClient(t *testing.T) {
+func TestCosmosClient(t *testing.T) {
 	// Local only for now, could maybe run on CI if we install terrad there?
-	accounts, testdir, tendermintURL := SetupLocalTerraNode(t, "42")
+	accounts, testdir, tendermintURL := SetupLocalCosmosNode(t, "42")
 	lggr := logger.Test(t)
 	tc, err := NewClient(
 		"42",

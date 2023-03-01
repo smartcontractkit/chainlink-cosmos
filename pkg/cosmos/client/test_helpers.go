@@ -32,9 +32,9 @@ type Account struct {
 // 0.001
 var minGasPrice = sdk.NewDecCoinFromDec("ucosm", sdk.NewDecWithPrec(1, 3))
 
-// SetupLocalTerraNode sets up a local terra node via terrad, and returns pre-funded accounts, the test directory, and the url.
-func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string, string) {
-	t.Skip("depends on terrad")
+// SetupLocalCosmosNode sets up a local terra node via terrad, and returns pre-funded accounts, the test directory, and the url.
+func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, string) {
+	t.Skip("depends on wasmd")
 	testdir, err := os.MkdirTemp("", "integration-test")
 	require.NoError(t, err)
 	t.Cleanup(func() {

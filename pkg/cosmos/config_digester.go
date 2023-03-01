@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/blake2s"
 )
 
-const ConfigDigestPrefixTerra types.ConfigDigestPrefix = 2
+const ConfigDigestPrefixCosmos types.ConfigDigestPrefix = 2
 
 var _ types.OffchainConfigDigester = (*OffchainConfigDigester)(nil)
 
@@ -111,5 +111,5 @@ func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.C
 
 // This should return the same constant value on every invocation
 func (OffchainConfigDigester) ConfigDigestPrefix() types.ConfigDigestPrefix {
-	return ConfigDigestPrefixTerra
+	return ConfigDigestPrefixCosmos
 }
