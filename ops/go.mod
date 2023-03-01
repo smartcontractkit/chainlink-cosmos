@@ -1,4 +1,4 @@
-module github.com/smartcontractkit/chainlink-terra/ops
+module github.com/smartcontractkit/chainlink-cosmos/ops
 
 go 1.20
 

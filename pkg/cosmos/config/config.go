@@ -12,8 +12,8 @@ import (
 	"github.com/smartcontractkit/chainlink-relay/pkg/config"
 	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos"
-	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/db"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
 )
 
 type Chain struct {

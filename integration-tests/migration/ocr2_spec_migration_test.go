@@ -4,14 +4,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/smartcontractkit/chainlink-terra/integration-tests/common"
-	"github.com/smartcontractkit/chainlink-terra/integration-tests/utils"
+	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
+	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/utils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/smartcontractkit/chainlink/integration-tests/actions"
 
-	tc "github.com/smartcontractkit/chainlink-terra/integration-tests/smoke/common"
+	tc "github.com/smartcontractkit/chainlink-cosmos/integration-tests/smoke/common"
 )
 
 var _ = Describe("Terra OCRv2 @ocr-spec-migration", func() {

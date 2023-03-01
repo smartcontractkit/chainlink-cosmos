@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/mocks"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/mocks"
 )
 
 func TestProxyMonitoring(t *testing.T) {

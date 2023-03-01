@@ -12,7 +12,7 @@ import (
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"go.uber.org/ratelimit"
 
-	pkgClient "github.com/smartcontractkit/chainlink-terra/pkg/cosmos/client"
+	pkgClient "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 )
 
 // ChainReader is a subset of the pkg/cosmos/client.Reader interface enhanced with context support.

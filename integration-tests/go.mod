@@ -1,4 +1,4 @@
-module github.com/smartcontractkit/chainlink-terra/integration-tests
+module github.com/smartcontractkit/chainlink-cosmos/integration-tests
 
 go 1.20
 
@@ -10,7 +10,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/smartcontractkit/chainlink v1.9.0
 	github.com/smartcontractkit/chainlink-env v0.2.56
-	// github.com/smartcontractkit/chainlink-terra v0.1.4-0.20220824174951-d1e2bcd51e46
+	// github.com/smartcontractkit/chainlink-cosmos v0.1.4-0.20220824174951-d1e2bcd51e46
 	github.com/smartcontractkit/chainlink-testing-framework v1.7.10
 	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20221102233518-1e61a9b970a2
 	github.com/smartcontractkit/libocr v0.0.0-20221121171434-482da3ed36d8
@@ -365,4 +365,4 @@ replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alp
 // See https://github.com/ugorji/go/issues/279
 replace github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1
 
-replace github.com/smartcontractkit/chainlink-terra => ./..
+replace github.com/smartcontractkit/chainlink-cosmos => ./..

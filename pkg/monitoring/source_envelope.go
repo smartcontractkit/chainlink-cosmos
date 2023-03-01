@@ -16,8 +16,8 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"go.uber.org/multierr"
 
-	pkgCosmos "github.com/smartcontractkit/chainlink-terra/pkg/cosmos"
-	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
+	pkgCosmos "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
 )
 
 // NewEnvelopeSourceFactory build a new object that reads observations and

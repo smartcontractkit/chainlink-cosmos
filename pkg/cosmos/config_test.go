@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/guregu/null.v4"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/db"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
 )
 
 func TestConfig(t *testing.T) {

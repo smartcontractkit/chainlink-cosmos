@@ -7,11 +7,11 @@ import (
 
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/client"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/db"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
 )
 
 // Global defaults.

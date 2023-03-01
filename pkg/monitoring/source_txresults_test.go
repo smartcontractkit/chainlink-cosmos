@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
-	fcdclientmocks "github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient/mocks"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
+	fcdclientmocks "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient/mocks"
 )
 
 func TestTxResultsSource(t *testing.T) {

@@ -572,7 +572,7 @@ fn transmit_happy_path() {
     );
 
     // TODO: test repeated withdrawal to check for no-op
-    // https://github.com/smartcontractkit/chainlink-terra/issues/19
+    // https://github.com/smartcontractkit/chainlink-cosmos/issues/19
 
     // -- now trigger set_config again which should clear the state and pay out remaining oracles
 

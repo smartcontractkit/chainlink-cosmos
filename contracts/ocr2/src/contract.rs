@@ -411,7 +411,7 @@ pub fn execute_accept_proposal(
     let (_total, mut response) = pay_oracles(&mut deps, &config, response)?;
 
     // TODO: pay_oracles already loads all the transmitters, avoid calling TRANSMITTERS.keys
-    // https://github.com/smartcontractkit/chainlink-terra/issues/27
+    // https://github.com/smartcontractkit/chainlink-cosmos/issues/27
     // Clear out oracles
     let keys: Result<Vec<_>, _> = TRANSMITTERS
         .keys(deps.storage, None, None, Order::Ascending)
@@ -556,7 +556,7 @@ pub fn execute_propose_config(
     // validate new config
     require!(f != 0, InvalidInput);
     require!(signers_len <= MAX_ORACLES, TooManySigners);
-    // See corresponding comment https://github.com/smartcontractkit/chainlink-terra/blob/5c229358eea2633922de615be509eb47c5bcb998/pkg/terra/config_digester.go#L30
+    // See corresponding comment https://github.com/smartcontractkit/chainlink-cosmos/blob/5c229358eea2633922de615be509eb47c5bcb998/pkg/terra/config_digester.go#L30
     // If this requirement of len(transmitters) == len(signers) is removed, we'll need
     // to update the config digester to include a length prefix on transmitters.
     require!(transmitters.len() == signers.len(), InvalidInput);

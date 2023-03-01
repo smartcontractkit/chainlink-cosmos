@@ -3,8 +3,8 @@ package cosmos
 import (
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/client"
-	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/db"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )

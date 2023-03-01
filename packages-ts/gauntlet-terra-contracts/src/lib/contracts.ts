@@ -117,7 +117,7 @@ export abstract class Contract {
 }
 
 class ChainlinkContract extends Contract {
-  readonly downloadUrl = `https://github.com/smartcontractkit/chainlink-terra/releases/download/`
+  readonly downloadUrl = `https://github.com/smartcontractkit/chainlink-cosmos/releases/download/`
 
   constructor(id, dirName, defaultVersion = DEFAULT_RELEASE_VERSION) {
     super(id, dirName, defaultVersion)

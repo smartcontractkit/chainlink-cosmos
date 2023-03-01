@@ -7,7 +7,7 @@ import (
 
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
 )
 
 // NewTxResultsSourceFactory builds sources of TxResults objects expected by the relay monitoring.

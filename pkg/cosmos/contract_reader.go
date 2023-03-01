@@ -15,7 +15,7 @@ import (
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/client"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 )
 
 type OCR2Reader struct {
@@ -230,7 +230,7 @@ func (r *OCR2Reader) LatestTransmissionDetails(ctx context.Context) (
 	if err != nil {
 		// Handle the 500 error that occurs when there has not been a submission
 		// "rpc error: code = Unknown desc = ocr2::state::Transmission not found: contract query failed: unknown request"
-		// which is thrown if this map lookup fails https://github.com/smartcontractkit/chainlink-terra/blob/main/contracts/ocr2/src/contract.rs#L759
+		// which is thrown if this map lookup fails https://github.com/smartcontractkit/chainlink-cosmos/blob/main/contracts/ocr2/src/contract.rs#L759
 		if strings.Contains(fmt.Sprint(err), "ocr2::state::Transmission not found") {
 			r.lggr.Infof("No transmissions found when fetching `latest_transmission_details` attempting with `latest_config_digest_and_epoch`")
 			digest, epoch, err2 := r.LatestConfigDigestAndEpoch(ctx)
@@ -300,7 +300,7 @@ func (r *OCR2Reader) LatestTransmissionDetails(ctx context.Context) (
 //	for _, event := range res.TxResponses[0].Logs[0].Events {
 //		if event.Type == "wasm-new_round" {
 //			// TODO: confirm event parameters
-//			// https://github.com/smartcontractkit/chainlink-terra/issues/22
+//			// https://github.com/smartcontractkit/chainlink-cosmos/issues/22
 //			for _, attr := range event.Attributes {
 //				key, value := string(attr.Key), string(attr.Value)
 //				switch key {

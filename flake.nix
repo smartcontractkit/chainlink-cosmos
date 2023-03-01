@@ -1,5 +1,5 @@
 {
-  description = "chainlink-terra";
+  description = "chainlink-cosmos";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";

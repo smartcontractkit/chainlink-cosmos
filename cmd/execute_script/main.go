@@ -8,7 +8,7 @@ package main
 // 	sdk "github.com/cosmos/cosmos-sdk/types"
 // 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 
-// 	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/testutil"
+// 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/testutil"
 // 	// "github.com/smartcontractkit/terra.go/client"
 // 	// "github.com/smartcontractkit/terra.go/msg"
 // )

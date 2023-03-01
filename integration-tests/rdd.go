@@ -7,7 +7,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/testutil"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/testutil"
 )
 
 type RddConfig struct {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/smartcontractkit/chainlink-relay/pkg/types"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/client"
-	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/db"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
 )
 
 type ChainSet interface {

@@ -7,8 +7,8 @@ import (
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring"
-	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
 )
 
 func main() {

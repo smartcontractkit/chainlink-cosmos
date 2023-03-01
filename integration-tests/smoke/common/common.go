@@ -18,7 +18,7 @@ import (
 	ctfClient "github.com/smartcontractkit/chainlink-testing-framework/client"
 	"github.com/smartcontractkit/chainlink/integration-tests/client"
 
-	"github.com/smartcontractkit/chainlink-terra/integration-tests/common"
+	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
 )
 
 const (

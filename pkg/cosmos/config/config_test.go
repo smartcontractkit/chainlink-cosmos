@@ -12,7 +12,7 @@ import (
 
 	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 
-	"github.com/smartcontractkit/chainlink-terra/pkg/cosmos/db"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
 )
 
 func TestChain_SetFromDB(t *testing.T) {

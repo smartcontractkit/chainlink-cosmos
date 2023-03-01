@@ -7,7 +7,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	fcdclient "github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
+	fcdclient "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
 
 	testing "testing"
 )

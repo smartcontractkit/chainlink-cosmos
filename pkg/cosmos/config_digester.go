@@ -64,7 +64,7 @@ func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.C
 	}
 
 	// NOTE: We assume that signers and transmitters have the same length, currently
-	// enforced onchain https://github.com/smartcontractkit/chainlink-terra/blob/9465a4ace6954b8647869d279363a25d1ae1b934/contracts/ocr2/src/contract.rs#L508
+	// enforced onchain https://github.com/smartcontractkit/chainlink-cosmos/blob/9465a4ace6954b8647869d279363a25d1ae1b934/contracts/ocr2/src/contract.rs#L508
 	// and that they have fixed sizes, thus we don't need a transmitter length prefix
 	// here to avoid config digest collisions. Should that enforcement change
 	// we'll need to add a length prefix here.

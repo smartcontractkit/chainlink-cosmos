@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 // TODO: Deduplicate (also declared in 'contracts/ocr2/src/state.rs')
-// https://github.com/smartcontractkit/chainlink-terra/issues/18
+// https://github.com/smartcontractkit/chainlink-cosmos/issues/18
 pub mod bignum {
     use serde::{self, Deserialize, Deserializer, Serializer};
 

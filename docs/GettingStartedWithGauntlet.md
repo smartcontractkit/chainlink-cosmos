@@ -15,7 +15,7 @@
 ### 1. Clone the Chainlink Terra repository
 
 ```bash
-git clone https://github.com/smartcontractkit/chainlink-terra.git
+git clone https://github.com/smartcontractkit/chainlink-cosmos.git
 ```
 
 ### 2. Install dependencies
@@ -28,7 +28,7 @@ make install
 
 ### 3. Configure environment
 
-Create a `.env` file in the root directory of `chainlink-terra` and add the following line.
+Create a `.env` file in the root directory of `chainlink-cosmos` and add the following line.
 
 ```bash
 MNEMONIC=replace with your mnemonic
