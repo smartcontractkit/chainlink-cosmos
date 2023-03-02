@@ -6,18 +6,18 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
 
+	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/tmclient"
 	chaintypes "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/types"
 )
 
 var _ types.ContractConfigTracker = &CosmosModuleConfigTracker{}
 
 type CosmosModuleConfigTracker struct {
-	FeedId           string
-	QueryClient      chaintypes.QueryClient
-	TendermintClient tmclient.TendermintClient
+	FeedId                  string
+	QueryClient             chaintypes.QueryClient
+	tendermintServiceClient tmtypes.ServiceClient
 }
 
 // Notify may optionally emit notification events when the contract's
@@ -123,6 +123,7 @@ func (c *CosmosModuleConfigTracker) LatestConfig(
 	return config, nil
 }
 
+// TODO: duplicated from wasm adapter
 // LatestBlockHeight returns the height of the most recent block in the chain.
 func (c *CosmosModuleConfigTracker) LatestBlockHeight(
 	ctx context.Context,
@@ -130,17 +131,9 @@ func (c *CosmosModuleConfigTracker) LatestBlockHeight(
 	blockHeight uint64,
 	err error,
 ) {
-	if c.TendermintClient == nil {
-		err := errors.New("cannot query LatestBlockHeight: no TendermintClient set")
-		return 0, err
-	}
-
-	res, err := c.TendermintClient.GetLatestBlockHeight(ctx)
+	b, err := c.tendermintServiceClient.GetLatestBlock(context.Background(), &tmtypes.GetLatestBlockRequest{})
 	if err != nil {
 		return 0, err
-	} else if res < 0 {
-		return 0, errors.New("negative block num")
 	}
-
-	return uint64(res), nil
+	return uint64(b.Block.Header.Height), nil
 }
