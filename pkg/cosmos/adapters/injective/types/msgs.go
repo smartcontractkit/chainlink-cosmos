@@ -39,11 +39,7 @@ func (msg MsgCreateFeed) ValidateBasic() error {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Sender)
 	}
 
-	if err := msg.Config.ValidateBasic(); err != nil {
-		return err
-	}
-
-	return nil
+	return msg.Config.ValidateBasic()
 }
 
 // GetSignBytes implements the sdk.Msg interface. It encodes the message for signing
@@ -86,9 +82,8 @@ func (msg MsgUpdateFeed) ValidateBasic() error {
 
 		if _, ok := seenTransmitters[addr.String()]; ok {
 			return ErrRepeatedAddress
-		} else {
-			seenTransmitters[addr.String()] = struct{}{}
 		}
+		seenTransmitters[addr.String()] = struct{}{}
 	}
 
 	seenSigners := make(map[string]struct{}, len(msg.Signers))
@@ -100,9 +95,8 @@ func (msg MsgUpdateFeed) ValidateBasic() error {
 
 		if _, ok := seenSigners[addr.String()]; ok {
 			return ErrRepeatedAddress
-		} else {
-			seenSigners[addr.String()] = struct{}{}
 		}
+		seenSigners[addr.String()] = struct{}{}
 	}
 
 	if msg.LinkPerTransmission != nil {
@@ -310,9 +304,8 @@ func (msg MsgSetPayees) ValidateBasic() error {
 
 		if _, ok := seenTransmitters[addr.String()]; ok {
 			return ErrRepeatedAddress
-		} else {
-			seenTransmitters[addr.String()] = struct{}{}
 		}
+		seenTransmitters[addr.String()] = struct{}{}
 	}
 
 	seenPayees := make(map[string]struct{}, len(msg.Payees))
@@ -324,9 +317,8 @@ func (msg MsgSetPayees) ValidateBasic() error {
 
 		if _, ok := seenPayees[addr.String()]; ok {
 			return ErrRepeatedAddress
-		} else {
-			seenPayees[addr.String()] = struct{}{}
 		}
+		seenPayees[addr.String()] = struct{}{}
 	}
 
 	return nil

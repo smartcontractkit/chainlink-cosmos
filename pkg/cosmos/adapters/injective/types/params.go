@@ -58,11 +58,7 @@ func DefaultParams() Params {
 
 // Validate performs basic validation on insurance parameters.
 func (p Params) Validate() error {
-	if err := validateLinkDenom(p.LinkDenom); err != nil {
-		return err
-	}
-
-	return nil
+	return validateLinkDenom(p.LinkDenom)
 }
 
 func validateLinkDenom(i interface{}) error {
