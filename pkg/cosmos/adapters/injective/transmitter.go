@@ -4,7 +4,6 @@ import (
 	"context"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
-	"github.com/pkg/errors"
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
@@ -17,12 +16,32 @@ var _ types.ContractTransmitter = &CosmosModuleTransmitter{}
 
 type CosmosModuleTransmitter struct {
 	lggr        logger.Logger
-	FeedId      string
-	QueryClient chaintypes.QueryClient
-	ReportCodec median_report.ReportCodec
+	feedId      string
+	queryClient chaintypes.QueryClient
+	reportCodec median_report.ReportCodec
 	msgEnqueuer cosmos.MsgEnqueuer
 	contract    cosmosSDK.AccAddress
 	sender      cosmosSDK.AccAddress
+}
+
+func NewCosmosModuleTransmitter(
+	feedId string,
+	queryClient chaintypes.QueryClient,
+	contract cosmosSDK.AccAddress,
+	sender cosmosSDK.AccAddress,
+	reportCodec median_report.ReportCodec,
+	msgEnqueuer cosmos.MsgEnqueuer,
+	lggr logger.Logger,
+) *CosmosModuleTransmitter {
+	return &CosmosModuleTransmitter{
+		lggr:        lggr,
+		feedId:      feedId,
+		queryClient: queryClient,
+		reportCodec: reportCodec,
+		msgEnqueuer: msgEnqueuer,
+		contract:    contract,
+		sender:      sender,
+	}
 }
 
 func (c *CosmosModuleTransmitter) FromAccount() types.Account {
@@ -36,14 +55,9 @@ func (c *CosmosModuleTransmitter) Transmit(
 	report types.Report,
 	signatures []types.AttributedOnchainSignature,
 ) error {
-	if len(c.FeedId) == 0 {
-		err := errors.New("CosmosModuleTransmitter has no FeedId set")
-		return err
-	}
-
 	// TODO: design how to decouple Cosmos reporting from reportingplugins of OCR2
 	// The reports are not necessarily numeric (see: titlerequest).
-	reportRaw, err := c.ReportCodec.ParseReport(report)
+	reportRaw, err := c.reportCodec.ParseReport(report)
 	if err != nil {
 		return err
 	}
@@ -51,7 +65,7 @@ func (c *CosmosModuleTransmitter) Transmit(
 	msgTransmit := &chaintypes.MsgTransmit{
 		Transmitter:  c.sender.String(),
 		ConfigDigest: reportCtx.ConfigDigest[:],
-		FeedId:       c.FeedId,
+		FeedId:       c.feedId,
 		Epoch:        uint64(reportCtx.Epoch),
 		Round:        uint64(reportCtx.Round),
 		ExtraHash:    reportCtx.ExtraHash[:],
@@ -78,18 +92,8 @@ func (c *CosmosModuleTransmitter) LatestConfigDigestAndEpoch(
 	epoch uint32,
 	err error,
 ) {
-	if len(c.FeedId) == 0 {
-		err := errors.New("CosmosModuleTransmitter has no FeedId set")
-		return types.ConfigDigest{}, 0, err
-	}
-
-	if c.QueryClient == nil {
-		err := errors.New("cannot query LatestConfigDigestAndEpoch: no QueryClient set")
-		return types.ConfigDigest{}, 0, err
-	}
-
-	resp, err := c.QueryClient.FeedConfigInfo(ctx, &chaintypes.QueryFeedConfigInfoRequest{
-		FeedId: c.FeedId,
+	resp, err := c.queryClient.FeedConfigInfo(ctx, &chaintypes.QueryFeedConfigInfoRequest{
+		FeedId: c.feedId,
 	})
 	if err != nil {
 		return types.ConfigDigest{}, 0, err

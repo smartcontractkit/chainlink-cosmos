@@ -15,8 +15,15 @@ import (
 var _ median.MedianContract = &CosmosMedianReporter{}
 
 type CosmosMedianReporter struct {
-	FeedId      string
-	QueryClient chaintypes.QueryClient
+	feedId      string
+	queryClient chaintypes.QueryClient
+}
+
+func NewCosmosMedianReporter(feedId string, queryClient chaintypes.QueryClient) *CosmosMedianReporter {
+	return &CosmosMedianReporter{
+		feedId,
+		queryClient,
+	}
 }
 
 func (c *CosmosMedianReporter) LatestTransmissionDetails(
@@ -29,25 +36,15 @@ func (c *CosmosMedianReporter) LatestTransmissionDetails(
 	latestTimestamp time.Time,
 	err error,
 ) {
-	if len(c.FeedId) == 0 {
-		err = errors.New("CosmosMedianReporter has no FeedId set")
-		return
-	}
-
-	if c.QueryClient == nil {
-		err = errors.New("cannot query LatestTransmissionDetails: no QueryClient set")
-		return
-	}
-
 	var resp *chaintypes.QueryLatestTransmissionDetailsResponse
-	if resp, err = c.QueryClient.LatestTransmissionDetails(ctx, &chaintypes.QueryLatestTransmissionDetailsRequest{
-		FeedId: c.FeedId,
+	if resp, err = c.queryClient.LatestTransmissionDetails(ctx, &chaintypes.QueryLatestTransmissionDetailsRequest{
+		FeedId: c.feedId,
 	}); err != nil {
 		return
 	}
 
 	if resp.ConfigDigest == nil {
-		err = errors.Errorf("unable to receive config digest for for feedId=%s", c.FeedId)
+		err = errors.Errorf("unable to receive config digest for for feedId=%s", c.feedId)
 		return
 	}
 
@@ -79,5 +76,6 @@ func (c *CosmosMedianReporter) LatestRoundRequested(
 	round uint8,
 	err error,
 ) {
+	// TODO:
 	return
 }

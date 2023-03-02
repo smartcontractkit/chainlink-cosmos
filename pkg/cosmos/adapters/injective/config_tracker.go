@@ -15,9 +15,17 @@ import (
 var _ types.ContractConfigTracker = &CosmosModuleConfigTracker{}
 
 type CosmosModuleConfigTracker struct {
-	FeedId                  string
-	QueryClient             chaintypes.QueryClient
+	feedId                  string
+	queryClient             chaintypes.QueryClient
 	tendermintServiceClient tmtypes.ServiceClient
+}
+
+func NewCosmosModuleConfigTracker(feedId string, queryClient chaintypes.QueryClient, serviceClient tmtypes.ServiceClient) *CosmosModuleConfigTracker {
+	return &CosmosModuleConfigTracker{
+		feedId:                  feedId,
+		queryClient:             queryClient,
+		tendermintServiceClient: serviceClient,
+	}
 }
 
 // Notify may optionally emit notification events when the contract's
@@ -40,25 +48,15 @@ func (c *CosmosModuleConfigTracker) LatestConfigDetails(
 	configDigest types.ConfigDigest,
 	err error,
 ) {
-	if len(c.FeedId) == 0 {
-		err := errors.New("CosmosModuleConfigTracker has no FeedId set")
-		return 0, types.ConfigDigest{}, err
-	}
-
-	if c.QueryClient == nil {
-		err := errors.New("cannot query LatestConfigDetails: no QueryClient set")
-		return 0, types.ConfigDigest{}, err
-	}
-
-	resp, err := c.QueryClient.FeedConfigInfo(ctx, &chaintypes.QueryFeedConfigInfoRequest{
-		FeedId: c.FeedId,
+	resp, err := c.queryClient.FeedConfigInfo(ctx, &chaintypes.QueryFeedConfigInfoRequest{
+		FeedId: c.feedId,
 	})
 	if err != nil {
 		return 0, types.ConfigDigest{}, err
 	}
 
 	if resp.FeedConfigInfo == nil {
-		err = errors.Errorf("feed config not found: %s", c.FeedId)
+		err = errors.Errorf("feed config not found: %s", c.feedId)
 		return 0, types.ConfigDigest{}, err
 	}
 
@@ -72,18 +70,8 @@ func (c *CosmosModuleConfigTracker) LatestConfig(
 	ctx context.Context,
 	changedInBlock uint64,
 ) (types.ContractConfig, error) {
-	if len(c.FeedId) == 0 {
-		err := errors.New("CosmosModuleConfigTracker has no FeedId set")
-		return types.ContractConfig{}, err
-	}
-
-	if c.QueryClient == nil {
-		err := errors.New("cannot query LatestConfig: no QueryClient set")
-		return types.ContractConfig{}, err
-	}
-
-	resp, err := c.QueryClient.FeedConfig(ctx, &chaintypes.QueryFeedConfigRequest{
-		FeedId: c.FeedId,
+	resp, err := c.queryClient.FeedConfig(ctx, &chaintypes.QueryFeedConfigRequest{
+		FeedId: c.feedId,
 	})
 	if err != nil {
 		return types.ContractConfig{}, err
