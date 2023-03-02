@@ -49,11 +49,7 @@ func (msg *MsgCreateFeed) GetSignBytes() []byte {
 
 // GetSigners implements the sdk.Msg interface. It defines whose signature is required
 func (msg MsgCreateFeed) GetSigners() []sdk.AccAddress {
-	sender, err := sdk.AccAddressFromBech32(msg.Sender)
-	if err != nil {
-		panic(err)
-	}
-
+	sender := sdk.MustAccAddressFromBech32(msg.Sender)
 	return []sdk.AccAddress{sender}
 }
 
@@ -137,11 +133,7 @@ func (msg *MsgUpdateFeed) GetSignBytes() []byte {
 
 // GetSigners implements the sdk.Msg interface. It defines whose signature is required
 func (msg MsgUpdateFeed) GetSigners() []sdk.AccAddress {
-	sender, err := sdk.AccAddressFromBech32(msg.Sender)
-	if err != nil {
-		panic(err)
-	}
-
+	sender := sdk.MustAccAddressFromBech32(msg.Sender)
 	return []sdk.AccAddress{sender}
 }
 
@@ -191,11 +183,7 @@ func (msg *MsgTransmit) GetSignBytes() []byte {
 
 // GetSigners implements the sdk.Msg interface. It defines whose signature is required
 func (msg MsgTransmit) GetSigners() []sdk.AccAddress {
-	transmitter, err := sdk.AccAddressFromBech32(msg.Transmitter)
-	if err != nil {
-		panic(err)
-	}
-
+	transmitter := sdk.MustAccAddressFromBech32(msg.Transmitter)
 	return []sdk.AccAddress{transmitter}
 }
 
@@ -229,11 +217,7 @@ func (msg *MsgFundFeedRewardPool) GetSignBytes() []byte {
 
 // GetSigners implements the sdk.Msg interface. It defines whose signature is required
 func (msg MsgFundFeedRewardPool) GetSigners() []sdk.AccAddress {
-	sender, err := sdk.AccAddressFromBech32(msg.Sender)
-	if err != nil {
-		panic(err)
-	}
-
+	sender := sdk.MustAccAddressFromBech32(msg.Sender)
 	return []sdk.AccAddress{sender}
 }
 
@@ -267,11 +251,7 @@ func (msg *MsgWithdrawFeedRewardPool) GetSignBytes() []byte {
 
 // GetSigners implements the sdk.Msg interface. It defines whose signature is required
 func (msg MsgWithdrawFeedRewardPool) GetSigners() []sdk.AccAddress {
-	sender, err := sdk.AccAddressFromBech32(msg.Sender)
-	if err != nil {
-		panic(err)
-	}
-
+	sender := sdk.MustAccAddressFromBech32(msg.Sender)
 	return []sdk.AccAddress{sender}
 }
 
@@ -331,11 +311,7 @@ func (msg *MsgSetPayees) GetSignBytes() []byte {
 
 // GetSigners implements the sdk.Msg interface. It defines whose signature is required
 func (msg MsgSetPayees) GetSigners() []sdk.AccAddress {
-	sender, err := sdk.AccAddressFromBech32(msg.Sender)
-	if err != nil {
-		panic(err)
-	}
-
+	sender := sdk.MustAccAddressFromBech32(msg.Sender)
 	return []sdk.AccAddress{sender}
 }
 
@@ -377,11 +353,7 @@ func (msg *MsgTransferPayeeship) GetSignBytes() []byte {
 
 // GetSigners implements the sdk.Msg interface. It defines whose signature is required
 func (msg MsgTransferPayeeship) GetSigners() []sdk.AccAddress {
-	sender, err := sdk.AccAddressFromBech32(msg.Sender)
-	if err != nil {
-		panic(err)
-	}
-
+	sender := sdk.MustAccAddressFromBech32(msg.Sender)
 	return []sdk.AccAddress{sender}
 }
 
@@ -415,10 +387,6 @@ func (msg *MsgAcceptPayeeship) GetSignBytes() []byte {
 
 // GetSigners implements the sdk.Msg interface. It defines whose signature is required
 func (msg MsgAcceptPayeeship) GetSigners() []sdk.AccAddress {
-	sender, err := sdk.AccAddressFromBech32(msg.Payee)
-	if err != nil {
-		panic(err)
-	}
-
+	sender := sdk.MustAccAddressFromBech32(msg.Payee)
 	return []sdk.AccAddress{sender}
 }
