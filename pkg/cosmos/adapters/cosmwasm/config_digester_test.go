@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,7 +33,7 @@ var testConfig = types.ContractConfig{
 func TestConfigDigester(t *testing.T) {
 	d := NewOffchainConfigDigester(
 		"ibiza-808",
-		MustAccAddress("wasm1cd65xyq076dm9cw3xxqtdh4d6ypzug0edd9958"),
+		sdk.MustAccAddressFromBech32("wasm1cd65xyq076dm9cw3xxqtdh4d6ypzug0edd9958"),
 	)
 
 	digest, err := d.ConfigDigest(testConfig)
@@ -42,7 +44,7 @@ func TestConfigDigester(t *testing.T) {
 func TestConfigDigester_InvalidChainID(t *testing.T) {
 	d := NewOffchainConfigDigester(
 		strings.Repeat("a", 256), // chain ID is too long
-		MustAccAddress("wasm1cd65xyq076dm9cw3xxqtdh4d6ypzug0edd9958"),
+		sdk.MustAccAddressFromBech32("wasm1cd65xyq076dm9cw3xxqtdh4d6ypzug0edd9958"),
 	)
 
 	_, err := d.ConfigDigest(testConfig)

@@ -3,8 +3,6 @@ package cosmwasm
 import (
 	"encoding/hex"
 
-	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
@@ -24,12 +22,4 @@ func HexToConfigDigest(s string, digest *types.ConfigDigest) (err error) {
 
 	*digest, err = types.BytesToConfigDigest(byteArr)
 	return
-}
-
-func MustAccAddress(addr string) cosmosSDK.AccAddress {
-	accAddr, err := cosmosSDK.AccAddressFromBech32(addr)
-	if err != nil {
-		panic(err)
-	}
-	return accAddr
 }
