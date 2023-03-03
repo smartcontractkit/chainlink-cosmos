@@ -1,12 +1,12 @@
 package types
 
 import (
+	fmt "fmt"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/gogo/protobuf/proto"
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -166,7 +166,7 @@ func checkConfigValid(
 func ReportFromBytes(buf []byte) (*ReportToSign, error) {
 	var r ReportToSign
 	if err := proto.Unmarshal(buf, &r); err != nil {
-		err = errors.Wrap(err, "failed to proto-decode ReportToSign from bytes")
+		err = fmt.Errorf("failed to proto-decode ReportToSign from bytes: %w", err)
 		return nil, err
 	}
 

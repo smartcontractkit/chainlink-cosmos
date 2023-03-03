@@ -2,9 +2,9 @@ package injective
 
 import (
 	"context"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/pkg/errors"
 
 	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
@@ -56,7 +56,7 @@ func (c *CosmosModuleConfigTracker) LatestConfigDetails(
 	}
 
 	if resp.FeedConfigInfo == nil {
-		err = errors.Errorf("feed config not found: %s", c.feedId)
+		err = fmt.Errorf("feed config not found: %s", c.feedId)
 		return 0, types.ConfigDigest{}, err
 	}
 

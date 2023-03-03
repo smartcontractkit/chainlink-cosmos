@@ -5,7 +5,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/pkg/errors"
 )
 
 var _ paramtypes.ParamSet = &Params{}
@@ -64,11 +63,11 @@ func (p Params) Validate() error {
 func validateLinkDenom(i interface{}) error {
 	v, ok := i.(string)
 	if !ok {
-		return errors.Errorf("invalid parameter type: %T", i)
+		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 
 	if len(v) == 0 {
-		return errors.Errorf("linkDenom param cannot be empty: %v", v)
+		return fmt.Errorf("linkDenom param cannot be empty: %v", v)
 	}
 
 	return nil

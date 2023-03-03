@@ -3,12 +3,13 @@
 package median_report
 
 import (
+	"errors"
+	fmt "fmt"
 	"math/big"
 	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	proto "github.com/gogo/protobuf/proto"
-	"github.com/pkg/errors"
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
@@ -52,7 +53,7 @@ func (ReportCodec) BuildReport(observations []median.ParsedAttributedObservation
 
 	reportBytes, err := proto.Marshal(reportToPack)
 	if err != nil {
-		err = errors.Wrap(err, "failed to marshal MedianObservation message")
+		err = fmt.Errorf("failed to marshal MedianObservation message: %w", err)
 		return nil, err
 	}
 
@@ -69,7 +70,7 @@ func (ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
 	var reportRaw Report
 
 	if err := proto.Unmarshal([]byte(report), &reportRaw); err != nil {
-		err = errors.Wrap(err, "failed to unmarshal data as median_report.Report")
+		err = fmt.Errorf("failed to unmarshal data as median_report.Report: %w", err)
 		return nil, err
 	}
 
@@ -87,7 +88,7 @@ func (ReportCodec) ParseReport(data []byte) (*Report, error) {
 	var reportRaw Report
 
 	if err := proto.Unmarshal(data, &reportRaw); err != nil {
-		err = errors.Wrap(err, "failed to unmarshal data as median_report.Report")
+		err = fmt.Errorf("failed to unmarshal data as median_report.Report: %w", err)
 		return nil, err
 	}
 

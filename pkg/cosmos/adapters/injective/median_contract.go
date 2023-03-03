@@ -2,10 +2,10 @@ package injective
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
@@ -44,7 +44,7 @@ func (c *CosmosMedianReporter) LatestTransmissionDetails(
 	}
 
 	if resp.ConfigDigest == nil {
-		err = errors.Errorf("unable to receive config digest for for feedId=%s", c.feedId)
+		err = fmt.Errorf("unable to receive config digest for for feedId=%s", c.feedId)
 		return
 	}
 
