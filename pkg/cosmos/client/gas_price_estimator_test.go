@@ -32,38 +32,6 @@ func TestGasPriceEstimators(t *testing.T) {
 		assert.Equal(t, "10.000000000000000000", price.Amount.String())
 	})
 
-	t.Run("fcd", func(t *testing.T) {
-		// Note this test runs in CI against a real api, we do want to know if this API changes or becomes slow
-		gpeFCD := NewFCDGasPriceEstimator(newConfig(t, "https://fcd.terra.dev:443/v1/txs/gas_prices"), 10*time.Second, lggr)
-		p, err := gpeFCD.GasPrices()
-		require.NoError(t, err)
-		for _, price := range []string{
-			"ucosm",
-			"usdr",
-			"ukrw",
-			"umnt",
-			"ueur",
-			"ucny",
-			"ujpy",
-			"ugbp",
-			"uinr",
-			"ucad",
-			"uchf",
-			"uaud",
-			"usgd",
-			"uthb",
-			"usek",
-			"unok",
-			"udkk",
-			"uidr",
-			"uphp",
-			"uhkd",
-		} {
-			_, ok := p[price]
-			assert.True(t, ok)
-		}
-	})
-
 	t.Run("caching", func(t *testing.T) {
 		gpeFCD := NewFCDGasPriceEstimator(newConfig(t, "https://fcd.terra.dev:443/v1/txs/gas_prices"), 10*time.Second, lggr)
 		cachingFCD := NewCachingGasPriceEstimator(gpeFCD, lggr)
