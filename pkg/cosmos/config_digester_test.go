@@ -17,10 +17,10 @@ var testConfig = types.ContractConfig{
 		[]byte{243, 96, 118, 131, 178, 167, 101, 157, 94, 246, 73, 127, 240, 101, 36, 36, 102, 191, 168, 19, 47, 217, 47, 45, 245, 233, 119, 230, 53, 102, 153, 74},
 	},
 	Transmitters: []types.Account{
-		"wasm1tghjf8lcrf7ad9hjw9ap0ptxn0q5nkang9m3p4",
-		"wasm1wk3s8vpkxj8c08rswt8m2ur0ufe2lkxcwh7l3d",
-		"wasm1ddkw35crxpeddenmcjewh5dqraxsv7vwm48xak",
-		"wasm1gcu7jcnyh6k74f0cp95gp4lzg4k0w26shkw22l",
+		"wasm1cd65xyq076dm9cw3xxqtdh4d6ypzug0edd9958",
+		"wasm19ctxyyc49cf42cfx3vvj3kmkrgzflw72h4afvv",
+		"wasm1ysjdehnf3a3kpndx74yyg6ry90258y4z5vawjz",
+		"wasm1fucynrfkrt684pm8jrt8la5h2csvs5cnldcgqc",
 	},
 	F:                     1,
 	OnchainConfig:         []byte{},
@@ -30,19 +30,19 @@ var testConfig = types.ContractConfig{
 
 func TestConfigDigester(t *testing.T) {
 	d := NewOffchainConfigDigester(
-		"cosmwasm",
-		MustAccAddress("wasm16huq7fzc95eyy89xsghzchde2tvucn9ahqja3j"),
+		"ibiza-808",
+		MustAccAddress("wasm1cd65xyq076dm9cw3xxqtdh4d6ypzug0edd9958"),
 	)
 
 	digest, err := d.ConfigDigest(testConfig)
 	assert.NoError(t, err)
-	assert.Equal(t, "0002c337db7a24692b6dc0a0da59c4ee80a3afbd4c782e40e4d8267454f3cf61", digest.Hex())
+	assert.Equal(t, "000289b55121341b1ff99cc8e15659fb8de14fca52a695b2b269a7fb94059b9f", digest.Hex())
 }
 
 func TestConfigDigester_InvalidChainID(t *testing.T) {
 	d := NewOffchainConfigDigester(
 		strings.Repeat("a", 256), // chain ID is too long
-		MustAccAddress("wasm16huq7fzc95eyy89xsghzchde2tvucn9ahqja3j"),
+		MustAccAddress("wasm1cd65xyq076dm9cw3xxqtdh4d6ypzug0edd9958"),
 	)
 
 	_, err := d.ConfigDigest(testConfig)
