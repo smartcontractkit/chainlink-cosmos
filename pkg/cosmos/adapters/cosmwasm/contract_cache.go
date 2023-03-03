@@ -1,4 +1,4 @@
-package cosmos
+package cosmwasm
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
@@ -16,7 +17,7 @@ import (
 var _ median.MedianContract = (*ContractCache)(nil)
 
 type ContractCache struct {
-	cfg    Config
+	cfg    adapters.Config
 	reader *OCR2Reader
 	lggr   logger.Logger
 
@@ -36,7 +37,7 @@ type ContractCache struct {
 	latestTimestamp time.Time
 }
 
-func NewContractCache(cfg Config, reader *OCR2Reader, lggr logger.Logger) *ContractCache {
+func NewContractCache(cfg adapters.Config, reader *OCR2Reader, lggr logger.Logger) *ContractCache {
 	return &ContractCache{
 		cfg:    cfg,
 		reader: reader,

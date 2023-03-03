@@ -12,7 +12,7 @@ import (
 	"github.com/smartcontractkit/chainlink-relay/pkg/config"
 	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
 )
 
@@ -79,36 +79,36 @@ func (c *Chain) SetFromDB(cfg *db.ChainCfg) error {
 
 func (c *Chain) SetDefaults() {
 	if c.BlockRate == nil {
-		c.BlockRate = utils.MustNewDuration(cosmos.DefaultConfigSet.BlockRate)
+		c.BlockRate = utils.MustNewDuration(adapters.DefaultConfigSet.BlockRate)
 	}
 	if c.BlocksUntilTxTimeout == nil {
-		c.BlocksUntilTxTimeout = &cosmos.DefaultConfigSet.BlocksUntilTxTimeout
+		c.BlocksUntilTxTimeout = &adapters.DefaultConfigSet.BlocksUntilTxTimeout
 	}
 	if c.ConfirmPollPeriod == nil {
-		c.ConfirmPollPeriod = utils.MustNewDuration(cosmos.DefaultConfigSet.ConfirmPollPeriod)
+		c.ConfirmPollPeriod = utils.MustNewDuration(adapters.DefaultConfigSet.ConfirmPollPeriod)
 	}
 	if c.FallbackGasPriceUAtom == nil {
-		d := decimal.NewFromBigInt(cosmos.DefaultConfigSet.FallbackGasPriceUAtom.BigInt(), -sdk.Precision)
+		d := decimal.NewFromBigInt(adapters.DefaultConfigSet.FallbackGasPriceUAtom.BigInt(), -sdk.Precision)
 		c.FallbackGasPriceUAtom = &d
 	}
 	if c.FCDURL == nil {
-		c.FCDURL = (*utils.URL)(&cosmos.DefaultConfigSet.FCDURL)
+		c.FCDURL = (*utils.URL)(&adapters.DefaultConfigSet.FCDURL)
 	}
 	if c.GasLimitMultiplier == nil {
-		d := decimal.NewFromFloat(cosmos.DefaultConfigSet.GasLimitMultiplier)
+		d := decimal.NewFromFloat(adapters.DefaultConfigSet.GasLimitMultiplier)
 		c.GasLimitMultiplier = &d
 	}
 	if c.MaxMsgsPerBatch == nil {
-		c.MaxMsgsPerBatch = &cosmos.DefaultConfigSet.MaxMsgsPerBatch
+		c.MaxMsgsPerBatch = &adapters.DefaultConfigSet.MaxMsgsPerBatch
 	}
 	if c.OCR2CachePollPeriod == nil {
-		c.OCR2CachePollPeriod = utils.MustNewDuration(cosmos.DefaultConfigSet.OCR2CachePollPeriod)
+		c.OCR2CachePollPeriod = utils.MustNewDuration(adapters.DefaultConfigSet.OCR2CachePollPeriod)
 	}
 	if c.OCR2CacheTTL == nil {
-		c.OCR2CacheTTL = utils.MustNewDuration(cosmos.DefaultConfigSet.OCR2CacheTTL)
+		c.OCR2CacheTTL = utils.MustNewDuration(adapters.DefaultConfigSet.OCR2CacheTTL)
 	}
 	if c.TxMsgTimeout == nil {
-		c.TxMsgTimeout = utils.MustNewDuration(cosmos.DefaultConfigSet.TxMsgTimeout)
+		c.TxMsgTimeout = utils.MustNewDuration(adapters.DefaultConfigSet.TxMsgTimeout)
 	}
 }
 

@@ -1,11 +1,6 @@
-package cosmos
+package cosmwasm
 
 import (
-	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
-
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
@@ -35,32 +30,4 @@ type LatestTransmissionDetails struct {
 type LatestConfigDigestAndEpoch struct {
 	ConfigDigest types.ConfigDigest `json:"config_digest"`
 	Epoch        uint32             `json:"epoch"`
-}
-
-type Msg struct {
-	db.Msg
-
-	// In memory only
-	DecodedMsg cosmosSDK.Msg
-}
-
-type Msgs []Msg
-
-func (tms Msgs) GetSimMsgs() client.SimMsgs {
-	var msgs []client.SimMsg
-	for i := range tms {
-		msgs = append(msgs, client.SimMsg{
-			ID:  tms[i].ID,
-			Msg: tms[i].DecodedMsg,
-		})
-	}
-	return msgs
-}
-
-func (tms Msgs) GetIDs() []int64 {
-	ids := make([]int64, len(tms))
-	for i := range tms {
-		ids[i] = tms[i].ID
-	}
-	return ids
 }

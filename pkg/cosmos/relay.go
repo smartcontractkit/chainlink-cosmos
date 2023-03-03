@@ -13,6 +13,8 @@ import (
 	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/cosmwasm"
 )
 
 // ErrMsgUnsupported is returned when an unsupported type of message is encountered.
@@ -22,22 +24,6 @@ type ErrMsgUnsupported struct {
 
 func (e *ErrMsgUnsupported) Error() string {
 	return fmt.Sprintf("unsupported message type %T: %s", e.Msg, e.Msg)
-}
-
-type MsgEnqueuer interface {
-	// Enqueue enqueues msg for broadcast and returns its id.
-	// Returns ErrMsgUnsupported for unsupported message types.
-	Enqueue(contractID string, msg cosmosSDK.Msg) (int64, error)
-}
-
-// TxManager manages txs composed of batches of queued messages.
-type TxManager interface {
-	MsgEnqueuer
-
-	// GetMsgs returns any messages matching ids.
-	GetMsgs(ids ...int64) (Msgs, error)
-	// GasPrice returns the gas price in ucosm.
-	GasPrice() (cosmosSDK.DecCoin, error)
 }
 
 // CL Core OCR2 job spec RelayConfig member for Cosmos
@@ -121,9 +107,9 @@ func (r *Relayer) NewMedianProvider(rargs relaytypes.RelayArgs, pargs relaytypes
 
 	return &medianProvider{
 		configProvider: configProvider,
-		reportCodec:    ReportCodec{},
+		reportCodec:    cosmwasm.ReportCodec{},
 		contract:       configProvider.contractCache,
-		transmitter: NewContractTransmitter(
+		transmitter: cosmwasm.NewContractTransmitter(
 			configProvider.reader,
 			rargs.ExternalJobID.String(),
 			configProvider.contractAddr,
@@ -147,8 +133,8 @@ type configProvider struct {
 	transmitter types.ContractTransmitter //nolint:unused
 
 	chain         Chain
-	contractCache *ContractCache
-	reader        *OCR2Reader
+	contractCache *cosmwasm.ContractCache
+	reader        *cosmwasm.OCR2Reader
 	contractAddr  cosmosSDK.AccAddress
 }
 
@@ -170,10 +156,10 @@ func newConfigProvider(ctx context.Context, lggr logger.Logger, chainSet ChainSe
 	if err != nil {
 		return nil, err
 	}
-	reader := NewOCR2Reader(contractAddr, chainReader, lggr)
-	contract := NewContractCache(chain.Config(), reader, lggr)
-	tracker := NewContractTracker(chainReader, contract)
-	digester := NewOffchainConfigDigester(relayConfig.ChainID, contractAddr)
+	reader := cosmwasm.NewOCR2Reader(contractAddr, chainReader, lggr)
+	contract := cosmwasm.NewContractCache(chain.Config(), reader, lggr)
+	tracker := cosmwasm.NewContractTracker(chainReader, contract)
+	digester := cosmwasm.NewOffchainConfigDigester(relayConfig.ChainID, contractAddr)
 	return &configProvider{
 		digester:      digester,
 		tracker:       tracker,

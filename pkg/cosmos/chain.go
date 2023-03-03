@@ -5,6 +5,7 @@ import (
 
 	"github.com/smartcontractkit/chainlink-relay/pkg/types"
 
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
 )
@@ -19,9 +20,9 @@ type Chain interface {
 	types.Service
 
 	ID() string
-	Config() Config
+	Config() adapters.Config
 	UpdateConfig(*db.ChainCfg)
-	TxManager() TxManager
+	TxManager() adapters.TxManager
 	// Reader returns a new Reader. If nodeName is provided, the underlying client must use that node.
 	Reader(nodeName string) (client.Reader, error)
 }

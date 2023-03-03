@@ -1,4 +1,4 @@
-package cosmos
+package adapters
 
 import (
 	"testing"

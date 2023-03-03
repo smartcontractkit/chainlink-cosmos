@@ -1,4 +1,4 @@
-package cosmos
+package cosmwasm
 
 import (
 	"strings"

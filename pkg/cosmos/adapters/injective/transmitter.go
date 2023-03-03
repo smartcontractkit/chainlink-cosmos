@@ -7,7 +7,7 @@ import (
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/median_report"
 	chaintypes "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/types"
 )
@@ -19,7 +19,7 @@ type CosmosModuleTransmitter struct {
 	feedId      string
 	queryClient chaintypes.QueryClient
 	reportCodec median_report.ReportCodec
-	msgEnqueuer cosmos.MsgEnqueuer
+	msgEnqueuer adapters.MsgEnqueuer
 	contract    cosmosSDK.AccAddress
 	sender      cosmosSDK.AccAddress
 }
@@ -30,7 +30,7 @@ func NewCosmosModuleTransmitter(
 	contract cosmosSDK.AccAddress,
 	sender cosmosSDK.AccAddress,
 	reportCodec median_report.ReportCodec,
-	msgEnqueuer cosmos.MsgEnqueuer,
+	msgEnqueuer adapters.MsgEnqueuer,
 	lggr logger.Logger,
 ) *CosmosModuleTransmitter {
 	return &CosmosModuleTransmitter{

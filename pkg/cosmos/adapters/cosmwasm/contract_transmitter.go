@@ -1,4 +1,4 @@
-package cosmos
+package cosmwasm
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/chains/evmutil"
@@ -16,12 +17,12 @@ var _ types.ContractTransmitter = (*ContractTransmitter)(nil)
 
 type ContractTransmitter struct {
 	*OCR2Reader
-	msgEnqueuer MsgEnqueuer
+	msgEnqueuer adapters.MsgEnqueuer
 	lggr        logger.Logger
 	jobID       string
 	contract    cosmosSDK.AccAddress
 	sender      cosmosSDK.AccAddress
-	cfg         Config
+	cfg         adapters.Config
 }
 
 func NewContractTransmitter(
@@ -29,9 +30,9 @@ func NewContractTransmitter(
 	jobID string,
 	contract cosmosSDK.AccAddress,
 	sender cosmosSDK.AccAddress,
-	msgEnqueuer MsgEnqueuer,
+	msgEnqueuer adapters.MsgEnqueuer,
 	lggr logger.Logger,
-	cfg Config,
+	cfg adapters.Config,
 ) *ContractTransmitter {
 	return &ContractTransmitter{
 		OCR2Reader:  reader,
