@@ -83,6 +83,8 @@ type Reader interface {
 	LatestBlock() (*tmtypes.GetLatestBlockResponse, error)
 	BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse, error)
 	Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error)
+	// TODO: escape hatch for injective client
+	Context() *cosmosclient.Context
 }
 
 // Writer provides methods for writing to a cosmos chain.
@@ -215,6 +217,10 @@ func NewClient(chainID string,
 		clientCtx:               clientCtx,
 		log:                     lggr,
 	}, nil
+}
+
+func (c *Client) Context() *cosmosclient.Context {
+	return &c.clientCtx
 }
 
 // Account read the account address for the account number and sequence number.

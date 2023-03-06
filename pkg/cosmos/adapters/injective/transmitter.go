@@ -16,18 +16,16 @@ var _ types.ContractTransmitter = &CosmosModuleTransmitter{}
 
 type CosmosModuleTransmitter struct {
 	lggr        logger.Logger
-	feedId      string
 	queryClient chaintypes.QueryClient
 	reportCodec median_report.ReportCodec
 	msgEnqueuer adapters.MsgEnqueuer
-	contract    cosmosSDK.AccAddress
+	feedID      string
 	sender      cosmosSDK.AccAddress
 }
 
 func NewCosmosModuleTransmitter(
-	feedId string,
 	queryClient chaintypes.QueryClient,
-	contract cosmosSDK.AccAddress,
+	feedId string,
 	sender cosmosSDK.AccAddress,
 	reportCodec median_report.ReportCodec,
 	msgEnqueuer adapters.MsgEnqueuer,
@@ -35,11 +33,10 @@ func NewCosmosModuleTransmitter(
 ) *CosmosModuleTransmitter {
 	return &CosmosModuleTransmitter{
 		lggr:        lggr,
-		feedId:      feedId,
+		feedID:      feedId,
 		queryClient: queryClient,
 		reportCodec: reportCodec,
 		msgEnqueuer: msgEnqueuer,
-		contract:    contract,
 		sender:      sender,
 	}
 }
@@ -65,7 +62,7 @@ func (c *CosmosModuleTransmitter) Transmit(
 	msgTransmit := &chaintypes.MsgTransmit{
 		Transmitter:  c.sender.String(),
 		ConfigDigest: reportCtx.ConfigDigest[:],
-		FeedId:       c.feedId,
+		FeedId:       c.feedID,
 		Epoch:        uint64(reportCtx.Epoch),
 		Round:        uint64(reportCtx.Round),
 		ExtraHash:    reportCtx.ExtraHash[:],
@@ -81,7 +78,7 @@ func (c *CosmosModuleTransmitter) Transmit(
 		msgTransmit.Signatures = append(msgTransmit.Signatures, sig.Signature)
 	}
 
-	_, err = c.msgEnqueuer.Enqueue(c.contract.String(), msgTransmit)
+	_, err = c.msgEnqueuer.Enqueue(c.feedID, msgTransmit)
 	return err
 }
 
@@ -93,7 +90,7 @@ func (c *CosmosModuleTransmitter) LatestConfigDigestAndEpoch(
 	err error,
 ) {
 	resp, err := c.queryClient.FeedConfigInfo(ctx, &chaintypes.QueryFeedConfigInfoRequest{
-		FeedId: c.feedId,
+		FeedId: c.feedID,
 	})
 	if err != nil {
 		return types.ConfigDigest{}, 0, err

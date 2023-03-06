@@ -15,7 +15,7 @@ import (
 var _ median.MedianContract = &CosmosMedianReporter{}
 
 type CosmosMedianReporter struct {
-	feedId      string
+	feedID      string
 	queryClient chaintypes.QueryClient
 }
 
@@ -38,13 +38,13 @@ func (c *CosmosMedianReporter) LatestTransmissionDetails(
 ) {
 	var resp *chaintypes.QueryLatestTransmissionDetailsResponse
 	if resp, err = c.queryClient.LatestTransmissionDetails(ctx, &chaintypes.QueryLatestTransmissionDetailsRequest{
-		FeedId: c.feedId,
+		FeedId: c.feedID,
 	}); err != nil {
 		return
 	}
 
 	if resp.ConfigDigest == nil {
-		err = fmt.Errorf("unable to receive config digest for for feedId=%s", c.feedId)
+		err = fmt.Errorf("unable to receive config digest for for feedId=%s", c.feedID)
 		return
 	}
 

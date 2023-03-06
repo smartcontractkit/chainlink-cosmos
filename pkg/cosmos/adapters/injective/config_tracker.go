@@ -16,14 +16,14 @@ var _ types.ContractConfigTracker = &CosmosModuleConfigTracker{}
 
 type CosmosModuleConfigTracker struct {
 	feedId                  string
-	queryClient             chaintypes.QueryClient
+	injectiveClient         chaintypes.QueryClient
 	tendermintServiceClient tmtypes.ServiceClient
 }
 
 func NewCosmosModuleConfigTracker(feedId string, queryClient chaintypes.QueryClient, serviceClient tmtypes.ServiceClient) *CosmosModuleConfigTracker {
 	return &CosmosModuleConfigTracker{
 		feedId:                  feedId,
-		queryClient:             queryClient,
+		injectiveClient:         queryClient,
 		tendermintServiceClient: serviceClient,
 	}
 }
@@ -48,7 +48,7 @@ func (c *CosmosModuleConfigTracker) LatestConfigDetails(
 	configDigest types.ConfigDigest,
 	err error,
 ) {
-	resp, err := c.queryClient.FeedConfigInfo(ctx, &chaintypes.QueryFeedConfigInfoRequest{
+	resp, err := c.injectiveClient.FeedConfigInfo(ctx, &chaintypes.QueryFeedConfigInfoRequest{
 		FeedId: c.feedId,
 	})
 	if err != nil {
@@ -70,7 +70,7 @@ func (c *CosmosModuleConfigTracker) LatestConfig(
 	ctx context.Context,
 	changedInBlock uint64,
 ) (types.ContractConfig, error) {
-	resp, err := c.queryClient.FeedConfig(ctx, &chaintypes.QueryFeedConfigRequest{
+	resp, err := c.injectiveClient.FeedConfig(ctx, &chaintypes.QueryFeedConfigRequest{
 		FeedId: c.feedId,
 	})
 	if err != nil {

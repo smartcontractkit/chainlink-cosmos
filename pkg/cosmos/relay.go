@@ -14,6 +14,7 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/cosmwasm"
 )
 
@@ -26,23 +27,17 @@ func (e *ErrMsgUnsupported) Error() string {
 	return fmt.Sprintf("unsupported message type %T: %s", e.Msg, e.Msg)
 }
 
-// CL Core OCR2 job spec RelayConfig member for Cosmos
-type RelayConfig struct {
-	ChainID  string `json:"chainID"`  // required
-	NodeName string `json:"nodeName"` // optional, defaults to a random node with ChainID
-}
-
 var _ relaytypes.Relayer = &Relayer{}
 
 type Relayer struct {
 	lggr     logger.Logger
-	chainSet ChainSet
+	chainSet adapters.ChainSet
 	ctx      context.Context
 	cancel   func()
 }
 
 // Note: constructed in core
-func NewRelayer(lggr logger.Logger, chainSet ChainSet) *Relayer {
+func NewRelayer(lggr logger.Logger, chainSet adapters.ChainSet) *Relayer {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Relayer{
 		lggr:     lggr,
@@ -125,21 +120,20 @@ var _ relaytypes.ConfigProvider = &configProvider{}
 
 type configProvider struct {
 	utils.StartStopOnce
-	digester    types.OffchainConfigDigester
-	reportCodec median.ReportCodec //nolint:unused
-	lggr        logger.Logger
+	digester types.OffchainConfigDigester
+	lggr     logger.Logger
 
-	tracker     types.ContractConfigTracker
-	transmitter types.ContractTransmitter //nolint:unused
+	tracker types.ContractConfigTracker
 
-	chain         Chain
+	chain         adapters.Chain
 	contractCache *cosmwasm.ContractCache
 	reader        *cosmwasm.OCR2Reader
 	contractAddr  cosmosSDK.AccAddress
 }
 
-func newConfigProvider(ctx context.Context, lggr logger.Logger, chainSet ChainSet, args relaytypes.RelayArgs) (*configProvider, error) {
-	var relayConfig RelayConfig
+// TODO: pass chain instead of chainSet
+func newConfigProvider(ctx context.Context, lggr logger.Logger, chainSet adapters.ChainSet, args relaytypes.RelayArgs) (*configProvider, error) {
+	var relayConfig adapters.RelayConfig
 	err := json.Unmarshal(args.RelayConfig, &relayConfig)
 	if err != nil {
 		return nil, err
