@@ -16,7 +16,7 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"go.uber.org/multierr"
 
-	pkgCosmos "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/cosmwasm"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
 )
 
@@ -164,7 +164,7 @@ func (e *envelopeSource) fetchLatestTransmission(ctx context.Context) (transmiss
 	data := transmissionData{}
 	err = e.extractDataFromTxResponse("wasm-new_transmission", e.cosmosFeedConfig.ContractAddressBech32, res, map[string]func(string) error{
 		"config_digest": func(value string) error {
-			return pkgCosmos.HexToConfigDigest(value, &data.configDigest)
+			return cosmwasm.HexToConfigDigest(value, &data.configDigest)
 		},
 		"epoch": func(value string) error {
 			rawEpoch, parseErr := strconv.ParseUint(value, 10, 32)
@@ -251,7 +251,7 @@ func (e *envelopeSource) fetchLatestConfigBlock(ctx context.Context) (uint64, er
 		e.cosmosFeedConfig.ContractAddress,
 		[]byte(`"latest_config_details"`),
 	)
-	var details pkgCosmos.ConfigDetails
+	var details cosmwasm.ConfigDetails
 	if err != nil {
 		return 0, fmt.Errorf("failed to fetch config details: %w", err)
 	}
@@ -270,7 +270,7 @@ func (e *envelopeSource) fetchLatestConfigFromLogs(ctx context.Context, blockHei
 	err = e.extractDataFromTxResponse("wasm-set_config", e.cosmosFeedConfig.ContractAddressBech32, res, map[string]func(string) error{
 		"latest_config_digest": func(value string) error {
 			// parse byte array encoded as hex string
-			return pkgCosmos.HexToConfigDigest(value, &output.ConfigDigest)
+			return cosmwasm.HexToConfigDigest(value, &output.ConfigDigest)
 		},
 		"config_count": func(value string) error {
 			i, parseErr := strconv.ParseInt(value, 10, 64)
@@ -281,7 +281,7 @@ func (e *envelopeSource) fetchLatestConfigFromLogs(ctx context.Context, blockHei
 			// this assumes the value will be a hex encoded string which each signer
 			// 32 bytes and each signer will be a separate parameter
 			var v []byte
-			convertErr := pkgCosmos.HexToByteArray(value, &v)
+			convertErr := cosmwasm.HexToByteArray(value, &v)
 			output.Signers = append(output.Signers, v)
 			return convertErr
 		},
