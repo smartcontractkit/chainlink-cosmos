@@ -46,7 +46,7 @@ const validateOffchainConfig: ValidateFn<CommandInput> = async (input, context) 
     process.env.SECRET!,
     input.randomSecret,
   )
-  const proposal: any = await context.provider.wasm.contractQuery(context.contract, {
+  const proposal: any = await context.provider.queryContractSmart(context.contract, {
     proposal: {
       id: input.proposalId,
     },
@@ -88,7 +88,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
   logger.loading(`Executing ${context.id} from contract ${context.contract}`)
   const { proposalId } = input.user
 
-  const proposal: any = await context.provider.wasm.contractQuery(context.contract, {
+  const proposal: any = await context.provider.queryContractSmart(context.contract, {
     proposal: {
       id: proposalId,
     },
@@ -107,10 +107,11 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
 
   // Config in contract
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
-  const offchainConfigInContract = event?.offchain_config
-    ? tryDeserialize(event.offchain_config[0])
-    : ({} as OffchainConfig)
-  const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, { f: event?.f[0] })
+  const attr = event?.attributes.find(({ key }) => key === 'offchain_config')?.value
+  const offchainConfigInContract = attr ? tryDeserialize(attr) : ({} as OffchainConfig)
+  const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, {
+    f: event?.attributes.find(({ key }) => key === 'f')?.value,
+  })
 
   logger.info('Review the configuration difference from contract and proposal: green - added, red - deleted.')
   diff.printDiff(configInContract, configInProposal)
@@ -133,7 +134,7 @@ const afterExecute = () => async (response: Result<TransactionResponse>) => {
     logger.error('Could not retrieve events from tx')
     return
   }
-  const digest = events[0]['wasm-set_config'].latest_config_digest[0]
+  const digest = events[0]['wasm-set_config']?.[0].attributes.find(({ key }) => key === 'latest_config_digest')?.value
   return {
     digest,
   }

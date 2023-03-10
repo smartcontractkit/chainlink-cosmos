@@ -39,7 +39,7 @@
       "minimum": 0.0
     },
     "recommended_gas_price_micro": {
-      "description": "Should match <https://fcd.terra.dev/v1/txs/gas_prices>. For example if reports contain juels_per_luna, then recommended_gas_price is in uLUNA.",
+      "description": "Should match <https://fcd.terra.dev/v1/txs/gas_prices>. For example if reports contain juels_per_atom, then recommended_gas_price is in uATOM.",
       "allOf": [
         {
           "$ref": "#/definitions/Decimal"

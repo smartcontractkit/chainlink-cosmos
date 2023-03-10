@@ -1,14 +1,14 @@
 #![cfg(test)]
 #![cfg(not(tarpaulin_include))]
 use cosmwasm_std::{Addr, Empty};
-use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, Contract, ContractWrapper, Executor};
 
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::Round;
 use crate::{execute, instantiate, parse_round_id, query};
 
 fn mock_app() -> App {
-    AppBuilder::new().build()
+    App::default()
 }
 
 pub fn contract_proxy() -> Box<dyn Contract<Empty>> {
@@ -21,7 +21,7 @@ mod mock {
         to_binary, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
     };
     use cw_multi_test::{Contract, ContractWrapper};
-    use cw_storage_plus::{Item, Map, U32Key};
+    use cw_storage_plus::{Item, Map};
 
     use schemars::JsonSchema;
     use serde::{Deserialize, Serialize};
@@ -35,7 +35,7 @@ mod mock {
     }
 
     pub const LATEST_ROUND: Item<u32> = Item::new("latest_round");
-    pub const ROUNDS: Map<U32Key, ocr2::state::Round> = Map::new("rounds");
+    pub const ROUNDS: Map<u32, ocr2::state::Round> = Map::new("rounds");
 
     pub const DECIMALS: u8 = 8;
     pub const VERSION: &str = "0.0.0";
@@ -52,7 +52,7 @@ mod mock {
                 ExecuteMsg::Insert(round) => {
                     let round_id = LATEST_ROUND
                         .update(deps.storage, |_: u32| StdResult::Ok(round.round_id))?; // store data based on passed in round_id
-                    ROUNDS.save(deps.storage, round_id.into(), &round)?;
+                    ROUNDS.save(deps.storage, round_id, &round)?;
                     Ok(Response::default())
                 }
             }
@@ -70,12 +70,12 @@ mod mock {
             use ocr2::msg::QueryMsg;
             match msg {
                 QueryMsg::RoundData { round_id } => {
-                    let round = ROUNDS.load(deps.storage, round_id.into())?;
+                    let round = ROUNDS.load(deps.storage, round_id)?;
                     to_binary(&round)
                 }
                 QueryMsg::LatestRoundData => {
                     let latest_round = LATEST_ROUND.load(deps.storage)?;
-                    let round = ROUNDS.load(deps.storage, latest_round.into())?;
+                    let round = ROUNDS.load(deps.storage, latest_round)?;
                     to_binary(&round)
                 }
                 QueryMsg::Decimals => to_binary(&DECIMALS),

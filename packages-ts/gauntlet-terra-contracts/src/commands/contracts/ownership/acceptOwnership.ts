@@ -1,8 +1,7 @@
 import { AbstractInstruction, BeforeExecute } from '../../abstract/executionWrapper'
-import { RDD, logger } from '@chainlink/gauntlet-terra'
+import { RDD, logger, AccAddress } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'
-import { AccAddress } from '@terra-money/terra.js'
 
 type CommandInput = {}
 
@@ -13,7 +12,7 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
 const validateInput = (input: CommandInput): boolean => true
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async (signer) => {
-  const currentOwner: AccAddress = await context.provider.wasm.contractQuery(context.contract, 'owner' as any)
+  const currentOwner: AccAddress = await context.provider.queryContractSmart(context.contract, 'owner' as any)
   const contract = RDD.getContractFromRDD(RDD.getRDD(context.flags.rdd), context.contract)
   logger.info(`Accepting Ownership Transfer of contract of type "${contract.type}":
     - Contract: ${logger.styleAddress(contract.address)} ${contract.description ? '- ' + contract.description : ''}

@@ -9,7 +9,7 @@ use crate::Decimal;
 use anyhow::Result as AnyResult;
 use cosmwasm_std::{to_binary, Addr, Binary, Empty, Uint128};
 use cw20::Cw20Coin;
-use cw_multi_test::{App, AppBuilder, AppResponse, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 use deviation_flagging_validator as validator;
 use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes};
 use rand::thread_rng;
@@ -19,7 +19,7 @@ use std::str::FromStr;
 const GIGA: u128 = 10u128.pow(9);
 
 fn mock_app() -> App {
-    AppBuilder::new().build()
+    App::default()
 }
 
 pub fn contract_ocr2() -> Box<dyn Contract<Empty>> {
@@ -106,7 +106,7 @@ fn transmit_report(
     for _ in 0..len {
         report.extend_from_slice(&bytes); // observation
     }
-    report.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0]); // juels per luna (1 with 18 decimal places)
+    report.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0]); // juels per atom (1 with 18 decimal places)
 
     // Generate report context
     let mut report_context = vec![0; 96];
@@ -120,8 +120,8 @@ fn transmit_report(
     epoch_and_round[31] = round;
 
     // determine hash to sign
-    use blake2::{Blake2s, Digest};
-    let mut hasher = Blake2s::default();
+    use blake2::{Blake2s256, Digest};
+    let mut hasher = Blake2s256::default();
     hasher.update((report.len() as u32).to_be_bytes());
     hasher.update(&report);
     hasher.update(&report_context);
@@ -156,7 +156,7 @@ fn transmit_report(
     };
 
     env.router
-        .execute_contract(transmitter.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .execute_contract(transmitter, env.ocr2_addr.clone(), &msg, &[])
 }
 
 fn setup() -> Env {
@@ -170,7 +170,7 @@ fn setup() -> Env {
 
     let main_balance = Cw20Coin {
         address: owner.clone().into(),
-        amount: Decimal::from_str("1000").unwrap().0,
+        amount: Decimal::from_str("1000").unwrap().atomics(),
     };
 
     let billing_access_controller_addr = router
@@ -232,7 +232,7 @@ fn setup() -> Env {
         )
         .unwrap();
 
-    let deposit = Decimal::from_str("1000").unwrap().0;
+    let deposit = Decimal::from_str("1000").unwrap().atomics();
     // Supply contract with funds
     router
         .execute_contract(
@@ -400,14 +400,14 @@ fn migrate() {
 // cw3 multisig account can control cw20 admin actions
 fn transmit_happy_path() {
     let mut env = setup();
-    let deposit = Decimal::from_str("1000").unwrap().0;
+    let deposit = Decimal::from_str("1000").unwrap().atomics();
     // expected in juels
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().atomics();
 
     // -- set billing
 
-    // price in uLUNA
+    // price in uATOM
     let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
 
     let msg = ExecuteMsg::SetBilling {
@@ -451,11 +451,14 @@ fn transmit_happy_path() {
     // Should revert
     let res = transmit_report(&mut env, 1, 1, ANSWER, false);
     assert!(res.is_err());
-    assert_eq!(res.err().unwrap().to_string(), "invalid signature");
+    assert_eq!(
+        res.err().unwrap().source().unwrap().to_string(),
+        "invalid signature"
+    );
 
     // -- call transmit
     let res = transmit_report(&mut env, 1, 1, ANSWER, true);
-    assert!(!res.is_err());
+    assert!(res.is_ok());
 
     let transmitter = Addr::unchecked(env.transmitters.first().cloned().unwrap());
 
@@ -569,7 +572,7 @@ fn transmit_happy_path() {
     );
 
     // TODO: test repeated withdrawal to check for no-op
-    // https://github.com/smartcontractkit/chainlink-terra/issues/19
+    // https://github.com/smartcontractkit/chainlink-cosmos/issues/19
 
     // -- now trigger set_config again which should clear the state and pay out remaining oracles
 
@@ -708,14 +711,14 @@ fn transmit_happy_path() {
 #[test]
 fn set_link_token() {
     let mut env = setup();
-    let deposit = Decimal::from_str("1000").unwrap().0;
+    let deposit = Decimal::from_str("1000").unwrap().atomics();
     // expected in juels
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().atomics();
 
     // -- set billing
 
-    // price in uLUNA
+    // price in uATOM
     let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
 
     let msg = ExecuteMsg::SetBilling {
@@ -874,10 +877,13 @@ fn set_link_token() {
             },
         )
         .unwrap();
-    let expected_balance = Decimal(deposit)
-        - (Decimal(Uint128::new(env.transmitters.len() as u128) * observation_payment)
-            + Decimal(reimbursement));
-    assert_eq!(Decimal(balance).to_string(), expected_balance.to_string());
+    let expected_balance = Decimal::new(deposit)
+        - (Decimal::new(Uint128::new(env.transmitters.len() as u128) * observation_payment)
+            + Decimal::new(reimbursement));
+    assert_eq!(
+        Decimal::new(balance).to_string(),
+        expected_balance.to_string()
+    );
 
     // token address should be changed
     let token_addr: Addr = env
@@ -894,7 +900,7 @@ fn revert_payouts_correctly() {
 
     // set billing
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().atomics();
     let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
     let msg = ExecuteMsg::SetBilling {
         config: Billing {
@@ -954,7 +960,7 @@ fn revert_payouts_correctly() {
     };
     assert!(env
         .router
-        .execute_contract(payee.clone(), env.ocr2_addr.clone(), &msg, &[])
+        .execute_contract(payee, env.ocr2_addr.clone(), &msg, &[])
         .is_err());
 
     // owed balance should not have changed
@@ -1086,7 +1092,7 @@ fn transmit_failing_validation() {
             env.ocr2_addr.clone(),
             &ExecuteMsg::SetValidatorConfig {
                 config: Some(Validator {
-                    address: validator_addr.clone(),
+                    address: validator_addr,
                     gas_limit: u64::MAX,
                 }),
             },
@@ -1142,10 +1148,10 @@ fn set_billing_payout() {
     let mut env = setup();
     // expected in juels
     let observation_payment = Uint128::from(5 * GIGA);
-    let reimbursement = Decimal::from_str("0.002445793504").unwrap().0;
+    let reimbursement = Decimal::from_str("0.002445793504").unwrap().atomics();
 
     // -- set billing
-    // price in uLUNA
+    // price in uATOM
     let recommended_gas_price = Decimal::from_str("0.01133").unwrap();
     let msg = ExecuteMsg::SetBilling {
         config: Billing {

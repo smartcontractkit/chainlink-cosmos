@@ -3,10 +3,10 @@
 use crate::contract::{execute, instantiate, query};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use cosmwasm_std::{Addr, Empty};
-use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, Contract, ContractWrapper, Executor};
 
 fn mock_app() -> App {
-    AppBuilder::new().build()
+    App::default()
 }
 
 pub fn contract_hello_world() -> Box<dyn Contract<Empty>> {
@@ -26,8 +26,8 @@ mod mock {
     };
     use cw_multi_test::{Contract, ContractWrapper};
 
-    use chainlink_terra::msg::QueryMsg as ChainlinkQueryMsg;
-    use chainlink_terra::state::Round;
+    use chainlink_cosmos::msg::QueryMsg as ChainlinkQueryMsg;
+    use chainlink_cosmos::state::Round;
 
     pub type InstantiateMsg = ();
     pub type ExecuteMsg = ();
@@ -122,7 +122,7 @@ fn it_works() {
         .is_ok());
 
     // query round
-    let round: chainlink_terra::state::Round = env
+    let round: chainlink_cosmos::state::Round = env
         .router
         .wrap()
         .query_wasm_smart(&env.hello_world_addr, &QueryMsg::Round {})

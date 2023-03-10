@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use access_controller::AccessControllerContract;
 use cosmwasm_std::{Addr, Binary, Uint128};
 use cw20::Cw20Contract;
-use cw_storage_plus::{Item, Map, U128Key, U32Key};
+use cw_storage_plus::{Item, Map};
 use owned::Auth;
 use std::convert::TryFrom;
 
@@ -33,16 +33,16 @@ pub mod bignum {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Validator {
     pub address: Addr,
     pub gas_limit: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Billing {
     /// Should match <https://fcd.terra.dev/v1/txs/gas_prices>.
-    /// For example if reports contain juels_per_luna, then recommended_gas_price is in uLUNA.
+    /// For example if reports contain juels_per_atom, then recommended_gas_price is in uATOM.
     pub recommended_gas_price_micro: Decimal,
     pub observation_payment_gjuels: u64,
     pub transmission_payment_gjuels: u64,
@@ -119,7 +119,7 @@ impl Config {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Proposal {
     pub owner: Addr,
     pub finalized: bool,
@@ -139,8 +139,8 @@ impl Proposal {
             hasher.update(transmitter.as_bytes());
             hasher.update(payee.as_bytes());
         }
-        hasher.update(&[self.f]);
-        hasher.update(&self.offchain_config_version.to_be_bytes());
+        hasher.update([self.f]);
+        hasher.update(self.offchain_config_version.to_be_bytes());
         hasher.update((self.offchain_config.len() as u32).to_be_bytes());
         hasher.update(&self.offchain_config.0);
         let result = hasher.finalize();
@@ -165,9 +165,9 @@ pub fn config_digest_from_data(
     use blake2::{Blake2s, Digest};
     let mut hasher = Blake2s::default();
     hasher.update(chain_id_length.to_be_bytes());
-    hasher.update(&chain_id.as_bytes());
+    hasher.update(chain_id.as_bytes());
     hasher.update(contract_address.as_bytes());
-    hasher.update(&config_count.to_be_bytes());
+    hasher.update(config_count.to_be_bytes());
     hasher.update([(oracles.len() as u8)]);
     for (signer, _) in oracles {
         hasher.update(&signer.0);
@@ -175,12 +175,12 @@ pub fn config_digest_from_data(
     for (_, transmitter) in oracles {
         hasher.update(transmitter.as_bytes());
     }
-    hasher.update(&[f]);
+    hasher.update([f]);
     hasher.update((onchain_config.len() as u32).to_be_bytes());
-    hasher.update(&onchain_config);
-    hasher.update(&offchain_config_version.to_be_bytes());
+    hasher.update(onchain_config);
+    hasher.update(offchain_config_version.to_be_bytes());
     hasher.update((offchain_config.len() as u32).to_be_bytes());
-    hasher.update(&offchain_config);
+    hasher.update(offchain_config);
     let result = hasher.finalize();
     let mut result: [u8; 32] = result.into();
     // prefix masking
@@ -189,7 +189,7 @@ pub fn config_digest_from_data(
     result
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Transmitter {
     /// Reimbursement in juels
     pub payment: Uint128,
@@ -197,7 +197,7 @@ pub struct Transmitter {
     pub from_round_id: u32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Transmission {
     #[serde(with = "bignum")]
     #[schemars(with = "String")]
@@ -206,7 +206,7 @@ pub struct Transmission {
     pub transmission_timestamp: u32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Round {
     pub round_id: u32,
     #[serde(with = "bignum")]
@@ -221,7 +221,7 @@ pub const OWNER: Auth = Auth::new("owner");
 pub const CONFIG: Item<Config> = Item::new("config");
 
 pub type ProposalId = Uint128;
-pub const PROPOSALS: Map<U128Key, Proposal> = Map::new("proposals");
+pub const PROPOSALS: Map<u128, Proposal> = Map::new("proposals");
 pub const NEXT_PROPOSAL_ID: Item<ProposalId> = Item::new("next_proposal_id");
 
 // An addr currently can't be converted to pubkey: https://docs.cosmos.network/master/architecture/adr-028-public-key-addresses.html
@@ -232,7 +232,7 @@ pub const TRANSMITTERS: Map<&Addr, Transmitter> = Map::new("transmitters");
 pub const SIGNERS: Map<&[u8], ()> = Map::new("signers");
 
 // round ID -> transmission
-pub const TRANSMISSIONS: Map<U32Key, Transmission> = Map::new("transmissions");
+pub const TRANSMISSIONS: Map<u32, Transmission> = Map::new("transmissions");
 
 // Addresses at which oracles want to receive payments.
 // transmitter -> payment address

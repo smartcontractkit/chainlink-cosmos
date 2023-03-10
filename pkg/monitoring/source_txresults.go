@@ -6,7 +6,8 @@ import (
 	"sync"
 
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	"github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
+
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
 )
 
 // NewTxResultsSourceFactory builds sources of TxResults objects expected by the relay monitoring.
@@ -24,17 +25,17 @@ func (t *txResultsSourceFactory) NewSource(
 	chainConfig relayMonitoring.ChainConfig,
 	feedConfig relayMonitoring.FeedConfig,
 ) (relayMonitoring.Source, error) {
-	terraConfig, ok := chainConfig.(TerraConfig)
+	cosmosConfig, ok := chainConfig.(CosmosConfig)
 	if !ok {
-		return nil, fmt.Errorf("expected chainConfig to be of type TerraConfig not %T", chainConfig)
+		return nil, fmt.Errorf("expected chainConfig to be of type CosmosConfig not %T", chainConfig)
 	}
-	terraFeedConfig, ok := feedConfig.(TerraFeedConfig)
+	cosmosFeedConfig, ok := feedConfig.(CosmosFeedConfig)
 	if !ok {
-		return nil, fmt.Errorf("expected feedConfig to be of type TerraFeedConfig not %T", feedConfig)
+		return nil, fmt.Errorf("expected feedConfig to be of type CosmosFeedConfig not %T", feedConfig)
 	}
 	return &txResultsSource{
-		terraConfig,
-		terraFeedConfig,
+		cosmosConfig,
+		cosmosFeedConfig,
 		t.client,
 		0,
 		sync.Mutex{},
@@ -46,9 +47,9 @@ func (t *txResultsSourceFactory) GetType() string {
 }
 
 type txResultsSource struct {
-	terraConfig     TerraConfig
-	terraFeedConfig TerraFeedConfig
-	client          fcdclient.Client
+	cosmosConfig     CosmosConfig
+	cosmosFeedConfig CosmosFeedConfig
+	client           fcdclient.Client
 
 	latestTxID   uint64
 	latestTxIDMu sync.Mutex
@@ -57,11 +58,11 @@ type txResultsSource struct {
 func (t *txResultsSource) Fetch(ctx context.Context) (interface{}, error) {
 	// Query the FCD endpoint.
 	response, err := t.client.GetTxList(ctx, fcdclient.GetTxListParams{
-		Account: t.terraFeedConfig.ContractAddress,
+		Account: t.cosmosFeedConfig.ContractAddress,
 		Limit:   10,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch transactions from terra FCD: %w", err)
+		return nil, fmt.Errorf("unable to fetch transactions from cosmos FCD: %w", err)
 	}
 	// Filter recent transactions
 	// TODO (dru) keep latest processed tx in the state.

@@ -1,12 +1,11 @@
 import { BN, inspection, logger, longs } from '@chainlink/gauntlet-core/dist/utils'
-import { providerUtils, RDD } from '@chainlink/gauntlet-terra'
+import { RDD, Client } from '@chainlink/gauntlet-terra'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { CATEGORIES, TOKEN_UNIT } from '../../../../lib/constants'
 import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
 import { deserializeConfig } from '../../../../lib/encoding'
 import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
 import { getLatestOCRConfigEvent } from '../../../../lib/inspection'
-import { LCDClient } from '@terra-money/terra.js'
 
 // Command input and expected info is the same here
 type ContractExpectedInfo = {
@@ -54,7 +53,7 @@ const makeInput = async (flags: any, args: string[]): Promise<ContractExpectedIn
   }
 }
 
-const makeOnchainData = (provider: LCDClient) => async (
+const makeOnchainData = (provider: Client) => async (
   instructionsData: any[],
   input: ContractExpectedInfo,
   aggregator: string,
@@ -72,7 +71,7 @@ const makeOnchainData = (provider: LCDClient) => async (
 
   const owedPerTransmitter: string[] = await Promise.all(
     transmitters.addresses.map((t) => {
-      return provider.wasm.contractQuery(aggregator, {
+      return provider.queryContractSmart(aggregator, {
         owed_payment: {
           transmitter: t,
         },
@@ -81,11 +80,12 @@ const makeOnchainData = (provider: LCDClient) => async (
   )
 
   const event = await getLatestOCRConfigEvent(provider, aggregator)
+  const offchain_config = event?.attributes.find(({ key }) => key === 'offchain_config')?.value
   let offchainConfig = {} as OffchainConfig
 
-  if (event?.offchain_config) {
+  if (offchain_config) {
     try {
-      offchainConfig = await deserializeConfig(Buffer.from(event.offchain_config[0], 'base64'))
+      offchainConfig = deserializeConfig(Buffer.from(offchain_config, 'base64'))
     } catch (e) {
       logger.warn('Could not deserialize offchain config')
     }

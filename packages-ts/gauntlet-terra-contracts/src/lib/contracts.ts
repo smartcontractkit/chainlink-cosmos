@@ -4,7 +4,6 @@ import { existsSync, readFileSync } from 'fs'
 import path from 'path'
 import fetch from 'node-fetch'
 import { DEFAULT_RELEASE_VERSION, DEFAULT_CWPLUS_VERSION } from './constants'
-import { AccAddress } from '@terra-money/terra.js'
 import { assertions } from '@chainlink/gauntlet-core/dist/utils'
 
 export type CONTRACT_LIST = typeof CONTRACT_LIST[keyof typeof CONTRACT_LIST]
@@ -41,7 +40,7 @@ export abstract class Contract {
   // Only load bytecode & schema later if needed
   version: string
   abi: TerraABI
-  bytecode: string
+  bytecode: Uint8Array
 
   constructor(id, dirName, defaultVersion) {
     this.id = id
@@ -60,6 +59,7 @@ export abstract class Contract {
       // Possible paths depending on how/where gauntlet is being executed
       const possibleContractPaths = [
         path.join(__dirname, '../../artifacts/bin'),
+        path.join(process.cwd(), './artifacts'),
         path.join(process.cwd(), './artifacts/bin'),
         path.join(process.cwd(), './tests/e2e/common_artifacts'),
         path.join(process.cwd(), './packages-ts/gauntlet-terra-contracts/artifacts/bin'),
@@ -67,10 +67,7 @@ export abstract class Contract {
 
       const codes = possibleContractPaths
         .filter((contractPath) => existsSync(`${contractPath}/${this.id}.wasm`))
-        .map((contractPath) => {
-          const wasm = readFileSync(`${contractPath}/${this.id}.wasm`)
-          return wasm.toString('base64')
-        })
+        .map((contractPath) => readFileSync(`${contractPath}/${this.id}.wasm`))
       this.bytecode = codes[0]
     } else {
       const url = `${this.downloadUrl}${version}/${this.id}.wasm`
@@ -80,7 +77,7 @@ export abstract class Contract {
       if (body.length == 0) {
         throw new Error(`Download ${this.id}.wasm failed`)
       }
-      this.bytecode = Buffer.from(body).toString('base64')
+      this.bytecode = Buffer.from(body)
     }
   }
 
@@ -120,7 +117,7 @@ export abstract class Contract {
 }
 
 class ChainlinkContract extends Contract {
-  readonly downloadUrl = `https://github.com/smartcontractkit/chainlink-terra/releases/download/`
+  readonly downloadUrl = `https://github.com/smartcontractkit/chainlink-cosmos/releases/download/`
 
   constructor(id, dirName, defaultVersion = DEFAULT_RELEASE_VERSION) {
     super(id, dirName, defaultVersion)

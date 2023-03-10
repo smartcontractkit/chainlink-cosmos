@@ -1,8 +1,7 @@
-import { RDD } from '@chainlink/gauntlet-terra'
+import { RDD, Client } from '@chainlink/gauntlet-terra'
 import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { CATEGORIES } from '../../../../lib/constants'
-import { LCDClient } from '@terra-money/terra.js'
 import { getLatestOCRNewTransmissionEvents, RoundData } from '../../../../lib/inspection'
 import { inspection, logger } from '@chainlink/gauntlet-core/dist/utils'
 import { dateFromUnix } from '../../../../lib/utils'
@@ -61,7 +60,7 @@ const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   }
 }
 
-const makeOnchainData = (provider: LCDClient) => async (
+const makeOnchainData = (provider: Client) => async (
   instructionsData: any[],
   input: CommandInput,
   aggregator: string,

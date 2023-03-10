@@ -1,4 +1,4 @@
-import { AccAddress } from '@terra-money/terra.js'
+import { AccAddress } from '@chainlink/gauntlet-terra'
 
 type EventOraclePaid = {
   payee: string

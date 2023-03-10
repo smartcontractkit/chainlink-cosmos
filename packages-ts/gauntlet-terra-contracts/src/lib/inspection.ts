@@ -1,5 +1,4 @@
-import { AccAddress, EventsByType, LCDClient } from '@terra-money/terra.js'
-import { providerUtils } from '@chainlink/gauntlet-terra'
+import { AccAddress, Client, providerUtils } from '@chainlink/gauntlet-terra'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 
 export type RoundData = {
@@ -9,25 +8,27 @@ export type RoundData = {
   transmissionTimestamp: number
 }
 
+// TODO: maybe use blockSearchAll via the tendermint client
+
 // TODO: find the right place for this function
-export const getLatestOCRConfigEvent = async (provider: LCDClient, contract: AccAddress) => {
+export const getLatestOCRConfigEvent = async (provider: Client, contract: AccAddress) => {
   // The contract only stores the block where the config was accepted. The tx log contains the config
-  const latestConfigDetails: any = await provider.wasm.contractQuery(contract, 'latest_config_details' as any)
+  const latestConfigDetails: any = await provider.queryContractSmart(contract, 'latest_config_details' as any)
   const setConfigTx = providerUtils.filterTxsByEvent(
-    await providerUtils.getBlockTxs(provider, latestConfigDetails.block_number),
+    // TODO: there has to be a way to filter by tag for event then scan single block
+    await provider.searchTx({ height: latestConfigDetails.block_number }),
     'wasm-set_config',
   )
 
-  return setConfigTx?.logs?.[0].eventsByType['wasm-set_config']
+  return setConfigTx?.events?.[0]
 }
 
 export const getLatestOCRNewTransmissionEvents = async (
-  provider: LCDClient,
+  provider: Client,
   contract: AccAddress,
-  amount = 10,
-): Promise<EventsByType[]> => {
+): Promise<providerUtils.Events> => {
   try {
-    return providerUtils.getLatestContractEvents(provider, 'wasm-new_transmission', contract, amount)
+    return providerUtils.getLatestContractEvents(provider, 'wasm-new_transmission', contract)
   } catch (e) {
     logger.error(`Error fetching latest transmission events: ${e.message}`)
     return []

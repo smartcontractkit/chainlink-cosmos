@@ -29,7 +29,7 @@ export default class DeployLink extends TerraCommand {
       name: 'ChainLink Token',
       symbol: 'LINK',
       decimals: TOKEN_DECIMALS,
-      initial_balances: [{ address: this.wallet.key.accAddress, amount: '1000000000000000000000000000' }],
+      initial_balances: [{ address: this.signer.address, amount: '1000000000000000000000000000' }],
       marketing: {
         project: 'Chainlink',
         logo: {
@@ -38,19 +38,19 @@ export default class DeployLink extends TerraCommand {
         },
       },
       mint: {
-        minter: this.wallet.key.accAddress,
+        minter: this.signer.address,
       },
     })
-    const result = await this.provider.wasm.contractQuery(deploy.address!, { token_info: {} })
-    logger.success(`LINK token successfully deployed at ${deploy.address} (txhash: ${deploy.hash})`)
+    const result = await this.provider.queryContractSmart(deploy.contractAddress!, { token_info: {} })
+    logger.success(`LINK token successfully deployed at ${deploy.contractAddress} (txhash: ${deploy.transactionHash})`)
     logger.debug(result)
     return {
       responses: [
         {
           tx: deploy,
-          contract: deploy.address,
+          contract: deploy.contractAddress,
         },
       ],
-    } as Result<TransactionResponse>
+    } as Result<any>
   }
 }

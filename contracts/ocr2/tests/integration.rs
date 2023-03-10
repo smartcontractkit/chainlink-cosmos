@@ -25,7 +25,7 @@ fn setup() -> Instance<MockApi, MockStorage, MockQuerier> {
     let mut deps = mock_instance(WASM, &[]);
 
     let msg = InstantiateMsg {
-        link_token: "LINK".to_string(),
+        link_token: "link".to_string(),
         min_answer: 0i128,
         max_answer: 100_000_000_000i128,
         billing_access_controller: "billing_controller".to_string(),
@@ -48,7 +48,7 @@ pub const REPORT2: &[u8] = &[
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 73, 150, 2, 210, // observation 1
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 73, 150, 2, 210, // observation 2
     0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0,
-    0, // juels per luna (1 with 18 decimal places)
+    0, // juels per atom (1 with 18 decimal places)
 ];
 
 #[test]
@@ -107,7 +107,7 @@ fn gas_test() {
     };
 
     let execute_info = mock_info(OWNER, &[]);
-    let response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
+    let _response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
 
     let msg = ExecuteMsg::ProposeOffchainConfig {
         id,
@@ -116,7 +116,7 @@ fn gas_test() {
     };
 
     let execute_info = mock_info(OWNER, &[]);
-    let response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
+    let _response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
 
     let msg = ExecuteMsg::FinalizeProposal { id };
     let execute_info = mock_info(OWNER, &[]);
@@ -186,7 +186,7 @@ fn gas_test() {
         // observation
         report.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 73, 150, 2, 210]);
     }
-    // juels per luna (1 with 18 decimal places)
+    // juels per atom (1 with 18 decimal places)
     report.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0]);
 
     let mut report_context = vec![0; 96];
@@ -200,8 +200,8 @@ fn gas_test() {
     epoch_and_round[31] = 1;
 
     // determine hash to sign
-    use blake2::{Blake2s, Digest};
-    let mut hasher = Blake2s::default();
+    use blake2::{Blake2s256, Digest};
+    let mut hasher = Blake2s256::default();
     hasher.update((report.len() as u32).to_be_bytes());
     hasher.update(&report);
     hasher.update(&report_context);
@@ -223,7 +223,7 @@ fn gas_test() {
         })
         .collect();
 
-    let n = signatures.len();
+    let _n = signatures.len();
 
     let gas_before = deps.get_gas_left();
 
@@ -237,7 +237,7 @@ fn gas_test() {
     let execute_info = mock_info(transmitter.as_str(), &[]);
     let _response: Response = execute(&mut deps, mock_env(), execute_info, msg).unwrap();
 
-    let gas_used = gas_before - deps.get_gas_left();
+    let _gas_used = gas_before - deps.get_gas_left();
     // unimplemented!("gas used: {} for {} signatures", gas_used, n);
     // 1 = 403574 / 406205 / 405237
     // 2 = 447190 / 445798 / 448000

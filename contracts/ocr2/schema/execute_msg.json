@@ -460,7 +460,7 @@
           "minimum": 0.0
         },
         "recommended_gas_price_micro": {
-          "description": "Should match <https://fcd.terra.dev/v1/txs/gas_prices>. For example if reports contain juels_per_luna, then recommended_gas_price is in uLUNA.",
+          "description": "Should match <https://fcd.terra.dev/v1/txs/gas_prices>. For example if reports contain juels_per_atom, then recommended_gas_price is in uATOM.",
           "allOf": [
             {
               "$ref": "#/definitions/Decimal"
@@ -475,7 +475,7 @@
       }
     },
     "Binary": {
-      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>",
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
       "type": "string"
     },
     "Cw20ReceiveMsg": {
@@ -496,7 +496,8 @@
         "sender": {
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Decimal": {
       "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",

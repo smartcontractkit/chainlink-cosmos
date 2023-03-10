@@ -1,18 +1,20 @@
 import { Result } from '@chainlink/gauntlet-core'
 import { time, logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
-import { AccAddress, MsgExecuteContract, MsgSend } from '@terra-money/terra.js'
+import { AccAddress } from '@chainlink/gauntlet-terra'
 import { isDeepEqual } from '../lib/utils'
 import { fetchProposalState, makeInspectionMessage } from './inspect'
 import { Vote, Cw3WasmMsg, Action, State, Cw3BankMsg, Expiration } from '../lib/types'
 
+import { toUtf8 } from '@cosmjs/encoding'
+import { EncodeObject } from '@cosmjs/proto-signing'
+import { MsgExecuteContractEncodeObject } from '@cosmjs/cosmwasm-stargate'
+import { MsgExecuteContract } from 'cosmjs-types/cosmwasm/wasm/v1/tx'
+import { MsgSend } from 'cosmjs-types/cosmos/bank/v1beta1/tx'
+
 export const DEFAULT_VOTING_PERIOD_IN_SECS = 24 * 60 * 60
 
-type ProposalAction = (
-  signer: AccAddress,
-  proposalId: number,
-  message: (MsgExecuteContract | MsgSend)[],
-) => Promise<MsgExecuteContract[]>
+type ProposalAction = (signer: AccAddress, proposalId: number, message: EncodeObject[]) => Promise<object>
 
 export const wrapCommand = (command) => {
   return class Multisig extends TerraCommand {
@@ -52,7 +54,7 @@ export const wrapCommand = (command) => {
 
       if (state.proposal.nextAction !== Action.CREATE) {
         this.require(
-          await this.isSameProposal(
+          this.isSameProposal(
             state.proposal.data,
             messages.map((element) => this.toMsg(element)),
           ),
@@ -61,24 +63,35 @@ export const wrapCommand = (command) => {
       }
 
       const proposal_id = Number(this.flags.proposal || this.flags.multisigProposal) // alias requested by eng ops
-      return operations[state.proposal.nextAction](signer, Number(proposal_id), messages)
+      let input = operations[state.proposal.nextAction](signer, Number(proposal_id), messages)
+
+      const msg: MsgExecuteContractEncodeObject = {
+        typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
+        value: MsgExecuteContract.fromPartial({
+          sender: signer,
+          contract: this.multisig,
+          msg: toUtf8(JSON.stringify(input)),
+          funds: [],
+        }),
+      }
+      return [msg]
     }
 
     isSameProposal = (proposalMsgs: (Cw3WasmMsg | Cw3BankMsg)[], generatedMsgs: (Cw3WasmMsg | Cw3BankMsg)[]) => {
       return isDeepEqual(proposalMsgs, generatedMsgs)
     }
 
-    toMsg = (message: MsgSend | MsgExecuteContract): Cw3BankMsg | Cw3WasmMsg => {
-      if (message instanceof MsgSend) return this.toBankMsg(message as MsgSend)
-      if (message instanceof MsgExecuteContract) return this.toWasmMsg(message as MsgExecuteContract)
+    toMsg = (message: EncodeObject): Cw3BankMsg | Cw3WasmMsg => {
+      if ('amount' in message.value) return this.toBankMsg(message.value as MsgSend)
+      if ('contract' in message.value) return this.toWasmMsg(message.value as MsgExecuteContract)
     }
 
     toBankMsg = (message: MsgSend): Cw3BankMsg => {
       return {
         bank: {
           send: {
-            amount: message.amount.toArray().map((c) => c.toData()),
-            to_address: message.to_address,
+            amount: message.amount,
+            to_address: message.toAddress,
           },
         },
       }
@@ -89,8 +102,8 @@ export const wrapCommand = (command) => {
         wasm: {
           execute: {
             contract_addr: message.contract,
-            funds: message.coins.toArray().map((c) => c.toData()),
-            msg: Buffer.from(JSON.stringify(message.execute_msg)).toString('base64'),
+            funds: message.funds,
+            msg: Buffer.from(JSON.stringify(message.msg)).toString('base64'),
           },
         },
       }
@@ -127,10 +140,11 @@ export const wrapCommand = (command) => {
           latest: expiration,
         },
       }
-      return [new MsgExecuteContract(signer, this.multisig, proposeInput)]
+
+      return proposeInput
     }
 
-    makeAcceptTransaction: ProposalAction = async (signer, proposalId) => {
+    makeAcceptTransaction: ProposalAction = async (signer, proposalId, _) => {
       logger.info(`Generating data for approving proposal ${proposalId}`)
       const approvalInput = {
         vote: {
@@ -138,17 +152,17 @@ export const wrapCommand = (command) => {
           proposal_id: proposalId,
         },
       }
-      return [new MsgExecuteContract(signer, this.multisig, approvalInput)]
+      return approvalInput
     }
 
-    makeExecuteTransaction: ProposalAction = async (signer, proposalId) => {
+    makeExecuteTransaction: ProposalAction = async (signer, proposalId, _) => {
       logger.info(`Generating data for executing multisig proposal ${proposalId}`)
       const executeInput = {
         execute: {
           proposal_id: proposalId,
         },
       }
-      return [new MsgExecuteContract(signer, this.multisig, executeInput)]
+      return executeInput
     }
 
     fetchState = async (proposalId?: number): Promise<State> => {
@@ -186,7 +200,7 @@ export const wrapCommand = (command) => {
         await this.printPostInstructions(proposalId)
         return
       }
-      const rawTx = await this.makeRawTransaction(this.wallet.key.accAddress, state)
+      const rawTx = await this.makeRawTransaction(this.signer.address, state)
 
       const actionMessage = {
         [Action.CREATE]: 'CREATING',
@@ -212,7 +226,8 @@ export const wrapCommand = (command) => {
         }
 
         if (state.proposal.nextAction === Action.CREATE) {
-          const proposalFromEvent = tx.events[0].wasm.proposal_id[0]
+          // const proposalFromEvent = tx.events[0].wasm.proposal_id[0] TODO
+          const proposalFromEvent = 'a'
           logger.success(`New proposal created with multisig proposal ID: ${proposalFromEvent}`)
           proposalId = Number(proposalFromEvent)
         }
@@ -229,7 +244,7 @@ export const wrapCommand = (command) => {
       }
 
       // TODO: Test raw message
-      const msgData = Buffer.from(JSON.stringify(rawTx[0].execute_msg)).toString('base64')
+      const msgData = Buffer.from(JSON.stringify(rawTx[0].value)).toString('base64')
       logger.line()
       logger.success(`Message generated succesfully for ${actionMessage[state.proposal.nextAction]} multisig proposal`)
       logger.log()

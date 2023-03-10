@@ -115,6 +115,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   }
 }
 
+// TODO: ton of duplication with acceptProposal
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, input) => async () => {
   const tryDeserialize = (config: string): OffchainConfig => {
     try {
@@ -126,10 +127,11 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
 
   // Config in contract
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
-  const offchainConfigInContract = event?.offchain_config
-    ? tryDeserialize(event.offchain_config[0])
-    : ({} as OffchainConfig)
-  const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, { f: event?.f })
+  const attr = event?.attributes.find(({ key }) => key === 'offchain_config')?.value
+  const offchainConfigInContract = attr ? tryDeserialize(attr) : ({} as OffchainConfig)
+  const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, {
+    f: event?.attributes.find(({ key }) => key === 'f')?.value,
+  })
 
   // Proposed config
   const proposedOffchainConfig = tryDeserialize(input.contract.offchain_config)

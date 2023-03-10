@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 // TODO: Deduplicate (also declared in 'contracts/ocr2/src/state.rs')
-// https://github.com/smartcontractkit/chainlink-terra/issues/18
+// https://github.com/smartcontractkit/chainlink-cosmos/issues/18
 pub mod bignum {
     use serde::{self, Deserialize, Deserializer, Serializer};
 
@@ -23,7 +23,7 @@ pub mod bignum {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct InstantiateMsg {
     /// The address of the flags contract
     pub flags: String,
@@ -33,7 +33,7 @@ pub struct InstantiateMsg {
     pub flagging_threshold: u32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Initiate contract ownership transfer to another address.
@@ -70,7 +70,7 @@ pub enum ExecuteMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     /// Check whether the parameters count is valid by comparing the difference
@@ -96,7 +96,7 @@ pub enum QueryMsg {
     Owner,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct FlaggingThresholdResponse {
     pub threshold: u32,
 }

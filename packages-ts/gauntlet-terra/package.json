@@ -1,7 +1,7 @@
 {
   "name": "@chainlink/gauntlet-terra",
   "version": "0.0.1",
-  "repository": "https://github.com/smartcontractkit/chainlink-terra",
+  "repository": "https://github.com/smartcontractkit/chainlink-cosmos",
   "license": "MIT",
   "engines": {
     "node": ">= 14"
@@ -32,9 +32,11 @@
   },
   "dependencies": {
     "@chainlink/gauntlet-core": "0.2.0",
-    "@ledgerhq/hw-transport-node-hid": "^6.20.0",
-    "@terra-money/ledger-terra-js": "^1.2.1",
-    "@terra-money/terra.js": "^3.0.6",
-    "secp256k1": "^4.0.3"
+    "@cosmjs/cosmwasm-stargate": "^0.29.3",
+    "@cosmjs/encoding": "^0.29.3",
+    "@cosmjs/ledger-amino": "^0.29.3",
+    "@cosmjs/proto-signing": "^0.29.3",
+    "@cosmjs/stargate": "^0.29.3",
+    "@ledgerhq/hw-transport-node-hid": "^6.20.0"
   }
 }

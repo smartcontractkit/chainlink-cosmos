@@ -27,7 +27,7 @@ export default class QueryContractCode extends TerraCommand {
     // Execute query
     const responses: any[] = []
     try {
-      const result = await this.query(this.args[0], this.flags.msg)
+      const result = await this.provider.queryContractSmart(this.args[0], this.flags.msg)
       logger.info(`Query finished with result: ${JSON.stringify(result)}`)
       responses.push(result)
     } catch (error) {

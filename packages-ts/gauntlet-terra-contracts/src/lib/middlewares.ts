@@ -1,7 +1,7 @@
 import { TerraCommand, logger } from '@chainlink/gauntlet-terra'
 import { Middleware, Next, AddressBook } from '@chainlink/gauntlet-core'
 import { CONTRACT_LIST } from './contracts'
-import { AccAddress } from '@terra-money/terra.js'
+import { AccAddress } from '@chainlink/gauntlet-terra'
 
 const addressBooks = new Map<string, AddressBook>()
 
@@ -11,12 +11,12 @@ const addressBooks = new Map<string, AddressBook>()
 // The logger also needs a reference to addressBook for logger.styleAddress(),
 // but currently supports only one network
 //
-export const withAddressBook: Middleware = (c: TerraCommand, next: Next) => {
-  const chainId = c.provider.config.chainID
+export const withAddressBook: Middleware = async (c: TerraCommand, next: Next) => {
+  const chainId = await c.provider.getChainId()
 
   if (!addressBooks.has(chainId)) {
     addressBooks[chainId] = new AddressBook()
-    addressBooks[chainId].setOperator(c.wallet.key.accAddress)
+    addressBooks[chainId].setOperator(c.signer.address)
 
     const tryAddInstance = (id: CONTRACT_LIST, address: string | undefined, name?: string) => {
       if (!address) {

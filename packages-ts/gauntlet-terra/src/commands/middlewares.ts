@@ -1,43 +1,53 @@
-import { LCDClient, Key, MnemonicKey } from '@terra-money/terra.js'
-import { LedgerKey } from './ledgerKey'
 import { Middleware, Next } from '@chainlink/gauntlet-core'
 import { assertions, io, logger } from '@chainlink/gauntlet-core/dist/utils'
+import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import TerraCommand from './internal/terra'
 import path from 'path'
 import { existsSync } from 'fs'
-import { BIP44_LUNA_PATH } from '../lib/constants'
+import { DirectSecp256k1HdWallet, OfflineSigner } from '@cosmjs/proto-signing'
+import { LedgerSigner } from '@cosmjs/ledger-amino'
+import TransportNodeHid from '@ledgerhq/hw-transport-node-hid'
+import { makeCosmoshubPath } from '@cosmjs/proto-signing'
+import { GasPrice } from '@cosmjs/stargate'
 
 const isValidURL = (a) => true
-export const withProvider: Middleware = (c: TerraCommand, next: Next) => {
+
+export const withProvider: Middleware = async (c: TerraCommand, next: Next) => {
   const nodeURL = process.env.NODE_URL
   assertions.assert(
     nodeURL && isValidURL(nodeURL),
     `Invalid NODE_URL (${nodeURL}), please add an http:// or https:// prefix`,
   )
-  c.provider = new LCDClient({
-    URL: nodeURL,
-    chainID: process.env.CHAIN_ID,
-    gasPrices: { uluna: process.env.DEFAULT_GAS_PRICE },
-  })
-  return next()
-}
 
-export const withWallet: Middleware = async (c: TerraCommand, next: Next) => {
-  let key: Key
+  let wallet: OfflineSigner
   if (c.flags.withLedger || !!process.env.WITH_LEDGER) {
-    const path = c.flags.ledgerPath || BIP44_LUNA_PATH
-    key = await LedgerKey.create(path)
+    // TODO: allow specifying custom path, using stringToPath. BIP44_ATOM_PATH was different for example
+    // const rawPath = c.flags.ledgerPath || BIP44_ATOM_PATH
+    const transport = await TransportNodeHid.create()
+
+    const accounts = [0] // we only use the first account?
+    const paths = accounts.map((account) => makeCosmoshubPath(account))
+
+    wallet = new LedgerSigner(transport, {
+      // testModeAllowed: true,
+      hdPaths: paths,
+    })
   } else {
     const mnemonic = process.env.MNEMONIC
     assertions.assert(!!mnemonic, `Missing MNEMONIC, please add one`)
-
-    key = new MnemonicKey({
-      mnemonic: mnemonic,
-    })
+    wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, { prefix: 'wasm' }) // TODO customizable, in sync with Addr
+    // TODO: set hdPaths too, if using different path
   }
+  let [signer] = await wallet.getAccounts()
 
-  c.wallet = c.provider.wallet(key)
-  logger.debug(`Operator address is ${c.wallet.key.accAddress}`)
+  c.wallet = wallet
+  c.signer = signer
+
+  logger.info(`Operator address is ${c.signer.address}`)
+
+  c.provider = await SigningCosmWasmClient.connectWithSigner(nodeURL, wallet, {
+    gasPrice: GasPrice.fromString(process.env.DEFAULT_GAS_PRICE),
+  })
   return next()
 }
 

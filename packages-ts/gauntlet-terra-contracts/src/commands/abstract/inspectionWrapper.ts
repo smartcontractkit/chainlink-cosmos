@@ -1,10 +1,9 @@
 import { makeAbstractCommand } from '.'
 import { Result } from '@chainlink/gauntlet-core'
-import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
+import { Client, TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { CATEGORIES } from '../../lib/constants'
 import { CONTRACT_LIST } from '../../lib/contracts'
-import { LCDClient } from '@terra-money/terra.js'
 import { withAddressBook } from '../../lib/middlewares'
 
 /**
@@ -32,7 +31,7 @@ export interface InspectInstruction<CommandInput, ContractExpectedInfo> {
   }[]
   makeInput: (flags: any, args: string[]) => Promise<CommandInput>
   makeOnchainData: (
-    provider: LCDClient,
+    provider: Client,
   ) => (instructionsData: any[], input: CommandInput, contractAddress: string) => Promise<ContractExpectedInfo>
   inspect: (expected: CommandInput, data: ContractExpectedInfo) => boolean
 }

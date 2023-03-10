@@ -15,16 +15,16 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cosmwasm-std = { version = "0.16.2" }
-cosmwasm-storage = { version = "0.16.0" }
-cw-storage-plus = "0.9.0"
-cw2 = "0.9.0"
+cosmwasm-std = { version = "1.1.5" }
+cosmwasm-storage = { version = "1.1.5" }
+cw-storage-plus = "0.16.0"
+cw2 = "0.16.0"
 schemars = "0.8.3"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.24" }
 
-chainlink-terra = { version = "1.0", package = "proxy-ocr2", path = "../../contracts/proxy-ocr2", default-features = false, features = ["library"] }
+chainlink-cosmos = { version = "1.0", package = "proxy-ocr2", path = "../../contracts/proxy-ocr2", default-features = false, features = ["library"] }
 
 [dev-dependencies]
-cosmwasm-schema = { version = "0.16.0" }
-cw-multi-test = "0.9.1"
+cosmwasm-schema = { version = "1.1.5" }
+cw-multi-test = "0.16.0"

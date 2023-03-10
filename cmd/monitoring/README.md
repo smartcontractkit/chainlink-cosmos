@@ -1,16 +1,16 @@
-# Terra on-chain monitor
+# On-chain monitor
 
 ## Example of running the monitor locally
 
 ```bash
-TERRA_TENDERMINT_URL="<some terra url>" \
-TERRA_FCD_URL="https://fcd.terra.dev/" \
-TERRA_NETWORK_NAME="terra-devnet" \
-TERRA_NETWORK_ID="terra-devnet" \
-TERRA_CHAIN_ID="1" \
-TERRA_READ_TIMEOUT="15s" \
-TERRA_POLL_INTERVAL="5s" \
-TERRA_LINK_TOKEN_ADDRESS="terra1eq0xqc88ceuvw2ztz2a08200he8lrgvnplrcst" \
+COSMOS_TENDERMINT_URL="<some terra url>" \
+COSMOS_FCD_URL="https://fcd.cosmos.dev/" \
+COSMOS_NETWORK_NAME="cosmos-devnet" \
+COSMOS_NETWORK_ID="cosmos-devnet" \
+COSMOS_CHAIN_ID="1" \
+COSMOS_READ_TIMEOUT="15s" \
+COSMOS_POLL_INTERVAL="5s" \
+COSMOS_LINK_TOKEN_ADDRESS="terra1eq0xqc88ceuvw2ztz2a08200he8lrgvnplrcst" \
 KAFKA_BROKERS="localhost:29092" \
 KAFKA_CLIENT_ID=“terra” \
 KAFKA_SECURITY_PROTOCOL="PLAINTEXT" \

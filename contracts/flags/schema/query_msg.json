@@ -5,8 +5,14 @@
     {
       "type": "string",
       "enum": [
-        "owner",
         "raising_access_controller"
+      ]
+    },
+    {
+      "description": "Returns contract owner's address Response [`Addr`]",
+      "type": "string",
+      "enum": [
+        "owner"
       ]
     },
     {

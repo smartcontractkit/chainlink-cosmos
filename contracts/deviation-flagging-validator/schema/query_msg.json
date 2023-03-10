@@ -3,13 +3,6 @@
   "title": "QueryMsg",
   "oneOf": [
     {
-      "type": "string",
-      "enum": [
-        "flagging_threshold",
-        "owner"
-      ]
-    },
-    {
       "description": "Check whether the parameters count is valid by comparing the difference change to the flagging threshold Response: [`bool`]",
       "type": "object",
       "required": [
@@ -35,6 +28,20 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "description": "Query the flagging threshold Response: [`u32`]",
+      "type": "string",
+      "enum": [
+        "flagging_threshold"
+      ]
+    },
+    {
+      "description": "Returns contract owner's address Response [`Addr`]",
+      "type": "string",
+      "enum": [
+        "owner"
+      ]
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "name": "@chainlink/gauntlet-terra-cw-plus",
   "version": "0.0.1",
-  "repository": "https://github.com/smartcontractkit/chainlink-terra",
+  "repository": "https://github.com/smartcontractkit/chainlink-cosmos",
   "license": "MIT",
   "engines": {
     "node": ">= 14"

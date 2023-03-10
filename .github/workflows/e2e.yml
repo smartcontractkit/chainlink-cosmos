@@ -79,13 +79,10 @@ jobs:
           repository: ${{ inputs.repo_name }}
           ref: ${{ inputs.ref }}
       - name: Install Nix
-        uses: cachix/install-nix-action@v14
+        uses: cachix/install-nix-action@5c11eae19dba042788936d4f1c9685fdd814ac49 # v19
         with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+          nix_path: nixpkgs=channel:nixos-unstable
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:

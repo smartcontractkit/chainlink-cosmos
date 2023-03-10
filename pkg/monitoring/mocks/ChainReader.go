@@ -21,8 +21,8 @@ type ChainReader struct {
 	mock.Mock
 }
 
-// ContractStore provides a mock function with given fields: ctx, contractAddress, queryMsg
-func (_m *ChainReader) ContractStore(ctx context.Context, contractAddress types.AccAddress, queryMsg []byte) ([]byte, error) {
+// ContractState provides a mock function with given fields: ctx, contractAddress, queryMsg
+func (_m *ChainReader) ContractState(ctx context.Context, contractAddress types.AccAddress, queryMsg []byte) ([]byte, error) {
 	ret := _m.Called(ctx, contractAddress, queryMsg)
 
 	var r0 []byte

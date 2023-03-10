@@ -1,11 +1,15 @@
 import { Result } from '@chainlink/gauntlet-core'
-import { AccAddress, MsgExecuteContract } from '@terra-money/terra.js'
-import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
+import { AccAddress } from '@chainlink/gauntlet-terra'
+import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { TransactionResponse, TerraCommand } from '@chainlink/gauntlet-terra'
 import { Contract, CONTRACT_LIST, contracts, TerraABI, TERRA_OPERATIONS } from '../../lib/contracts'
-import { DEFAULT_RELEASE_VERSION } from '../../lib/constants'
+// import { DEFAULT_RELEASE_VERSION } from '../../lib/constants'
 import schema from '../../lib/schema'
 import { withAddressBook } from '../../lib/middlewares'
+import { MsgExecuteContract } from 'cosmjs-types/cosmwasm/wasm/v1/tx'
+import { MsgExecuteContractEncodeObject } from '@cosmjs/cosmwasm-stargate'
+import { EncodeObject } from '@cosmjs/proto-signing'
+import { toUtf8 } from '@cosmjs/encoding'
 
 export interface AbstractOpts {
   contract: Contract
@@ -126,9 +130,18 @@ export default class AbstractCommand extends TerraCommand {
     this.contracts = [this.opts.contract.id]
   }
 
-  makeRawTransaction = async (signer: AccAddress): Promise<MsgExecuteContract[]> => {
-    const address = this.args[0]
-    return [new MsgExecuteContract(signer, address, this.params)]
+  makeRawTransaction = async (signer: AccAddress): Promise<EncodeObject[]> => {
+    const contractAddress = this.args[0]
+    const msg: MsgExecuteContractEncodeObject = {
+      typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
+      value: MsgExecuteContract.fromPartial({
+        sender: signer,
+        contract: contractAddress,
+        msg: toUtf8(JSON.stringify(this.params)),
+        funds: [],
+      }),
+    }
+    return [msg]
   }
 
   abstractDeploy: AbstractExecute = async (params: any) => {
@@ -136,21 +149,21 @@ export default class AbstractCommand extends TerraCommand {
     const codeId = this.codeIds[this.opts.contract.id]
     this.require(!!codeId, `Code Id for contract ${this.opts.contract.id} not found`)
     const deploy = await this.deploy(codeId, params)
-    logger.success(`Deployed ${this.opts.contract.id} to ${deploy.address}`)
+    logger.success(`Deployed ${this.opts.contract.id} to ${deploy.contractAddress}`)
     return {
       responses: [
         {
           tx: deploy,
-          contract: deploy.address,
+          contract: deploy.contractAddress,
         },
       ],
-    } as Result<TransactionResponse>
+    } as Result<any>
   }
 
   abstractExecute: AbstractExecute = async (params: any, address: string) => {
     logger.debug(`Executing ${this.opts.function} from contract ${this.opts.contract.id} at ${address}`)
     const tx = await this.call(address, params)
-    logger.debug(`Execution finished at tx ${tx.hash}`)
+    logger.debug(`Execution finished at tx ${tx.transactionHash}`)
     return {
       responses: [
         {
@@ -158,12 +171,12 @@ export default class AbstractCommand extends TerraCommand {
           contract: address,
         },
       ],
-    } as Result<TransactionResponse>
+    } as Result<any>
   }
 
   abstractQuery: AbstractExecute = async (params: any, address: string) => {
     logger.debug(`Calling ${this.opts.function} from contract ${this.opts.contract.id} at ${address}`)
-    const result = await this.query(address, params)
+    const result = await this.provider.queryContractSmart(address, params)
     logger.debug(`Query finished with result: ${JSON.stringify(result)}`)
     return {
       data: result,
@@ -172,7 +185,7 @@ export default class AbstractCommand extends TerraCommand {
           contract: address,
         },
       ],
-    } as Result<TransactionResponse>
+    } as Result<any>
   }
 
   abstractHelp: AbstractExecute = async () => {
@@ -185,19 +198,15 @@ export default class AbstractCommand extends TerraCommand {
     }
   }
 
-  simulateExecute = async () => {
+  simulateExecute_ = async () => {
     if (this.opts.action !== TERRA_OPERATIONS.EXECUTE) {
       logger.info('Skipping tx simulation for non-execute operation')
       return
     }
 
-    const signer = this.wallet.key.accAddress // signer is the default loaded wallet
     const contractAddress = this.args[0]
-    const input = this.params
-    const msg = new MsgExecuteContract(signer, contractAddress, input)
     logger.loading(`Executing tx simulation for ${this.opts.contract.id}:${this.opts.function} at ${contractAddress}`)
-
-    const estimatedGas = await this.simulate(signer, [msg])
+    const estimatedGas = await this.simulateExecute(contractAddress, [this.params])
     logger.info(`Tx simulation successful: estimated gas usage is ${estimatedGas}`)
     return estimatedGas
   }

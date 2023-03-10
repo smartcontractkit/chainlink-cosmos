@@ -5,7 +5,7 @@ use cosmwasm_std::{
     Response, StdError,
 };
 
-use cw_storage_plus::{Item, Map, U16Key};
+use cw_storage_plus::{Item, Map};
 
 use thiserror::Error;
 
@@ -32,7 +32,7 @@ pub enum ContractError {
     CannotMigrate { previous_contract: String },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Phase {
     pub id: u16,
     pub contract_address: Addr,
@@ -41,12 +41,12 @@ pub struct Phase {
 pub const OWNER: Auth = Auth::new("owner");
 pub const CURRENT_PHASE: Item<Phase> = Item::new("current_phase");
 pub const PROPOSED_CONTRACT: Item<Addr> = Item::new("proposed_contract");
-pub const PHASES: Map<U16Key, Addr> = Map::new("phases");
+pub const PHASES: Map<u16, Addr> = Map::new("phases");
 
 pub mod state {
     use super::*;
     /// Identical to [ocr2::state::Round], but modified to use a larger round_id to account for phase_id.
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
     pub struct Round {
         pub round_id: u64,
         #[serde(with = "ocr2::state::bignum")]
@@ -60,12 +60,12 @@ pub mod state {
 pub mod msg {
     use super::*;
 
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
     pub struct InstantiateMsg {
         pub contract_address: String,
     }
 
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub enum ExecuteMsg {
         ProposeContract {
@@ -84,7 +84,7 @@ pub mod msg {
         AcceptOwnership,
     }
 
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub enum QueryMsg {
         Decimals,
@@ -125,7 +125,7 @@ pub fn instantiate(
 
     OWNER.initialize(deps.storage, info.sender)?;
 
-    PHASES.save(deps.storage, 1.into(), &contract_address)?;
+    PHASES.save(deps.storage, 1, &contract_address)?;
     CURRENT_PHASE.save(
         deps.storage,
         &Phase {
@@ -178,7 +178,7 @@ pub fn execute(
 
             PHASES.save(
                 deps.storage,
-                current_phase.id.into(),
+                current_phase.id,
                 &current_phase.contract_address,
             )?;
 
@@ -202,7 +202,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
             let contract_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
             let decimals: u8 = deps
                 .querier
-                .query_wasm_smart(&contract_address, &ocr2::msg::QueryMsg::Decimals)?;
+                .query_wasm_smart(contract_address, &ocr2::msg::QueryMsg::Decimals)?;
             Ok(to_binary(&decimals)?)
         }
         QueryMsg::Version => {
@@ -221,7 +221,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
         }
         QueryMsg::RoundData { round_id } => {
             let (phase_id, round_id) = parse_round_id(round_id);
-            let contract_address = PHASES.load(deps.storage, phase_id.into())?;
+            let contract_address = PHASES.load(deps.storage, phase_id)?;
 
             let round: ocr2::state::Round = deps.querier.query_wasm_smart(
                 contract_address,
@@ -261,7 +261,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
             Ok(to_binary(&phase_id)?)
         }
         QueryMsg::PhaseAggregators { phase_id } => {
-            let contract_address = PHASES.load(deps.storage, phase_id.into())?;
+            let contract_address = PHASES.load(deps.storage, phase_id)?;
             Ok(to_binary(&contract_address)?)
         }
         QueryMsg::ProposedAggregator => {

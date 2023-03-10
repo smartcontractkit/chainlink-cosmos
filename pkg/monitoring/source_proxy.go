@@ -9,7 +9,7 @@ import (
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 )
 
-// ProxyData is a subset of the data returned by the Terra feed proxy contract's "latest_round_data" method.
+// ProxyData is a subset of the data returned by the Cosmos feed proxy contract's "latest_round_data" method.
 type ProxyData struct {
 	Answer *big.Int
 }
@@ -28,19 +28,19 @@ func (p *proxySourceFactory) NewSource(
 	chainConfig relayMonitoring.ChainConfig,
 	feedConfig relayMonitoring.FeedConfig,
 ) (relayMonitoring.Source, error) {
-	terraConfig, ok := chainConfig.(TerraConfig)
+	cosmosConfig, ok := chainConfig.(CosmosConfig)
 	if !ok {
-		return nil, fmt.Errorf("expected chainConfig to be of type TerraConfig not %T", chainConfig)
+		return nil, fmt.Errorf("expected chainConfig to be of type CosmosConfig not %T", chainConfig)
 	}
-	terraFeedConfig, ok := feedConfig.(TerraFeedConfig)
+	cosmosFeedConfig, ok := feedConfig.(CosmosFeedConfig)
 	if !ok {
-		return nil, fmt.Errorf("expected feedConfig to be of type TerraFeedConfig not %T", feedConfig)
+		return nil, fmt.Errorf("expected feedConfig to be of type CosmosFeedConfig not %T", feedConfig)
 	}
 	return &proxySource{
 		p.client,
 		p.log,
-		terraConfig,
-		terraFeedConfig,
+		cosmosConfig,
+		cosmosFeedConfig,
 	}, nil
 }
 
@@ -49,15 +49,15 @@ func (p *proxySourceFactory) GetType() string {
 }
 
 type proxySource struct {
-	client          ChainReader
-	log             relayMonitoring.Logger
-	terraConfig     TerraConfig
-	terraFeedConfig TerraFeedConfig
+	client           ChainReader
+	log              relayMonitoring.Logger
+	cosmosConfig     CosmosConfig
+	cosmosFeedConfig CosmosFeedConfig
 }
 
 func (p *proxySource) Fetch(ctx context.Context) (interface{}, error) {
-	if p.terraFeedConfig.ProxyAddressBech32 == "" {
-		p.log.Debugw("skipping fetch because no proxy contract is configured", "feed", p.terraFeedConfig.ContractAddressBech32)
+	if p.cosmosFeedConfig.ProxyAddressBech32 == "" {
+		p.log.Debugw("skipping fetch because no proxy contract is configured", "feed", p.cosmosFeedConfig.ContractAddressBech32)
 		return nil, relayMonitoring.ErrNoUpdate
 	}
 	answer, err := p.fetchLatestRoundFromProxy(ctx)
@@ -73,9 +73,9 @@ type latestRoundDataRes struct {
 }
 
 func (p *proxySource) fetchLatestRoundFromProxy(ctx context.Context) (*big.Int, error) {
-	res, err := p.client.ContractStore(
+	res, err := p.client.ContractState(
 		ctx,
-		p.terraFeedConfig.ProxyAddress,
+		p.cosmosFeedConfig.ProxyAddress,
 		[]byte(`"latest_round_data"`),
 	)
 	if err != nil {

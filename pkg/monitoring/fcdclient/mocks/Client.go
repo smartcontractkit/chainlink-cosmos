@@ -5,8 +5,9 @@ package mocks
 import (
 	context "context"
 
-	fcdclient "github.com/smartcontractkit/chainlink-terra/pkg/monitoring/fcdclient"
 	mock "github.com/stretchr/testify/mock"
+
+	fcdclient "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
 
 	testing "testing"
 )
