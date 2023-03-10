@@ -1,9 +1,8 @@
 package client
 
 import (
-	"net/url"
+	"errors"
 	"testing"
-	"time"
 
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"go.uber.org/zap"
@@ -33,18 +32,28 @@ func TestGasPriceEstimators(t *testing.T) {
 	})
 
 	t.Run("caching", func(t *testing.T) {
-		gpeFCD := NewFCDGasPriceEstimator(newConfig(t, "https://fcd.terra.dev:443/v1/txs/gas_prices"), 10*time.Second, lggr)
-		cachingFCD := NewCachingGasPriceEstimator(gpeFCD, lggr)
+		responses := []sdk.DecCoin{
+			sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("10")),
+		}
+		gpe := NewClosureGasPriceEstimator(func() (map[string]sdk.DecCoin, error) {
+			if len(responses) == 0 {
+				return nil, errors.New("no more prices")
+			}
+			var price sdk.DecCoin
+			price, responses = responses[0], responses[1:]
+			return map[string]sdk.DecCoin{
+				"ucosm": price,
+			}, nil
+		})
+		cachedGpe := NewCachingGasPriceEstimator(gpe, lggr)
 
 		// Fill cache
-		prices, err := cachingFCD.GasPrices()
+		prices, err := cachedGpe.GasPrices()
 		require.NoError(t, err)
 
-		// Use cache
-		const badURL = "https://does.not.exist:443/v1/txs/gas_prices"
-		gpeFCD.cfg = newConfig(t, badURL)
+		// Use cache, no more prices returned from estimator
 		t.Cleanup(assertLogsLen(t, 1))
-		cachedPrices, err := cachingFCD.GasPrices()
+		cachedPrices, err := cachedGpe.GasPrices()
 		require.NoError(t, err)
 		assert.Equal(t, prices["ucosm"], cachedPrices["ucosm"])
 	})
@@ -64,37 +73,32 @@ func TestGasPriceEstimators(t *testing.T) {
 	})
 
 	t.Run("composed", func(t *testing.T) {
-		gpeFCD := NewFCDGasPriceEstimator(newConfig(t, "https://does.not.exist:443/v1/txs/gas_prices"), 10*time.Second, lggr)
-		cachingFCD := NewCachingGasPriceEstimator(gpeFCD, lggr)
+		responses := []sdk.DecCoin{}
+		closureGpe := NewClosureGasPriceEstimator(func() (map[string]sdk.DecCoin, error) {
+			if len(responses) == 0 {
+				return nil, errors.New("no more prices")
+			}
+			var price sdk.DecCoin
+			price, responses = responses[0], responses[1:]
+			return map[string]sdk.DecCoin{
+				"ucosm": price,
+			}, nil
+		})
+		cachingGpe := NewCachingGasPriceEstimator(closureGpe, lggr)
 		gpeFixed := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
 			"ucosm": sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("10")),
 		})
-		gpe := NewMustGasPriceEstimator([]GasPricesEstimator{cachingFCD, gpeFixed}, lggr)
+		gpe := NewMustGasPriceEstimator([]GasPricesEstimator{cachingGpe, gpeFixed}, lggr)
 		t.Cleanup(assertLogsLen(t, 1))
 		fixedPrices := gpe.GasPrices()
 		ucosm, ok := fixedPrices["ucosm"]
 		assert.True(t, ok)
 		assert.Equal(t, "10.000000000000000000", ucosm.Amount.String())
 		// If the url starts working, it should use that.
-		const goodURL = "https://fcd.terra.dev:443/v1/txs/gas_prices"
-		gpeFCD.cfg = newConfig(t, goodURL)
-		fcdPrices := gpe.GasPrices()
-		ucosm, ok = fcdPrices["ucosm"]
+		responses = append(responses, sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("9")))
+		gpePrices := gpe.GasPrices()
+		ucosm, ok = gpePrices["ucosm"]
 		assert.True(t, ok)
 		assert.NotEqual(t, "10.000000000000000000", ucosm.Amount.String())
 	})
-}
-
-type config struct {
-	fcdURL url.URL
-}
-
-func newConfig(t *testing.T, u string) *config {
-	parsed, err := url.Parse(u)
-	require.NoError(t, err)
-	return &config{*parsed}
-}
-
-func (c *config) FCDURL() url.URL {
-	return c.fcdURL
 }
