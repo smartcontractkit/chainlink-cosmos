@@ -92,10 +92,5 @@ func (ReportCodec) ParseReport(data []byte) (*Report, error) {
 		return nil, err
 	}
 
-	if len(reportRaw.Observations) == 0 {
-		err := errors.New("empty observations set in report")
-		return nil, err
-	}
-
 	return &reportRaw, nil
 }
