@@ -17,7 +17,6 @@ var _ types.ContractTransmitter = &CosmosModuleTransmitter{}
 type CosmosModuleTransmitter struct {
 	lggr        logger.Logger
 	queryClient chaintypes.QueryClient
-	reportCodec median_report.ReportCodec
 	msgEnqueuer adapters.MsgEnqueuer
 	feedID      string
 	sender      cosmosSDK.AccAddress
@@ -27,7 +26,6 @@ func NewCosmosModuleTransmitter(
 	queryClient chaintypes.QueryClient,
 	feedId string,
 	sender cosmosSDK.AccAddress,
-	reportCodec median_report.ReportCodec,
 	msgEnqueuer adapters.MsgEnqueuer,
 	lggr logger.Logger,
 ) *CosmosModuleTransmitter {
@@ -35,7 +33,6 @@ func NewCosmosModuleTransmitter(
 		lggr:        lggr,
 		feedID:      feedId,
 		queryClient: queryClient,
-		reportCodec: reportCodec,
 		msgEnqueuer: msgEnqueuer,
 		sender:      sender,
 	}
@@ -54,7 +51,7 @@ func (c *CosmosModuleTransmitter) Transmit(
 ) error {
 	// TODO: design how to decouple Cosmos reporting from reportingplugins of OCR2
 	// The reports are not necessarily numeric (see: titlerequest).
-	reportRaw, err := c.reportCodec.ParseReport(report)
+	reportRaw, err := median_report.ParseReport(report)
 	if err != nil {
 		return err
 	}

@@ -118,7 +118,7 @@ func NewMedianProvider(ctx context.Context, lggr logger.Logger, chainSet adapter
 	if err != nil {
 		return nil, err
 	}
-	transmitter := NewCosmosModuleTransmitter(injectiveClient, configProvider.feedID, senderAddr, reportCodec, configProvider.chain.TxManager(), lggr)
+	transmitter := NewCosmosModuleTransmitter(injectiveClient, configProvider.feedID, senderAddr, configProvider.chain.TxManager(), lggr)
 	return &medianProvider{
 		configProvider: configProvider,
 		reportCodec:    reportCodec,
