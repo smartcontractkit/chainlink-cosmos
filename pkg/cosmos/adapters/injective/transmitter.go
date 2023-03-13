@@ -17,7 +17,6 @@ var _ types.ContractTransmitter = &CosmosModuleTransmitter{}
 type CosmosModuleTransmitter struct {
 	lggr        logger.Logger
 	queryClient chaintypes.QueryClient
-	reportCodec median_report.ReportCodec
 	msgEnqueuer adapters.MsgEnqueuer
 	feedID      string
 	sender      cosmosSDK.AccAddress
@@ -27,7 +26,6 @@ func NewCosmosModuleTransmitter(
 	queryClient chaintypes.QueryClient,
 	feedId string,
 	sender cosmosSDK.AccAddress,
-	reportCodec median_report.ReportCodec,
 	msgEnqueuer adapters.MsgEnqueuer,
 	lggr logger.Logger,
 ) *CosmosModuleTransmitter {
@@ -35,7 +33,6 @@ func NewCosmosModuleTransmitter(
 		lggr:        lggr,
 		feedID:      feedId,
 		queryClient: queryClient,
-		reportCodec: reportCodec,
 		msgEnqueuer: msgEnqueuer,
 		sender:      sender,
 	}
@@ -49,12 +46,12 @@ func (c *CosmosModuleTransmitter) FromAccount() types.Account {
 func (c *CosmosModuleTransmitter) Transmit(
 	ctx context.Context,
 	reportCtx types.ReportContext,
-	report types.Report,
+	rawReport types.Report,
 	signatures []types.AttributedOnchainSignature,
 ) error {
 	// TODO: design how to decouple Cosmos reporting from reportingplugins of OCR2
 	// The reports are not necessarily numeric (see: titlerequest).
-	reportRaw, err := c.reportCodec.ParseReport(report)
+	report, err := median_report.ParseReport(rawReport)
 	if err != nil {
 		return err
 	}
@@ -66,12 +63,8 @@ func (c *CosmosModuleTransmitter) Transmit(
 		Epoch:        uint64(reportCtx.Epoch),
 		Round:        uint64(reportCtx.Round),
 		ExtraHash:    reportCtx.ExtraHash[:],
-		Report: &chaintypes.Report{ // chain only understands median.Report for now
-			ObservationsTimestamp: reportRaw.ObservationsTimestamp,
-			Observers:             reportRaw.Observers,
-			Observations:          reportRaw.Observations,
-		},
-		Signatures: make([][]byte, 0, len(signatures)),
+		Report:       report, // chain only understands median.Report for now
+		Signatures:   make([][]byte, 0, len(signatures)),
 	}
 
 	for _, sig := range signatures {

@@ -79,21 +79,13 @@ func (c *CosmosModuleConfigTracker) LatestConfig(
 
 	signers := make([]types.OnchainPublicKey, 0, len(resp.FeedConfig.Signers))
 	for _, addr := range resp.FeedConfig.Signers {
-		acc, err := sdk.AccAddressFromBech32(addr)
-		if err != nil {
-			panic(err)
-		}
-
+		acc := sdk.MustAccAddressFromBech32(addr)
 		signers = append(signers, types.OnchainPublicKey(acc.Bytes()))
 	}
 
 	transmitters := make([]types.Account, 0, len(resp.FeedConfig.Transmitters))
 	for _, addr := range resp.FeedConfig.Transmitters {
-		acc, err := sdk.AccAddressFromBech32(addr)
-		if err != nil {
-			panic(err)
-		}
-
+		acc := sdk.MustAccAddressFromBech32(addr)
 		transmitters = append(transmitters, types.Account(acc.String()))
 	}
 
