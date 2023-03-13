@@ -46,12 +46,12 @@ func (c *CosmosModuleTransmitter) FromAccount() types.Account {
 func (c *CosmosModuleTransmitter) Transmit(
 	ctx context.Context,
 	reportCtx types.ReportContext,
-	report types.Report,
+	rawReport types.Report,
 	signatures []types.AttributedOnchainSignature,
 ) error {
 	// TODO: design how to decouple Cosmos reporting from reportingplugins of OCR2
 	// The reports are not necessarily numeric (see: titlerequest).
-	reportRaw, err := median_report.ParseReport(report)
+	report, err := median_report.ParseReport(rawReport)
 	if err != nil {
 		return err
 	}
@@ -63,12 +63,8 @@ func (c *CosmosModuleTransmitter) Transmit(
 		Epoch:        uint64(reportCtx.Epoch),
 		Round:        uint64(reportCtx.Round),
 		ExtraHash:    reportCtx.ExtraHash[:],
-		Report: &chaintypes.Report{ // chain only understands median.Report for now
-			ObservationsTimestamp: reportRaw.ObservationsTimestamp,
-			Observers:             reportRaw.Observers,
-			Observations:          reportRaw.Observations,
-		},
-		Signatures: make([][]byte, 0, len(signatures)),
+		Report:       report, // chain only understands median.Report for now
+		Signatures:   make([][]byte, 0, len(signatures)),
 	}
 
 	for _, sig := range signatures {
