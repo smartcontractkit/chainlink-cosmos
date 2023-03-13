@@ -1,0 +1,22 @@
+wasmd:
+  image:
+    repository: cosmwasm/wasmd
+    tag: v0.30.0
+    pullPolicy: IfNotPresent
+
+  resources:
+    limits:
+      cpu: '1000m'
+      memory: '1024Mi'
+    requests:
+      cpu: '1000m'
+      memory: '1024Mi'
+
+  args:
+    - /opt/setup_and_run.sh
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

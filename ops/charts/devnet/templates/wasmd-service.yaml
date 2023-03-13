@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wasmd-service
+spec:
+  selector:
+    app: wasmd
+  type: ClusterIP
+  ports:
+    - name: "tendermint-rpc"
+      port: 26657
+      targetPort: tendermint-rpc
+    - name: "tendermint-p2p"
+      port: 26656
+      targetPort: tendermint-p2p
+    - name: "lcd"
+      port: 1317
+      targetPort: lcd
+    - name: "tendermint-grpc"
+      port: 9090
+      targetPort: tendermint-grpc
+    - name: "web-grpc"
+      port: 9091
+      targetPort: web-grpc
+  selector:
+    app: wasmd
+    release: {{ .Release.Name }}

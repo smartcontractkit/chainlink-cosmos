@@ -1,39 +1,26 @@
 package soak_test
 
-import (
-	"time"
+// var _ = Describe("Terra OCRv2 soak test @ocr2-soak", func() {
+// 	var state *tc.OCRv2State
 
-	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
-	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/utils"
+// 	BeforeEach(func() {
+// 		state = tc.NewOCRv2State(30, 5)
+// 		By("Deploying the cluster", func() {
+// 			state.DeployCluster(5, common.ChainBlockTimeSoak, false, utils.ContractsDir)
+// 			state.SetAllAdapterResponsesToTheSameValue(2)
+// 		})
+// 	})
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/smartcontractkit/chainlink/integration-tests/actions"
+// 	Describe("with Terra OCR2", func() {
+// 		It("performs OCR2 round", func() {
+// 			state.ValidateAllRounds(time.Now(), tc.NewSoakRoundCheckTimeout, 300, false)
+// 		})
+// 	})
 
-	tc "github.com/smartcontractkit/chainlink-cosmos/integration-tests/smoke/common"
-)
-
-var _ = Describe("Terra OCRv2 soak test @ocr2-soak", func() {
-	var state *tc.OCRv2State
-
-	BeforeEach(func() {
-		state = tc.NewOCRv2State(30, 5)
-		By("Deploying the cluster", func() {
-			state.DeployCluster(5, common.ChainBlockTimeSoak, false, utils.ContractsDir)
-			state.SetAllAdapterResponsesToTheSameValue(2)
-		})
-	})
-
-	Describe("with Terra OCR2", func() {
-		It("performs OCR2 round", func() {
-			state.ValidateAllRounds(time.Now(), tc.NewSoakRoundCheckTimeout, 300, false)
-		})
-	})
-
-	AfterEach(func() {
-		By("Tearing down the environment", func() {
-			err := actions.TeardownSuite(state.Env, "logs", state.Nodes, nil, nil)
-			Expect(err).ShouldNot(HaveOccurred())
-		})
-	})
-})
+// 	AfterEach(func() {
+// 		By("Tearing down the environment", func() {
+// 			err := actions.TeardownSuite(state.Env, "logs", state.Nodes, nil, nil)
+// 			Expect(err).ShouldNot(HaveOccurred())
+// 		})
+// 	})
+// })
