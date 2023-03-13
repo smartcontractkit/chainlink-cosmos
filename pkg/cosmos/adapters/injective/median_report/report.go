@@ -67,10 +67,8 @@ func (ReportCodec) MaxReportLength(n int) int {
 }
 
 func (ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
-	var reportRaw Report
-
-	if err := proto.Unmarshal([]byte(report), &reportRaw); err != nil {
-		err = fmt.Errorf("failed to unmarshal data as median_report.Report: %w", err)
+	reportRaw, err := ParseReport([]byte(report))
+	if err != nil {
 		return nil, err
 	}
 
@@ -84,7 +82,7 @@ func (ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
 	return median, nil
 }
 
-func (ReportCodec) ParseReport(data []byte) (*Report, error) {
+func ParseReport(data []byte) (*Report, error) {
 	var reportRaw Report
 
 	if err := proto.Unmarshal(data, &reportRaw); err != nil {
