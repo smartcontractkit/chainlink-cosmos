@@ -1,4 +1,0 @@
-### Migration test
-```shell
-CHAINLINK_IMAGE="${REGISTRY}" CHAINLINK_VERSION="${IMAGE_SHA}" CHAINLINK_IMAGE_TO="${REGISTRY}" CHAINLINK_VERSION_TO="${IMAGE_SHA}" make test_migration
-```

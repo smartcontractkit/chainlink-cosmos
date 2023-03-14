@@ -1,37 +1,32 @@
 package smoke_test
 
 import (
-	"errors"
+	"fmt"
 	"testing"
 
+	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
+	"github.com/smartcontractkit/chainlink-cosmos/ops/gauntlet"
+	"github.com/smartcontractkit/chainlink-cosmos/ops/utils"
 	"github.com/test-go/testify/require"
 )
 
+var (
+	err error
+)
+
 func TestOCRBasic(t *testing.T) {
-	require.NoError(t, errors.New("implement me"))
+	testState := &common.Test{
+		T: t,
+	}
+	testState.Common = common.New()
+	testState.Common.Default(t)
+	// Setting this to the root of the repo for cmd exec func for Gauntlet
+	testState.Cg, err = gauntlet.NewCosmosGauntlet(fmt.Sprintf("%s/", utils.ProjectRoot))
+	require.NoError(t, err, "Could not get a new gauntlet struct")
+	testState.DeployCluster()
+	require.NoError(t, err, "Deploying cluster should not fail")
+	if testState.Common.Env.WillUseRemoteRunner() {
+		return // short circuit here if using a remote runner
+	}
+
 }
-
-// var _ = Describe("Terra OCRv2 @ocr2", func() {
-// 	var state *tc.OCRv2State
-
-// 	BeforeEach(func() {
-// 		state = tc.NewOCRv2State(1, 5)
-// 		By("Deploying the cluster", func() {
-// 			state.DeployCluster(5, common.ChainBlockTime, false, utils.ContractsDir)
-// 			state.SetAllAdapterResponsesToTheSameValue(2)
-// 		})
-// 	})
-
-// 	Describe("with Terra OCR2", func() {
-// 		It("performs OCR2 round", func() {
-// 			state.ValidateAllRounds(time.Now(), tc.NewRoundCheckTimeout, 10, false)
-// 		})
-// 	})
-
-// 	AfterEach(func() {
-// 		By("Tearing down the environment", func() {
-// 			err := actions.TeardownSuite(state.Env, "logs", state.Nodes, nil, nil)
-// 			Expect(err).ShouldNot(HaveOccurred())
-// 		})
-// 	})
-// })
