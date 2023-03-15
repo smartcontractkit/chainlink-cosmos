@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"github.com/smartcontractkit/chainlink-cosmos/ops/wasmd"
 	"github.com/smartcontractkit/chainlink-env/environment"
 	"github.com/smartcontractkit/chainlink-env/pkg/alias"
@@ -92,35 +91,36 @@ func New() *Common {
 
 func (c *Common) Default(t *testing.T) {
 	c.K8Config = &environment.Config{NamespacePrefix: "chainlink-ocr-cosmos", TTL: c.TTL, Test: t}
-	wasmdUrl := fmt.Sprintf("http://%s:%d", chainName, 9091)
-	if c.Testnet {
-		wasmdUrl = c.L2RPCUrl
-	}
-	baseTOML := fmt.Sprintf(`[[Cosmos]]
-Enabled = true
-ChainID = '%s'
+	// These can be uncommented when toml configuration is supposrted for cosmos in the chainlink node
+	// 	wasmdUrl := fmt.Sprintf("http://%s:%d", chainName, 9091)
+	// 	if c.Testnet {
+	// 		wasmdUrl = c.L2RPCUrl
+	// 	}
+	// 	baseTOML := fmt.Sprintf(`[[Cosmos]]
+	// Enabled = true
+	// ChainID = '%s'
 
-[[Cosmos.Nodes]]
-Name = 'primary'
-URL = '%s'
+	// [[Cosmos.Nodes]]
+	// Name = 'primary'
+	// URL = '%s'
 
-[OCR2]
-Enabled = true
+	// [OCR2]
+	// Enabled = true
 
-[P2P]
-[P2P.V2]
-Enabled = true
-DeltaDial = '5s'
-DeltaReconcile = '5s'
-ListenAddresses = ['0.0.0.0:6690']
-`, c.ChainId, wasmdUrl)
-	log.Debug().Str("toml", baseTOML).Msg("TOML")
+	// [P2P]
+	// [P2P.V2]
+	// Enabled = true
+	// DeltaDial = '5s'
+	// DeltaReconcile = '5s'
+	// ListenAddresses = ['0.0.0.0:6690']
+	// `, c.ChainId, wasmdUrl)
+	// log.Debug().Str("toml", baseTOML).Msg("TOML")
 	c.ClConfig = map[string]interface{}{
 		"replicas": c.NodeCount,
-		"toml":     baseTOML,
+		// "toml":     baseTOML,
 	}
 	c.Env = environment.New(c.K8Config).
-		AddHelm(wasmd.New(nil, "")).
+		AddHelm(wasmd.New(nil)).
 		AddHelm(mockservercfg.New(nil)).
 		AddHelm(mockserver.New(nil)).
 		AddHelm(chainlink.New(0, c.ClConfig))

@@ -7,21 +7,21 @@ import (
 
 	"github.com/smartcontractkit/chainlink-cosmos/ops/utils"
 	"github.com/smartcontractkit/chainlink-env/client"
+	"github.com/smartcontractkit/chainlink-env/config"
 	"github.com/smartcontractkit/chainlink-env/environment"
 )
 
-type Props struct {
-	NetworkName string   `envconfig:"network_name"`
-	HttpURLs    []string `envconfig:"http_url"`
-	WsURLs      []string `envconfig:"ws_url"`
-	Values      map[string]interface{}
-}
+const (
+	AppName = "chainlink"
+)
+
+type Props struct{}
 
 type HelmProps struct {
 	Name    string
 	Path    string
 	Version string
-	Values  *map[string]interface{}
+	Values  *map[string]any
 }
 
 type Chart struct {
@@ -33,7 +33,7 @@ func (m Chart) IsDeploymentNeeded() bool {
 	return true
 }
 
-func (m Chart) GetProps() interface{} {
+func (m Chart) GetProps() any {
 	return m.Props
 }
 
@@ -49,7 +49,7 @@ func (m Chart) GetVersion() string {
 	return m.HelmProps.Version
 }
 
-func (m Chart) GetValues() *map[string]interface{} {
+func (m Chart) GetValues() *map[string]any {
 	return m.HelmProps.Values
 }
 
@@ -70,57 +70,47 @@ func (m Chart) ExportData(e *environment.Environment) error {
 	if err != nil {
 		return err
 	}
-	e.URLs[m.Props.NetworkName] = []string{netLocal, netLocalWS}
+	e.URLs[AppName] = []string{netLocal, netLocalWS}
 	if e.Cfg.InsideK8s {
-		e.URLs[m.Props.NetworkName] = []string{netInternal, netInternalWS}
+		e.URLs[AppName] = []string{netInternal, netInternalWS}
 	}
-	log.Info().Str("Name", m.Props.NetworkName).Str("URLs", netLocal).Msg("Cosmos network")
+	log.Info().Str("Name", AppName).Str("URLs", netLocal).Msg("Cosmos network")
 	return nil
 }
 
-func defaultProps() *Props {
-	return &Props{
-		NetworkName: "wasmd",
-		Values: map[string]interface{}{
-			"replicas": "1",
-			"wasmd": map[string]interface{}{
-				"image": map[string]interface{}{
-					"image":   "cosmwasm/wasmd",
-					"version": "v0.30.0",
+func defaultValues() map[string]any {
+	return map[string]any{
+		"replicas": "1",
+		"wasmd": map[string]any{
+			"image": map[string]any{
+				"image":   "cosmwasm/wasmd",
+				"version": "v0.30.0", // TODO: may want to ty this to an env var
+			},
+			"resources": map[string]any{
+				"requests": map[string]any{
+					"cpu":    "1000m",
+					"memory": "1024Mi",
 				},
-				"resources": map[string]interface{}{
-					"requests": map[string]interface{}{
-						"cpu":    "1000m",
-						"memory": "1024Mi",
-					},
-					"limits": map[string]interface{}{
-						"cpu":    "1000m",
-						"memory": "1024Mi",
-					},
+				"limits": map[string]any{
+					"cpu":    "1000m",
+					"memory": "1024Mi",
 				},
 			},
 		},
 	}
 }
 
-func New(props *Props, path string) environment.ConnectedChart {
-	return NewVersioned("", props, path)
-}
-
-// NewVersioned enables choosing a specific helm chart version
-func NewVersioned(helmVersion string, props *Props, path string) environment.ConnectedChart {
-	if props == nil {
-		props = defaultProps()
-	}
-	if path == "" {
-		path = "chainlink-qa/wasmd"
+func New(props *Props) environment.ConnectedChart {
+	dp := defaultValues()
+	if props != nil {
+		config.MustMerge(&dp, props)
 	}
 	return Chart{
 		HelmProps: &HelmProps{
 			Name:    "wasmd",
 			Path:    fmt.Sprintf("%s/charts/devnet", utils.OpsRoot),
-			Values:  &props.Values,
-			Version: helmVersion,
+			Version: "",
+			Values:  &dp,
 		},
 		Props: props,
 	}
