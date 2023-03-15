@@ -20,7 +20,7 @@ import (
 
 const (
 	chainName          = "wasmd"
-	chainID            = "wasmd"
+	chainID            = "testing"
 	ChainBlockTime     = "200ms"
 	ChainBlockTimeSoak = "2s"
 )

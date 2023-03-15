@@ -22,6 +22,15 @@ spec:
           env:
             - name: PASSWORD
               value: cosm1234
+            - name: CHAIN_ID
+              value: testing
+            # If we need to change these for better control in testing we can
+            # - name: MONIKER
+            #   value: node001
+            # - name: STAKE
+            #   value: ustake
+            # - name: FEE
+            #   value: ucosm
           command: ["/opt/setup_and_run.sh"]
 {{- with .Values.wasmd.args }}
           args:
@@ -42,14 +51,6 @@ spec:
           resources:
 {{ toYaml . | indent 12 }}
 {{- end }}
-          # volumeMounts:
-          #   - name: wasmd-cm
-          #     mountPath: /root/.wasmd
-      restartPolicy: Always
-      # volumes:
-      #   - name: wasmd-cm
-      #     configMap:
-      #       name: wasmd-cm
 {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
