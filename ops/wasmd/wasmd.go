@@ -1,17 +1,11 @@
 package wasmd
 
-import (
-	"context"
-
-	"github.com/go-resty/resty/v2"
-)
-
-type StarkNetDevnetClient struct {
-	ctx      context.Context
-	cancel   context.CancelFunc
-	client   *resty.Client
-	dumpPath string
-}
+// type CosmosDevnetClient struct {
+// 	ctx      context.Context
+// 	cancel   context.CancelFunc
+// 	client   *resty.Client
+// 	dumpPath string
+// }
 
 // func (devnet *StarkNetDevnetClient) NewStarkNetDevnetClient(rpcUrl string, dumpPath string) *StarkNetDevnetClient {
 // 	ctx, cancel := context.WithCancel(context.Background())
