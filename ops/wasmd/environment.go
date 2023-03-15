@@ -118,7 +118,7 @@ func NewVersioned(helmVersion string, props *Props, path string) environment.Con
 	return Chart{
 		HelmProps: &HelmProps{
 			Name:    "wasmd",
-			Path:    fmt.Sprintf("%s/charts/wasmd", utils.OpsRoot),
+			Path:    fmt.Sprintf("%s/charts/devnet", utils.OpsRoot),
 			Values:  &props.Values,
 			Version: helmVersion,
 		},

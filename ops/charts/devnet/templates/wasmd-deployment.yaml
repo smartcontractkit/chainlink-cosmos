@@ -19,6 +19,10 @@ spec:
         - name: wasmd
           image: "{{ .Values.wasmd.image.repository }}:{{ .Values.wasmd.image.tag }}"
           imagePullPolicy: {{.Values.wasmd.image.pullPolicy}}
+          env:
+            - name: PASSWORD
+              value: cosm1234
+          command: ["/opt/setup_and_run.sh"]
 {{- with .Values.wasmd.args }}
           args:
 {{ toYaml . | indent 12 }}
@@ -34,18 +38,18 @@ spec:
             containerPort: 9090
           - name: web-grpc
             containerPort: 9091
-{{- if .Values.wasmd.resources }}
+{{- with .Values.wasmd.resources }}
           resources:
 {{ toYaml . | indent 12 }}
 {{- end }}
-          volumeMounts:
-            - name: wasmd-cm
-              mountPath: /root/.wasmd/config
+          # volumeMounts:
+          #   - name: wasmd-cm
+          #     mountPath: /root/.wasmd
       restartPolicy: Always
-      volumes:
-        - name: wasmd-cm
-          configMap:
-            name: wasmd-cm
+      # volumes:
+      #   - name: wasmd-cm
+      #     configMap:
+      #       name: wasmd-cm
 {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}

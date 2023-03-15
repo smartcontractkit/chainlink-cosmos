@@ -12,9 +12,6 @@ wasmd:
       cpu: '1000m'
       memory: '1024Mi'
 
-  args:
-    - /opt/setup_and_run.sh
-
 nodeSelector: {}
 
 tolerations: []

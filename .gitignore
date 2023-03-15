@@ -23,4 +23,5 @@ packages-ts/gauntlet-terra-contracts/networks/.env.test*
 integration-tests/logs
 integration-tests/smoke/logs
 integration-tests/soak/logs
+tmp-manifest-*
 artifacts
