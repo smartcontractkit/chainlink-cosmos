@@ -61,9 +61,6 @@ type Config interface {
 	OCR2CachePollPeriod() time.Duration
 	OCR2CacheTTL() time.Duration
 	TxMsgTimeout() time.Duration
-
-	// Update sets new chain config values.
-	Update(db.ChainCfg)
 }
 
 type configSet struct {
@@ -89,18 +86,13 @@ type config struct {
 }
 
 // NewConfig returns a Config with defaults overridden by dbcfg.
+// TODO: remove mutex
 func NewConfig(dbcfg db.ChainCfg, lggr logger.Logger) *config {
 	return &config{
 		defaults: defaultConfigSet,
 		chain:    dbcfg,
 		lggr:     lggr,
 	}
-}
-
-func (c *config) Update(dbcfg db.ChainCfg) {
-	c.chainMu.Lock()
-	c.chain = dbcfg
-	c.chainMu.Unlock()
 }
 
 func (c *config) BlockRate() time.Duration {
