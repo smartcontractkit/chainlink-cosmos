@@ -78,7 +78,7 @@ func (m Chart) ExportData(e *environment.Environment) error {
 	return nil
 }
 
-func defaultValues() map[string]any {
+func defaultProps() map[string]any {
 	return map[string]any{
 		"replicas": "1",
 		"wasmd": map[string]any{
@@ -101,7 +101,7 @@ func defaultValues() map[string]any {
 }
 
 func New(props *Props) environment.ConnectedChart {
-	dp := defaultValues()
+	dp := defaultProps()
 	if props != nil {
 		config.MustMerge(&dp, props)
 	}
