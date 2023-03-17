@@ -1,4 +1,4 @@
-package fcdclient
+package lcdclient
 
 import (
 	"context"

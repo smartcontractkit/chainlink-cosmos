@@ -33,7 +33,7 @@ type ChainCfg struct {
 	BlocksUntilTxTimeout  null.Int
 	ConfirmPollPeriod     *utils.Duration
 	FallbackGasPriceUAtom null.String
-	FCDURL                null.String `db:"fcd_url"`
+	LCDURL                null.String `db:"lcd_url"`
 	GasLimitMultiplier    null.Float
 	MaxMsgsPerBatch       null.Int
 	OCR2CachePollPeriod   *utils.Duration

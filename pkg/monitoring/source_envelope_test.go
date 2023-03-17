@@ -15,8 +15,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
-	fcdclientmocks "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient/mocks"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/lcdclient"
+	lcdclientmocks "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/lcdclient/mocks"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/mocks"
 )
 
@@ -30,11 +30,11 @@ func TestEnvelopeSource(t *testing.T) {
 	linkAvailableForPaymentRes := []byte(`{"amount":"-380431529018756503364"}`)
 	getBlockRaw, err := os.ReadFile("./fixtures/set_config-block.json")
 	require.NoError(t, err)
-	getBlockRes := fcdclient.Response{}
+	getBlockRes := lcdclient.Response{}
 	require.NoError(t, json.Unmarshal(getBlockRaw, &getBlockRes))
 	getTxsRaw, err := os.ReadFile("./fixtures/new_transmission-txs.json")
 	require.NoError(t, err)
-	getTxsRes := fcdclient.Response{}
+	getTxsRes := lcdclient.Response{}
 	require.NoError(t, json.Unmarshal(getTxsRaw, &getTxsRes))
 
 	// Configurations.
@@ -45,11 +45,11 @@ func TestEnvelopeSource(t *testing.T) {
 
 	// Setup mocks.
 	rpcClient := new(mocks.ChainReader)
-	fcdClient := new(fcdclientmocks.Client)
+	lcdClient := new(lcdclientmocks.Client)
 	// Transmission
-	fcdClient.On("GetTxList",
+	lcdClient.On("GetTxList",
 		mock.Anything, // context
-		fcdclient.GetTxListParams{Account: feedConfig.ContractAddress, Limit: 10},
+		lcdclient.GetTxListParams{Account: feedConfig.ContractAddress, Limit: 10},
 	).Return(getTxsRes, nil).Once()
 	// Configuration
 	rpcClient.On("ContractState",
@@ -57,7 +57,7 @@ func TestEnvelopeSource(t *testing.T) {
 		feedConfig.ContractAddress,
 		[]byte(`"latest_config_details"`),
 	).Return(latestConfigDetailsRes, nil).Once()
-	fcdClient.On("GetBlockAtHeight",
+	lcdClient.On("GetBlockAtHeight",
 		mock.Anything,   // context
 		uint64(6805892), // See ./fixtures/set_config-block.json
 	).Return(getBlockRes, nil).Once()
@@ -75,7 +75,7 @@ func TestEnvelopeSource(t *testing.T) {
 	).Return(linkAvailableForPaymentRes, nil).Once()
 
 	// Execute Fetch()
-	factory := NewEnvelopeSourceFactory(rpcClient, fcdClient, newNullLogger())
+	factory := NewEnvelopeSourceFactory(rpcClient, lcdClient, newNullLogger())
 	source, err := factory.NewSource(chainConfig, feedConfig)
 	require.NoError(t, err)
 	rawEnvelope, err := source.Fetch(ctx)
@@ -156,9 +156,9 @@ func TestEnvelopeSource(t *testing.T) {
 		[]byte(`"latest_config_details"`),
 	).Return(latestConfigDetailsRes, nil).Once()
 	// Transmission
-	fcdClient.On("GetTxList",
+	lcdClient.On("GetTxList",
 		mock.Anything, // context
-		fcdclient.GetTxListParams{Account: feedConfig.ContractAddress, Limit: 10},
+		lcdclient.GetTxListParams{Account: feedConfig.ContractAddress, Limit: 10},
 	).Return(getTxsRes, nil).Once()
 	// LINK Balance
 	rpcClient.On("ContractState",

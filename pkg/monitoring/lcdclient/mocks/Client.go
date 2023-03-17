@@ -7,7 +7,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	fcdclient "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
+	lcdclient "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/lcdclient"
 
 	testing "testing"
 )
@@ -18,14 +18,14 @@ type Client struct {
 }
 
 // GetBlockAtHeight provides a mock function with given fields: _a0, _a1
-func (_m *Client) GetBlockAtHeight(_a0 context.Context, _a1 uint64) (fcdclient.Response, error) {
+func (_m *Client) GetBlockAtHeight(_a0 context.Context, _a1 uint64) (lcdclient.Response, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 fcdclient.Response
-	if rf, ok := ret.Get(0).(func(context.Context, uint64) fcdclient.Response); ok {
+	var r0 lcdclient.Response
+	if rf, ok := ret.Get(0).(func(context.Context, uint64) lcdclient.Response); ok {
 		r0 = rf(_a0, _a1)
 	} else {
-		r0 = ret.Get(0).(fcdclient.Response)
+		r0 = ret.Get(0).(lcdclient.Response)
 	}
 
 	var r1 error
@@ -39,18 +39,18 @@ func (_m *Client) GetBlockAtHeight(_a0 context.Context, _a1 uint64) (fcdclient.R
 }
 
 // GetTxList provides a mock function with given fields: _a0, _a1
-func (_m *Client) GetTxList(_a0 context.Context, _a1 fcdclient.GetTxListParams) (fcdclient.Response, error) {
+func (_m *Client) GetTxList(_a0 context.Context, _a1 lcdclient.GetTxListParams) (lcdclient.Response, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 fcdclient.Response
-	if rf, ok := ret.Get(0).(func(context.Context, fcdclient.GetTxListParams) fcdclient.Response); ok {
+	var r0 lcdclient.Response
+	if rf, ok := ret.Get(0).(func(context.Context, lcdclient.GetTxListParams) lcdclient.Response); ok {
 		r0 = rf(_a0, _a1)
 	} else {
-		r0 = ret.Get(0).(fcdclient.Response)
+		r0 = ret.Get(0).(lcdclient.Response)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, fcdclient.GetTxListParams) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, lcdclient.GetTxListParams) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)

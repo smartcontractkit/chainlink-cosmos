@@ -7,18 +7,18 @@ import (
 
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/lcdclient"
 )
 
 // NewTxResultsSourceFactory builds sources of TxResults objects expected by the relay monitoring.
 func NewTxResultsSourceFactory(
-	client fcdclient.Client,
+	client lcdclient.Client,
 ) relayMonitoring.SourceFactory {
 	return &txResultsSourceFactory{client}
 }
 
 type txResultsSourceFactory struct {
-	client fcdclient.Client
+	client lcdclient.Client
 }
 
 func (t *txResultsSourceFactory) NewSource(
@@ -49,24 +49,24 @@ func (t *txResultsSourceFactory) GetType() string {
 type txResultsSource struct {
 	cosmosConfig     CosmosConfig
 	cosmosFeedConfig CosmosFeedConfig
-	client           fcdclient.Client
+	client           lcdclient.Client
 
 	latestTxID   uint64
 	latestTxIDMu sync.Mutex
 }
 
 func (t *txResultsSource) Fetch(ctx context.Context) (interface{}, error) {
-	// Query the FCD endpoint.
-	response, err := t.client.GetTxList(ctx, fcdclient.GetTxListParams{
+	// Query the LCD endpoint.
+	response, err := t.client.GetTxList(ctx, lcdclient.GetTxListParams{
 		Account: t.cosmosFeedConfig.ContractAddress,
 		Limit:   10,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch transactions from cosmos FCD: %w", err)
+		return nil, fmt.Errorf("unable to fetch transactions from cosmos LCD: %w", err)
 	}
 	// Filter recent transactions
 	// TODO (dru) keep latest processed tx in the state.
-	recentTxs := []fcdclient.Tx{}
+	recentTxs := []lcdclient.Tx{}
 	func() {
 		t.latestTxIDMu.Lock()
 		defer t.latestTxIDMu.Unlock()
@@ -95,7 +95,7 @@ func (t *txResultsSource) Fetch(ctx context.Context) (interface{}, error) {
 
 // Helpers
 
-func isFailedTransaction(tx fcdclient.Tx) bool {
+func isFailedTransaction(tx lcdclient.Tx) bool {
 	// See https://docs.cosmos.network/master/building-modules/errors.html
 	return tx.Code != 0
 }

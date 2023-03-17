@@ -8,7 +8,7 @@ import (
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring"
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/lcdclient"
 )
 
 func main() {
@@ -31,15 +31,15 @@ func main() {
 	}
 
 	chainReader := monitoring.NewChainReader(cosmosConfig, l)
-	fcdClient := fcdclient.New(cosmosConfig.FCDURL, cosmosConfig.FCDReqsPerSec)
+	lcdClient := lcdclient.New(cosmosConfig.LCDURL, cosmosConfig.LCDReqsPerSec)
 
 	envelopeSourceFactory := monitoring.NewEnvelopeSourceFactory(
 		chainReader,
-		fcdClient,
+		lcdClient,
 		logger.With(l, "component", "source-envelope"),
 	)
 	txResultsFactory := monitoring.NewTxResultsSourceFactory(
-		fcdClient,
+		lcdClient,
 	)
 
 	monitor, err := relayMonitoring.NewMonitor(

@@ -55,7 +55,7 @@ type Config interface {
 	BlocksUntilTxTimeout() int64
 	ConfirmPollPeriod() time.Duration
 	FallbackGasPriceUAtom() sdk.Dec
-	FCDURL() url.URL
+	LCDURL() url.URL
 	GasLimitMultiplier() float64
 	MaxMsgsPerBatch() int64
 	OCR2CachePollPeriod() time.Duration
@@ -68,7 +68,7 @@ type configSet struct {
 	BlocksUntilTxTimeout  int64
 	ConfirmPollPeriod     time.Duration
 	FallbackGasPriceUAtom sdk.Dec
-	FCDURL                url.URL
+	LCDURL                url.URL
 	GasLimitMultiplier    float64
 	MaxMsgsPerBatch       int64
 	OCR2CachePollPeriod   time.Duration
@@ -140,9 +140,9 @@ func (c *config) FallbackGasPriceUAtom() sdk.Dec {
 	return c.defaults.FallbackGasPriceUAtom
 }
 
-func (c *config) FCDURL() url.URL {
+func (c *config) LCDURL() url.URL {
 	c.chainMu.RLock()
-	ch := c.chain.FCDURL
+	ch := c.chain.LCDURL
 	c.chainMu.RUnlock()
 	if ch.Valid {
 		str := ch.String
@@ -150,9 +150,9 @@ func (c *config) FCDURL() url.URL {
 		if err == nil {
 			return *u
 		}
-		c.lggr.Warnf(invalidFallbackMsg, "FCDURL", str, c.defaults.FCDURL, err)
+		c.lggr.Warnf(invalidFallbackMsg, "LCDURL", str, c.defaults.LCDURL, err)
 	}
-	return c.defaults.FCDURL
+	return c.defaults.LCDURL
 }
 
 func (c *config) GasLimitMultiplier() float64 {
@@ -212,7 +212,7 @@ type Chain struct {
 	BlocksUntilTxTimeout  *int64
 	ConfirmPollPeriod     *utils.Duration
 	FallbackGasPriceUAtom *decimal.Decimal
-	FCDURL                *utils.URL
+	LCDURL                *utils.URL
 	GasLimitMultiplier    *decimal.Decimal
 	MaxMsgsPerBatch       *int64
 	OCR2CachePollPeriod   *utils.Duration
@@ -241,13 +241,13 @@ func (c *Chain) SetFromDB(cfg *db.ChainCfg) error {
 		}
 		c.FallbackGasPriceUAtom = &d
 	}
-	if cfg.FCDURL.Valid {
-		s := cfg.FCDURL.String
+	if cfg.LCDURL.Valid {
+		s := cfg.LCDURL.String
 		d, err := url.Parse(s)
 		if err != nil {
-			return fmt.Errorf("invalid FCDURL: %s", s)
+			return fmt.Errorf("invalid LCDURL: %s", s)
 		}
-		c.FCDURL = (*utils.URL)(d)
+		c.LCDURL = (*utils.URL)(d)
 	}
 	if cfg.GasLimitMultiplier.Valid {
 		d := decimal.NewFromFloat(cfg.GasLimitMultiplier.Float64)
@@ -282,8 +282,8 @@ func (c *Chain) SetDefaults() {
 		d := decimal.NewFromBigInt(defaultConfigSet.FallbackGasPriceUAtom.BigInt(), -sdk.Precision)
 		c.FallbackGasPriceUAtom = &d
 	}
-	if c.FCDURL == nil {
-		c.FCDURL = (*utils.URL)(&defaultConfigSet.FCDURL)
+	if c.LCDURL == nil {
+		c.LCDURL = (*utils.URL)(&defaultConfigSet.LCDURL)
 	}
 	if c.GasLimitMultiplier == nil {
 		d := decimal.NewFromFloat(defaultConfigSet.GasLimitMultiplier)

@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
-	fcdclientmocks "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient/mocks"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/lcdclient"
+	lcdclientmocks "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/lcdclient/mocks"
 )
 
 func TestTxResultsSource(t *testing.T) {
@@ -23,19 +23,19 @@ func TestTxResultsSource(t *testing.T) {
 		chainConfig := generateChainConfig()
 		feedConfig := generateFeedConfig()
 
-		fcdClient := new(fcdclientmocks.Client)
-		factory := NewTxResultsSourceFactory(fcdClient)
+		lcdClient := new(lcdclientmocks.Client)
+		factory := NewTxResultsSourceFactory(lcdClient)
 		source, err := factory.NewSource(chainConfig, feedConfig)
 		require.NoError(t, err)
 
 		// Setup mocks
 		getTxsRaw, err := os.ReadFile("./fixtures/txs.json")
 		require.NoError(t, err)
-		getTxsRes := fcdclient.Response{}
+		getTxsRes := lcdclient.Response{}
 		require.NoError(t, json.Unmarshal(getTxsRaw, &getTxsRes))
-		fcdClient.On("GetTxList",
+		lcdClient.On("GetTxList",
 			mock.Anything, // context
-			fcdclient.GetTxListParams{Account: feedConfig.ContractAddress, Limit: 10},
+			lcdclient.GetTxListParams{Account: feedConfig.ContractAddress, Limit: 10},
 		).Return(getTxsRes, nil).Once()
 
 		// Execute Fetch()

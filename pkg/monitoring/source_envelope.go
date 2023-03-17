@@ -17,22 +17,22 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/cosmwasm"
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/lcdclient"
 )
 
 // NewEnvelopeSourceFactory build a new object that reads observations and
 // configurations from the Cosmos chain.
 func NewEnvelopeSourceFactory(
 	rpcClient ChainReader,
-	fcdClient fcdclient.Client,
+	lcdClient lcdclient.Client,
 	log relayMonitoring.Logger,
 ) relayMonitoring.SourceFactory {
-	return &envelopeSourceFactory{rpcClient, fcdClient, log}
+	return &envelopeSourceFactory{rpcClient, lcdClient, log}
 }
 
 type envelopeSourceFactory struct {
 	rpcClient ChainReader
-	fcdClient fcdclient.Client
+	lcdClient lcdclient.Client
 	log       relayMonitoring.Logger
 }
 
@@ -50,7 +50,7 @@ func (e *envelopeSourceFactory) NewSource(
 	}
 	return &envelopeSource{
 		e.rpcClient,
-		e.fcdClient,
+		e.lcdClient,
 		e.log,
 		cosmosConfig,
 		cosmosFeedConfig,
@@ -67,7 +67,7 @@ func (e *envelopeSourceFactory) GetType() string {
 
 type envelopeSource struct {
 	rpcClient        ChainReader
-	fcdClient        fcdclient.Client
+	lcdClient        lcdclient.Client
 	log              relayMonitoring.Logger
 	cosmosConfig     CosmosConfig
 	cosmosFeedConfig CosmosFeedConfig
@@ -154,7 +154,7 @@ type transmissionData struct {
 }
 
 func (e *envelopeSource) fetchLatestTransmission(ctx context.Context) (transmissionData, error) {
-	res, err := e.fcdClient.GetTxList(ctx, fcdclient.GetTxListParams{
+	res, err := e.lcdClient.GetTxList(ctx, lcdclient.GetTxListParams{
 		Account: e.cosmosFeedConfig.ContractAddress,
 		Limit:   10, // there should be a new transmission in the last 10 blocks
 	})
@@ -212,7 +212,7 @@ func (e *envelopeSource) fetchLatestTransmission(ctx context.Context) (transmiss
 	}
 	data.blockNumber, err = strconv.ParseUint(res.Txs[0].Height, 10, 64)
 	if err != nil {
-		return data, fmt.Errorf("failed to parse block height from fcd data '%s': %w", res.Txs[0].Height, err)
+		return data, fmt.Errorf("failed to parse block height from lcd data '%s': %w", res.Txs[0].Height, err)
 	}
 	return data, nil
 }
@@ -262,7 +262,7 @@ func (e *envelopeSource) fetchLatestConfigBlock(ctx context.Context) (uint64, er
 }
 
 func (e *envelopeSource) fetchLatestConfigFromLogs(ctx context.Context, blockHeight uint64) (types.ContractConfig, error) {
-	res, err := e.fcdClient.GetBlockAtHeight(ctx, blockHeight)
+	res, err := e.lcdClient.GetBlockAtHeight(ctx, blockHeight)
 	if err != nil {
 		return types.ContractConfig{}, fmt.Errorf("failed to fetch block at height: %w", err)
 	}
@@ -373,7 +373,7 @@ func (e *envelopeSource) fetchLinkAvailableForPayment(ctx context.Context) (*big
 func (e *envelopeSource) extractDataFromTxResponse(
 	eventType string,
 	contractAddressBech32 string,
-	res fcdclient.Response,
+	res lcdclient.Response,
 	extractors map[string]func(string) error,
 ) error {
 	// Extract matching events
@@ -404,8 +404,8 @@ func (e *envelopeSource) extractDataFromTxResponse(
 	return nil
 }
 
-func extractMatchingEvents(res fcdclient.Response, eventType, contractAddressBech32 string) []fcdclient.Event {
-	out := []fcdclient.Event{}
+func extractMatchingEvents(res lcdclient.Response, eventType, contractAddressBech32 string) []lcdclient.Event {
+	out := []lcdclient.Event{}
 	// Sort txs such that the most recent tx is first
 	sort.Slice(res.Txs, func(i, j int) bool {
 		return res.Txs[i].ID > res.Txs[j].ID
@@ -434,7 +434,7 @@ func extractMatchingEvents(res fcdclient.Response, eventType, contractAddressBec
 }
 
 func checkEventAttributes(
-	event fcdclient.Event,
+	event lcdclient.Event,
 	extractors map[string]func(string) error,
 ) error {
 	// The event should have at least one attribute with the Key in the extractors map.

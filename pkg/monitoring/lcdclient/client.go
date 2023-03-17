@@ -1,4 +1,4 @@
-package fcdclient
+package lcdclient
 
 import (
 	"context"
@@ -14,11 +14,11 @@ import (
 )
 
 func New(
-	fcdURL string,
+	lcdURL string,
 	requestsPerSec int,
 ) Client {
 	return &client{
-		fcdURL,
+		lcdURL,
 		&http.Client{},
 		ratelimit.New(int(requestsPerSec),
 			ratelimit.Per(1*time.Second), // the interval to count requests is 1 sec.
@@ -28,7 +28,7 @@ func New(
 }
 
 type client struct {
-	fcdURL     string
+	lcdURL     string
 	httpClient *http.Client
 	limiter    ratelimit.Limiter
 }
@@ -48,7 +48,7 @@ func (c *client) GetTxList(ctx context.Context, params GetTxListParams) (Respons
 	if params.Block != "" {
 		query.Set("block", params.Block)
 	}
-	getTxsURL, err := url.Parse(c.fcdURL)
+	getTxsURL, err := url.Parse(c.lcdURL)
 	if err != nil {
 		return Response{}, err
 	}
@@ -56,16 +56,16 @@ func (c *client) GetTxList(ctx context.Context, params GetTxListParams) (Respons
 	getTxsURL.RawQuery = query.Encode()
 	getTxsReq, err := http.NewRequestWithContext(ctx, http.MethodGet, getTxsURL.String(), nil)
 	if err != nil {
-		return Response{}, fmt.Errorf("unable to build a request to the cosmos FCD: %w", err)
+		return Response{}, fmt.Errorf("unable to build a request to the cosmos LCD: %w", err)
 	}
 	res, err := c.httpClient.Do(getTxsReq)
 	if err != nil {
-		return Response{}, fmt.Errorf("unable to fetch transactions from cosmos FCD: %w", err)
+		return Response{}, fmt.Errorf("unable to fetch transactions from cosmos LCD: %w", err)
 	}
 	defer res.Body.Close()
 	resBody, _ := io.ReadAll(res.Body)
 	if res.StatusCode != http.StatusOK {
-		return Response{}, fmt.Errorf("non-200 response from FCD, status=%d, body='%s'", res.StatusCode, resBody)
+		return Response{}, fmt.Errorf("non-200 response from LCD, status=%d, body='%s'", res.StatusCode, resBody)
 	}
 	output := Response{}
 	// Decode the response
@@ -77,23 +77,23 @@ func (c *client) GetTxList(ctx context.Context, params GetTxListParams) (Respons
 
 func (c *client) GetBlockAtHeight(ctx context.Context, height uint64) (Response, error) {
 	_ = c.limiter.Take()
-	getBlockURL, err := url.Parse(c.fcdURL)
+	getBlockURL, err := url.Parse(c.lcdURL)
 	if err != nil {
 		return Response{}, err
 	}
 	getBlockURL.Path = fmt.Sprintf("/v1/blocks/%d", height)
 	getBlockReq, err := http.NewRequestWithContext(ctx, http.MethodGet, getBlockURL.String(), nil)
 	if err != nil {
-		return Response{}, fmt.Errorf("unable to build a request to the cosmos FCD: %w", err)
+		return Response{}, fmt.Errorf("unable to build a request to the cosmos LCD: %w", err)
 	}
 	res, err := c.httpClient.Do(getBlockReq)
 	if err != nil {
-		return Response{}, fmt.Errorf("unable to fetch block from cosmos FCD: %w", err)
+		return Response{}, fmt.Errorf("unable to fetch block from cosmos LCD: %w", err)
 	}
 	defer res.Body.Close()
 	resBody, _ := io.ReadAll(res.Body)
 	if res.StatusCode != http.StatusOK {
-		return Response{}, fmt.Errorf("non-200 response from FCD, status=%d, body='%s'", res.StatusCode, resBody)
+		return Response{}, fmt.Errorf("non-200 response from LCD, status=%d, body='%s'", res.StatusCode, resBody)
 	}
 	output := Response{}
 	// Decode the response
