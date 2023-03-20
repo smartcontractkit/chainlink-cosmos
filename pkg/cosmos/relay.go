@@ -64,13 +64,8 @@ func (r *Relayer) Ready() error {
 	return r.chainSet.Ready()
 }
 
-// Healthy only if all subservices are healthy
-func (r *Relayer) Healthy() error {
-	return r.chainSet.Healthy()
-}
-
 func (r *Relayer) HealthReport() map[string]error {
-	return map[string]error{r.Name(): r.Healthy()}
+	return r.chainSet.HealthReport()
 }
 
 func (r *Relayer) NewMercuryProvider(rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MercuryProvider, error) {
