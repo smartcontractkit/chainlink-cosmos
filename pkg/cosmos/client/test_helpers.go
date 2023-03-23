@@ -79,7 +79,7 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 		})
 	}
 	// Stake 10 luna in first acct
-	out, err = exec.Command("wasmd", "gentx", accounts[0].Name, "10000000ucosm", fmt.Sprintf("--chain-id=%s", chainID), "--keyring-backend", "test", "--home", testdir).CombinedOutput() //nolint:gosec
+	out, err = exec.Command("wasmd", "gentx", accounts[0].Name, "10000000ucosm", "--chain-id", chainID, "--keyring-backend", "test", "--home", testdir).CombinedOutput() //nolint:gosec
 	require.NoError(t, err, string(out))
 	out, err = exec.Command("wasmd", "collect-gentxs", "--home", testdir).CombinedOutput()
 	require.NoError(t, err, string(out))
@@ -88,11 +88,11 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 	tendermintURL := fmt.Sprintf("http://127.0.0.1:%d", port)
 	t.Log(tendermintURL)
 	cmd := exec.Command("wasmd", "start", "--home", testdir,
-		"--rpc.laddr", fmt.Sprintf("tcp://127.0.0.1:%d", port),
-		"--rpc.pprof_laddr", "0.0.0.0:0",
-		"--grpc.address", "0.0.0.0:0",
-		"--grpc-web.address", "0.0.0.0:0",
-		"--p2p.laddr", "0.0.0.0:0")
+		"--rpc.laddr", tendermintURL,
+		"--rpc.pprof_laddr", "127.0.0.1:0",
+		"--grpc.address", "127.0.0.1:0",
+		"--grpc-web.address", "127.0.0.1:0",
+		"--p2p.laddr", "127.0.0.1:0")
 	var stdErr bytes.Buffer
 	cmd.Stderr = &stdErr
 	require.NoError(t, cmd.Start())
