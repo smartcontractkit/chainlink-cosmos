@@ -57,7 +57,7 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 	var accounts []Account
 	for i := 0; i < 2; i++ {
 		account := fmt.Sprintf("test%d", i)
-		key, err2 := exec.Command("wasmd", "keys", "add", account, "--output", "json", "--keyring-backend", "test", "--keyring-dir", testdir).CombinedOutput()
+		key, err2 := exec.Command("wasmd", "keys", "add", account, "--output", "json", "--keyring-backend", "test", "--home", testdir).CombinedOutput()
 		require.NoError(t, err2, string(key))
 		var k struct {
 			Address  string `json:"address"`
@@ -79,7 +79,7 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 		})
 	}
 	// Stake 10 luna in first acct
-	out, err = exec.Command("wasmd", "gentx", accounts[0].Name, "10000000ucosm", fmt.Sprintf("--chain-id=%s", chainID), "--keyring-backend", "test", "--keyring-dir", testdir, "--home", testdir).CombinedOutput() //nolint:gosec
+	out, err = exec.Command("wasmd", "gentx", accounts[0].Name, "10000000ucosm", fmt.Sprintf("--chain-id=%s", chainID), "--keyring-backend", "test", "--home", testdir).CombinedOutput() //nolint:gosec
 	require.NoError(t, err, string(out))
 	out, err = exec.Command("wasmd", "collect-gentxs", "--home", testdir).CombinedOutput()
 	require.NoError(t, err, string(out))
