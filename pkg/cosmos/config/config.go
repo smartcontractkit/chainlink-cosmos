@@ -1,9 +1,7 @@
 package config
 
 import (
-	"fmt"
 	"net/url"
-	"sync"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -12,11 +10,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	relayconfig "github.com/smartcontractkit/chainlink-relay/pkg/config"
-	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
 )
 
 // Global defaults.
@@ -63,6 +59,7 @@ type Config interface {
 	TxMsgTimeout() time.Duration
 }
 
+// opt: remove
 type configSet struct {
 	BlockRate             time.Duration
 	BlocksUntilTxTimeout  int64
@@ -76,137 +73,6 @@ type configSet struct {
 	TxMsgTimeout          time.Duration
 }
 
-var _ Config = (*config)(nil)
-
-type config struct {
-	defaults configSet
-	chain    db.ChainCfg
-	chainMu  sync.RWMutex
-	lggr     logger.Logger
-}
-
-// NewConfig returns a Config with defaults overridden by dbcfg.
-// TODO: remove mutex
-func NewConfig(dbcfg db.ChainCfg, lggr logger.Logger) *config {
-	return &config{
-		defaults: defaultConfigSet,
-		chain:    dbcfg,
-		lggr:     lggr,
-	}
-}
-
-func (c *config) BlockRate() time.Duration {
-	c.chainMu.RLock()
-	ch := c.chain.BlockRate
-	c.chainMu.RUnlock()
-	if ch != nil {
-		return ch.Duration()
-	}
-	return c.defaults.BlockRate
-}
-
-func (c *config) BlocksUntilTxTimeout() int64 {
-	c.chainMu.RLock()
-	ch := c.chain.BlocksUntilTxTimeout
-	c.chainMu.RUnlock()
-	if ch.Valid {
-		return ch.Int64
-	}
-	return c.defaults.BlocksUntilTxTimeout
-}
-
-func (c *config) ConfirmPollPeriod() time.Duration {
-	c.chainMu.RLock()
-	ch := c.chain.ConfirmPollPeriod
-	c.chainMu.RUnlock()
-	if ch != nil {
-		return ch.Duration()
-	}
-	return c.defaults.ConfirmPollPeriod
-}
-
-func (c *config) FallbackGasPriceUAtom() sdk.Dec {
-	c.chainMu.RLock()
-	ch := c.chain.FallbackGasPriceUAtom
-	c.chainMu.RUnlock()
-	if ch.Valid {
-		str := ch.String
-		dec, err := sdk.NewDecFromStr(str)
-		if err == nil {
-			return dec
-		}
-		c.lggr.Warnf(invalidFallbackMsg, "FallbackGasPriceUAtom", str, c.defaults.FallbackGasPriceUAtom, err)
-	}
-	return c.defaults.FallbackGasPriceUAtom
-}
-
-func (c *config) FCDURL() url.URL {
-	c.chainMu.RLock()
-	ch := c.chain.FCDURL
-	c.chainMu.RUnlock()
-	if ch.Valid {
-		str := ch.String
-		u, err := url.Parse(str)
-		if err == nil {
-			return *u
-		}
-		c.lggr.Warnf(invalidFallbackMsg, "FCDURL", str, c.defaults.FCDURL, err)
-	}
-	return c.defaults.FCDURL
-}
-
-func (c *config) GasLimitMultiplier() float64 {
-	c.chainMu.RLock()
-	ch := c.chain.GasLimitMultiplier
-	c.chainMu.RUnlock()
-	if ch.Valid {
-		return ch.Float64
-	}
-	return c.defaults.GasLimitMultiplier
-}
-
-func (c *config) MaxMsgsPerBatch() int64 {
-	c.chainMu.RLock()
-	ch := c.chain.MaxMsgsPerBatch
-	c.chainMu.RUnlock()
-	if ch.Valid {
-		return ch.Int64
-	}
-	return c.defaults.MaxMsgsPerBatch
-}
-
-func (c *config) OCR2CachePollPeriod() time.Duration {
-	c.chainMu.RLock()
-	ch := c.chain.OCR2CachePollPeriod
-	c.chainMu.RUnlock()
-	if ch != nil {
-		return ch.Duration()
-	}
-	return c.defaults.OCR2CachePollPeriod
-}
-
-func (c *config) OCR2CacheTTL() time.Duration {
-	c.chainMu.RLock()
-	ch := c.chain.OCR2CacheTTL
-	c.chainMu.RUnlock()
-	if ch != nil {
-		return ch.Duration()
-	}
-	return c.defaults.OCR2CacheTTL
-}
-
-func (c *config) TxMsgTimeout() time.Duration {
-	c.chainMu.RLock()
-	ch := c.chain.TxMsgTimeout
-	c.chainMu.RUnlock()
-	if ch != nil {
-		return ch.Duration()
-	}
-	return c.defaults.TxMsgTimeout
-}
-
-const invalidFallbackMsg = `Invalid value provided for %s, "%s" - falling back to default "%s": %v`
-
 type Chain struct {
 	BlockRate             *utils.Duration
 	BlocksUntilTxTimeout  *int64
@@ -218,54 +84,6 @@ type Chain struct {
 	OCR2CachePollPeriod   *utils.Duration
 	OCR2CacheTTL          *utils.Duration
 	TxMsgTimeout          *utils.Duration
-}
-
-func (c *Chain) SetFromDB(cfg *db.ChainCfg) error {
-	if cfg == nil {
-		return nil
-	}
-	if cfg.BlockRate != nil {
-		c.BlockRate = utils.MustNewDuration(cfg.BlockRate.Duration())
-	}
-	if cfg.BlocksUntilTxTimeout.Valid {
-		c.BlocksUntilTxTimeout = &cfg.BlocksUntilTxTimeout.Int64
-	}
-	if cfg.ConfirmPollPeriod != nil {
-		c.ConfirmPollPeriod = utils.MustNewDuration(cfg.ConfirmPollPeriod.Duration())
-	}
-	if cfg.FallbackGasPriceUAtom.Valid {
-		s := cfg.FallbackGasPriceUAtom.String
-		d, err := decimal.NewFromString(s)
-		if err != nil {
-			return fmt.Errorf("invalid decimal FallbackGasPriceUAtom: %s", s)
-		}
-		c.FallbackGasPriceUAtom = &d
-	}
-	if cfg.FCDURL.Valid {
-		s := cfg.FCDURL.String
-		d, err := url.Parse(s)
-		if err != nil {
-			return fmt.Errorf("invalid FCDURL: %s", s)
-		}
-		c.FCDURL = (*utils.URL)(d)
-	}
-	if cfg.GasLimitMultiplier.Valid {
-		d := decimal.NewFromFloat(cfg.GasLimitMultiplier.Float64)
-		c.GasLimitMultiplier = &d
-	}
-	if cfg.MaxMsgsPerBatch.Valid {
-		c.MaxMsgsPerBatch = &cfg.MaxMsgsPerBatch.Int64
-	}
-	if cfg.OCR2CachePollPeriod != nil {
-		c.OCR2CachePollPeriod = utils.MustNewDuration(cfg.OCR2CachePollPeriod.Duration())
-	}
-	if cfg.OCR2CacheTTL != nil {
-		c.OCR2CacheTTL = utils.MustNewDuration(cfg.OCR2CacheTTL.Duration())
-	}
-	if cfg.TxMsgTimeout != nil {
-		c.TxMsgTimeout = utils.MustNewDuration(cfg.TxMsgTimeout.Duration())
-	}
-	return nil
 }
 
 func (c *Chain) SetDefaults() {
@@ -306,20 +124,6 @@ func (c *Chain) SetDefaults() {
 type Node struct {
 	Name          *string
 	TendermintURL *utils.URL
-}
-
-func (n *Node) SetFromDB(db db.Node) error {
-	if db.Name != "" {
-		n.Name = &db.Name
-	}
-	if db.TendermintURL != "" {
-		u, err := url.Parse(db.TendermintURL)
-		if err != nil {
-			return err
-		}
-		n.TendermintURL = (*utils.URL)(u)
-	}
-	return nil
 }
 
 func (n *Node) ValidateConfig() (err error) {

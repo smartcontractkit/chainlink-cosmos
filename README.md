@@ -1,5 +1,5 @@
-# Chainlink Terra
+# Chainlink Cosmos
 
 ## Quick Start
 
-For more information, see the [Chainlink Terra Documentation](./docs/).
+For more information, see the [Chainlink Cosmos Documentation](./docs/).
