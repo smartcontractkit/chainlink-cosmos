@@ -1,349 +1,127 @@
 package common
 
 import (
-	"bytes"
-	"encoding/hex"
 	"fmt"
-	"math/big"
-	"sort"
-	"strings"
+	"os"
+	"strconv"
+	"testing"
 	"time"
 
-	"github.com/lib/pq"
 	"github.com/rs/zerolog/log"
-	uuid "github.com/satori/go.uuid"
-	"gopkg.in/guregu/null.v4"
-
-	ctfClient "github.com/smartcontractkit/chainlink-testing-framework/client"
-	"github.com/smartcontractkit/chainlink/core/services/job"
-	"github.com/smartcontractkit/chainlink/integration-tests/client"
-	"github.com/smartcontractkit/chainlink/integration-tests/contracts"
-	"github.com/smartcontractkit/libocr/offchainreporting2/confighelper"
-	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
-	"github.com/smartcontractkit/libocr/offchainreporting2/types"
-	"golang.org/x/crypto/curve25519"
+	"github.com/smartcontractkit/chainlink-cosmos/ops/wasmd"
+	"github.com/smartcontractkit/chainlink-env/environment"
+	"github.com/smartcontractkit/chainlink-env/pkg/alias"
+	"github.com/smartcontractkit/chainlink-env/pkg/helm/chainlink"
+	"github.com/smartcontractkit/chainlink-env/pkg/helm/mockserver"
+	mockservercfg "github.com/smartcontractkit/chainlink-env/pkg/helm/mockserver-cfg"
 )
 
 // TODO: those should be moved as a common part of chainlink-testing-framework
 
 const (
-	ChainName          = "terra"
-	ChainID            = "wasmd"
+	chainName          = "wasmd"
+	chainID            = "testing"
 	ChainBlockTime     = "200ms"
 	ChainBlockTimeSoak = "2s"
 )
 
-// Those functions may be common with another chains and should be moved to another lib
-
-var RelayConfig = map[string]string{
-	"nodeType":      "terra",
-	"tendermintURL": "http://terrad:26657",
-	"fcdURL":        "http://fcd-api:3060",
-	"chainID":       "localterra",
+type Common struct {
+	P2PPort    string
+	ChainName  string
+	ChainId    string
+	NodeCount  int
+	TTL        time.Duration
+	Testnet    bool
+	L2RPCUrl   string
+	PrivateKey string
+	Account    string
+	ClConfig   map[string]any
+	K8Config   *environment.Config
+	Env        *environment.Environment
 }
 
-// ContractNodeInfo contains the indexes of the nodes, bridges, NodeKeyBundles and nodes relevant to an OCR2 Contract
-type ContractNodeInfo struct {
-	OCR2Address             string
-	BootstrapNodeIdx        int
-	BootstrapNode           *client.Chainlink
-	BootstrapNodeKeysBundle NodeKeysBundle
-	BootstrapBridgeInfo     BridgeInfo
-	NodesIdx                []int
-	Nodes                   []*client.Chainlink
-	NodeKeysBundle          []NodeKeysBundle
-	BridgeInfos             []BridgeInfo
-}
-
-type NodeKeysBundle struct {
-	PeerID  string
-	OCR2Key *client.OCR2Key
-	TXKey   *client.TxKey
-}
-
-type BridgeInfo struct {
-	RelayConfig       map[string]string
-	ObservationSource string
-	JuelsSource       string
-}
-
-// OCR2 keys are in format OCR2<key_type>_<network>_<key>
-func stripKeyPrefix(key string) string {
-	chunks := strings.Split(key, "_")
-	if len(chunks) == 3 {
-		return chunks[2]
+// getEnv gets the environment variable if it exists and sets it for the remote runner
+func getEnv(v string) string {
+	val := os.Getenv(v)
+	if val != "" {
+		os.Setenv(fmt.Sprintf("TEST_%s", v), val)
 	}
-	return key
+	return val
 }
 
-func CreateNodeKeysBundle(nodes []*client.Chainlink) ([]NodeKeysBundle, error) {
-	nkb := make([]NodeKeysBundle, 0)
-	for _, n := range nodes {
-		p2pkeys, err := n.MustReadP2PKeys()
+func New() *Common {
+	var err error
+	c := &Common{
+		ChainName: chainName,
+		ChainId:   chainID,
+	}
+	// Checking if count of OCR nodes is defined in ENV
+	nodeCountSet := getEnv("NODE_COUNT")
+	if nodeCountSet != "" {
+		c.NodeCount, err = strconv.Atoi(nodeCountSet)
 		if err != nil {
-			return nil, err
+			panic(fmt.Sprintf("Please define a proper node count for the test: %v", err))
 		}
-
-		peerID := p2pkeys.Data[0].Attributes.PeerID
-		txKey, _, err := n.CreateTxKey(ChainName, ChainID)
-		if err != nil {
-			return nil, err
-		}
-		ocrKey, _, err := n.CreateOCR2Key(ChainName)
-		if err != nil {
-			return nil, err
-		}
-		nkb = append(nkb, NodeKeysBundle{
-			PeerID:  peerID,
-			OCR2Key: ocrKey,
-			TXKey:   txKey,
-		})
+	} else {
+		panic("Please define NODE_COUNT")
 	}
-	return nkb, nil
+
+	// Checking if TTL env var is set in ENV
+	ttlValue := getEnv("TTL")
+	if ttlValue != "" {
+		duration, err := time.ParseDuration(ttlValue)
+		if err != nil {
+			panic(fmt.Sprintf("Please define a proper duration for the test: %v", err))
+		}
+		c.TTL, err = time.ParseDuration(*alias.ShortDur(duration))
+		if err != nil {
+			panic(fmt.Sprintf("Please define a proper duration for the test: %v", err))
+		}
+	} else {
+		panic("Please define TTL of env")
+	}
+
+	// Setting optional parameters
+	c.L2RPCUrl = getEnv("L2_RPC_URL") // Fetch L2 RPC url if defined
+	c.Testnet = c.L2RPCUrl != ""
+	c.PrivateKey = getEnv("PRIVATE_KEY")
+	c.Account = getEnv("ACCOUNT")
+
+	return c
 }
 
-func createOracleIdentities(nkb []NodeKeysBundle) ([]confighelper.OracleIdentityExtra, error) {
-	oracleIdentities := make([]confighelper.OracleIdentityExtra, 0)
-	for _, nodeKeys := range nkb {
-		offChainPubKeyRaw, err := hex.DecodeString(stripKeyPrefix(nodeKeys.OCR2Key.Data.Attributes.OffChainPublicKey))
-		if err != nil {
-			return nil, err
-		}
-		var offChainPubKey types.OffchainPublicKey
-		copy(offChainPubKey[:], offChainPubKeyRaw)
-		onChainPubKey, err := hex.DecodeString(stripKeyPrefix(nodeKeys.OCR2Key.Data.Attributes.OnChainPublicKey))
-		if err != nil {
-			return nil, err
-		}
-		cfgPubKeyTemp, err := hex.DecodeString(stripKeyPrefix(nodeKeys.OCR2Key.Data.Attributes.ConfigPublicKey))
-		if err != nil {
-			return nil, err
-		}
-		cfgPubKeyBytes := [curve25519.PointSize]byte{}
-		copy(cfgPubKeyBytes[:], cfgPubKeyTemp)
-		oracleIdentities = append(oracleIdentities, confighelper.OracleIdentityExtra{
-			OracleIdentity: confighelper.OracleIdentity{
-				OffchainPublicKey: offChainPubKey,
-				OnchainPublicKey:  onChainPubKey,
-				PeerID:            nodeKeys.PeerID,
-				TransmitAccount:   types.Account(nodeKeys.TXKey.Data.Attributes.PublicKey),
-			},
-			ConfigEncryptionPublicKey: cfgPubKeyBytes,
-		})
+func (c *Common) Default(t *testing.T) {
+	c.K8Config = &environment.Config{NamespacePrefix: "chainlink-ocr-cosmos", TTL: c.TTL, Test: t}
+	// These can be uncommented when toml configuration is supposrted for cosmos in the chainlink node
+	wasmdUrl := fmt.Sprintf("http://%s:%d", "tendermint-rpc", 26657)
+	if c.Testnet {
+		wasmdUrl = c.L2RPCUrl
 	}
-	// program sorts oracles (need to pre-sort to allow correct onchainConfig generation)
-	sort.Slice(oracleIdentities, func(i, j int) bool {
-		return bytes.Compare(oracleIdentities[i].OracleIdentity.OnchainPublicKey, oracleIdentities[j].OracleIdentity.OnchainPublicKey) < 0
-	})
-	return oracleIdentities, nil
-}
+	baseTOML := fmt.Sprintf(`[[Cosmos]]
+Enabled = true
+ChainID = '%s'
+[[Cosmos.Nodes]]
+Name = 'primary'
+TendermintURL = '%s'
 
-func FundOracles(nkb []NodeKeysBundle, amount *big.Float) error {
-	// TODO:
-	// for _, nk := range nkb {
-	// 	addr := nk.TXKey.Data.Attributes.PublicKey
-	// 	if err := c.Fund(addr, amount); err != nil {
-	// 		return err
-	// 	}
-	// }
-	return nil
-}
+[OCR2]
+Enabled = true
 
-// OffChainConfigParamsFromNodes creates contracts.OffChainAggregatorV2Config
-func OffChainConfigParamsFromNodes(nodes []*client.Chainlink, nkb []NodeKeysBundle) (contracts.OffChainAggregatorV2Config, error) {
-	oi, err := createOracleIdentities(nkb)
-	if err != nil {
-		return contracts.OffChainAggregatorV2Config{}, err
+[P2P]
+[P2P.V2]
+Enabled = true
+DeltaDial = '5s'
+DeltaReconcile = '5s'
+ListenAddresses = ['0.0.0.0:6690']
+`, c.ChainId, wasmdUrl)
+	log.Debug().Str("toml", baseTOML).Msg("TOML")
+	c.ClConfig = map[string]any{
+		"replicas": c.NodeCount,
+		"toml":     baseTOML,
 	}
-	s := make([]int, 0)
-	for range nodes {
-		s = append(s, 1)
-	}
-	faultyNodes := 0
-	if len(nodes) > 1 {
-		faultyNodes = len(nodes)/3 - 1
-	}
-	if faultyNodes == 0 {
-		faultyNodes = 1
-	}
-	log.Warn().Int("Nodes", faultyNodes).Msg("Faulty nodes")
-	return contracts.OffChainAggregatorV2Config{
-		DeltaProgress: 2 * time.Second,
-		DeltaResend:   5 * time.Second,
-		DeltaRound:    1 * time.Second,
-		DeltaGrace:    500 * time.Millisecond,
-		DeltaStage:    10 * time.Second,
-		RMax:          3,
-		S:             s,
-		Oracles:       oi,
-		ReportingPluginConfig: median.OffchainConfig{
-			AlphaReportPPB: uint64(0),
-			AlphaAcceptPPB: uint64(0),
-		}.Encode(),
-		MaxDurationQuery:                        0,
-		MaxDurationObservation:                  500 * time.Millisecond,
-		MaxDurationReport:                       500 * time.Millisecond,
-		MaxDurationShouldAcceptFinalizedReport:  500 * time.Millisecond,
-		MaxDurationShouldTransmitAcceptedReport: 500 * time.Millisecond,
-		F:                                       faultyNodes,
-		OnchainConfig:                           []byte{},
-	}, nil
-}
-
-func CreateTerraChainAndNode(nodes []*client.Chainlink) error {
-	for _, n := range nodes {
-		_, _, err := n.CreateTerraChain(&client.TerraChainAttributes{
-			ChainID: "localterra",
-			FCDURL:  RelayConfig["fcdURL"],
-		})
-		if err != nil {
-			return err
-		}
-		if _, _, err = n.CreateTerraNode(&client.TerraNodeAttributes{
-			Name:          "terra",
-			TerraChainID:  RelayConfig["chainID"],
-			TendermintURL: RelayConfig["tendermintURL"],
-		}); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func CreateBridges(ContractsIdxMapToContractsNodeInfo map[int]*ContractNodeInfo, mock *ctfClient.MockserverClient) error {
-	for i, nodesInfo := range ContractsIdxMapToContractsNodeInfo {
-		// Bootstrap node first
-		nodeContractPairID, err := BuildNodeContractPairID(nodesInfo.BootstrapNode, nodesInfo.OCR2Address)
-		if err != nil {
-			return err
-		}
-		sourceValueBridge := client.BridgeTypeAttributes{
-			Name:        nodeContractPairID,
-			URL:         fmt.Sprintf("%s/%s", mock.Config.ClusterURL, nodeContractPairID),
-			RequestData: "{}",
-		}
-		observationSource := client.ObservationSourceSpecBridge(sourceValueBridge)
-		err = nodesInfo.BootstrapNode.MustCreateBridge(&sourceValueBridge)
-		if err != nil {
-			return err
-		}
-		juelsBridge := client.BridgeTypeAttributes{
-			Name:        nodeContractPairID + "juels",
-			URL:         fmt.Sprintf("%s/juels", mock.Config.ClusterURL),
-			RequestData: "{}",
-		}
-		juelsSource := client.ObservationSourceSpecBridge(juelsBridge)
-		err = nodesInfo.BootstrapNode.MustCreateBridge(&juelsBridge)
-		if err != nil {
-			return err
-		}
-		ContractsIdxMapToContractsNodeInfo[i].BootstrapBridgeInfo = BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: RelayConfig}
-
-		// Other nodes later
-		for _, node := range nodesInfo.Nodes {
-			nodeContractPairID, err := BuildNodeContractPairID(node, nodesInfo.OCR2Address)
-			if err != nil {
-				return err
-			}
-			sourceValueBridge := client.BridgeTypeAttributes{
-				Name:        nodeContractPairID,
-				URL:         fmt.Sprintf("%s/%s", mock.Config.ClusterURL, nodeContractPairID),
-				RequestData: "{}",
-			}
-			observationSource := client.ObservationSourceSpecBridge(sourceValueBridge)
-			err = node.MustCreateBridge(&sourceValueBridge)
-			if err != nil {
-				return err
-			}
-			juelsBridge := client.BridgeTypeAttributes{
-				Name:        nodeContractPairID + "juels",
-				URL:         fmt.Sprintf("%s/juels", mock.Config.ClusterURL),
-				RequestData: "{}",
-			}
-			juelsSource := client.ObservationSourceSpecBridge(juelsBridge)
-			err = node.MustCreateBridge(&juelsBridge)
-			if err != nil {
-				return err
-			}
-			ContractsIdxMapToContractsNodeInfo[i].BridgeInfos = append(ContractsIdxMapToContractsNodeInfo[i].BridgeInfos, BridgeInfo{ObservationSource: observationSource, JuelsSource: juelsSource, RelayConfig: RelayConfig})
-		}
-	}
-
-	return nil
-}
-
-func CreateJobs(contractNodeInfo *ContractNodeInfo) error {
-	bootstrapPeers := []client.P2PData{
-		{
-			RemoteIP:   contractNodeInfo.BootstrapNode.RemoteIP(),
-			RemotePort: "6690",
-			PeerID:     contractNodeInfo.BootstrapNodeKeysBundle.PeerID,
-		},
-	}
-
-	var p2pBootstrappers []string
-
-	for i := range bootstrapPeers {
-		p2pBootstrappers = append(p2pBootstrappers, bootstrapPeers[i].P2PV2Bootstrapper())
-	}
-
-	// TODO: convert contractNodeInfo.BootstrapBridgeInfo.RelayConfig
-	// and contractNodeInfo.BridgeInfos[nIdx].RelayConfig,
-	relayConfig := job.JSONConfig{}
-
-	oracleSpec := job.OCR2OracleSpec{
-		ContractID:         contractNodeInfo.OCR2Address,
-		Relay:              ChainName,
-		RelayConfig:        relayConfig,
-		PluginType:         "median",
-		P2PV2Bootstrappers: pq.StringArray{strings.Join(p2pBootstrappers, ",")},
-		OCRKeyBundleID:     null.StringFrom(contractNodeInfo.BootstrapNodeKeysBundle.OCR2Key.Data.ID),
-		TransmitterID:      null.StringFrom(contractNodeInfo.BootstrapNodeKeysBundle.TXKey.Data.ID),
-		PluginConfig: job.JSONConfig{
-			"juelsPerFeeCoinSource": contractNodeInfo.BootstrapBridgeInfo.JuelsSource,
-		},
-	}
-	jobSpec := &client.OCR2TaskJobSpec{
-		Name:              fmt.Sprintf("terra-OCRv2-%s-%s", "bootstrap", uuid.NewV4().String()),
-		JobType:           "bootstrap",
-		OCR2OracleSpec:    oracleSpec,
-		ObservationSource: contractNodeInfo.BootstrapBridgeInfo.ObservationSource,
-	}
-	if _, err := contractNodeInfo.BootstrapNode.MustCreateJob(jobSpec); err != nil {
-		return fmt.Errorf("failed creating job for boostrap node: %w", err)
-	}
-	for nIdx, n := range contractNodeInfo.Nodes {
-		oracleSpec := job.OCR2OracleSpec{
-			ContractID:         contractNodeInfo.OCR2Address,
-			Relay:              ChainName,
-			RelayConfig:        relayConfig,
-			PluginType:         "median",
-			P2PV2Bootstrappers: pq.StringArray{strings.Join(p2pBootstrappers, ",")},
-			OCRKeyBundleID:     null.StringFrom(contractNodeInfo.NodeKeysBundle[nIdx].OCR2Key.Data.ID),
-			TransmitterID:      null.StringFrom(contractNodeInfo.NodeKeysBundle[nIdx].TXKey.Data.ID),
-			PluginConfig: job.JSONConfig{
-				"juelsPerFeeCoinSource": contractNodeInfo.BridgeInfos[nIdx].JuelsSource,
-			},
-		}
-		jobSpec := &client.OCR2TaskJobSpec{
-			Name:              fmt.Sprintf("terra-OCRv2-%d-%s", nIdx, uuid.NewV4().String()),
-			JobType:           "offchainreporting2",
-			OCR2OracleSpec:    oracleSpec,
-			ObservationSource: contractNodeInfo.BridgeInfos[nIdx].ObservationSource,
-		}
-		if _, err := n.MustCreateJob(jobSpec); err != nil {
-			return fmt.Errorf("failed creating job for node %s: %w", n.URL(), err)
-		}
-	}
-	return nil
-}
-
-func BuildNodeContractPairID(node *client.Chainlink, ocr2Addr string) (string, error) {
-	csaKeys, _, err := node.ReadCSAKeys()
-	if err != nil {
-		return "", err
-	}
-	shortNodeAddr := csaKeys.Data[0].Attributes.PublicKey[2:12]
-	shortOCRAddr := ocr2Addr[2:12]
-	return strings.ToLower(fmt.Sprintf("node_%s_contract_%s", shortNodeAddr, shortOCRAddr)), nil
+	c.Env = environment.New(c.K8Config).
+		AddHelm(wasmd.New(nil)).
+		AddHelm(mockservercfg.New(nil)).
+		AddHelm(mockserver.New(nil)).
+		AddHelm(chainlink.New(0, c.ClConfig))
 }

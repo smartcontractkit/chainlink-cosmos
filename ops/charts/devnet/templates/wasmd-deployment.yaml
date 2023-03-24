@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wasmd
+  labels:
+    app: wasmd
+    release: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wasmd
+  template:
+    metadata:
+      labels:
+        app: wasmd
+    spec:
+      containers:
+        - name: wasmd
+          image: "{{ .Values.wasmd.image.repository }}:{{ .Values.wasmd.image.tag }}"
+          imagePullPolicy: {{.Values.wasmd.image.pullPolicy}}
+          env:
+            - name: PASSWORD
+              value: cosm1234
+            - name: CHAIN_ID
+              value: testing
+            # If we need to change these for better control in testing we can
+            # - name: MONIKER
+            #   value: node001
+            # - name: STAKE
+            #   value: ustake
+            # - name: FEE
+            #   value: ucosm
+          command: ["/opt/setup_and_run.sh"]
+{{- with .Values.wasmd.args }}
+          args:
+{{ toYaml . | indent 12 }}
+{{- end}}
+          ports:
+          - name: tendermint-rpc
+            containerPort: 26657
+          - name: tendermint-p2p
+            containerPort: 26656
+          - name: lcd
+            containerPort: 1317
+          - name: tendermint-grpc
+            containerPort: 9090
+          - name: web-grpc
+            containerPort: 9091
+{{- with .Values.wasmd.resources }}
+          resources:
+{{ toYaml . | indent 12 }}
+{{- end }}
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}

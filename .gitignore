@@ -1,5 +1,5 @@
 .direnv
-.vscode
+.vscode/
 .idea
 target/
 artifacts/bin/
@@ -20,6 +20,8 @@ packages-ts/gauntlet-terra-contracts/codeIds/test*
 packages-ts/gauntlet-terra-contracts/networks/.env.test*
 tests/e2e/logs
 packages-ts/gauntlet-terra-contracts/networks/.env.test*
-tests/e2e/smoke/rdd/directory*
-tests/e2e/smoke/reports
+integration-tests/logs
+integration-tests/smoke/logs
+integration-tests/soak/logs
+tmp-manifest-*
 artifacts

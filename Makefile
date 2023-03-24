@@ -23,31 +23,45 @@ download:
 
 install:
 ifeq ($(OSFLAG),$(WINDOWS))
-	echo "If you are running windows and know how to install what is needed, please contribute by adding it here!"
+	@echo "Windows system detected - no automated setup available."
+	@echo "Please install your developer enviroment manually (@see .tool-versions)."
+	@echo
 	exit 1
 endif
 ifeq ($(OSFLAG),$(OSX))
+	@echo "MacOS system detected - installing the required toolchain via asdf (@see .tool-versions)."
+	@echo
 	brew install asdf
-	asdf plugin-add nodejs || true
+	asdf plugin add golang || true
 	asdf plugin-add rust || true
-	asdf plugin-add golang || true
-	asdf plugin-add ginkgo || true
-	asdf plugin-add pulumi || true
+	asdf plugin add nodejs || true
+	asdf plugin add python || true
+	asdf plugin add mockery || true
 	asdf plugin add golangci-lint || true
 	asdf plugin add actionlint || true
 	asdf plugin add shellcheck || true
+	asdf plugin add k3d || true
+	asdf plugin add kubectl || true
+	asdf plugin add k9s || true
+	asdf plugin add helm || true
+	@echo
 	asdf install
 endif
 ifeq ($(OSFLAG),$(LINUX))
-	# install nix
+	@echo "Linux system detected - please install and use NIX (@see shell.nix)."
+	@echo
 ifneq ($(CI),true)
 	sh <(curl -L https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install) --daemon --tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve --nix-extra-conf-file ./nix.conf
 endif
-	go install github.com/onsi/ginkgo/v2/ginkgo@v$(shell cat ./.tool-versions | grep ginkgo | sed -En "s/ginkgo.(.*)/\1/p")
 endif
 
-golint:
-	golangci-lint --color=always --timeout=5m0s --tests=false run ./... -v
+.PHONY: nix-container
+nix-container:
+	docker run -it --rm -v $(shell pwd):/repo -e NIX_USER_CONF_FILES=/repo/nix.conf --workdir /repo nixos/nix:latest /bin/sh
+
+.PHONY: nix-flake-update
+nix-flake-update:
+	docker run -it --rm -v $(shell pwd):/repo -e NIX_USER_CONF_FILES=/repo/nix.conf --workdir /repo nixos/nix:latest /bin/sh -c "nix flake update"
 
 build_js:
 	yarn install --frozen-lockfile
@@ -87,20 +101,89 @@ test_relay_unit:
 	go build -v ./pkg/cosmos/...
 	go test -v ./pkg/cosmos/...
 
-test_smoke:
-	CGO_ENABLED=1 SELECTED_NETWORKS=localterra ginkgo -p -procs=3 tests/e2e/smoke
 
-test_ocr:
-	CGO_ENABLED=1 SELECTED_NETWORKS=localterra ginkgo --focus=@ocr2 tests/e2e/smoke
+# copied over from starknet, replace as needed
+.PHONY: build-go
+build-go: build-go-relayer build-go-ops build-go-integration-tests
 
-test_ocr_soak:
-	CGO_ENABLED=1 SELECTED_NETWORKS=localterra ginkgo --focus=@ocr2-soak tests/e2e/soak
+.PHONY: build-go-relayer
+build-go-relayer:
+	cd relayer/ && go build ./...
 
-test_ocr_proxy:
-	CGO_ENABLED=1 SELECTED_NETWORKS=localterra ginkgo --focus=@ocr_proxy tests/e2e/smoke
+.PHONY: build-go-ops
+build-go-ops:
+	cd ops/ && go build ./...
 
-test_migration:
-	CGO_ENABLED=1 SELECTED_NETWORKS=localterra ginkgo tests/e2e/migration
+.PHONY: build-go-integration-tests
+build-go-integration-tests:
+	cd integration-tests/ && go build ./...
 
-test_gauntlet:
-	CGO_ENABLED=1 SELECTED_NETWORKS=localterra ginkgo --focus=@gauntlet tests/e2e/smoke
+.PHONY: format-go
+format-go: format-go-fmt format-go-mod-tidy
+
+.PHONY: format-go-fmt
+format-go-fmt:
+	cd ./relayer && go fmt ./...
+	cd ./ops && go fmt ./...
+	cd ./integration-tests && go fmt ./...
+
+.PHONY: format-go-mod-tidy
+format-go-mod-tidy:
+	cd ./relayer && go mod tidy
+	cd ./ops && go mod tidy
+	cd ./integration-tests && go mod tidy
+
+.PHONY: lint-go-ops
+lint-go-ops:
+	cd ./ops && golangci-lint --color=always run
+
+.PHONY: lint-go-relayer
+lint-go-relayer:
+	cd ./relayer && golangci-lint --color=always run
+
+.PHONY: lint-go-test
+lint-go-test:
+	cd ./integration-tests && golangci-lint --color=always --exclude=dot-imports run
+
+.PHONY: test-integration-prep
+test-integration-prep:
+	# add any stuff that we might need here
+	make build
+
+.PHONY: test-go
+test-go: test-unit-go test-integration-go
+
+.PHONY: test-unit
+test-unit: test-unit-go
+
+.PHONY: test-unit-go
+test-unit-go:
+	cd ./relayer && go test -v ./...
+	cd ./relayer && go test -v ./... -race -count=10
+
+.PHONY: test-integration-go
+# only runs tests with TestIntegration_* + //go:build integration
+test-integration-go:
+	cd ./relayer && go test -v ./... -run TestIntegration -tags integration
+
+.PHONY: test-integration-smoke
+test-integration-smoke: test-integration-prep
+	cd integration-tests/ && \
+		go test --timeout=2h -v ./smoke
+
+# CI Already has already ran test-integration-prep
+.PHONY: test-integration-smoke-ci
+test-integration-smoke-ci:
+	cd integration-tests/ && \
+		go test --timeout=2h -v -count=1 -json ./smoke 2>&1 | tee /tmp/gotest.log | gotestfmt
+
+.PHONY: test-integration-soak
+test-integration-soak: test-integration-prep
+	cd integration-tests/ && \
+		go test --timeout=1h -v ./soak
+
+# CI Already has already ran test-integration-prep
+.PHONY: test-integration-soak-ci
+test-integration-soak-ci:
+	cd integration-tests/ && \
+		go test --timeout=1h -v -count=1 -json ./soak 2>&1 | tee /tmp/gotest.log | gotestfmt
