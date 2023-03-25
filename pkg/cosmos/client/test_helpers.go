@@ -85,10 +85,12 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 	require.NoError(t, err, string(out))
 
 	port := mustRandomPort()
-	tendermintURL := fmt.Sprintf("http://127.0.0.1:%d", port)
+	tendermintHost := fmt.Sprintf("127.0.0.1:%d", port)
+	tendermintURL := "http://" + tendermintHost
 	t.Log(tendermintURL)
+
 	cmd := exec.Command("wasmd", "start", "--home", testdir,
-		"--rpc.laddr", tendermintURL,
+		"--rpc.laddr", "tcp://"+tendermintHost,
 		"--rpc.pprof_laddr", "127.0.0.1:0",
 		"--grpc.address", "127.0.0.1:0",
 		"--grpc-web.address", "127.0.0.1:0",
