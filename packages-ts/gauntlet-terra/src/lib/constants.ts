@@ -1,1 +1,1 @@
-export const BIP44_ATOM_PATH = "44'/330'/0'/0/0"
+export const BIP44_ATOM_PATH = "44'/118'/0'/0/0"
