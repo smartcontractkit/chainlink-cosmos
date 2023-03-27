@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"testing"
 	"time"
 
@@ -52,6 +53,18 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 	config.Set("minimum-gas-prices", minGasPrice.String())
 	require.NoError(t, os.WriteFile(p, []byte(config.String()), 0600))
 	// TODO: could also speed up the block mining config
+
+	p = path.Join(testdir, "config", "genesis.json")
+	f, err = os.ReadFile(p)
+	require.NoError(t, err)
+
+	genesisData := string(f)
+	// fix hardcoded token, see
+	// https://github.com/CosmWasm/wasmd/blob/develop/docker/setup_wasmd.sh
+	// https://github.com/CosmWasm/wasmd/blob/develop/contrib/local/setup_wasmd.sh
+	genesisData = strings.ReplaceAll(genesisData, "\"ustake\"", "\"ucosm\"")
+	genesisData = strings.ReplaceAll(genesisData, "\"stake\"", "\"ucosm\"")
+	require.NoError(t, os.WriteFile(p, []byte(genesisData), 0600))
 
 	// Create 2 test accounts
 	var accounts []Account
