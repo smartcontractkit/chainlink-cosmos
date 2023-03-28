@@ -32,22 +32,25 @@ jobs:
         with:
           name: artifacts
           path: artifacts
+
   e2e_custom_build_custom_chainlink_image:
     name: E2E Custom Build Custom CL Image
-    # target branch can't be set as var, it's from where we getting pipeline code
-    uses: smartcontractkit/chainlink/.github/workflows/build-custom.yml@develop
-    with:
-      cl_repo: smartcontractkit/chainlink
-      # by default we are integrating with develop
-      cl_ref: ${{ github.event.inputs.cl_branch_ref }}
-      # commit of the caller branch
-      dep_terra_sha: ${{ github.sha }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.QA_AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.QA_AWS_SECRET_KEY }}
-      AWS_REGION: ${{ secrets.QA_AWS_REGION }}
-      AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
-      QA_KUBECONFIG: ${{ secrets.QA_KUBECONFIG }}
+    runs-on: ubuntu-latest
+    environment: integration
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Build Image
+        uses: smartcontractkit/chainlink-github-actions/chainlink-testing-framework/build-image@b4cf639bc68241f51b32d931384a40875420c219
+        with:
+          cl_repo: smartcontractkit/chainlink
+          cl_ref: ${{ github.event.inputs.cl_branch_ref }}
+          dep_cosmos_sha: ${{ github.event.pull_request.head.sha }}
+          push_tag: ${{ secrets.QA_AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.QA_AWS_REGION }}.amazonaws.com/chainlink:custom.${{ github.event.pull_request.head.sha }}
+          QA_AWS_REGION: ${{ secrets.QA_AWS_REGION }}
+          QA_AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
+
   e2e_cutsom_run_smoke_tests:
     name: E2E Custom Run Smoke Tests
     runs-on: ubuntu-latest
