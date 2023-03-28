@@ -49,7 +49,7 @@ func TestBatchSim(t *testing.T) {
 		return func() { assert.Len(t, logs.TakeAll(), l) }
 	}
 
-	contract := DeployTestContract(t, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
+	contract := DeployTestContract(t, tendermintURL, "42", accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 	var succeed sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), Msg: []byte(`{"reset":{"count":5}}`)}
 	var fail sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), Msg: []byte(`{"blah":{"count":5}}`)}
 
@@ -132,7 +132,7 @@ func TestCosmosClient(t *testing.T) {
 	gpe := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
 		"ucosm": sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.01")),
 	})
-	contract := DeployTestContract(t, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
+	contract := DeployTestContract(t, tendermintURL, "42", accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 
 	t.Run("send tx between accounts", func(t *testing.T) {
 		// Assert balance before
