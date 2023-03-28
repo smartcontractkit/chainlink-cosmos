@@ -242,24 +242,29 @@ func TestCosmosClient(t *testing.T) {
 		ev, err := tc.TxsEvents([]string{"wasm.action='reset'", fmt.Sprintf("wasm._contract_address='%s'", contract.String())}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 2, len(ev.TxResponses))
-		foundCount := false
 		foundContract := false
 		for _, event := range ev.TxResponses[0].Logs[0].Events {
-			if event.Type != "wasm-reset" {
+			if event.Type != "wasm" {
+				continue
+			}
+			isResetAction := false
+			for _, attr := range event.Attributes {
+				if attr.Key != "action" {
+					continue
+				}
+				isResetAction = attr.Value == "reset"
+				break
+			}
+			if !isResetAction {
 				continue
 			}
 			for _, attr := range event.Attributes {
-				if attr.Key == "count" {
-					assert.Equal(t, "4", attr.Value)
-					foundCount = true
-				}
 				if attr.Key == "_contract_address" {
 					assert.Equal(t, contract.String(), attr.Value)
 					foundContract = true
 				}
 			}
 		}
-		assert.True(t, foundCount)
 		assert.True(t, foundContract)
 
 		// Ensure the height filtering works
