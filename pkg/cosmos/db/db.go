@@ -1,23 +1,8 @@
 package db
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
 	"time"
-
-	"gopkg.in/guregu/null.v4"
-
-	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 )
-
-type Chain struct {
-	ID        string
-	Cfg       ChainCfg
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Enabled   bool
-}
 
 type Node struct {
 	ID            int32
@@ -26,32 +11,6 @@ type Node struct {
 	TendermintURL string `db:"tendermint_url"`
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
-}
-
-type ChainCfg struct {
-	BlockRate             *utils.Duration
-	BlocksUntilTxTimeout  null.Int
-	ConfirmPollPeriod     *utils.Duration
-	FallbackGasPriceUAtom null.String
-	FCDURL                null.String `db:"fcd_url"`
-	GasLimitMultiplier    null.Float
-	MaxMsgsPerBatch       null.Int
-	OCR2CachePollPeriod   *utils.Duration
-	OCR2CacheTTL          *utils.Duration
-	TxMsgTimeout          *utils.Duration
-}
-
-func (c *ChainCfg) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return errors.New("type assertion to []byte failed")
-	}
-
-	return json.Unmarshal(b, c)
-}
-
-func (c *ChainCfg) Value() (driver.Value, error) {
-	return json.Marshal(c)
 }
 
 // State represents the state of a given cosmos msg
