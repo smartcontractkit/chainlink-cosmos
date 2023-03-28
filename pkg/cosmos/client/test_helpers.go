@@ -152,7 +152,7 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 func DeployTestContract(t *testing.T, tendermintURL string, deployAccount, ownerAccount Account, tc *Client, testdir, wasmTestContractPath string) sdk.AccAddress {
 	//nolint:gosec
 	out, err := exec.Command("wasmd", "tx", "wasm", "store", wasmTestContractPath, "--node", tendermintURL,
-		"--from", deployAccount.Name, "--gas", "auto", "--fees", "100000ucosm", "--chain-id", "42", "--broadcast-mode", "block", "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes").CombinedOutput()
+		"--from", deployAccount.Name, "--gas", "auto", "--fees", "100000ucosm", "--gas-adjustment", "1.3", "--chain-id", "42", "--broadcast-mode", "block", "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes", "--output", "json").CombinedOutput()
 	require.NoError(t, err, string(out))
 	an, sn, err2 := tc.Account(ownerAccount.Address)
 	require.NoError(t, err2)
