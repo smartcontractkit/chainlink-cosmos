@@ -184,7 +184,7 @@ func GetContractAddr(t *testing.T, tc *Client, deploymentHash string) sdk.AccAdd
 	for _, etype := range deploymentTx.TxResponse.Events {
 		if etype.Type == "wasm" {
 			for _, attr := range etype.Attributes {
-				if string(attr.Key) == "contract_address" {
+				if string(attr.Key) == "_contract_address" {
 					contractAddr = string(attr.Value)
 				}
 			}

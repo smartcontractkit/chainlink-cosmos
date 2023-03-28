@@ -239,7 +239,7 @@ func TestCosmosClient(t *testing.T) {
 
 		// Check events querying works
 		// TxEvents sorts in a descending manner, so latest txes are first
-		ev, err := tc.TxsEvents([]string{fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())}, nil)
+		ev, err := tc.TxsEvents([]string{"wasm.action='reset'", fmt.Sprintf("wasm._contract_address='%s'", contract.String())}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 2, len(ev.TxResponses))
 		foundCount := false
@@ -253,7 +253,7 @@ func TestCosmosClient(t *testing.T) {
 					assert.Equal(t, "4", attr.Value)
 					foundCount = true
 				}
-				if attr.Key == "contract_address" {
+				if attr.Key == "_contract_address" {
 					assert.Equal(t, contract.String(), attr.Value)
 					foundContract = true
 				}
@@ -263,10 +263,10 @@ func TestCosmosClient(t *testing.T) {
 		assert.True(t, foundContract)
 
 		// Ensure the height filtering works
-		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", resp1.TxResponse.Height+1), fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())}, nil)
+		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", resp1.TxResponse.Height+1), "wasm.action='reset'", fmt.Sprintf("wasm._contract_address='%s'", contract.String())}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(ev.TxResponses))
-		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height=%d", resp1.TxResponse.Height), fmt.Sprintf("wasm-reset.contract_address='%s'", contract)}, nil)
+		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height=%d", resp1.TxResponse.Height), "wasm.action='reset'", fmt.Sprintf("wasm._contract_address='%s'", contract)}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(ev.TxResponses))
 		for _, ev := range ev.TxResponses[0].Logs[0].Events {
