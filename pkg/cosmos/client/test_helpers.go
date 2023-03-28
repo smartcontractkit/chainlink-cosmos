@@ -161,6 +161,7 @@ func DeployTestContract(t *testing.T, tendermintURL string, deployAccount, owner
 			Sender: ownerAccount.Address.String(),
 			Admin:  "",
 			CodeID: 1,
+			Label:  "testcontract",
 			Msg:    []byte(`{"count":0}`),
 			Funds:  sdk.Coins{},
 		},
