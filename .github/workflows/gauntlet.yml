@@ -16,6 +16,11 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: "sandbox = false"
+      - name: Cache Nix
+        uses: cachix/cachix-action@v12
+        with:
+          name: chainlink-cosmos
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - run: nix develop -c yarn install --frozen-lockfile
       - run: nix develop -c yarn build
 
@@ -31,6 +36,11 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: "sandbox = false"
+      - name: Cache Nix
+        uses: cachix/cachix-action@v12
+        with:
+          name: chainlink-cosmos
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - run: nix develop -c yarn install --frozen-lockfile
       - run: nix develop -c yarn lint:format
 
@@ -46,5 +56,10 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: "sandbox = false"
+      - name: Cache Nix
+        uses: cachix/cachix-action@v12
+        with:
+          name: chainlink-cosmos
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - run: nix develop -c yarn install --frozen-lockfile
       - run: nix develop -c yarn test:ci
