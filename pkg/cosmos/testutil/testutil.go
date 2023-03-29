@@ -22,9 +22,16 @@ func CreateMnemonic() (string, error) {
 	return bip39.NewMnemonic(entropy)
 }
 
+// TODO: these should be configurable
+var (
+	// ATOM coin type
+	// ref: https://github.com/satoshilabs/slips/blob/master/slip-0044.md
+	coinType uint32 = 118
+)
+
 // CreateHDPath returns BIP 44 object from account and index parameters.
 func CreateHDPath(account uint32, index uint32) string {
-	return hd.CreateHDPath(330, account, index).String()
+	return hd.CreateHDPath(coinType, account, index).String()
 }
 
 func CreateKeyFromMnemonic(mnemonic string) (cryptotypes.PrivKey, sdk.AccAddress, error) {
