@@ -12,10 +12,9 @@ pkgs.mkShell {
     cargo-generate
     cargo-tarpaulin
     gcc
-    # pkg-config
-    # openssl
-
-    (pkgs.callPackage ./terrad.nix {})
+    pkg-config
+    openssl
+    cacert
 
     # Golang
     # Keep this golang version in sync with the version in .tool-versions please
@@ -24,6 +23,11 @@ pkgs.mkShell {
     delve
     golangci-lint
     gotools
+
+    which
+    git
+    gnumake
+    (pkgs.callPackage ./wasmd.nix {})
 
     # NodeJS + TS
     nodePackages.typescript

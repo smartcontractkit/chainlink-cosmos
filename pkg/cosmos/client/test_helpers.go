@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,16 +33,15 @@ type Account struct {
 // 0.001
 var minGasPrice = sdk.NewDecCoinFromDec("ucosm", sdk.NewDecWithPrec(1, 3))
 
-// SetupLocalCosmosNode sets up a local terra node via terrad, and returns pre-funded accounts, the test directory, and the url.
+// SetupLocalCosmosNode sets up a local terra node via wasmd, and returns pre-funded accounts, the test directory, and the url.
 func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, string) {
-	t.Skip("depends on wasmd")
 	testdir, err := os.MkdirTemp("", "integration-test")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, os.RemoveAll(testdir))
 	})
 	t.Log(testdir)
-	out, err := exec.Command("terrad", "init", "integration-test", "-o", "--chain-id", chainID, "--home", testdir).Output()
+	out, err := exec.Command("wasmd", "init", "integration-test", "-o", "--chain-id", chainID, "--home", testdir).Output()
 	require.NoError(t, err, string(out))
 
 	p := path.Join(testdir, "config", "app.toml")
@@ -54,11 +54,23 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 	require.NoError(t, os.WriteFile(p, []byte(config.String()), 0600))
 	// TODO: could also speed up the block mining config
 
+	p = path.Join(testdir, "config", "genesis.json")
+	f, err = os.ReadFile(p)
+	require.NoError(t, err)
+
+	genesisData := string(f)
+	// fix hardcoded token, see
+	// https://github.com/CosmWasm/wasmd/blob/develop/docker/setup_wasmd.sh
+	// https://github.com/CosmWasm/wasmd/blob/develop/contrib/local/setup_wasmd.sh
+	genesisData = strings.ReplaceAll(genesisData, "\"ustake\"", "\"ucosm\"")
+	genesisData = strings.ReplaceAll(genesisData, "\"stake\"", "\"ucosm\"")
+	require.NoError(t, os.WriteFile(p, []byte(genesisData), 0600))
+
 	// Create 2 test accounts
 	var accounts []Account
 	for i := 0; i < 2; i++ {
 		account := fmt.Sprintf("test%d", i)
-		key, err2 := exec.Command("terrad", "keys", "add", account, "--output", "json", "--keyring-backend", "test", "--keyring-dir", testdir).CombinedOutput()
+		key, err2 := exec.Command("wasmd", "keys", "add", account, "--output", "json", "--keyring-backend", "test", "--home", testdir).CombinedOutput()
 		require.NoError(t, err2, string(key))
 		var k struct {
 			Address  string `json:"address"`
@@ -71,7 +83,7 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 		require.NoError(t, err4)
 		require.Equal(t, expAcctAddr, address)
 		// Give it 100 luna
-		out2, err2 := exec.Command("terrad", "add-genesis-account", k.Address, "100000000ucosm", "--home", testdir).Output() //nolint:gosec
+		out2, err2 := exec.Command("wasmd", "add-genesis-account", k.Address, "100000000ucosm", "--home", testdir).Output() //nolint:gosec
 		require.NoError(t, err2, string(out2))
 		accounts = append(accounts, Account{
 			Name:       account,
@@ -80,20 +92,22 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 		})
 	}
 	// Stake 10 luna in first acct
-	out, err = exec.Command("terrad", "gentx", accounts[0].Name, "10000000ucosm", fmt.Sprintf("--chain-id=%s", chainID), "--keyring-backend", "test", "--keyring-dir", testdir, "--home", testdir).CombinedOutput() //nolint:gosec
+	out, err = exec.Command("wasmd", "gentx", accounts[0].Name, "10000000ucosm", "--chain-id", chainID, "--keyring-backend", "test", "--home", testdir).CombinedOutput() //nolint:gosec
 	require.NoError(t, err, string(out))
-	out, err = exec.Command("terrad", "collect-gentxs", "--home", testdir).CombinedOutput()
+	out, err = exec.Command("wasmd", "collect-gentxs", "--home", testdir).CombinedOutput()
 	require.NoError(t, err, string(out))
 
 	port := mustRandomPort()
-	tendermintURL := fmt.Sprintf("http://127.0.0.1:%d", port)
+	tendermintHost := fmt.Sprintf("127.0.0.1:%d", port)
+	tendermintURL := "http://" + tendermintHost
 	t.Log(tendermintURL)
-	cmd := exec.Command("terrad", "start", "--home", testdir,
-		"--rpc.laddr", fmt.Sprintf("tcp://127.0.0.1:%d", port),
-		"--rpc.pprof_laddr", "0.0.0.0:0",
-		"--grpc.address", "0.0.0.0:0",
-		"--grpc-web.address", "0.0.0.0:0",
-		"--p2p.laddr", "0.0.0.0:0")
+
+	cmd := exec.Command("wasmd", "start", "--home", testdir,
+		"--rpc.laddr", "tcp://"+tendermintHost,
+		"--rpc.pprof_laddr", "127.0.0.1:0",
+		"--grpc.address", "127.0.0.1:0",
+		"--grpc-web.address", "127.0.0.1:0",
+		"--p2p.laddr", "127.0.0.1:0")
 	var stdErr bytes.Buffer
 	cmd.Stderr = &stdErr
 	require.NoError(t, cmd.Start())
@@ -101,7 +115,7 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 		assert.NoError(t, cmd.Process.Kill())
 		if err2 := cmd.Wait(); assert.Error(t, err2) {
 			if !assert.Contains(t, err2.Error(), "signal: killed", cmd.ProcessState.String()) {
-				t.Log("terrad stderr:", stdErr.String())
+				t.Log("wasmd stderr:", stdErr.String())
 			}
 		}
 	})
@@ -135,10 +149,10 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 }
 
 // DeployTestContract deploys a test contract.
-func DeployTestContract(t *testing.T, tendermintURL string, deployAccount, ownerAccount Account, tc *Client, testdir, wasmTestContractPath string) sdk.AccAddress {
+func DeployTestContract(t *testing.T, tendermintURL, chainID string, deployAccount, ownerAccount Account, tc *Client, testdir, wasmTestContractPath string) sdk.AccAddress {
 	//nolint:gosec
-	out, err := exec.Command("terrad", "tx", "wasm", "store", wasmTestContractPath, "--node", tendermintURL,
-		"--from", deployAccount.Name, "--gas", "auto", "--fees", "100000ucosm", "--chain-id", "42", "--broadcast-mode", "block", "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes").CombinedOutput()
+	out, err := exec.Command("wasmd", "tx", "wasm", "store", wasmTestContractPath, "--node", tendermintURL,
+		"--from", deployAccount.Name, "--gas", "auto", "--fees", "100000ucosm", "--gas-adjustment", "1.3", "--chain-id", chainID, "--broadcast-mode", "block", "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes", "--output", "json").CombinedOutput()
 	require.NoError(t, err, string(out))
 	an, sn, err2 := tc.Account(ownerAccount.Address)
 	require.NoError(t, err2)
@@ -146,7 +160,9 @@ func DeployTestContract(t *testing.T, tendermintURL string, deployAccount, owner
 		&wasmtypes.MsgInstantiateContract{
 			Sender: ownerAccount.Address.String(),
 			Admin:  "",
+			// TODO: this only works for the first code deployment, read code_id from the store invocation above and use the value here.
 			CodeID: 1,
+			Label:  "testcontract",
 			Msg:    []byte(`{"count":0}`),
 			Funds:  sdk.Coins{},
 		},
@@ -170,7 +186,7 @@ func GetContractAddr(t *testing.T, tc *Client, deploymentHash string) sdk.AccAdd
 	for _, etype := range deploymentTx.TxResponse.Events {
 		if etype.Type == "wasm" {
 			for _, attr := range etype.Attributes {
-				if string(attr.Key) == "contract_address" {
+				if string(attr.Key) == "_contract_address" {
 					contractAddr = string(attr.Value)
 				}
 			}

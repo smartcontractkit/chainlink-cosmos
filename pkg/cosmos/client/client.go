@@ -58,7 +58,11 @@ var (
 func init() {
 	// Extracted from app.MakeEncodingConfig() to ensure that we only call them once, since they race and can panic.
 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	// This registers base sdk, tx and crypto types, see
+	// https://github.com/cosmos/cosmos-sdk/blob/47f46643affd7ec7978329c42bac47275ac7e1cc/std/codec.go#L20
 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	// needed for Client.Account() to deserialize authtypes.AccountI
+	authtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 
 	// NOTE: bech32 is configured globally, blocked on https://github.com/cosmos/cosmos-sdk/issues/13140
 	config := sdk.GetConfig()
