@@ -9,6 +9,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -100,5 +102,41 @@ func TestGasPriceEstimators(t *testing.T) {
 		ucosm, ok = gpePrices["ucosm"]
 		assert.True(t, ok)
 		assert.NotEqual(t, "10.000000000000000000", ucosm.Amount.String())
+	})
+}
+
+func TestInsufficientGasError(t *testing.T) {
+	accounts, testdir, tendermintURL := SetupLocalCosmosNode(t, "42")
+	lggr := logger.Test(t)
+	tc, err := NewClient(
+		"42",
+		tendermintURL,
+		DefaultTimeout,
+		lggr)
+	require.NoError(t, err)
+
+	t.Run("identifiable insufficient fee error", func(t *testing.T) {
+		contract := DeployTestContract(t, tendermintURL, "42", accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
+		var reset sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), Msg: []byte(`{"reset":{"count":5}}`)}
+
+		an, sn, err := tc.Account(accounts[0].Address)
+		gasLimit, err := tc.SimulateUnsigned([]sdk.Msg{reset}, sn)
+		require.NoError(t, err)
+		an, sn, err = tc.Account(accounts[0].Address)
+		require.NoError(t, err)
+		var gasLimitMultiplier float64 = 1
+		gasPrice := sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.0001"))
+		txBytes, err := tc.CreateAndSign([]sdk.Msg{reset}, an, sn, gasLimit.GasInfo.GasUsed, gasLimitMultiplier, gasPrice, accounts[0].PrivateKey, 0)
+		require.NoError(t, err)
+		_, err = tc.Simulate(txBytes)
+		require.NoError(t, err)
+		resp, err := tc.Broadcast(txBytes, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		require.NotNil(t, err)
+		require.NotNil(t, resp)
+		require.NotNil(t, resp.TxResponse)
+
+		// 13 is ErrInsufficientFee
+		// https://github.com/cosmos/cosmos-sdk/blob/47f46643affd7ec7978329c42bac47275ac7e1cc/types/errors/errors.go#L56
+		require.Equal(t, resp.TxResponse.Code, uint32(13))
 	})
 }
