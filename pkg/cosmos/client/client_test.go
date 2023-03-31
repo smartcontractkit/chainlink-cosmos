@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -15,8 +16,20 @@ import (
 	"github.com/tendermint/tendermint/abci/types"
 	"go.uber.org/zap"
 
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
+
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 )
+
+func TestMain(m *testing.M) {
+	// these are hardcoded in test_helpers.go.
+	params.InitCosmosSdk(
+		/* bech32Prefix= */ "wasm",
+		/* token= */ "cosm",
+	)
+	code := m.Run()
+	os.Exit(code)
+}
 
 func TestErrMatch(t *testing.T) {
 	errStr := "rpc error: code = InvalidArgument desc = failed to execute message; message index: 0: Error parsing into type my_first_contract::msg::ExecuteMsg: unknown variant `blah`, expected `increment` or `reset`: execute wasm contract failed: invalid request"
