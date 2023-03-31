@@ -15,13 +15,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -32,45 +33,6 @@ import (
 )
 
 const httpResponseLimit = 10_000_000 // 10MB
-
-// "github.com/terra-money/core/app/params"
-// TODO: import as params.MakeEncoding config
-var encodingConfig = MakeEncodingConfig()
-
-// copied from wasmd https://github.com/CosmWasm/wasmd/blob/88e01a98ab8a87b98dc26c03715e6aef5c92781b/app/app.go#L163-L174
-// TODO: make configurable
-var (
-	Bech32Prefix = "wasm"
-	// Bech32PrefixAccAddr defines the Bech32 prefix of an account's address
-	Bech32PrefixAccAddr = Bech32Prefix
-	// Bech32PrefixAccPub defines the Bech32 prefix of an account's public key
-	Bech32PrefixAccPub = Bech32Prefix + sdk.PrefixPublic
-	// Bech32PrefixValAddr defines the Bech32 prefix of a validator's operator address
-	Bech32PrefixValAddr = Bech32Prefix + sdk.PrefixValidator + sdk.PrefixOperator
-	// Bech32PrefixValPub defines the Bech32 prefix of a validator's operator public key
-	Bech32PrefixValPub = Bech32Prefix + sdk.PrefixValidator + sdk.PrefixOperator + sdk.PrefixPublic
-	// Bech32PrefixConsAddr defines the Bech32 prefix of a consensus node address
-	Bech32PrefixConsAddr = Bech32Prefix + sdk.PrefixValidator + sdk.PrefixConsensus
-	// Bech32PrefixConsPub defines the Bech32 prefix of a consensus node public key
-	Bech32PrefixConsPub = Bech32Prefix + sdk.PrefixValidator + sdk.PrefixConsensus + sdk.PrefixPublic
-)
-
-func init() {
-	// Extracted from app.MakeEncodingConfig() to ensure that we only call them once, since they race and can panic.
-	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
-	// This registers base sdk, tx and crypto types, see
-	// https://github.com/cosmos/cosmos-sdk/blob/47f46643affd7ec7978329c42bac47275ac7e1cc/std/codec.go#L20
-	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	// needed for Client.Account() to deserialize authtypes.AccountI
-	authtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-
-	// NOTE: bech32 is configured globally, blocked on https://github.com/cosmos/cosmos-sdk/issues/13140
-	config := sdk.GetConfig()
-	config.SetBech32PrefixForAccount(Bech32PrefixAccAddr, Bech32PrefixAccPub)
-	config.SetBech32PrefixForValidator(Bech32PrefixValAddr, Bech32PrefixValPub)
-	config.SetBech32PrefixForConsensusNode(Bech32PrefixConsAddr, Bech32PrefixConsPub)
-	config.Seal()
-}
 
 //go:generate mockery --name ReaderWriter --output ./mocks/
 type ReaderWriter interface {
@@ -191,19 +153,14 @@ func NewClient(chainID string,
 	if err != nil {
 		return nil, err
 	}
-	ec := encodingConfig
-	// TODO: extract this cosmosclient.Context{} creation so we can change it per chain
+
 	// Note should cosmos nodes start exposing grpc, its preferable
 	// to connect directly with grpc.Dial to avoid using clientCtx (according to tendermint team).
 	// If so then we would start putting timeouts on the ctx we pass in to the generate grpc client calls.
-	clientCtx := cosmosclient.Context{}.
-		WithClient(tmClient).
-		WithChainID(chainID).
-		WithCodec(ec.Marshaler).
-		WithLegacyAmino(ec.Amino).
+	clientCtx := params.NewClientContext().
 		WithAccountRetriever(authtypes.AccountRetriever{}).
-		WithInterfaceRegistry(ec.InterfaceRegistry).
-		WithTxConfig(ec.TxConfig)
+		WithClient(tmClient).
+		WithChainID(chainID)
 
 	cosmosServiceClient := txtypes.NewServiceClient(clientCtx)
 	authClient := authtypes.NewQueryClient(clientCtx)
@@ -290,7 +247,7 @@ func (c *Client) BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse,
 func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error) {
 	// https://github.com/cosmos/cosmos-sdk/blob/a785bf5af602525cf7a5c5ea097056597e2eb7ef/client/tx/tx.go#L63-L117
 	// https://docs.cosmos.network/main/run-node/txs#signing-a-transaction-1
-	txConfig := encodingConfig.TxConfig
+	txConfig := params.ClientTxConfig()
 	txBuilder := txConfig.NewTxBuilder()
 	err := txBuilder.SetMsgs(msgs...)
 	if err != nil {
@@ -455,7 +412,8 @@ func (c *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSim
 
 // SimulateUnsigned simulates an unsigned msg
 func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error) {
-	txBuilder := encodingConfig.TxConfig.NewTxBuilder()
+	txConfig := params.ClientTxConfig()
+	txBuilder := txConfig.NewTxBuilder()
 	if err := txBuilder.SetMsgs(msgs...); err != nil {
 		return nil, err
 	}
@@ -472,7 +430,7 @@ func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.Sim
 	if err := txBuilder.SetSignatures(sig); err != nil {
 		return nil, err
 	}
-	txBytes, err := encodingConfig.TxConfig.TxEncoder()(txBuilder.GetTx())
+	txBytes, err := txConfig.TxEncoder()(txBuilder.GetTx())
 	if err != nil {
 		return nil, err
 	}

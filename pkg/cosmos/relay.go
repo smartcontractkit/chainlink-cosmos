@@ -12,6 +12,7 @@ import (
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/cosmwasm"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 )
 
 // ErrMsgUnsupported is returned when an unsupported type of message is encountered.
@@ -52,6 +53,11 @@ func (r *Relayer) Start(context.Context) error {
 	if r.chainSet == nil {
 		return errors.New("Cosmos unavailable")
 	}
+	// TODO(BCI-915): Make this configurable.
+	params.InitCosmosSdk(
+		/* bech32Prefix= */ "wasm",
+		/* token= */ "atom",
+	)
 	return nil
 }
 
