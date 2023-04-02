@@ -7,11 +7,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/config"
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/config"
 )
 
 var _ median.MedianContract = (*ContractCache)(nil)

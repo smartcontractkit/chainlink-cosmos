@@ -6,9 +6,10 @@ import (
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
+
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/config"
-	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/chains/evmutil"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"

@@ -5,10 +5,11 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/smartcontractkit/chainlink-cosmos/ops/utils"
 	"github.com/smartcontractkit/chainlink-env/client"
 	"github.com/smartcontractkit/chainlink-env/config"
 	"github.com/smartcontractkit/chainlink-env/environment"
+
+	"github.com/smartcontractkit/chainlink-cosmos/ops/utils"
 )
 
 const (
