@@ -3,7 +3,6 @@ module github.com/smartcontractkit/chainlink-cosmos/ops
 go 1.20
 
 require (
-	github.com/go-resty/resty/v2 v2.7.0
 	github.com/rs/zerolog v1.28.0
 	github.com/smartcontractkit/chainlink-env v0.2.50
 	github.com/smartcontractkit/chainlink-testing-framework v1.7.10
