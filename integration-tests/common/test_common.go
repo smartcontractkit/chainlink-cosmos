@@ -3,10 +3,11 @@ package common
 import (
 	"testing"
 
-	"github.com/smartcontractkit/chainlink-cosmos/ops/gauntlet"
 	ctfClient "github.com/smartcontractkit/chainlink-testing-framework/client"
 	"github.com/smartcontractkit/chainlink/integration-tests/client"
 	"github.com/test-go/testify/require"
+
+	"github.com/smartcontractkit/chainlink-cosmos/ops/gauntlet"
 )
 
 type Test struct {

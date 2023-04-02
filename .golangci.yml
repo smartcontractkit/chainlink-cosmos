@@ -14,7 +14,7 @@ linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
   goimports:
-    local-prefixes: github.com/smartcontractkit/chainlink-terra
+    local-prefixes: github.com/smartcontractkit/chainlink-cosmos
   golint:
     min-confidence: 1.0
   gosec:
