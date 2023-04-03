@@ -21,7 +21,6 @@ require (
 	google.golang.org/genproto v0.0.0-20221024183307-1bc688fe9f3e
 	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.28.2-0.20220831092852-f930b1dc76e8
-	gopkg.in/guregu/null.v4 v4.0.0
 )
 
 require (

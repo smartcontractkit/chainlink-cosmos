@@ -4,6 +4,7 @@ package mocks
 
 import (
 	cosmos_sdkclient "github.com/cosmos/cosmos-sdk/client"
+
 	client "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"

@@ -24,9 +24,9 @@ FROM ubuntu:20.04
 RUN apt-get update && apt-get install -y ca-certificates
 COPY --from=build /cosmos-monitoring/monitoring /monitoring
 
-# dependency of cosmwasm
-COPY --from=build /root/go/pkg/mod/github.com/\!cosm\!wasm/wasmvm@v*/api/libwasmvm.so /usr/lib/
-RUN chmod 755 /usr/lib/libwasmvm.so
+# Dependency of CosmWasm/wasmd
+COPY --from=build /go/pkg/mod/github.com/\!cosm\!wasm/wasmvm@v*/internal/api/libwasmvm.*.so /usr/lib/
+RUN chmod 755 /usr/lib/libwasmvm.*.so
 
 # Expose prometheus default port
 EXPOSE 9090/tcp

@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/test-go/testify/require"
+
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
 	"github.com/smartcontractkit/chainlink-cosmos/ops/gauntlet"
 	"github.com/smartcontractkit/chainlink-cosmos/ops/utils"
-	"github.com/test-go/testify/require"
 )
 
 var (
