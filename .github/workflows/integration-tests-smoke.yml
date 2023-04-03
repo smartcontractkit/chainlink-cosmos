@@ -143,7 +143,7 @@ jobs:
           test_command_to_run: nix develop -c make test-integration-smoke-ci
           test_download_vendor_packages_command: cd integration-tests && nix develop -c go mod download
           cl_repo: ${{ env.CL_ECR }}
-          cl_image_tag: ci.${{ github.sha }}
+          cl_image_tag: cosmos.${{ github.sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
           go_mod_path: ./integration-tests/go.mod
           QA_AWS_REGION: ${{ secrets.QA_AWS_REGION }}
