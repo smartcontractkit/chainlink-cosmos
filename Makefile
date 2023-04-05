@@ -21,9 +21,6 @@ endif
 download:
 	go mod download
 
-download_integration_tests:
-	cd ./integration-tests && go mod download
-
 install:
 ifeq ($(OSFLAG),$(WINDOWS))
 	@echo "Windows system detected - no automated setup available."
