@@ -50,7 +50,8 @@ jobs:
       contents: read
     steps:
       - name: Build Image
-        uses: smartcontractkit/chainlink-github-actions/chainlink-testing-framework/build-image@b4cf639bc68241f51b32d931384a40875420c219
+        # note using a temporary commit for build-image that works around the go get issues, replace when go get issues are fixed please
+        uses: smartcontractkit/chainlink-github-actions/chainlink-testing-framework/build-image@7fdd40ecbbd02db07c6b0f847b33103f53b8e478 # cosmos_one_off
         with:
           cl_repo: smartcontractkit/chainlink
           cl_ref: ${{ github.event.inputs.cl_branch_ref }}
