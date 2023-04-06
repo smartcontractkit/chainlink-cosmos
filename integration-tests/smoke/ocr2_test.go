@@ -5,10 +5,12 @@ import (
 	"testing"
 
 	"github.com/test-go/testify/require"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
 	"github.com/smartcontractkit/chainlink-cosmos/ops/gauntlet"
 	"github.com/smartcontractkit/chainlink-cosmos/ops/utils"
+	"github.com/smartcontractkit/chainlink/integration-tests/actions"
 )
 
 var (
@@ -29,5 +31,6 @@ func TestOCRBasic(t *testing.T) {
 	if testState.Common.Env.WillUseRemoteRunner() {
 		return // short circuit here if using a remote runner
 	}
-
+	err = actions.TeardownSuite(testState.T, testState.Common.Env, "./", nil, nil, zapcore.DPanicLevel, nil)
+	require.NoError(testState.T, err)
 }
