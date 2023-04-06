@@ -177,6 +177,11 @@ test-integration-smoke-ci:
 	cd integration-tests/ && \
 		go test --timeout=2h -v -count=1 -json ./smoke 2>&1 | tee /tmp/gotest.log | gotestfmt
 
+.PHONY: test-integration-remote-runner
+test-integration-remote-runner:
+	cd integration-tests/ && \
+		./"$(suite)".test -test.v -test.count 1 $(args) -test.run ^$(test_name)$
+
 .PHONY: test-integration-soak
 test-integration-soak: test-integration-prep
 	cd integration-tests/ && \

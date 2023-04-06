@@ -56,7 +56,7 @@ jobs:
           cl_repo: smartcontractkit/chainlink
           cl_ref: ${{ github.event.inputs.cl_branch_ref }}
           dep_cosmos_sha: ${{ github.event.pull_request.head.sha }}
-          push_tag: ${{ env.CL_ECR }}:cosmos.${{ github.event.pull_request.head.sha }}
+          push_tag: ${{ env.CL_ECR }}:cosmos.${{ github.sha }}
           QA_AWS_REGION: ${{ secrets.QA_AWS_REGION }}
           QA_AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
       - name: Print Chainlink Image Built
@@ -119,6 +119,7 @@ jobs:
       TEST_ARGS: -test.timeout 1h
       TTL: 1h
       NODE_COUNT: 5
+      RR_CPU: 3000m
     permissions:
       checks: write
       pull-requests: write
