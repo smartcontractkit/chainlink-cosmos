@@ -9,6 +9,10 @@ on:
         default: develop
         type: string
 
+concurrency:
+  group: integration-tests-cosmos-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REF_NAME: ${{ github.head_ref || github.ref_name }}
   CHAINLINK_ENV_USER: ${{ github.actor }}
