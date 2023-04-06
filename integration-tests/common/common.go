@@ -92,7 +92,11 @@ func New() *Common {
 }
 
 func (c *Common) Default(t *testing.T) {
-	c.K8Config = &environment.Config{NamespacePrefix: "chainlink-ocr-cosmos", TTL: c.TTL, Test: t}
+	c.K8Config = &environment.Config{
+		NamespacePrefix: "cosmos-ocr",
+		TTL:             c.TTL,
+		Test:            t,
+	}
 	// These can be uncommented when toml configuration is supposrted for cosmos in the chainlink node
 	wasmdUrl := fmt.Sprintf("http://%s:%d", "tendermint-rpc", 26657)
 	if c.Testnet {

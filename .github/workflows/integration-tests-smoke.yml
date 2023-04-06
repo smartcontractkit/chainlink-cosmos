@@ -20,7 +20,7 @@ env:
 jobs:
   build_artifacts:
     name: Build Artifacts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu20.04-16cores-64GB
     steps:
       - uses: actions/checkout@f25a3a9f25bd5f4c5d77189cab02ff357b5aedeb # v2.4.1
       - name: Cache cargo registry
@@ -117,6 +117,8 @@ jobs:
     env:
       TEST_SUITE: smoke
       TEST_ARGS: -test.timeout 1h
+      TTL: 1h
+      NODE_COUNT: 5
     permissions:
       checks: write
       pull-requests: write
