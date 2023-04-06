@@ -18,101 +18,101 @@ env:
   CONTRACT_ARTIFACTS_PATH: artifacts
 
 jobs:
-  # build_artifacts:
-  #   name: Build Artifacts
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@f25a3a9f25bd5f4c5d77189cab02ff357b5aedeb # v2.4.1
-  #     - name: Cache cargo registry
-  #       uses: actions/cache@v2.1.7
-  #       with:
-  #         path: ~/.cargo/registry
-  #         key: ${{ runner.os }}-v2-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-  #     - name: Cache cargo index
-  #       uses: actions/cache@v2.1.7
-  #       with:
-  #         path: ~/.cargo/git
-  #         key: ${{ runner.os }}-v2-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-  #     - name: Build Artifacts
-  #       run: make contracts_compile
-  #     - name: Upload Artifacts
-  #       uses: actions/upload-artifact@master
-  #       with:
-  #         name: artifacts
-  #         path: ${{ env.CONTRACT_ARTIFACTS_PATH }}
+  build_artifacts:
+    name: Build Artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@f25a3a9f25bd5f4c5d77189cab02ff357b5aedeb # v2.4.1
+      - name: Cache cargo registry
+        uses: actions/cache@v2.1.7
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-v2-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v2.1.7
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-v2-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build Artifacts
+        run: make contracts_compile
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@master
+        with:
+          name: artifacts
+          path: ${{ env.CONTRACT_ARTIFACTS_PATH }}
 
-  # build-chainlink-image:
-  #   name: Build Custom CL Image
-  #   runs-on: ubuntu-latest
-  #   environment: integration
-  #   permissions:
-  #     id-token: write
-  #     contents: read
-  #   steps:
-  #     - name: Build Image
-  #       # note using a temporary commit for build-image that works around the go get issues, replace when go get issues are fixed please
-  #       uses: smartcontractkit/chainlink-github-actions/chainlink-testing-framework/build-image@7fdd40ecbbd02db07c6b0f847b33103f53b8e478 # cosmos_one_off
-  #       with:
-  #         cl_repo: smartcontractkit/chainlink
-  #         cl_ref: ${{ github.event.inputs.cl_branch_ref }}
-  #         dep_cosmos_sha: ${{ github.event.pull_request.head.sha }}
-  #         push_tag: ${{ env.CL_ECR }}:cosmos.${{ github.event.pull_request.head.sha }}
-  #         QA_AWS_REGION: ${{ secrets.QA_AWS_REGION }}
-  #         QA_AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
-  #     - name: Print Chainlink Image Built
-  #       run: |
-  #         echo "### chainlink image tag used for this test run :link:" >>$GITHUB_STEP_SUMMARY
-  #         echo "\`cosmos.${{ github.sha }}\`" >>$GITHUB_STEP_SUMMARY
+  build-chainlink-image:
+    name: Build Custom CL Image
+    runs-on: ubuntu-latest
+    environment: integration
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Build Image
+        # note using a temporary commit for build-image that works around the go get issues, replace when go get issues are fixed please
+        uses: smartcontractkit/chainlink-github-actions/chainlink-testing-framework/build-image@7fdd40ecbbd02db07c6b0f847b33103f53b8e478 # cosmos_one_off
+        with:
+          cl_repo: smartcontractkit/chainlink
+          cl_ref: ${{ github.event.inputs.cl_branch_ref }}
+          dep_cosmos_sha: ${{ github.event.pull_request.head.sha }}
+          push_tag: ${{ env.CL_ECR }}:cosmos.${{ github.event.pull_request.head.sha }}
+          QA_AWS_REGION: ${{ secrets.QA_AWS_REGION }}
+          QA_AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
+      - name: Print Chainlink Image Built
+        run: |
+          echo "### chainlink image tag used for this test run :link:" >>$GITHUB_STEP_SUMMARY
+          echo "\`cosmos.${{ github.sha }}\`" >>$GITHUB_STEP_SUMMARY
   
-  # build-test-image:
-  #   environment: integration
-  #   permissions:
-  #     id-token: write
-  #     contents: read
-  #   name: Build Test Image
-  #   runs-on: ubuntu20.04-32cores-128GB
-  #   needs: [build_artifacts]
-  #   steps:
-  #     - name: Collect Metrics
-  #       id: collect-gha-metrics
-  #       uses: smartcontractkit/push-gha-metrics-action@v1
-  #       with:
-  #         basic-auth: ${{ secrets.GRAFANA_CLOUD_BASIC_AUTH }}
-  #         hostname: ${{ secrets.GRAFANA_CLOUD_HOST }}
-  #         this-job-name: Build Test Image
-  #       continue-on-error: true
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
-  #       with:
-  #         ref: ${{ github.event.pull_request.head.sha }}
-  #     - name: Download Artifacts
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: artifacts
-  #         path: ${{ env.CONTRACT_ARTIFACTS_PATH }}
-  #     - name: build test runner
-  #       if: ${{ env.REF_NAME != 'develop' }}
-  #       uses: smartcontractkit/chainlink-github-actions/docker/build-push@ab595504ae9cf10c60eb8d2c5ce025284e58b210 # 2.1.5
-  #       with:
-  #         tags: ${{ env.ENV_JOB_IMAGE }}
-  #         file: ./integration-tests/test.Dockerfile
-  #         build-args: |
-  #           SUITES="smoke"
-  #         AWS_REGION: ${{ secrets.QA_AWS_REGION }}
-  #         AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
-  #     - name: Print Image Built
-  #       run: |
-  #         echo "### chainlink-starknet-tests image tag for this test run :ship:" >>$GITHUB_STEP_SUMMARY
-  #         if [ "${{ env.REF_NAME }}" != "develop" ]; then
-  #           echo "\`ci.${{ github.sha }}\`" >>$GITHUB_STEP_SUMMARY
-  #         else
-  #           echo "\`${{ env.REF_NAME }}\`" >>$GITHUB_STEP_SUMMARY
-          # fi
+  build-test-image:
+    environment: integration
+    permissions:
+      id-token: write
+      contents: read
+    name: Build Test Image
+    runs-on: ubuntu20.04-32cores-128GB
+    needs: [build_artifacts]
+    steps:
+      - name: Collect Metrics
+        id: collect-gha-metrics
+        uses: smartcontractkit/push-gha-metrics-action@v1
+        with:
+          basic-auth: ${{ secrets.GRAFANA_CLOUD_BASIC_AUTH }}
+          hostname: ${{ secrets.GRAFANA_CLOUD_HOST }}
+          this-job-name: Build Test Image
+        continue-on-error: true
+      - name: Checkout the repo
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: artifacts
+          path: ${{ env.CONTRACT_ARTIFACTS_PATH }}
+      - name: build test runner
+        if: ${{ env.REF_NAME != 'develop' }}
+        uses: smartcontractkit/chainlink-github-actions/docker/build-push@ab595504ae9cf10c60eb8d2c5ce025284e58b210 # 2.1.5
+        with:
+          tags: ${{ env.ENV_JOB_IMAGE }}
+          file: ./integration-tests/test.Dockerfile
+          build-args: |
+            SUITES="smoke"
+          AWS_REGION: ${{ secrets.QA_AWS_REGION }}
+          AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
+      - name: Print Image Built
+        run: |
+          echo "### chainlink-starknet-tests image tag for this test run :ship:" >>$GITHUB_STEP_SUMMARY
+          if [ "${{ env.REF_NAME }}" != "develop" ]; then
+            echo "\`ci.${{ github.sha }}\`" >>$GITHUB_STEP_SUMMARY
+          else
+            echo "\`${{ env.REF_NAME }}\`" >>$GITHUB_STEP_SUMMARY
+          fi
   
   run_tests:
     name: Run Smoke Tests
     runs-on: ubuntu20.04-16cores-64GB
-    # needs: [build_artifacts, build-chainlink-image, build-test-image]
+    needs: [build-chainlink-image, build-test-image]
     environment: integration
     env:
       TEST_SUITE: smoke
@@ -134,10 +134,10 @@ jobs:
         continue-on-error: true
       - name: Checkout the repo
         uses: actions/checkout@v3.0.2
-      # - name: Install Nix
-      #   uses: cachix/install-nix-action@5c11eae19dba042788936d4f1c9685fdd814ac49 # v19
-      #   with:
-      #     nix_path: nixpkgs=channel:nixos-unstable
+      - name: Install Nix
+        uses: cachix/install-nix-action@5c11eae19dba042788936d4f1c9685fdd814ac49 # v19
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - name: Run Tests
         uses: smartcontractkit/chainlink-github-actions/chainlink-testing-framework/run-tests@ab595504ae9cf10c60eb8d2c5ce025284e58b210 # 2.1.5
         with:
