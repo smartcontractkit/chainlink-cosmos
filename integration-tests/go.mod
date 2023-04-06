@@ -6,7 +6,7 @@ require (
 	github.com/rs/zerolog v1.29.0
 	github.com/smartcontractkit/chainlink v1.12.1-0.20230314231502-a098ccdd9358 // indirect
 	github.com/smartcontractkit/chainlink-cosmos/ops v0.0.0-00010101000000-000000000000
-	github.com/smartcontractkit/chainlink-env v0.3.19
+	github.com/smartcontractkit/chainlink-env v0.3.27
 	// github.com/smartcontractkit/chainlink-cosmos v0.1.4-0.20220824174951-d1e2bcd51e46
 	github.com/smartcontractkit/chainlink-testing-framework v1.10.9-0.20230301123015-fa17d1a4dc61
 	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20230314231502-a098ccdd9358
