@@ -24,17 +24,23 @@ pkgs.mkShell {
     golangci-lint
     gotools
 
+    # needed for test
+    kube3d
+    kubectl
+    k9s
+    kubernetes-helm
+
     which
     git
     gnumake
     (pkgs.callPackage ./wasmd.nix {})
 
     # NodeJS + TS
-    nodePackages.typescript
-    nodePackages.typescript-language-server
-    # Keep this nodejs version in sync with the version in .tool-versions please
     nodejs-18_x
     (yarn.override { nodejs = nodejs-18_x; })
+    nodePackages.typescript
+    nodePackages.typescript-language-server
+    nodePackages.npm
 
     python3
 
@@ -48,4 +54,10 @@ pkgs.mkShell {
 
   # Avoids issues with delve
   CGO_CPPFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0";
+
+  HELM_REPOSITORY_CONFIG=./.helm-repositories.yaml;
+  postShellHook = ''
+    go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
+    helm repo update
+  '';
 }

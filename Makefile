@@ -71,7 +71,7 @@ build_contracts: contracts_compile contracts_install
 contracts_compile: artifacts_clean
 	./scripts/build-contracts.sh
 
-contracts_install: artifacts_curl_deps artifacts_cp_gauntlet artifacts_cp_terrad
+contracts_install: artifacts_curl_deps artifacts_cp_gauntlet artifacts_cp_wasmd
 
 artifacts_curl_deps: artifacts_curl_cw20
 
@@ -81,10 +81,10 @@ artifacts_curl_cw20:
 artifacts_cp_gauntlet:
 	cp -r artifacts/. packages-ts/gauntlet-terra-contracts/artifacts/bin
 
-artifacts_cp_terrad:
-	cp -r artifacts/. ops/terrad/artifacts
+artifacts_cp_wasmd:
+	cp -r artifacts/. ops/wasmd/artifacts
 
-artifacts_clean: artifacts_clean_root artifacts_clean_gauntlet artifacts_clean_terrad
+artifacts_clean: artifacts_clean_root artifacts_clean_gauntlet artifacts_clean_wasmd
 
 artifacts_clean_root:
 	rm -rf artifacts/*
@@ -92,8 +92,8 @@ artifacts_clean_root:
 artifacts_clean_gauntlet:
 	rm -rf packages-ts/gauntlet-terra-contracts/artifacts/bin/*
 
-artifacts_clean_terrad:
-	rm -rf ops/terrad/artifacts/*
+artifacts_clean_wasmd:
+	rm -rf ops/wasmd/artifacts/*
 
 build: build_js build_contracts
 
@@ -176,6 +176,11 @@ test-integration-smoke: test-integration-prep
 test-integration-smoke-ci:
 	cd integration-tests/ && \
 		go test --timeout=2h -v -count=1 -json ./smoke 2>&1 | tee /tmp/gotest.log | gotestfmt
+
+.PHONY: test-integration-remote-runner
+test-integration-remote-runner:
+	cd integration-tests/ && \
+		./"$(suite)".test -test.v -test.count 1 $(args) -test.run ^$(test_name)$
 
 .PHONY: test-integration-soak
 test-integration-soak: test-integration-prep
