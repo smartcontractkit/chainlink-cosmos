@@ -129,7 +129,7 @@ format-go-fmt:
 
 .PHONY: format-go-mod-tidy
 format-go-mod-tidy:
-	cd ./relayer && go mod tidy
+	go mod tidy
 	cd ./ops && go mod tidy
 	cd ./integration-tests && go mod tidy
 
