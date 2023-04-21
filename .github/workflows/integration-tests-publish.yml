@@ -1,0 +1,41 @@
+name: Integration Tests Publish
+# Publish the compiled integration tests
+
+on:
+  push:
+    branches:
+      - develop
+
+env:
+  ECR_TAG: ${{ secrets.QA_AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.QA_AWS_REGION }}.amazonaws.com/chainlink-cosmos-tests:develop
+  CONTRACT_ARTIFACTS_PATH: artifacts
+
+jobs:
+  publish-integration-test-image:
+    environment: integration
+    permissions:
+      id-token: write
+      contents: read
+    name: Publish Integration Test Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect Metrics
+        id: collect-gha-metrics
+        uses: smartcontractkit/push-gha-metrics-action@v1
+        with:
+          basic-auth: ${{ secrets.GRAFANA_CLOUD_BASIC_AUTH }}
+          hostname: ${{ secrets.GRAFANA_CLOUD_HOST }}
+          this-job-name: Publish Integration Test Image
+        continue-on-error: true
+      - name: Checkout the repo
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        with:
+          ref: ${{ github.sha }}
+      - name: Build Image
+        uses: ./.github/actions/build-test-image
+        with:
+          artifacts_path: ${{ env.CONTRACT_ARTIFACTS_PATH }}
+          other_tags: ${{ env.ECR_TAG }}
+          QA_AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
+          QA_AWS_REGION: ${{ secrets.QA_AWS_REGION }}
+          QA_AWS_ACCOUNT_NUMBER: ${{ secrets.QA_AWS_ACCOUNT_NUMBER }}
