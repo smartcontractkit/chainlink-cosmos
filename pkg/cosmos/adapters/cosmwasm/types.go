@@ -1,7 +1,7 @@
 package cosmwasm
 
 import (
-	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+	"github.com/smartcontractkit/libocr/offchainreporting2plus/types"
 )
 
 type TransmitMsg struct {

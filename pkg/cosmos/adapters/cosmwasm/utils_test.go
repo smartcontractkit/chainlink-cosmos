@@ -3,7 +3,7 @@ package cosmwasm
 import (
 	"testing"
 
-	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+	"github.com/smartcontractkit/libocr/offchainreporting2plus/types"
 	"github.com/stretchr/testify/assert"
 )
 

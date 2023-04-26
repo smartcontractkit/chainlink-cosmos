@@ -6,8 +6,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
-	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+	"github.com/smartcontractkit/libocr/offchainreporting2plus/reportingplugin/median"
+	"github.com/smartcontractkit/libocr/offchainreporting2plus/types"
 
 	chaintypes "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/types"
 )
