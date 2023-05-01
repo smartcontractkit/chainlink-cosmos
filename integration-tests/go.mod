@@ -8,7 +8,7 @@ require (
 	github.com/smartcontractkit/chainlink-env v0.3.29
 	github.com/smartcontractkit/chainlink-testing-framework v1.11.5
 	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20230418232145-9b83bdc20e8a
-	github.com/test-go/testify v1.1.4
+	github.com/stretchr/testify v1.8.2
 	go.uber.org/zap v1.24.0
 )
 
@@ -282,7 +282,6 @@ require (
 	github.com/spf13/viper v1.14.0 // indirect
 	github.com/status-im/keycard-go v0.2.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a // indirect
 	github.com/tendermint/btcd v0.1.1 // indirect
@@ -371,15 +370,12 @@ replace (
 
 	github.com/prometheus/common => github.com/prometheus/common v0.10.0
 
-	github.com/satori/go.uuid => github.com/satori/go.uuid v1.2.0
-
 	// Make sure we're working with the latest ops
 	github.com/smartcontractkit/chainlink-cosmos/ops => ../ops
 
 	github.com/smartcontractkit/chainlink/v2 => github.com/smartcontractkit/chainlink/v2 v2.0.0-20230418232145-9b83bdc20e8a
 
 	// The Loki - Grafana - Prometheus - Cortex stack is all sorts of wack
-	github.com/weaveworks/common => github.com/weaveworks/common v0.0.0-20200625145055-4b1847531bc9
 	google.golang.org/grpc => google.golang.org/grpc v1.29.1
 
 	// K8s imports are weird
