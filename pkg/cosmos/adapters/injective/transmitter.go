@@ -38,8 +38,8 @@ func NewCosmosModuleTransmitter(
 	}
 }
 
-func (c *CosmosModuleTransmitter) FromAccount() types.Account {
-	return types.Account(c.sender.String())
+func (c *CosmosModuleTransmitter) FromAccount() (types.Account, error) {
+	return types.Account(c.sender.String()), nil
 }
 
 // Transmit sends the report to the on-chain OCR2Aggregator smart contract's Transmit method

@@ -95,8 +95,8 @@ func (c ReportCodec) BuildReport(oo []median.ParsedAttributedObservation) (types
 	return report, nil
 }
 
-func (c ReportCodec) MaxReportLength(n int) int {
-	return prefixSizeBytes + (n * observationSizeBytes) + juelsPerFeeCoinSizeBytes
+func (c ReportCodec) MaxReportLength(n int) (int, error) {
+	return prefixSizeBytes + (n * observationSizeBytes) + juelsPerFeeCoinSizeBytes, nil
 }
 
 func (c ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {

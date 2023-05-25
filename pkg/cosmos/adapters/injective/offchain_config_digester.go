@@ -54,8 +54,8 @@ func (d CosmosOffchainConfigDigester) ConfigDigest(cc types.ContractConfig) (typ
 	return configDigest, nil
 }
 
-func (d CosmosOffchainConfigDigester) ConfigDigestPrefix() types.ConfigDigestPrefix {
-	return ConfigDigestPrefixCosmos
+func (d CosmosOffchainConfigDigester) ConfigDigestPrefix() (types.ConfigDigestPrefix, error) {
+	return ConfigDigestPrefixCosmos, nil
 }
 
 func configDigestFromBytes(buf []byte) types.ConfigDigest {

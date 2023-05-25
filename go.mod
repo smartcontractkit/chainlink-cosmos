@@ -10,13 +10,13 @@ require (
 	github.com/pelletier/go-toml v1.9.5
 	github.com/prometheus/client_golang v1.14.0
 	github.com/shopspring/decimal v1.3.1
-	github.com/smartcontractkit/chainlink-relay v0.1.7-0.20230418142941-22572bf2b14a
-	github.com/smartcontractkit/libocr v0.0.0-20221121171434-482da3ed36d8
-	github.com/stretchr/testify v1.8.1
+	github.com/smartcontractkit/chainlink-relay v0.1.7-0.20230525161650-dce1bc58b504
+	github.com/smartcontractkit/libocr v0.0.0-20230525150148-a75f6e244bb3
+	github.com/stretchr/testify v1.8.2
 	github.com/tendermint/tendermint v0.34.23
 	go.uber.org/multierr v1.8.0
 	go.uber.org/ratelimit v0.2.0
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.1.0
 	google.golang.org/genproto v0.0.0-20230223222841-637eb2293923
 	google.golang.org/grpc v1.53.0
@@ -118,7 +118,6 @@ require (
 	github.com/rs/zerolog v1.28.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v5 v5.1.1 // indirect
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
-	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
@@ -140,7 +139,7 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.2.0 // indirect
-	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
+	golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
