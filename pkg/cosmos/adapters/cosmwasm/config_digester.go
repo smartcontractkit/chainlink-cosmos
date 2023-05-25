@@ -103,13 +103,18 @@ func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.C
 		return digest, fmt.Errorf("incorrect hash size %d, expected %d", n, len(digest))
 	}
 
+	pre, err := cd.ConfigDigestPrefix()
+	if err != nil {
+		return digest, err
+	}
+
 	digest[0] = 0x00
-	digest[1] = uint8(cd.ConfigDigestPrefix())
+	digest[1] = uint8(pre)
 
 	return digest, nil
 }
 
 // This should return the same constant value on every invocation
-func (OffchainConfigDigester) ConfigDigestPrefix() types.ConfigDigestPrefix {
-	return ConfigDigestPrefixCosmos
+func (OffchainConfigDigester) ConfigDigestPrefix() (types.ConfigDigestPrefix, error) {
+	return ConfigDigestPrefixCosmos, nil
 }

@@ -78,6 +78,6 @@ func (ct *ContractTransmitter) Transmit(
 	return err
 }
 
-func (ct *ContractTransmitter) FromAccount() types.Account {
-	return types.Account(ct.sender.String())
+func (ct *ContractTransmitter) FromAccount() (types.Account, error) {
+	return types.Account(ct.sender.String()), nil
 }
