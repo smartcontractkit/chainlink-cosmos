@@ -32,6 +32,7 @@
     "bundle": "yarn build && pkg ."
   },
   "dependencies": {
+    "@chainlink/gauntlet-contracts-ocr2": "^0.2.3",
     "@chainlink/gauntlet-core": "0.2.0",
     "@chainlink/gauntlet-terra": "*",
     "@cosmjs/cosmwasm-stargate": "^0.29.3",
