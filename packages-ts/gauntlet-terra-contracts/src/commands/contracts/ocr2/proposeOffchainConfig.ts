@@ -24,10 +24,12 @@ export const getOffchainConfigInput = (rdd: any, contract: string): encoding.Off
   const aggregator = rdd.contracts[contract]
   const config = aggregator.config
 
-  const aggregatorOperators: any[] = aggregator.oracles.map(o => rdd.operators[o.operator])
-  const operatorsPublicKeys = aggregatorOperators.map(o => o.ocr2OffchainPublicKey[0].replace('ocr2off_terra_', ''))
-  const operatorsPeerIds = aggregatorOperators.map(o => o.peerId[0])
-  const operatorConfigPublicKeys = aggregatorOperators.map(o => o.ocr2ConfigPublicKey[0].replace('ocr2cfg_terra_', ''))
+  const aggregatorOperators: any[] = aggregator.oracles.map((o) => rdd.operators[o.operator])
+  const operatorsPublicKeys = aggregatorOperators.map((o) => o.ocr2OffchainPublicKey[0].replace('ocr2off_terra_', ''))
+  const operatorsPeerIds = aggregatorOperators.map((o) => o.peerId[0])
+  const operatorConfigPublicKeys = aggregatorOperators.map((o) =>
+    o.ocr2ConfigPublicKey[0].replace('ocr2cfg_terra_', ''),
+  )
 
   const input: encoding.OffchainConfig = {
     deltaProgressNanoseconds: time.durationToNanoseconds(config.deltaProgress).toNumber(),
@@ -64,7 +66,7 @@ export const prepareOffchainConfigForDiff = (config: encoding.OffchainConfig, ex
   return longs.longsInObjToNumbers({
     ...config,
     ...(extra || {}),
-    offchainPublicKeys: config.offchainPublicKeys?.map(key => Buffer.from(key).toString('hex')),
+    offchainPublicKeys: config.offchainPublicKeys?.map((key) => Buffer.from(key).toString('hex')),
   }) as Object
 }
 
@@ -144,7 +146,7 @@ const afterExecute: AfterExecute<CommandInput, ContractInput> = (_, input) => as
   }
 }
 
-const validateOffchainConfig = async input => {
+const validateOffchainConfig = async (input) => {
   const { offchainConfig } = input
 
   const _isNegative = (v: number): boolean => new BN(v).lt(new BN(0))

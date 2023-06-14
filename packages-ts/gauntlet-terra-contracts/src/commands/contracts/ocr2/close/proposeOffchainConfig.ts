@@ -1,12 +1,13 @@
+import { encoding } from '@chainlink/gauntlet-contracts-ocr2'
 import { extendCommandInstruction, instructionToCommand } from '../../../abstract/executionWrapper'
-import ProposeOffchainConfig, { CommandInput, OffchainConfig, instruction } from '../proposeOffchainConfig'
+import ProposeOffchainConfig, { CommandInput, instruction } from '../proposeOffchainConfig'
 
-export const makeEmptyOffchainConfig = (): OffchainConfig => {
+export const makeEmptyOffchainConfig = (): encoding.OffchainConfig => {
   return ({
     offchainPublicKeys: [],
     configPublicKeys: [],
     peerIds: [],
-  } as unknown) as OffchainConfig
+  } as unknown) as encoding.OffchainConfig
 }
 
 export const EMPTY_SECRET = 'EMPTY'
