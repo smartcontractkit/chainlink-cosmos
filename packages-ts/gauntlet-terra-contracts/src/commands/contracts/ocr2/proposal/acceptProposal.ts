@@ -1,6 +1,7 @@
 import { Result } from '@chainlink/gauntlet-core'
 import { logger, diff } from '@chainlink/gauntlet-core/dist/utils'
 import { TransactionResponse, RDD } from '@chainlink/gauntlet-terra'
+import { encoding } from '@chainlink/gauntlet-contracts-ocr2'
 import { CATEGORIES } from '../../../../lib/constants'
 import {
   AbstractInstruction,
@@ -9,14 +10,14 @@ import {
   ValidateFn,
 } from '../../../abstract/executionWrapper'
 import { serializeOffchainConfig, deserializeConfig } from '../../../../lib/encoding'
-import { getOffchainConfigInput, OffchainConfig, prepareOffchainConfigForDiff } from '../proposeOffchainConfig'
+import { getOffchainConfigInput, prepareOffchainConfigForDiff } from '../proposeOffchainConfig'
 import { getLatestOCRConfigEvent } from '../../../../lib/inspection'
 import assert from 'assert'
 
 export type CommandInput = {
   proposalId: string
   digest: string
-  offchainConfig: OffchainConfig
+  offchainConfig: encoding.OffchainConfig
   randomSecret: string
 }
 
@@ -94,11 +95,11 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
     },
   })
 
-  const tryDeserialize = (config: string): OffchainConfig => {
+  const tryDeserialize = (config: string): encoding.OffchainConfig => {
     try {
       return deserializeConfig(Buffer.from(config, 'base64'))
     } catch (e) {
-      return {} as OffchainConfig
+      return {} as encoding.OffchainConfig
     }
   }
   // Config in Proposal
@@ -108,7 +109,7 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
   // Config in contract
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
   const attr = event?.attributes.find(({ key }) => key === 'offchain_config')?.value
-  const offchainConfigInContract = attr ? tryDeserialize(attr) : ({} as OffchainConfig)
+  const offchainConfigInContract = attr ? tryDeserialize(attr) : ({} as encoding.OffchainConfig)
   const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, {
     f: event?.attributes.find(({ key }) => key === 'f')?.value,
   })

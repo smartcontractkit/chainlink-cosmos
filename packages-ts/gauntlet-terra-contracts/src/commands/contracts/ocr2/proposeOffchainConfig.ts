@@ -6,10 +6,11 @@ import { CATEGORIES } from '../../../lib/constants'
 import { getLatestOCRConfigEvent } from '../../../lib/inspection'
 import { serializeOffchainConfig, deserializeConfig, generateSecretWords } from '../../../lib/encoding'
 import { logger, diff, longs } from '@chainlink/gauntlet-core/dist/utils'
+import { encoding } from '@chainlink/gauntlet-contracts-ocr2'
 
 export type CommandInput = {
   proposalId: string
-  offchainConfig: OffchainConfig
+  offchainConfig: encoding.OffchainConfig
   randomSecret?: string
 }
 
@@ -19,33 +20,7 @@ export type ContractInput = {
   offchain_config: string
 }
 
-export type OffchainConfig = {
-  deltaProgressNanoseconds: number
-  deltaResendNanoseconds: number
-  deltaRoundNanoseconds: number
-  deltaGraceNanoseconds: number
-  deltaStageNanoseconds: number
-  rMax: number
-  f: number
-  s: number[]
-  offchainPublicKeys: string[]
-  peerIds: string[]
-  reportingPluginConfig: {
-    alphaReportInfinite: boolean
-    alphaReportPpb: number
-    alphaAcceptInfinite: boolean
-    alphaAcceptPpb: number
-    deltaCNanoseconds: number
-  }
-  maxDurationQueryNanoseconds: number
-  maxDurationObservationNanoseconds: number
-  maxDurationReportNanoseconds: number
-  maxDurationShouldAcceptFinalizedReportNanoseconds: number
-  maxDurationShouldTransmitAcceptedReportNanoseconds: number
-  configPublicKeys: string[]
-}
-
-export const getOffchainConfigInput = (rdd: any, contract: string): OffchainConfig => {
+export const getOffchainConfigInput = (rdd: any, contract: string): encoding.OffchainConfig => {
   const aggregator = rdd.contracts[contract]
   const config = aggregator.config
 
@@ -56,7 +31,7 @@ export const getOffchainConfigInput = (rdd: any, contract: string): OffchainConf
     o.ocr2ConfigPublicKey[0].replace('ocr2cfg_terra_', ''),
   )
 
-  const input: OffchainConfig = {
+  const input: encoding.OffchainConfig = {
     deltaProgressNanoseconds: time.durationToNanoseconds(config.deltaProgress).toNumber(),
     deltaResendNanoseconds: time.durationToNanoseconds(config.deltaResend).toNumber(),
     deltaRoundNanoseconds: time.durationToNanoseconds(config.deltaRound).toNumber(),
@@ -64,7 +39,6 @@ export const getOffchainConfigInput = (rdd: any, contract: string): OffchainConf
     deltaStageNanoseconds: time.durationToNanoseconds(config.deltaStage).toNumber(),
     rMax: config.rMax,
     s: config.s,
-    f: config.f,
     offchainPublicKeys: operatorsPublicKeys,
     peerIds: operatorsPeerIds,
     reportingPluginConfig: {
@@ -88,7 +62,7 @@ export const getOffchainConfigInput = (rdd: any, contract: string): OffchainConf
   return input
 }
 
-export const prepareOffchainConfigForDiff = (config: OffchainConfig, extra?: Object): Object => {
+export const prepareOffchainConfigForDiff = (config: encoding.OffchainConfig, extra?: Object): Object => {
   return longs.longsInObjToNumbers({
     ...config,
     ...(extra || {}),
@@ -117,18 +91,18 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 
 // TODO: ton of duplication with acceptProposal
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, input) => async () => {
-  const tryDeserialize = (config: string): OffchainConfig => {
+  const tryDeserialize = (config: string): encoding.OffchainConfig => {
     try {
       return deserializeConfig(Buffer.from(config, 'base64'))
     } catch (e) {
-      return {} as OffchainConfig
+      return {} as encoding.OffchainConfig
     }
   }
 
   // Config in contract
   const event = await getLatestOCRConfigEvent(context.provider, context.contract)
   const attr = event?.attributes.find(({ key }) => key === 'offchain_config')?.value
-  const offchainConfigInContract = attr ? tryDeserialize(attr) : ({} as OffchainConfig)
+  const offchainConfigInContract = attr ? tryDeserialize(attr) : ({} as encoding.OffchainConfig)
   const configInContract = prepareOffchainConfigForDiff(offchainConfigInContract, {
     f: event?.attributes.find(({ key }) => key === 'f')?.value,
   })

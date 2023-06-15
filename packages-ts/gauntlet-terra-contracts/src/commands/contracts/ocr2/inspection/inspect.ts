@@ -1,10 +1,11 @@
 import { BN, inspection, logger, longs } from '@chainlink/gauntlet-core/dist/utils'
 import { RDD, Client } from '@chainlink/gauntlet-terra'
+import { encoding } from '@chainlink/gauntlet-contracts-ocr2'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { CATEGORIES, TOKEN_UNIT } from '../../../../lib/constants'
 import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
 import { deserializeConfig } from '../../../../lib/encoding'
-import { getOffchainConfigInput, OffchainConfig } from '../proposeOffchainConfig'
+import { getOffchainConfigInput } from '../proposeOffchainConfig'
 import { getLatestOCRConfigEvent } from '../../../../lib/inspection'
 
 // Command input and expected info is the same here
@@ -20,7 +21,7 @@ type ContractExpectedInfo = {
     recommendedGasPriceMicro: string
     transmissionPaymentGjuels: string
   }
-  offchainConfig: OffchainConfig
+  offchainConfig: encoding.OffchainConfig
   totalOwed?: string
   linkAvailable?: string
   owner?: string
@@ -81,7 +82,7 @@ const makeOnchainData = (provider: Client) => async (
 
   const event = await getLatestOCRConfigEvent(provider, aggregator)
   const offchain_config = event?.attributes.find(({ key }) => key === 'offchain_config')?.value
-  let offchainConfig = {} as OffchainConfig
+  let offchainConfig = {} as encoding.OffchainConfig
 
   if (offchain_config) {
     try {

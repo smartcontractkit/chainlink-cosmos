@@ -1,9 +1,9 @@
-import { OffchainConfig } from '../commands/contracts/ocr2/proposeOffchainConfig'
 import { Proto, sharedSecretEncryptions } from '@chainlink/gauntlet-core/dist/crypto'
+import { encoding } from '@chainlink/gauntlet-contracts-ocr2'
 import { join } from 'path'
 
 export const serializeOffchainConfig = async (
-  input: OffchainConfig,
+  input: encoding.OffchainConfig,
   gauntletSecret: string,
   secret?: string,
 ): Promise<{ offchainConfig: Buffer; randomSecret: string }> => {
@@ -14,7 +14,7 @@ export const serializeOffchainConfig = async (
     validInput.reportingPluginConfig,
   )
   const { sharedSecretEncryptions, randomSecret } = await generateSecretEncryptions(
-    configPublicKeys,
+    configPublicKeys || [],
     gauntletSecret,
     secret,
   )
@@ -53,7 +53,7 @@ export const generateSecretWords = async (): Promise<string> => {
   return await sharedSecretEncryptions.generateSecretWords(path)
 }
 
-export const deserializeConfig = (buffer: Buffer): OffchainConfig => {
+export const deserializeConfig = (buffer: Buffer): encoding.OffchainConfig => {
   const proto = new Proto.Protobuf({ descriptor })
   const offchain = proto.decode('offchainreporting2_config.OffchainConfigProto', buffer)
   const reportingPluginConfig = proto.decode(
