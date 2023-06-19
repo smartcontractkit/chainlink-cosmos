@@ -19,7 +19,7 @@ jobs:
 
       - name: Wait for Workflows
         id: wait
-        uses: smartcontractkit/chainlink-github-actions/utils/wait-for-workflows@feat/wait-action
+        uses: smartcontractkit/chainlink-github-actions/utils/wait-for-workflows@main
         with:
           max-timeout: "900"
           polling-interval: "30"
