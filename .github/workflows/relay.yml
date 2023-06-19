@@ -42,7 +42,17 @@ jobs:
         run: nix develop -c go build -v ./pkg/cosmos/...
 
       - name: Run unit tests
-        run: nix develop -c go test -v ./pkg/cosmos/...
+        run: nix develop -c go test -v -covermode=atomic ./pkg/cosmos/... -coverpkg=./... -coverprofile=coverage.txt "$1" | tee "$OUTPUT_FILE"
 
       - name: Run tests with the race detector enabled
-        run: nix develop -c go test -v ./pkg/cosmos/... -race -count=10
+        run: nix develop -c go test -v ./pkg/cosmos/... -race -count=10 -coverpkg=./... -coverprofile=race_coverage.txt "$1" | tee "$OUTPUT_FILE"
+      
+      - name: Upload Go test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: go-test-results
+          path: |
+            ./output.txt
+            ./coverage.txt
+            ./race_coverage.txt
