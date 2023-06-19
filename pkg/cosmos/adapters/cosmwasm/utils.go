@@ -3,7 +3,7 @@ package cosmwasm
 import (
 	"encoding/hex"
 
-	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+	"github.com/smartcontractkit/libocr/offchainreporting2plus/types"
 )
 
 // HexToByteArray is a wrapper for hex.DecodeString

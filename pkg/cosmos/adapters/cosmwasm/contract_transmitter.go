@@ -11,8 +11,8 @@ import (
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/config"
 
-	"github.com/smartcontractkit/libocr/offchainreporting2/chains/evmutil"
-	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+	"github.com/smartcontractkit/libocr/offchainreporting2plus/chains/evmutil"
+	"github.com/smartcontractkit/libocr/offchainreporting2plus/types"
 )
 
 var _ types.ContractTransmitter = (*ContractTransmitter)(nil)

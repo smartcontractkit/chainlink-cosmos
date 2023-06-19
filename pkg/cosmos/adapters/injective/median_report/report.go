@@ -9,8 +9,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	proto "github.com/gogo/protobuf/proto"
 
-	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
-	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+	"github.com/smartcontractkit/libocr/offchainreporting2plus/reportingplugin/median"
+	"github.com/smartcontractkit/libocr/offchainreporting2plus/types"
 
 	injectivetypes "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/types"
 )

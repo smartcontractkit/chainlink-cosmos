@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
-	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+	"github.com/smartcontractkit/libocr/offchainreporting2plus/types"
 )
 
 func Test_parseAttributes(t *testing.T) {

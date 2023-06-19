@@ -2,7 +2,7 @@ package injective
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+	"github.com/smartcontractkit/libocr/offchainreporting2plus/types"
 
 	chaintypes "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/types"
 )

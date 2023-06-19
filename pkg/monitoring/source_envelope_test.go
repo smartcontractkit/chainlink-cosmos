@@ -11,7 +11,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	ocr2types "github.com/smartcontractkit/libocr/offchainreporting2/types"
+	ocr2types "github.com/smartcontractkit/libocr/offchainreporting2plus/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 

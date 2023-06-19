@@ -9,7 +9,7 @@ import (
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+	"github.com/smartcontractkit/libocr/offchainreporting2plus/types"
 	"golang.org/x/crypto/blake2s"
 )
 

@@ -3,7 +3,7 @@ package cosmwasm
 import (
 	"context"
 
-	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+	"github.com/smartcontractkit/libocr/offchainreporting2plus/types"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 )
