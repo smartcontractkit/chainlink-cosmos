@@ -20,6 +20,7 @@ package main
 // }
 
 func main() {
+	var unusedVar int
 	// 	privKey, addr, err := testutil.CreateKeyFromMnemonic("TODO TERRA WALLET MNEMONIC")
 	// 	panicErr(err)
 
