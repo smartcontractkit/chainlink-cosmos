@@ -31,7 +31,7 @@ jobs:
     steps:
       - name: Check if image exists
         id: check-image
-        uses: smartcontractkit/chainlink-github-actions/docker/image-exists@8489879838862929f43f7d7cd1b33903965cf507 # v2.1.6
+        uses: smartcontractkit/chainlink-github-actions/docker/image-exists@2c9f401149f6c25fb632067b7e6626aebeee5d69 # v2.1.6
         with:
           repository: chainlink
           tag: cosmos.${{ github.sha }}
@@ -39,8 +39,7 @@ jobs:
           AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
       - name: Build Image
         if: steps.check-image.outputs.exists == 'false'
-        # note using a temporary commit for build-image that works around the go get issues, replace when go get issues are fixed please
-        uses: smartcontractkit/chainlink-github-actions/chainlink-testing-framework/build-image@cosmos_one_off
+        uses: smartcontractkit/chainlink-github-actions/chainlink-testing-framework/build-image@2c9f401149f6c25fb632067b7e6626aebeee5d69
         with:
           cl_repo: smartcontractkit/chainlink
           cl_ref: ${{ github.event.inputs.cl_branch_ref }}
@@ -52,7 +51,7 @@ jobs:
         run: |
           echo "### chainlink image tag used for this test run :link:" >> $GITHUB_STEP_SUMMARY
           echo "\`cosmos.${GITHUB_SHA}\`" >> $GITHUB_STEP_SUMMARY
-  
+
   build-test-image:
     environment: integration
     permissions:
@@ -80,7 +79,7 @@ jobs:
           QA_AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
           QA_AWS_REGION: ${{ secrets.QA_AWS_REGION }}
           QA_AWS_ACCOUNT_NUMBER: ${{ secrets.QA_AWS_ACCOUNT_NUMBER }}
-  
+
   run_tests:
     name: Run Smoke Tests
     runs-on: ubuntu20.04-16cores-64GB
@@ -125,4 +124,3 @@ jobs:
           QA_AWS_ROLE_TO_ASSUME: ${{ secrets.QA_AWS_ROLE_TO_ASSUME }}
           QA_KUBECONFIG: ${{ secrets.QA_KUBECONFIG }}
           artifacts_location: /home/runner/work/chainlink-cosmos/chainlink-cosmos/integration-tests/smoke/logs
-
