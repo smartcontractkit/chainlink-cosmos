@@ -75,4 +75,12 @@ jobs:
         run: make contracts_compile
           
       - run: nix develop -c yarn install --frozen-lockfile
-      - run: nix develop -c yarn test:ci
+      - run: nix develop -c yarn test:ci --coverage
+
+      - name: Upload test coverage report
+        if: always()
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # v3.1.0
+        with:
+          name: typescript-test-coverage
+          path: ./coverage/lcov.info
+
