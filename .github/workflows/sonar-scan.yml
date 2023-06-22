@@ -73,7 +73,7 @@ jobs:
         run: |
           echo "sonarqube_go_tests_report_paths=$(find . -type f -name 'output.txt' -printf "%p,")" >> $GITHUB_OUTPUT
           echo "sonarqube_go_coverage_report_paths=$(find . -type f -name '*coverage.txt' -printf "%p,")" >> $GITHUB_OUTPUT
-          echo "sonarqube_golangci_report_paths=$(find -type . f -name 'golangci-lint-report.xml' -printf "%p,")" >> $GITHUB_OUTPUT
+          echo "sonarqube_golangci_report_paths=$(find . -type f -name 'golangci-lint-report.xml' -printf "%p,")" >> $GITHUB_OUTPUT
           echo "sonarqube_ts_js_coverage_report_paths=$(find . -type f -name 'lcov.info' -printf "%p,")" >> $GITHUB_OUTPUT
 
       - name: SonarQube Scan
