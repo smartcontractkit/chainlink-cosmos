@@ -26,19 +26,34 @@ const (
 	ChainBlockTimeSoak = "2s"
 )
 
+var (
+	observationSource = `
+			val [type="bridge" name="bridge-coinmetrics" requestData=<{"data": {"from":"LINK","to":"USD"}}>]
+			parse [type="jsonparse" path="result"]
+			val -> parse
+			`
+	juelsPerFeeCoinSource = `"""
+			sum  [type="sum" values=<[451000]> ]
+			sum
+			"""
+			`
+)
+
 type Common struct {
-	P2PPort    string
-	ChainName  string
-	ChainId    string
-	NodeCount  int
-	TTL        time.Duration
-	Testnet    bool
-	L2RPCUrl   string
-	PrivateKey string
-	Account    string
-	ClConfig   map[string]any
-	K8Config   *environment.Config
-	Env        *environment.Environment
+	IsSoak                bool
+	P2PPort               string
+	ChainName             string
+	ChainId               string
+	NodeCount             int
+	TTL                   time.Duration
+	RPCUrl                string
+	PrivateKey            string
+	Account               string
+	ObservationSource     string
+	JuelsPerFeeCoinSource string
+	ClConfig              map[string]any
+	K8Config              *environment.Config
+	Env                   *environment.Environment
 }
 
 // getEnv gets the environment variable if it exists and sets it for the remote runner
@@ -50,48 +65,52 @@ func getEnv(v string) string {
 	return val
 }
 
-func New() *Common {
-	var err error
-	c := &Common{
-		ChainName: chainName,
-		ChainId:   chainID,
-	}
+func getNodeCount() int {
 	// Checking if count of OCR nodes is defined in ENV
 	nodeCountSet := getEnv("NODE_COUNT")
-	if nodeCountSet != "" {
-		c.NodeCount, err = strconv.Atoi(nodeCountSet)
-		if err != nil {
-			panic(fmt.Sprintf("Please define a proper node count for the test: %v", err))
-		}
-	} else {
+	if nodeCountSet == "" {
 		panic("Please define NODE_COUNT")
 	}
+	nodeCount, err := strconv.Atoi(nodeCountSet)
+	if err != nil {
+		panic(fmt.Sprintf("Please define a proper node count for the test: %v", err))
+	}
+	return nodeCount
+}
 
-	// Checking if TTL env var is set in ENV
+func getTTL() time.Duration {
 	ttlValue := getEnv("TTL")
-	if ttlValue != "" {
-		duration, err := time.ParseDuration(ttlValue)
-		if err != nil {
-			panic(fmt.Sprintf("Please define a proper duration for the test: %v", err))
-		}
-		c.TTL, err = time.ParseDuration(*alias.ShortDur(duration))
-		if err != nil {
-			panic(fmt.Sprintf("Please define a proper duration for the test: %v", err))
-		}
-	} else {
+	if ttlValue == "" {
 		panic("Please define TTL of env")
 	}
+	duration, err := time.ParseDuration(ttlValue)
+	if err != nil {
+		panic(fmt.Sprintf("Please define a proper duration for the test: %v", err))
+	}
+	t, err := time.ParseDuration(*alias.ShortDur(duration))
+	if err != nil {
+		panic(fmt.Sprintf("Please define a proper duration for the test: %v", err))
+	}
+	return t
+}
 
-	// Setting optional parameters
-	c.L2RPCUrl = getEnv("L2_RPC_URL") // Fetch L2 RPC url if defined
-	c.Testnet = c.L2RPCUrl != ""
-	c.PrivateKey = getEnv("PRIVATE_KEY")
-	c.Account = getEnv("ACCOUNT")
-
+func NewCommon() *Common {
+	c := &Common{
+		IsSoak:                getEnv("SOAK") != "",
+		ChainName:             chainName,
+		ChainId:               chainID,
+		NodeCount:             getNodeCount(),
+		TTL:                   getTTL(),
+		RPCUrl:                getEnv("RPC_URL"),
+		PrivateKey:            getEnv("PRIVATE_KEY"),
+		Account:               getEnv("ACCOUNT"),
+		ObservationSource:     observationSource,
+		JuelsPerFeeCoinSource: juelsPerFeeCoinSource,
+	}
 	return c
 }
 
-func (c *Common) Default(t *testing.T) {
+func (c *Common) SetDefaultEnvironment(t *testing.T) {
 	c.K8Config = &environment.Config{
 		NamespacePrefix: "cosmos-ocr",
 		TTL:             c.TTL,
@@ -99,8 +118,11 @@ func (c *Common) Default(t *testing.T) {
 	}
 	// These can be uncommented when toml configuration is supposrted for cosmos in the chainlink node
 	wasmdUrl := fmt.Sprintf("http://%s:%d", "tendermint-rpc", 26657)
-	if c.Testnet {
-		wasmdUrl = c.L2RPCUrl
+	//if c.Testnet {
+	//wasmdUrl = c.RPCUrl
+	//}
+	if c.RPCUrl != "" {
+		wasmdUrl = c.RPCUrl
 	}
 	baseTOML := fmt.Sprintf(`[[Cosmos]]
 Enabled = true
