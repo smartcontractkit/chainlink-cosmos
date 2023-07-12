@@ -1,8 +1,8 @@
 {
-  "name": "gauntlet-terra",
+  "name": "gauntlet-cosmos",
   "private": true,
   "version": "0.0.1",
-  "description": "Gauntlet Terra",
+  "description": "Gauntlet Cosmos",
   "workspaces": [
     "packages-ts/**"
   ],
@@ -10,11 +10,11 @@
     "typescript",
     "cli"
   ],
-  "main": "packages-ts/gauntlet-terra-contracts/dist/index.js",
-  "bin": "packages-ts/gauntlet-terra-contracts/dist/index.js",
+  "main": "packages-ts/gauntlet-cosmos-contracts/dist/index.js",
+  "bin": "packages-ts/gauntlet-cosmos-contracts/dist/index.js",
   "scripts": {
     "preinstall": "node scripts/require-yarn.js",
-    "gauntlet": "yarn build && node ./packages-ts/gauntlet-terra-contracts/dist/index.js",
+    "gauntlet": "yarn build && node ./packages-ts/gauntlet-cosmos-contracts/dist/index.js",
     "lint": "tsc -b ./tsconfig.json",
     "test": "yarn build && SKIP_PROMPTS=true jest --runInBand",
     "test:coverage": "yarn build && yarn test --collectCoverage",
@@ -28,7 +28,7 @@
   },
   "pkg": {
     "scripts": [
-      "packages-ts/gauntlet-terra-contracts/dist/index.js"
+      "packages-ts/gauntlet-cosmos-contracts/dist/index.js"
     ],
     "targets": [
       "linux",
@@ -37,9 +37,9 @@
     "outputPath": "bin",
     "assets": [
       "node_modules/usb/prebuilds",
-      "packages-ts/gauntlet-terra-contracts/codeIds",
-      "packages-ts/gauntlet-terra-contracts/networks",
-      "packages-ts/gauntlet-terra-contracts/artifacts",
+      "packages-ts/gauntlet-cosmos-contracts/codeIds",
+      "packages-ts/gauntlet-cosmos-contracts/networks",
+      "packages-ts/gauntlet-cosmos-contracts/artifacts",
       "contracts"
     ]
   },

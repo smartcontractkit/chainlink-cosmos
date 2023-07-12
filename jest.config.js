@@ -2,24 +2,24 @@ module.exports = {
   rootDir: '.',
   projects: [
     {
-      displayName: 'gauntlet-terra',
+      displayName: 'gauntlet-cosmos',
       preset: 'ts-jest',
       testEnvironment: 'node',
-      testMatch: ['<rootDir>/packages-ts/gauntlet-terra/**/*.test.ts'],
+      testMatch: ['<rootDir>/packages-ts/gauntlet-cosmos/**/*.test.ts'],
       globals: {
         'ts-jest': {
-          tsconfig: '<rootDir>/packages-ts/gauntlet-terra/tsconfig.json',
+          tsconfig: '<rootDir>/packages-ts/gauntlet-cosmos/tsconfig.json',
         },
       },
     },
     {
-      displayName: 'gauntlet-terra-contracts',
+      displayName: 'gauntlet-cosmos-contracts',
       preset: 'ts-jest',
       testEnvironment: 'node',
-      testMatch: ['<rootDir>/packages-ts/gauntlet-terra-contracts/**/*.test.ts'],
+      testMatch: ['<rootDir>/packages-ts/gauntlet-cosmos-contracts/**/*.test.ts'],
       globals: {
         'ts-jest': {
-          tsconfig: '<rootDir>/packages-ts/gauntlet-terra-contracts/tsconfig.json',
+          tsconfig: '<rootDir>/packages-ts/gauntlet-cosmos-contracts/tsconfig.json',
         },
       },
     },
