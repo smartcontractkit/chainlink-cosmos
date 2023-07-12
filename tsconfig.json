@@ -4,13 +4,13 @@
   "include": [],
   "references": [
     {
-      "path": "./packages-ts/gauntlet-terra"
+      "path": "./packages-ts/gauntlet-cosmos"
     },
     {
-      "path": "./packages-ts/gauntlet-terra-cw-plus"
+      "path": "./packages-ts/gauntlet-cosmos-cw-plus"
     },
     {
-      "path": "./packages-ts/gauntlet-terra-contracts"
+      "path": "./packages-ts/gauntlet-cosmos-contracts"
     }
-  ]  
+  ]
 }
