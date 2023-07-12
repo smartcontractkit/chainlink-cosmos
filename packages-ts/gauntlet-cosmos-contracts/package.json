@@ -1,0 +1,44 @@
+{
+  "name": "@chainlink/gauntlet-cosmos-contracts",
+  "version": "0.0.1",
+  "repository": "https://github.com/smartcontractkit/chainlink-cosmos",
+  "license": "MIT",
+  "engines": {
+    "node": ">= 14"
+  },
+  "description": "Gauntlet Cosmos Contracts",
+  "keywords": [
+    "typescript",
+    "cli"
+  ],
+  "main": "./dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "!dist/**/*.test.js"
+  ],
+  "scripts": {
+    "preinstall": "node ../../scripts/require-yarn.js",
+    "gauntlet": "ts-node ./src/index.ts",
+    "lint": "tsc",
+    "test": "SKIP_PROMPTS=true jest --runInBand",
+    "test:coverage": "yarn test --collectCoverage",
+    "test:ci": "yarn test --ci",
+    "lint:format": "yarn prettier --check ./src",
+    "format": "yarn prettier --write ./src",
+    "formatStaged": "node ./scripts/formatStaged.js",
+    "clean": "rm -rf ./dist/ ./bin/",
+    "build": "yarn clean && tsc",
+    "bundle": "yarn build && pkg ."
+  },
+  "dependencies": {
+    "@chainlink/gauntlet-contracts-ocr2": "^0.2.3",
+    "@chainlink/gauntlet-core": "0.2.0",
+    "@chainlink/gauntlet-cosmos": "*",
+    "@cosmjs/cosmwasm-stargate": "^0.29.3",
+    "@cosmjs/encoding": "^0.29.3",
+    "@cosmjs/proto-signing": "^0.29.3",
+    "ajv": "^8.6.3",
+    "cosmjs-types": "^0.5.2"
+  }
+}
