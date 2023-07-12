@@ -1,0 +1,1 @@
+# Gauntlet Cosmos CW Plus
