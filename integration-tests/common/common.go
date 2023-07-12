@@ -33,7 +33,7 @@ type Common struct {
 	NodeCount  int
 	TTL        time.Duration
 	Testnet    bool
-	L2RPCUrl   string
+	RPCUrl     string
 	PrivateKey string
 	Account    string
 	ClConfig   map[string]any

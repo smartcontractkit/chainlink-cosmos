@@ -14,11 +14,14 @@ import (
 )
 
 var (
-	err error
+	err           error
+	testState     *common.Test
+	decimals      = 9
+	mockServerVal = 900000000
 )
 
 func TestOCRBasic(t *testing.T) {
-	testState := &common.Test{
+	testState = &common.Test{
 		T: t,
 	}
 	testState.Common = common.New()
@@ -31,6 +34,21 @@ func TestOCRBasic(t *testing.T) {
 	if testState.Common.Env.WillUseRemoteRunner() {
 		return // short circuit here if using a remote runner
 	}
-	err = actions.TeardownSuite(testState.T, testState.Common.Env, "./", nil, nil, zapcore.DPanicLevel, nil)
-	require.NoError(testState.T, err)
+	err = testState.Cg.SetupNetwork(testState.Common.RPCUrl)
+	require.NoError(t, err, "Setting up gauntlet network should not fail")
+	err = testState.DeployGauntlet(0, 100000000000, decimals, "auto", 1, 1)
+	require.NoError(t, err, "Deploying contracts should not fail")
+	if !testState.Common.Testnet {
+		testState.Devnet.AutoLoadState(testState.OCR2Client, testState.OCRAddr)
+	}
+	testState.SetUpNodes(mockServerVal)
+
+	err = testState.ValidateRounds(10, false)
+	require.NoError(t, err, "Validating round should not fail")
+
+	t.Cleanup(func() {
+		err = actions.TeardownSuite(testState.T, testState.Common.Env, "./", nil, nil, zapcore.DPanicLevel, nil)
+		// err = actions.TeardownSuite(t, testState.Common.Env, utils.ProjectRoot, testState.Cc.ChainlinkNodes, nil, zapcore.ErrorLevel)
+		require.NoError(t, err, "Error tearing down environment")
+	})
 }

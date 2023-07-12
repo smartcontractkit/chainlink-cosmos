@@ -25,6 +25,7 @@ type GauntletResponse struct {
 			Hash    string `json:"hash"`
 			Address string `json:"address"`
 			Status  string `json:"status"`
+			CodeId  int    `json:"codeId"`
 
 			Tx struct {
 				Address         string   `json:"address"`
@@ -70,26 +71,38 @@ func (cg *CosmosGauntlet) FetchGauntletJsonOutput() (*GauntletResponse, error) {
 	return payload, nil
 }
 
-// // SetupNetwork Sets up a new network and sets the NODE_URL for Devnet / Cosmos RPC
-// func (sg *CosmosGauntlet) SetupNetwork(addr string) error {
-// 	sg.G.AddNetworkConfigVar("NODE_URL", addr)
-// 	err := sg.G.WriteNetworkConfigMap(sg.dir + "packages-ts/cosmos-gauntlet-cli/networks/")
-// 	if err != nil {
-// 		return err
-// 	}
+// SetupNetwork Sets up a new network and sets the NODE_URL for Devnet / Cosmos RPC
+func (sg *CosmosGauntlet) SetupNetwork(addr string) error {
+	sg.G.AddNetworkConfigVar("NODE_URL", addr)
+	err := sg.G.WriteNetworkConfigMap(sg.dir + "packages-ts/gauntlet-cosmos-contracts/networks/")
+	if err != nil {
+		return err
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
-// func (sg *CosmosGauntlet) InstallDependencies() error {
-// 	sg.G.Command = "yarn"
-// 	_, err := sg.G.ExecCommand([]string{"install"}, *sg.options)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	sg.G.Command = "gauntlet"
-// 	return nil
-// }
+func (sg *CosmosGauntlet) InstallDependencies() error {
+	sg.G.Command = "yarn"
+	_, err := sg.G.ExecCommand([]string{"install"}, *sg.options)
+	if err != nil {
+		return err
+	}
+	sg.G.Command = "gauntlet"
+	return nil
+}
+
+func (sg *CosmosGauntlet) UploadContract(name string) (int, error) {
+	_, err := sg.G.ExecCommand([]string{"upload", name}, *sg.options)
+	if err != nil {
+		return 0, err
+	}
+	sg.gr, err = sg.FetchGauntletJsonOutput()
+	if err != nil {
+		return 0, err
+	}
+	return sg.gr.Responses[0].Tx.CodeId, nil
+}
 
 // func (sg *CosmosGauntlet) DeployAccountContract(salt int64, pubKey string) (string, error) {
 // 	_, err := sg.G.ExecCommand([]string{"account:deploy", fmt.Sprintf("--salt=%d", salt), fmt.Sprintf("--publicKey=%s", pubKey)}, *sg.options)
@@ -103,17 +116,17 @@ func (cg *CosmosGauntlet) FetchGauntletJsonOutput() (*GauntletResponse, error) {
 // 	return sg.gr.Responses[0].Contract, nil
 // }
 
-// func (sg *CosmosGauntlet) DeployLinkTokenContract() (string, error) {
-// 	_, err := sg.G.ExecCommand([]string{"ERC20:deploy", "--link"}, *sg.options)
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	sg.gr, err = sg.FetchGauntletJsonOutput()
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	return sg.gr.Responses[0].Contract, nil
-// }
+func (sg *CosmosGauntlet) DeployLinkTokenContract() (string, error) {
+	_, err := sg.G.ExecCommand([]string{"token:deploy"}, *sg.options)
+	if err != nil {
+		return "", err
+	}
+	sg.gr, err = sg.FetchGauntletJsonOutput()
+	if err != nil {
+		return "", err
+	}
+	return sg.gr.Responses[0].Contract, nil
+}
 
 // func (sg *CosmosGauntlet) MintLinkToken(token, to, amount string) (string, error) {
 // 	_, err := sg.G.ExecCommand([]string{"ERC20:mint", fmt.Sprintf("--account=%s", to), fmt.Sprintf("--amount=%s", amount), token}, *sg.options)
@@ -127,17 +140,17 @@ func (cg *CosmosGauntlet) FetchGauntletJsonOutput() (*GauntletResponse, error) {
 // 	return sg.gr.Responses[0].Contract, nil
 // }
 
-// func (sg *CosmosGauntlet) TransferToken(token, to, amount string) (string, error) {
-// 	_, err := sg.G.ExecCommand([]string{"ERC20:transfer", fmt.Sprintf("--recipient=%s", to), fmt.Sprintf("--amount=%s", amount), token}, *sg.options)
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	sg.gr, err = sg.FetchGauntletJsonOutput()
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	return sg.gr.Responses[0].Contract, nil
-// }
+func (sg *CosmosGauntlet) TransferToken(token, to, amount string) (string, error) {
+	_, err := sg.G.ExecCommand([]string{"ERC20:transfer", fmt.Sprintf("--recipient=%s", to), fmt.Sprintf("--amount=%s", amount), token}, *sg.options)
+	if err != nil {
+		return "", err
+	}
+	sg.gr, err = sg.FetchGauntletJsonOutput()
+	if err != nil {
+		return "", err
+	}
+	return sg.gr.Responses[0].Contract, nil
+}
 
 // func (sg *CosmosGauntlet) DeployOCR2ControllerContract(minSubmissionValue int64, maxSubmissionValue int64, decimals int, name string, linkTokenAddress string) (string, error) {
 // 	_, err := sg.G.ExecCommand([]string{"ocr2:deploy", fmt.Sprintf("--minSubmissionValue=%d", minSubmissionValue), fmt.Sprintf("--maxSubmissionValue=%d", maxSubmissionValue), fmt.Sprintf("--decimals=%d", decimals), fmt.Sprintf("--name=%s", name), fmt.Sprintf("--link=%s", linkTokenAddress)}, *sg.options)
