@@ -16,10 +16,10 @@ report.json
 bin
 
 # test
-packages-ts/gauntlet-terra-contracts/codeIds/test*
-packages-ts/gauntlet-terra-contracts/networks/.env.test*
+packages-ts/gauntlet-cosmos-contracts/codeIds/test*
+packages-ts/gauntlet-cosmos-contracts/networks/.env.test*
 tests/e2e/logs
-packages-ts/gauntlet-terra-contracts/networks/.env.test*
+packages-ts/gauntlet-cosmos-contracts/networks/.env.test*
 integration-tests/logs
 integration-tests/smoke/logs
 integration-tests/soak/logs
