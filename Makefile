@@ -79,7 +79,7 @@ artifacts_curl_cw20:
 	curl -Lo artifacts/cw20_base.wasm https://github.com/CosmWasm/cw-plus/releases/download/v0.8.0/cw20_base.wasm
 
 artifacts_cp_gauntlet:
-	cp -r artifacts/. packages-ts/gauntlet-terra-contracts/artifacts/bin
+	cp -r artifacts/. packages-ts/gauntlet-cosmos-contracts/artifacts/bin
 
 artifacts_cp_wasmd:
 	cp -r artifacts/. ops/wasmd/artifacts
@@ -90,7 +90,7 @@ artifacts_clean_root:
 	rm -rf artifacts/*
 
 artifacts_clean_gauntlet:
-	rm -rf packages-ts/gauntlet-terra-contracts/artifacts/bin/*
+	rm -rf packages-ts/gauntlet-cosmos-contracts/artifacts/bin/*
 
 artifacts_clean_wasmd:
 	rm -rf ops/wasmd/artifacts/*
