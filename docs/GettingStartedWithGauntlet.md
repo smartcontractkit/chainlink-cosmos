@@ -52,7 +52,7 @@ yarn gauntlet tooling:query --network=testnet-bombay-internal --msg='{"owed_paym
 
 ### 5. Configuring a new network
 
-The network name must be selected from the [networks](../packages-ts/gauntlet-terra-contracts/networks/) folder. To add a new network configuration, simply add a new file to this folder (.env.YOUR_NETWORK_NAME).
+The network name must be selected from the [networks](../packages-ts/gauntlet-cosmos-contracts/networks/) folder. To add a new network configuration, simply add a new file to this folder (.env.YOUR_NETWORK_NAME).
 
 The following code snippet defines the general structure for defining a new network:
 
