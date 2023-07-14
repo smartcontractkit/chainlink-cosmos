@@ -38,6 +38,7 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 	// change bech32 prefix from cosmos to wasmd
 	typesConfig := sdk.GetConfig()
 	typesConfig.SetBech32PrefixForAccount("wasm", "wasm"+sdk.PrefixPublic)
+	typesConfig.Seal()
 
 	testdir, err := os.MkdirTemp("", "integration-test")
 	require.NoError(t, err)
