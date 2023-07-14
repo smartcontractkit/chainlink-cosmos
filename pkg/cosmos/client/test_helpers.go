@@ -20,6 +20,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/pelletier/go-toml"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,10 +36,7 @@ var minGasPrice = sdk.NewDecCoinFromDec("ucosm", sdk.NewDecWithPrec(1, 3))
 
 // SetupLocalCosmosNode sets up a local terra node via wasmd, and returns pre-funded accounts, the test directory, and the url.
 func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, string) {
-	// change bech32 prefix from cosmos to wasmd
-	typesConfig := sdk.GetConfig()
-	typesConfig.SetBech32PrefixForAccount("wasm", "wasm"+sdk.PrefixPublic)
-	typesConfig.Seal()
+	params.InitCosmosSdk("wasm", "atom")
 
 	testdir, err := os.MkdirTemp("", "integration-test")
 	require.NoError(t, err)
