@@ -22,9 +22,9 @@ var defaultConfigSet = configSet{
 	// Anecdotally it appears anything more than 4 blocks would be an extremely long wait,
 	// In practice during the UST depegging and subsequent extreme congestion, we saw
 	// ~16 block FIFO lineups.
-	BlocksUntilTxTimeout:  30,
-	ConfirmPollPeriod:     time.Second,
-	FallbackGasPriceUAtom: sdk.MustNewDecFromStr("0.015"),
+	BlocksUntilTxTimeout: 30,
+	ConfirmPollPeriod:    time.Second,
+	FallbackGasPrice:     sdk.MustNewDecFromStr("0.015"),
 	// This is high since we simulate before signing the transaction.
 	// There's a chicken and egg problem: need to sign to simulate accurately
 	// but you need to specify a gas limit when signing.
@@ -50,7 +50,7 @@ type Config interface {
 	BlockRate() time.Duration
 	BlocksUntilTxTimeout() int64
 	ConfirmPollPeriod() time.Duration
-	FallbackGasPriceUAtom() sdk.Dec
+	FallbackGasPrice() sdk.Dec
 	FCDURL() url.URL
 	GasLimitMultiplier() float64
 	MaxMsgsPerBatch() int64
@@ -61,29 +61,29 @@ type Config interface {
 
 // opt: remove
 type configSet struct {
-	BlockRate             time.Duration
-	BlocksUntilTxTimeout  int64
-	ConfirmPollPeriod     time.Duration
-	FallbackGasPriceUAtom sdk.Dec
-	FCDURL                url.URL
-	GasLimitMultiplier    float64
-	MaxMsgsPerBatch       int64
-	OCR2CachePollPeriod   time.Duration
-	OCR2CacheTTL          time.Duration
-	TxMsgTimeout          time.Duration
+	BlockRate            time.Duration
+	BlocksUntilTxTimeout int64
+	ConfirmPollPeriod    time.Duration
+	FallbackGasPrice     sdk.Dec
+	FCDURL               url.URL
+	GasLimitMultiplier   float64
+	MaxMsgsPerBatch      int64
+	OCR2CachePollPeriod  time.Duration
+	OCR2CacheTTL         time.Duration
+	TxMsgTimeout         time.Duration
 }
 
 type Chain struct {
-	BlockRate             *utils.Duration
-	BlocksUntilTxTimeout  *int64
-	ConfirmPollPeriod     *utils.Duration
-	FallbackGasPriceUAtom *decimal.Decimal
-	FCDURL                *utils.URL
-	GasLimitMultiplier    *decimal.Decimal
-	MaxMsgsPerBatch       *int64
-	OCR2CachePollPeriod   *utils.Duration
-	OCR2CacheTTL          *utils.Duration
-	TxMsgTimeout          *utils.Duration
+	BlockRate            *utils.Duration
+	BlocksUntilTxTimeout *int64
+	ConfirmPollPeriod    *utils.Duration
+	FallbackGasPrice     *decimal.Decimal
+	FCDURL               *utils.URL
+	GasLimitMultiplier   *decimal.Decimal
+	MaxMsgsPerBatch      *int64
+	OCR2CachePollPeriod  *utils.Duration
+	OCR2CacheTTL         *utils.Duration
+	TxMsgTimeout         *utils.Duration
 }
 
 func (c *Chain) SetDefaults() {
@@ -96,9 +96,9 @@ func (c *Chain) SetDefaults() {
 	if c.ConfirmPollPeriod == nil {
 		c.ConfirmPollPeriod = utils.MustNewDuration(defaultConfigSet.ConfirmPollPeriod)
 	}
-	if c.FallbackGasPriceUAtom == nil {
-		d := decimal.NewFromBigInt(defaultConfigSet.FallbackGasPriceUAtom.BigInt(), -sdk.Precision)
-		c.FallbackGasPriceUAtom = &d
+	if c.FallbackGasPrice == nil {
+		d := decimal.NewFromBigInt(defaultConfigSet.FallbackGasPrice.BigInt(), -sdk.Precision)
+		c.FallbackGasPrice = &d
 	}
 	if c.FCDURL == nil {
 		c.FCDURL = (*utils.URL)(&defaultConfigSet.FCDURL)
