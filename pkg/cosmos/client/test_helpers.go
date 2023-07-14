@@ -76,6 +76,7 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 			Address  string `json:"address"`
 			Mnemonic string `json:"mnemonic"`
 		}
+		t.Log(k.Address)
 		require.NoError(t, json.Unmarshal(key, &k))
 		expAcctAddr, err3 := sdk.AccAddressFromBech32(k.Address)
 		require.NoError(t, err3)
