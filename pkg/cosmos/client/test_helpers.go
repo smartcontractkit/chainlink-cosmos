@@ -38,6 +38,10 @@ var minGasPrice = sdk.NewDecCoinFromDec("ucosm", sdk.NewDecWithPrec(1, 3))
 
 // SetupLocalCosmosNode sets up a local terra node via wasmd, and returns pre-funded accounts, the test directory, and the url.
 func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, string) {
+	// change bech32 prefix from cosmos to wasmd
+	typesConfig := sdk.GetConfig()
+	typesConfig.SetBech32PrefixForAccount("wasm", "wasm"+sdk.PrefixPublic)
+
 	testdir, err := os.MkdirTemp("", "integration-test")
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -80,7 +84,6 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 			Mnemonic string `json:"mnemonic"`
 		}
 		require.NoError(t, json.Unmarshal(key, &k))
-		k.Address = strings.Replace(k.Address, "wasm", "cosmos", 1)
 		expAcctAddr, err3 := sdk.AccAddressFromBech32(k.Address)
 		require.NoError(t, err3)
 		privateKey, address, err4 := testutil.CreateKeyFromMnemonic(k.Mnemonic)
