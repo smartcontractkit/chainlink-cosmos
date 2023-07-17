@@ -83,7 +83,7 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 		require.NoError(t, err4)
 		require.Equal(t, expAcctAddr, address)
 		// Give it 100 luna
-		out2, err2 := exec.Command("wasmd", "add-genesis-account", k.Address, "100000000ucosm", "--home", testdir).Output() //nolint:gosec
+		out2, err2 := exec.Command("wasmd", "genesis", "add-genesis-account", k.Address, "100000000ucosm", "--home", testdir).Output() //nolint:gosec
 		require.NoError(t, err2, string(out2))
 		accounts = append(accounts, Account{
 			Name:       account,
