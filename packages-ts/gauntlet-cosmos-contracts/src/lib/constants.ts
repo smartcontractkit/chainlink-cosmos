@@ -21,7 +21,6 @@ export const ORACLES_MAX_LENGTH = 31
 
 export const CW20_BASE_CODE_IDs = {
   mainnet: 3,
-  local: 32,
   'testnet-bombay': 148,
   'testnet-bombay-internal': 148,
 }
