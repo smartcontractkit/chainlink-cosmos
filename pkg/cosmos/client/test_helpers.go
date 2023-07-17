@@ -83,7 +83,7 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 		require.NoError(t, err4)
 		require.Equal(t, expAcctAddr, address)
 		// Give it 100 luna
-		out2, err2 := exec.Command("wasmd", "genesis", "add-genesis-account", k.Address, "100000000ucosm", "--home", testdir).Output() //nolint:gosec
+		out2, err2 := exec.Command("wasmd", "add-genesis-account", k.Address, "100000000ucosm", "--home", testdir).Output() //nolint:gosec
 		require.NoError(t, err2, string(out2))
 		accounts = append(accounts, Account{
 			Name:       account,
@@ -92,9 +92,9 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 		})
 	}
 	// Stake 10 luna in first acct
-	out, err = exec.Command("wasmd", "genesis", "gentx", accounts[0].Name, "10000000ucosm", "--chain-id", chainID, "--keyring-backend", "test", "--home", testdir).CombinedOutput() //nolint:gosec
+	out, err = exec.Command("wasmd", "gentx", accounts[0].Name, "10000000ucosm", "--chain-id", chainID, "--keyring-backend", "test", "--home", testdir).CombinedOutput() //nolint:gosec
 	require.NoError(t, err, string(out))
-	out, err = exec.Command("wasmd", "genesis", "collect-gentxs", "--home", testdir).CombinedOutput()
+	out, err = exec.Command("wasmd", "collect-gentxs", "--home", testdir).CombinedOutput()
 	require.NoError(t, err, string(out))
 
 	port := mustRandomPort()
