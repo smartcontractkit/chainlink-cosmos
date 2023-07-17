@@ -25,7 +25,9 @@ export default class DeployLink extends CosmosCommand {
 
   execute = async () => {
     await prompt(`Begin deploying LINK Token?`)
-    const deploy = await this.deploy(CW20_BASE_CODE_IDs[this.flags.network], {
+    const codeId = this.codeIds['cw20_base'] || CW20_BASE_CODE_IDs[this.flags.network];
+    logger.info('Using code ID: ' + codeId);
+    const deploy = await this.deploy(codeId, {
       name: 'ChainLink Token',
       symbol: 'LINK',
       decimals: TOKEN_DECIMALS,
