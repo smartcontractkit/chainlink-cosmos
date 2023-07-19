@@ -18,6 +18,7 @@ import (
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -29,7 +30,6 @@ import (
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 )
 
 const httpResponseLimit = 10_000_000 // 10MB
