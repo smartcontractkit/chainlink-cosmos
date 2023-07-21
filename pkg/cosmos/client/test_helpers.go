@@ -9,11 +9,13 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/testutil"
+	"github.com/tidwall/gjson"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -82,8 +84,8 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 		privateKey, address, err4 := testutil.CreateKeyFromMnemonic(k.Mnemonic)
 		require.NoError(t, err4)
 		require.Equal(t, expAcctAddr, address)
-		// Give it 100 luna
-		out2, err2 := exec.Command("wasmd", "add-genesis-account", k.Address, "100000000ucosm", "--home", testdir).Output() //nolint:gosec
+		// Give it 100000000ucosm
+		out2, err2 := exec.Command("wasmd", "genesis", "add-genesis-account", k.Address, "100000000ucosm", "--home", testdir).Output() //nolint:gosec
 		require.NoError(t, err2, string(out2))
 		accounts = append(accounts, Account{
 			Name:       account,
@@ -92,9 +94,9 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 		})
 	}
 	// Stake 10 luna in first acct
-	out, err = exec.Command("wasmd", "gentx", accounts[0].Name, "10000000ucosm", "--chain-id", chainID, "--keyring-backend", "test", "--home", testdir).CombinedOutput() //nolint:gosec
+	out, err = exec.Command("wasmd", "genesis", "gentx", accounts[0].Name, "10000000ucosm", "--chain-id", chainID, "--keyring-backend", "test", "--home", testdir).CombinedOutput() //nolint:gosec
 	require.NoError(t, err, string(out))
-	out, err = exec.Command("wasmd", "collect-gentxs", "--home", testdir).CombinedOutput()
+	out, err = exec.Command("wasmd", "genesis", "collect-gentxs", "--home", testdir).CombinedOutput()
 	require.NoError(t, err, string(out))
 
 	port := mustRandomPort()
@@ -151,39 +153,45 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 // DeployTestContract deploys a test contract.
 func DeployTestContract(t *testing.T, tendermintURL, chainID string, deployAccount, ownerAccount Account, tc *Client, testdir, wasmTestContractPath string) sdk.AccAddress {
 	//nolint:gosec
-	out, err := exec.Command("wasmd", "tx", "wasm", "store", wasmTestContractPath, "--node", tendermintURL,
-		"--from", deployAccount.Name, "--gas", "auto", "--fees", "100000ucosm", "--gas-adjustment", "1.3", "--chain-id", chainID, "--broadcast-mode", "block", "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes", "--output", "json").CombinedOutput()
-	require.NoError(t, err, string(out))
-	an, sn, err2 := tc.Account(ownerAccount.Address)
-	require.NoError(t, err2)
-	r, err3 := tc.SignAndBroadcast([]sdk.Msg{
+	submitResp, err2 := exec.Command("wasmd", "tx", "wasm", "store", wasmTestContractPath, "--node", tendermintURL,
+		"--from", deployAccount.Name, "--gas", "auto", "--fees", "100000ucosm", "--gas-adjustment", "1.3", "--chain-id", chainID, "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes", "--output", "json").Output()
+	require.NoError(t, err2, string(submitResp))
+
+	// wait for tx to be committed
+	txHash := gjson.Get(string(submitResp), "txhash")
+	require.True(t, txHash.Exists())
+	storeTx, success := awaitTxCommitted(t, tc, txHash.String())
+	require.True(t, success)
+
+	// get code id from tx receipt
+	storeCodeLog := storeTx.TxResponse.Logs[len(storeTx.TxResponse.Logs)-1]
+	codeID, err := strconv.ParseUint(storeCodeLog.GetEvents()[1].Attributes[1].Value, 10, 64)
+	require.NoError(t, err, "failed to parse code id from tx receipt")
+
+	accountNumber, sequenceNumber, err := tc.Account(ownerAccount.Address)
+	require.NoError(t, err)
+	deployTx, err3 := tc.SignAndBroadcast([]sdk.Msg{
 		&wasmtypes.MsgInstantiateContract{
 			Sender: ownerAccount.Address.String(),
 			Admin:  "",
-			// TODO: this only works for the first code deployment, read code_id from the store invocation above and use the value here.
-			CodeID: 1,
+			CodeID: codeID,
 			Label:  "testcontract",
 			Msg:    []byte(`{"count":0}`),
 			Funds:  sdk.Coins{},
 		},
-	}, an, sn, minGasPrice, ownerAccount.PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+	}, accountNumber, sequenceNumber, minGasPrice, ownerAccount.PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 	require.NoError(t, err3)
-	return GetContractAddr(t, tc, r.TxResponse.TxHash)
+
+	// wait for tx to be committed
+	deployTxReceipt, success := awaitTxCommitted(t, tc, deployTx.TxResponse.TxHash)
+	require.True(t, success)
+
+	return GetContractAddr(t, deployTxReceipt.GetTxResponse())
 }
 
-func GetContractAddr(t *testing.T, tc *Client, deploymentHash string) sdk.AccAddress {
-	var deploymentTx *txtypes.GetTxResponse
-	var err error
-	for try := 0; try < 5; try++ {
-		deploymentTx, err = tc.Tx(deploymentHash)
-		if err != nil {
-			time.Sleep(1 * time.Second)
-			continue
-		}
-	}
-	require.NoError(t, err)
+func GetContractAddr(t *testing.T, deployTxReceipt *sdk.TxResponse) sdk.AccAddress {
 	var contractAddr string
-	for _, etype := range deploymentTx.TxResponse.Events {
+	for _, etype := range deployTxReceipt.Events {
 		if etype.Type == "wasm" {
 			for _, attr := range etype.Attributes {
 				if string(attr.Key) == "_contract_address" {
@@ -204,4 +212,18 @@ func mustRandomPort() int {
 		panic(fmt.Errorf("unexpected error generating random port: %w", err))
 	}
 	return int(r.Int64() + 1024)
+}
+
+// awaitTxCommitted waits for a transaction to be committed on chain and returns the tx receipt
+func awaitTxCommitted(t *testing.T, tc *Client, txHash string) (response *txtypes.GetTxResponse, success bool) {
+	for i := 0; i < 10; i++ { // max poll attempts to wait for tx commitment
+		txReceipt, err := tc.Tx(txHash)
+		if err != nil {
+			time.Sleep(time.Second * 1) // TODO: configure dynamically based on block times
+			continue
+		} else {
+			return txReceipt, true
+		}
+	}
+	return nil, false
 }
