@@ -7,10 +7,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/smartcontractkit/chainlink/integration-tests/actions"
+
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
 	"github.com/smartcontractkit/chainlink-cosmos/ops/gauntlet"
 	"github.com/smartcontractkit/chainlink-cosmos/ops/utils"
-	"github.com/smartcontractkit/chainlink/integration-tests/actions"
 )
 
 var (

@@ -14,8 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/testutil"
 	"github.com/tidwall/gjson"
+
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/testutil"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -218,12 +219,10 @@ func mustRandomPort() int {
 func awaitTxCommitted(t *testing.T, tc *Client, txHash string) (response *txtypes.GetTxResponse, success bool) {
 	for i := 0; i < 10; i++ { // max poll attempts to wait for tx commitment
 		txReceipt, err := tc.Tx(txHash)
-		if err != nil {
-			time.Sleep(time.Second * 1) // TODO: configure dynamically based on block times
-			continue
-		} else {
+		if err == nil {
 			return txReceipt, true
 		}
+		time.Sleep(time.Second * 1) // TODO: configure dynamically based on block times
 	}
 	return nil, false
 }

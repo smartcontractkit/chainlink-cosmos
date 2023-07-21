@@ -108,7 +108,7 @@ build-go: build-go-relayer build-go-ops build-go-integration-tests
 
 .PHONY: build-go-relayer
 build-go-relayer:
-	cd relayer/ && go build ./...
+	cd pkg/ && go build ./...
 
 .PHONY: build-go-ops
 build-go-ops:
@@ -123,7 +123,7 @@ format-go: format-go-fmt format-go-mod-tidy
 
 .PHONY: format-go-fmt
 format-go-fmt:
-	cd ./relayer && go fmt ./...
+	cd ./pkg && go fmt ./...
 	cd ./ops && go fmt ./...
 	cd ./integration-tests && go fmt ./...
 
@@ -133,13 +133,16 @@ format-go-mod-tidy:
 	cd ./ops && go mod tidy
 	cd ./integration-tests && go mod tidy
 
+.PHONY: lint-go
+lint-go: lint-go-ops lint-go-relayer lint-go-test
+
 .PHONY: lint-go-ops
 lint-go-ops:
 	cd ./ops && golangci-lint --color=always run
 
 .PHONY: lint-go-relayer
 lint-go-relayer:
-	cd ./relayer && golangci-lint --color=always run
+	cd ./pkg && golangci-lint --color=always run
 
 .PHONY: lint-go-test
 lint-go-test:
@@ -158,13 +161,13 @@ test-unit: test-unit-go
 
 .PHONY: test-unit-go
 test-unit-go:
-	cd ./relayer && go test -v ./...
-	cd ./relayer && go test -v ./... -race -count=10
+	cd ./pkg && go test -v ./...
+	cd ./pkg && go test -v ./... -race -count=10
 
 .PHONY: test-integration-go
 # only runs tests with TestIntegration_* + //go:build integration
 test-integration-go:
-	cd ./relayer && go test -v ./... -run TestIntegration -tags integration
+	cd ./pkg && go test -v ./... -run TestIntegration -tags integration
 
 .PHONY: test-integration-smoke
 test-integration-smoke: test-integration-prep

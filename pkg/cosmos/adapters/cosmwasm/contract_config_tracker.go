@@ -34,5 +34,5 @@ func (ct *ContractTracker) LatestBlockHeight(ctx context.Context) (blockHeight u
 	if err != nil {
 		return 0, err
 	}
-	return uint64(b.Block.Header.Height), nil
+	return uint64(b.SdkBlock.Header.Height), nil
 }

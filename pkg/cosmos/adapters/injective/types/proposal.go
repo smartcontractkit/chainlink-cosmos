@@ -1,7 +1,7 @@
 package types
 
 import (
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errors "cosmossdk.io/errors"
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 )
 
@@ -42,7 +42,7 @@ func (p *SetConfigProposal) ProposalType() string {
 // ValidateBasic returns ValidateBasic result of this proposal.
 func (p *SetConfigProposal) ValidateBasic() error {
 	if p.Config == nil {
-		return sdkerrors.Wrap(ErrIncompleteProposal, "proposal is missing config")
+		return errors.Wrap(ErrIncompleteProposal, "proposal is missing config")
 	}
 
 	if err := p.Config.ValidateBasic(); err != nil {
@@ -73,7 +73,7 @@ func (p *SetBatchConfigProposal) ProposalType() string {
 // ValidateBasic returns ValidateBasic result of this proposal.
 func (p *SetBatchConfigProposal) ValidateBasic() error {
 	if len(p.FeedProperties) == 0 {
-		return sdkerrors.Wrap(ErrIncompleteProposal, "proposal is missing feeds")
+		return errors.Wrap(ErrIncompleteProposal, "proposal is missing feeds")
 	}
 
 	for _, feed := range p.FeedProperties {
