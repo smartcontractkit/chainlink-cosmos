@@ -10,7 +10,7 @@ stdenv.mkDerivation rec {
     owner = "CosmWasm";
     repo = "wasmd";
     rev = "0c99c6c64370a86913907b87214f43deef7f2f99";
-    sha256 = "0mnim2wwzs1rm8rj00wv304aqzcqvinn5vgyv9cy7kb8jd6fklzx";
+    sha256 = "sha256-KBchSnIETM+HPngqHeajiqLYrhHhXY531C+Q/aSDzl4=";
   };
 
   buildInputs = with pkgs; [ gnumake git go_1_20 which openssl cacert ];
