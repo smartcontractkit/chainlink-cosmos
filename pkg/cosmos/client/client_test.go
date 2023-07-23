@@ -341,21 +341,19 @@ func TestCosmosClient(t *testing.T) {
 				require.NoError(t, err)
 				resp, err := tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, tt.gasPrice, accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 				require.NotNil(t, resp)
-				tx, success := awaitTxCommitted(t, tc, resp.TxResponse.TxHash)
 
 				if tt.expCode == 0 {
 					require.NoError(t, err)
+					tx, success := awaitTxCommitted(t, tc, resp.TxResponse.TxHash)
 					require.True(t, success)
 					require.Equal(t, types.CodeTypeOK, tx.TxResponse.Code)
 					require.Equal(t, "", tx.TxResponse.Codespace)
 					require.Equal(t, tt.expCode, tx.TxResponse.Code)
+					require.Equal(t, resp.TxResponse.TxHash, tx.TxResponse.TxHash)
 					t.Log("Fee:", tx.Tx.GetFee())
 					t.Log("Height:", tx.TxResponse.Height)
-					require.Equal(t, tx.TxResponse.TxHash, tx.TxResponse.TxHash)
 				} else {
 					require.Error(t, err)
-					require.False(t, success)
-					require.Nil(t, tx)
 					require.Equal(t, expCodespace, resp.TxResponse.Codespace)
 					require.Equal(t, tt.expCode, resp.TxResponse.Code)
 				}
