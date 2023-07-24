@@ -34,10 +34,12 @@ type Account struct {
 }
 
 // 0.001
-var minGasPrice = sdk.NewDecCoinFromDec("ucosm", sdk.NewDecWithPrec(1, 3))
+var defaultCoin = sdk.NewDecWithPrec(1, 3)
 
 // SetupLocalCosmosNode sets up a local terra node via wasmd, and returns pre-funded accounts, the test directory, and the url.
-func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, string) {
+// Token name is for both staking and fee coin
+func SetupLocalCosmosNode(t *testing.T, chainID string, token string) ([]Account, string, string) {
+	minGasPrice := sdk.NewDecCoinFromDec(token, defaultCoin)
 	testdir, err := os.MkdirTemp("", "integration-test")
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -62,11 +64,12 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 	require.NoError(t, err)
 
 	genesisData := string(f)
-	// fix hardcoded token, see
+	// fix hardcoded staking/governance token, see
 	// https://github.com/CosmWasm/wasmd/blob/develop/docker/setup_wasmd.sh
 	// https://github.com/CosmWasm/wasmd/blob/develop/contrib/local/setup_wasmd.sh
-	genesisData = strings.ReplaceAll(genesisData, "\"ustake\"", "\"ucosm\"")
-	genesisData = strings.ReplaceAll(genesisData, "\"stake\"", "\"ucosm\"")
+	newStakingToken := fmt.Sprintf(`"%s"`, token)
+	genesisData = strings.ReplaceAll(genesisData, "\"ustake\"", newStakingToken)
+	genesisData = strings.ReplaceAll(genesisData, "\"stake\"", newStakingToken)
 	require.NoError(t, os.WriteFile(p, []byte(genesisData), 0600))
 
 	// Create 2 test accounts
@@ -86,7 +89,7 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 		require.NoError(t, err4)
 		require.Equal(t, expAcctAddr, address)
 		// Give it 100000000ucosm
-		out2, err2 := exec.Command("wasmd", "genesis", "add-genesis-account", k.Address, "100000000ucosm", "--home", testdir).Output() //nolint:gosec
+		out2, err2 := exec.Command("wasmd", "genesis", "add-genesis-account", k.Address, "100000000"+token, "--home", testdir).Output() //nolint:gosec
 		require.NoError(t, err2, string(out2))
 		accounts = append(accounts, Account{
 			Name:       account,
@@ -94,8 +97,8 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 			PrivateKey: privateKey,
 		})
 	}
-	// Stake 10 luna in first acct
-	out, err = exec.Command("wasmd", "gentx", accounts[0].Name, "10000000ucosm", "--chain-id", chainID, "--keyring-backend", "test", "--home", testdir).CombinedOutput() //nolint:gosec
+	// Stake 10 tokens in first acct
+	out, err = exec.Command("wasmd", "gentx", accounts[0].Name, "10000000"+token, "--chain-id", chainID, "--keyring-backend", "test", "--home", testdir).CombinedOutput() //nolint:gosec
 	require.NoError(t, err, string(out))
 	out, err = exec.Command("wasmd", "collect-gentxs", "--home", testdir).CombinedOutput()
 	require.NoError(t, err, string(out))
@@ -152,10 +155,11 @@ func SetupLocalCosmosNode(t *testing.T, chainID string) ([]Account, string, stri
 }
 
 // DeployTestContract deploys a test contract.
-func DeployTestContract(t *testing.T, tendermintURL, chainID string, deployAccount, ownerAccount Account, tc *Client, testdir, wasmTestContractPath string) sdk.AccAddress {
+func DeployTestContract(t *testing.T, tendermintURL, chainID string, token string, deployAccount, ownerAccount Account, tc *Client, testdir, wasmTestContractPath string) sdk.AccAddress {
+	minGasPrice := sdk.NewDecCoinFromDec(token, defaultCoin)
 	//nolint:gosec
 	submitResp, err2 := exec.Command("wasmd", "tx", "wasm", "store", wasmTestContractPath, "--node", tendermintURL,
-		"--from", deployAccount.Name, "--gas", "auto", "--fees", "100000ucosm", "--gas-adjustment", "1.3", "--chain-id", chainID, "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes", "--output", "json").Output()
+		"--from", deployAccount.Name, "--gas", "auto", "--fees", "100000"+token, "--gas-adjustment", "1.3", "--chain-id", chainID, "--home", testdir, "--keyring-backend", "test", "--keyring-dir", testdir, "--yes", "--output", "json").Output()
 	require.NoError(t, err2, string(submitResp))
 
 	// wait for tx to be committed
