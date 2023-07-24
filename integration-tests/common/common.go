@@ -46,8 +46,8 @@ type Common struct {
 	ChainId               string
 	NodeCount             int
 	TTL                   time.Duration
-	RPCUrl                string
-	PrivateKey            string
+	NodeUrl               string
+	Mnemonic              string
 	Account               string
 	ObservationSource     string
 	JuelsPerFeeCoinSource string
@@ -101,8 +101,8 @@ func NewCommon() *Common {
 		ChainId:               chainID,
 		NodeCount:             getNodeCount(),
 		TTL:                   getTTL(),
-		RPCUrl:                getEnv("RPC_URL"),
-		PrivateKey:            getEnv("PRIVATE_KEY"),
+		NodeUrl:               getEnv("NODE_URL"),
+		Mnemonic:              getEnv("MNEMONIC"),
 		Account:               getEnv("ACCOUNT"),
 		ObservationSource:     observationSource,
 		JuelsPerFeeCoinSource: juelsPerFeeCoinSource,
@@ -121,8 +121,8 @@ func (c *Common) SetDefaultEnvironment(t *testing.T) {
 	//if c.Testnet {
 	//wasmdUrl = c.RPCUrl
 	//}
-	if c.RPCUrl != "" {
-		wasmdUrl = c.RPCUrl
+	if c.NodeUrl != "" {
+		wasmdUrl = c.NodeUrl
 	}
 	baseTOML := fmt.Sprintf(`[[Cosmos]]
 Enabled = true
