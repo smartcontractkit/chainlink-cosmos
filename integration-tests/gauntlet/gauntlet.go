@@ -74,8 +74,9 @@ func (cg *CosmosGauntlet) FetchGauntletJsonOutput() (*GauntletResponse, error) {
 }
 
 // SetupNetwork Sets up a new network and sets the NODE_URL for Devnet / Cosmos RPC
-func (cg *CosmosGauntlet) SetupNetwork(addr string) error {
-	cg.G.AddNetworkConfigVar("NODE_URL", addr)
+func (cg *CosmosGauntlet) SetupNetwork(nodeUrl string, mnemonic string) error {
+	cg.G.AddNetworkConfigVar("NODE_URL", nodeUrl)
+	cg.G.AddNetworkConfigVar("MNEMONIC", mnemonic)
 	err := cg.G.WriteNetworkConfigMap(cg.dir + "packages-ts/gauntlet-cosmos-contracts/networks/")
 	if err != nil {
 		return err
@@ -94,8 +95,11 @@ func (cg *CosmosGauntlet) InstallDependencies() error {
 	return nil
 }
 
-func (cg *CosmosGauntlet) UploadContract(name string) (int, error) {
-	_, err := cg.G.ExecCommand([]string{"upload", name}, *cg.options)
+func (cg *CosmosGauntlet) UploadContracts(names []string) (int, error) {
+	if names == nil {
+		names = []string{}
+	}
+	_, err := cg.G.ExecCommand(append([]string{"upload"}, names...), *cg.options)
 	if err != nil {
 		return 0, err
 	}
@@ -156,79 +160,73 @@ func (cg *CosmosGauntlet) TransferToken(token, to, amount string) (string, error
 }
 
 func (cg *CosmosGauntlet) DeployOCR2ControllerContract(minSubmissionValue int64, maxSubmissionValue int64, decimals int, name string, linkTokenAddress string) (string, error) {
-	// 	_, err := cg.G.ExecCommand([]string{"ocr2:deploy", fmt.Sprintf("--minSubmissionValue=%d", minSubmissionValue), fmt.Sprintf("--maxSubmissionValue=%d", maxSubmissionValue), fmt.Sprintf("--decimals=%d", decimals), fmt.Sprintf("--name=%s", name), fmt.Sprintf("--link=%s", linkTokenAddress)}, *cg.options)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	cg.gr, err = cg.FetchGauntletJsonOutput()
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	return cg.gr.Responses[0].Contract, nil
-	return "", errors.New("TODO")
+	_, err := cg.G.ExecCommand([]string{"ocr2:deploy", fmt.Sprintf("--minSubmissionValue=%d", minSubmissionValue), fmt.Sprintf("--maxSubmissionValue=%d", maxSubmissionValue), fmt.Sprintf("--decimals=%d", decimals), fmt.Sprintf("--name=%s", name), fmt.Sprintf("--link=%s", linkTokenAddress)}, *cg.options)
+	if err != nil {
+		return "", err
+	}
+	cg.gr, err = cg.FetchGauntletJsonOutput()
+	if err != nil {
+		return "", err
+	}
+	return cg.gr.Responses[0].Contract, nil
 }
 
 func (cg *CosmosGauntlet) DeployAccessControllerContract() (string, error) {
-	return "", errors.New("TODO")
-	// 	_, err := cg.G.ExecCommand([]string{"access_controller:deploy"}, *cg.options)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	cg.gr, err = cg.FetchGauntletJsonOutput()
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	return cg.gr.Responses[0].Contract, nil
+	_, err := cg.G.ExecCommand([]string{"access_controller:deploy"}, *cg.options)
+	if err != nil {
+		return "", err
+	}
+	cg.gr, err = cg.FetchGauntletJsonOutput()
+	if err != nil {
+		return "", err
+	}
+	return cg.gr.Responses[0].Contract, nil
 }
 
 func (cg *CosmosGauntlet) DeployOCR2ProxyContract(aggregator string) (string, error) {
-	// 	_, err := cg.G.ExecCommand([]string{"proxy:deploy", fmt.Sprintf("--address=%s", aggregator)}, *cg.options)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	cg.gr, err = cg.FetchGauntletJsonOutput()
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	return cg.gr.Responses[0].Contract, nil
-	return "", errors.New("TODO")
+	_, err := cg.G.ExecCommand([]string{"proxy:deploy", fmt.Sprintf("--address=%s", aggregator)}, *cg.options)
+	if err != nil {
+		return "", err
+	}
+	cg.gr, err = cg.FetchGauntletJsonOutput()
+	if err != nil {
+		return "", err
+	}
+	return cg.gr.Responses[0].Contract, nil
 }
 
 func (cg *CosmosGauntlet) SetOCRBilling(observationPaymentGjuels int64, transmissionPaymentGjuels int64, ocrAddress string) (string, error) {
-	// 	_, err := cg.G.ExecCommand([]string{"ocr2:set_billing", fmt.Sprintf("--observationPaymentGjuels=%d", observationPaymentGjuels), fmt.Sprintf("--transmissionPaymentGjuels=%d", transmissionPaymentGjuels), ocrAddress}, *cg.options)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	cg.gr, err = cg.FetchGauntletJsonOutput()
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	return cg.gr.Responses[0].Contract, nil
-	return "", errors.New("TODO")
+	_, err := cg.G.ExecCommand([]string{"ocr2:set_billing", fmt.Sprintf("--observationPaymentGjuels=%d", observationPaymentGjuels), fmt.Sprintf("--transmissionPaymentGjuels=%d", transmissionPaymentGjuels), ocrAddress}, *cg.options)
+	if err != nil {
+		return "", err
+	}
+	cg.gr, err = cg.FetchGauntletJsonOutput()
+	if err != nil {
+		return "", err
+	}
+	return cg.gr.Responses[0].Contract, nil
 }
 
 func (cg *CosmosGauntlet) SetConfigDetails(cfg string, ocrAddress string) (string, error) {
-	// 	_, err := cg.G.ExecCommand([]string{"ocr2:set_config", "--input=" + cfg, ocrAddress}, *cg.options)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	cg.gr, err = cg.FetchGauntletJsonOutput()
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	return cg.gr.Responses[0].Contract, nil
-	return "", errors.New("TODO")
+	_, err := cg.G.ExecCommand([]string{"ocr2:set_config", "--input=" + cfg, ocrAddress}, *cg.options)
+	if err != nil {
+		return "", err
+	}
+	cg.gr, err = cg.FetchGauntletJsonOutput()
+	if err != nil {
+		return "", err
+	}
+	return cg.gr.Responses[0].Contract, nil
 }
 
 func (cg *CosmosGauntlet) AddOCR2Access(aggregator, address string) (string, error) {
-	// 	_, err := cg.G.ExecCommand([]string{"ocr2:add_access", fmt.Sprintf("--address=%s", address), aggregator}, *cg.options)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	cg.gr, err = cg.FetchGauntletJsonOutput()
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	return cg.gr.Responses[0].Contract, nil
-	return "", errors.New("TODO")
+	_, err := cg.G.ExecCommand([]string{"ocr2:add_access", fmt.Sprintf("--address=%s", address), aggregator}, *cg.options)
+	if err != nil {
+		return "", err
+	}
+	cg.gr, err = cg.FetchGauntletJsonOutput()
+	if err != nil {
+		return "", err
+	}
+	return cg.gr.Responses[0].Contract, nil
 }

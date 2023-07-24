@@ -28,7 +28,7 @@ func TestOCRBasic(t *testing.T) {
 	err = cg.InstallDependencies()
 	require.NoError(t, err, "Failed to install gauntlet dependencies")
 
-	err = cg.SetupNetwork(commonConfig.RPCUrl)
+	err = cg.SetupNetwork(commonConfig.NodeUrl, commonConfig.Mnemonic)
 	require.NoError(t, err, "Setting up gauntlet network should not fail")
 
 	// TODO: uncomment once we are ready to test rounds
@@ -37,7 +37,7 @@ func TestOCRBasic(t *testing.T) {
 	// TODO: fund nodes if necessary
 
 	// store the cw20_base contract so we have the token contract, and then deploy the LINK token.
-	_, err = cg.UploadContract("cw20_base")
+	_, err = cg.UploadContracts(nil)
 	require.NoError(t, err, "Could not upload cw20_base contract")
 
 	linkTokenAddress, err := cg.DeployLinkTokenContract()
@@ -74,7 +74,7 @@ func TestOCRBasic(t *testing.T) {
 	_, err = cg.SetOCRBilling(observationPaymentGjuels, transmissionPaymentGjuels, ocrAddress)
 	require.NoError(t, err, "Could not set OCR billing")
 
-	chainlinkClient, err := common.NewChainlinkClient(commonConfig.Env, commonConfig.ChainName, commonConfig.ChainId, commonConfig.RPCUrl)
+	chainlinkClient, err := common.NewChainlinkClient(commonConfig.Env, commonConfig.ChainName, commonConfig.ChainId, commonConfig.NodeUrl)
 	require.NoError(t, err, "Could not create chainlink client")
 
 	cfg, err := chainlinkClient.LoadOCR2Config([]string{commonConfig.Account})
