@@ -217,12 +217,11 @@ func mustRandomPort() int {
 
 // awaitTxCommitted waits for a transaction to be committed on chain and returns the tx receipt
 func awaitTxCommitted(t *testing.T, tc *Client, txHash string) (response *txtypes.GetTxResponse, success bool) {
-	for i := 0; i < 9; i++ { // max poll attempts to wait for tx commitment
+	for i := 0; i < 10; i++ { // max poll attempts to wait for tx commitment
 		txReceipt, err := tc.Tx(txHash)
 		if err == nil {
 			return txReceipt, true
 		}
-		t.Logf("tx not committed yet (attempt %d)", i+1)
 		time.Sleep(time.Second * 1) // TODO: configure dynamically based on block times
 	}
 	return nil, false
