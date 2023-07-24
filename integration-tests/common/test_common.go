@@ -32,8 +32,8 @@ type Test struct {
 type ChainlinkClient struct {
 	NKeys          []client.NodeKeysBundle
 	ChainlinkNodes []*client.Chainlink
-	// bTypeAttr      *client.BridgeTypeAttributes
-	// bootstrapPeers []client.P2PData
+	bTypeAttr      *client.BridgeTypeAttributes
+	bootstrapPeers []client.P2PData
 }
 
 // DeployCluster Deploys and sets up config of the environment and nodes
