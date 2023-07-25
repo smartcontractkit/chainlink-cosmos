@@ -98,9 +98,9 @@ func SetupLocalCosmosNode(t *testing.T, chainID string, token string) ([]Account
 		})
 	}
 	// Stake 10 tokens in first acct
-	out, err = exec.Command("wasmd", "gentx", accounts[0].Name, "10000000"+token, "--chain-id", chainID, "--keyring-backend", "test", "--home", testdir).CombinedOutput() //nolint:gosec
+	out, err = exec.Command("wasmd", "genesis", "gentx", accounts[0].Name, "10000000"+token, "--chain-id", chainID, "--keyring-backend", "test", "--home", testdir).CombinedOutput() //nolint:gosec
 	require.NoError(t, err, string(out))
-	out, err = exec.Command("wasmd", "collect-gentxs", "--home", testdir).CombinedOutput()
+	out, err = exec.Command("wasmd", "genesis", "collect-gentxs", "--home", testdir).CombinedOutput()
 	require.NoError(t, err, string(out))
 
 	port := mustRandomPort()
