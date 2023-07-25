@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 container_name="chainlink-cosmos.wasmd"
-container_version="v0.31.0"
+container_version="v0.40.1"
 genesis_account="wasm1lsagfzrm4gz28he4wunt63sts5xzmczwda8vl6"
 
 set -euo pipefail
 
 # Clean up first
-bash "$(dirname -- "$0")/devnet-wasmd-down.sh"
+bash "$(dirname -- "$0")/wasmd-down.sh"
 
 echo "Starting wasmd container"
 

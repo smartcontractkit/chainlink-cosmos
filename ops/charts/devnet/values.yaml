@@ -1,7 +1,7 @@
 wasmd:
   image:
     repository: cosmwasm/wasmd
-    tag: v0.30.0
+    tag: v0.40.1
     pullPolicy: IfNotPresent
 
   resources:

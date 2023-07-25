@@ -85,7 +85,7 @@ func defaultProps() map[string]any {
 		"wasmd": map[string]any{
 			"image": map[string]any{
 				"image":   "cosmwasm/wasmd",
-				"version": "v0.30.0", // TODO: may want to ty this to an env var
+				"version": "0.40.1", // TODO: may want to ty this to an env var
 			},
 			"resources": map[string]any{
 				"requests": map[string]any{

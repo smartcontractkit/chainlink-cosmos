@@ -4,16 +4,15 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	"github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/abci/types"
 	"go.uber.org/zap"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
@@ -165,12 +164,11 @@ func TestCosmosClient(t *testing.T) {
 		require.NoError(t, err)
 		_, err = tc.Simulate(txBytes)
 		require.NoError(t, err)
-		resp, err := tc.Broadcast(txBytes, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		resp, err := tc.Broadcast(txBytes, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err)
-		require.Equal(t, types.CodeTypeOK, resp.TxResponse.Code)
-
-		// Note even the blocking command doesn't let you query for the tx right away
-		time.Sleep(1 * time.Second)
+		tx, success := awaitTxCommitted(t, tc, resp.TxResponse.TxHash)
+		require.True(t, success)
+		require.Equal(t, types.CodeTypeOK, tx.TxResponse.Code)
 
 		// Assert balance changed
 		b, err = tc.Balance(accounts[1].Address, "ucosm")
@@ -182,21 +180,21 @@ func TestCosmosClient(t *testing.T) {
 		require.Error(t, err)
 
 		// Ensure we can read back the tx with Query
-		tr, err := tc.TxsEvents([]string{fmt.Sprintf("tx.height=%v", resp.TxResponse.Height)}, nil)
+		tr, err := tc.TxsEvents([]string{fmt.Sprintf("tx.height=%v", tx.TxResponse.Height)}, nil)
 		require.NoError(t, err)
 		assert.Equal(t, 1, len(tr.TxResponses))
-		assert.Equal(t, resp.TxResponse.TxHash, tr.TxResponses[0].TxHash)
+		assert.Equal(t, tx.TxResponse.TxHash, tr.TxResponses[0].TxHash)
 		// And also Tx
-		getTx, err := tc.Tx(resp.TxResponse.TxHash)
+		getTx, err := tc.Tx(tx.TxResponse.TxHash)
 		require.NoError(t, err)
-		assert.Equal(t, getTx.TxResponse.TxHash, resp.TxResponse.TxHash)
+		assert.Equal(t, getTx.TxResponse.TxHash, tx.TxResponse.TxHash)
 	})
 
 	t.Run("can get height", func(t *testing.T) {
 		// Check getting the height works
 		latestBlock, err := tc.LatestBlock()
 		require.NoError(t, err)
-		assert.True(t, latestBlock.Block.Header.Height > 1)
+		assert.True(t, latestBlock.SdkBlock.Header.Height > 1)
 	})
 
 	t.Run("contract event querying", func(t *testing.T) {
@@ -226,9 +224,12 @@ func TestCosmosClient(t *testing.T) {
 		require.NoError(t, err)
 		gasPrices, err := gpe.GasPrices()
 		require.NoError(t, err)
-		resp1, err := tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		resp1, err := tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err)
-		time.Sleep(1 * time.Second)
+		tx1, success := awaitTxCommitted(t, tc, resp1.TxResponse.TxHash)
+		require.True(t, success)
+		require.Equal(t, types.CodeTypeOK, tx1.TxResponse.Code)
+
 		// Do it again so there are multiple executions
 		rawMsg = &wasmtypes.MsgExecuteContract{
 			Sender:   accounts[0].Address.String(),
@@ -238,9 +239,11 @@ func TestCosmosClient(t *testing.T) {
 		}
 		an, sn, err = tc.Account(accounts[0].Address)
 		require.NoError(t, err)
-		_, err = tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		resp2, err := tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err)
-		time.Sleep(1 * time.Second)
+		tx2, success := awaitTxCommitted(t, tc, resp2.TxResponse.TxHash)
+		require.True(t, success)
+		require.Equal(t, types.CodeTypeOK, tx2.TxResponse.Code)
 
 		// Observe changed contract state
 		count, err = tc.ContractState(
@@ -281,10 +284,10 @@ func TestCosmosClient(t *testing.T) {
 		assert.True(t, foundContract)
 
 		// Ensure the height filtering works
-		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", resp1.TxResponse.Height+1), "wasm.action='reset'", fmt.Sprintf("wasm._contract_address='%s'", contract.String())}, nil)
+		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height=%d", tx2.TxResponse.Height), "wasm.action='reset'", fmt.Sprintf("wasm._contract_address='%s'", contract.String())}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(ev.TxResponses))
-		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height=%d", resp1.TxResponse.Height), "wasm.action='reset'", fmt.Sprintf("wasm._contract_address='%s'", contract)}, nil)
+		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height=%d", tx1.TxResponse.Height), "wasm.action='reset'", fmt.Sprintf("wasm._contract_address='%s'", contract)}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(ev.TxResponses))
 		for _, ev := range ev.TxResponses[0].Logs[0].Events {
@@ -336,26 +339,23 @@ func TestCosmosClient(t *testing.T) {
 				t.Log("Gas price:", tt.gasPrice)
 				an, sn, err := tc.Account(accounts[0].Address)
 				require.NoError(t, err)
-				resp, err := tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, tt.gasPrice, accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+				resp, err := tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, tt.gasPrice, accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+				require.NotNil(t, resp)
+
 				if tt.expCode == 0 {
 					require.NoError(t, err)
+					tx, success := awaitTxCommitted(t, tc, resp.TxResponse.TxHash)
+					require.True(t, success)
+					require.Equal(t, types.CodeTypeOK, tx.TxResponse.Code)
+					require.Equal(t, "", tx.TxResponse.Codespace)
+					require.Equal(t, tt.expCode, tx.TxResponse.Code)
+					require.Equal(t, resp.TxResponse.TxHash, tx.TxResponse.TxHash)
+					t.Log("Fee:", tx.Tx.GetFee())
+					t.Log("Height:", tx.TxResponse.Height)
 				} else {
 					require.Error(t, err)
-				}
-				require.NotNil(t, resp)
-				if tt.expCode == 0 {
-					require.Equal(t, "", resp.TxResponse.Codespace)
-				} else {
 					require.Equal(t, expCodespace, resp.TxResponse.Codespace)
-				}
-				require.Equal(t, tt.expCode, resp.TxResponse.Code)
-				if tt.expCode == 0 {
-					time.Sleep(2 * time.Second)
-					txResp, err := tc.Tx(resp.TxResponse.TxHash)
-					require.NoError(t, err)
-					t.Log("Fee:", txResp.Tx.GetFee())
-					t.Log("Height:", txResp.TxResponse.Height)
-					require.Equal(t, resp.TxResponse.TxHash, txResp.TxResponse.TxHash)
+					require.Equal(t, tt.expCode, resp.TxResponse.Code)
 				}
 			})
 		}

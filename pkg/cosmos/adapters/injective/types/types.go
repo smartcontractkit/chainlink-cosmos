@@ -4,6 +4,7 @@ import (
 	fmt "fmt"
 	"strings"
 
+	errors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/gogo/protobuf/proto"
@@ -72,16 +73,16 @@ func (cfg *FeedConfig) ValidateBasic() error {
 	}
 
 	if cfg.ModuleParams == nil {
-		return sdkerrors.Wrap(ErrIncorrectConfig, "onchain config is not specified")
+		return errors.Wrap(ErrIncorrectConfig, "onchain config is not specified")
 	}
 
 	// TODO: determine whether this is a sensible enough limitation
 	if len(cfg.ModuleParams.FeedId) == 0 || len(cfg.ModuleParams.FeedId) > FeedIDMaxLength {
-		return sdkerrors.Wrap(ErrIncorrectConfig, "feed_id is missing or incorrect length")
+		return errors.Wrap(ErrIncorrectConfig, "feed_id is missing or incorrect length")
 	}
 
 	if strings.TrimSpace(cfg.ModuleParams.FeedId) != cfg.ModuleParams.FeedId {
-		return sdkerrors.Wrap(ErrIncorrectConfig, "feed_id cannot have leading or trailing space characters")
+		return errors.Wrap(ErrIncorrectConfig, "feed_id cannot have leading or trailing space characters")
 	}
 
 	if len(cfg.ModuleParams.FeedAdmin) > 0 {
@@ -97,15 +98,15 @@ func (cfg *FeedConfig) ValidateBasic() error {
 	}
 
 	if cfg.ModuleParams.MinAnswer.IsNil() || cfg.ModuleParams.MaxAnswer.IsNil() {
-		return sdkerrors.Wrap(ErrIncorrectConfig, "MinAnswer and MaxAnswer cannot be nil")
+		return errors.Wrap(ErrIncorrectConfig, "MinAnswer and MaxAnswer cannot be nil")
 	}
 
 	if cfg.ModuleParams.LinkPerTransmission.IsNil() || !cfg.ModuleParams.LinkPerTransmission.IsPositive() {
-		return sdkerrors.Wrap(ErrIncorrectConfig, "LinkPerTransmission must be positive")
+		return errors.Wrap(ErrIncorrectConfig, "LinkPerTransmission must be positive")
 	}
 
 	if cfg.ModuleParams.LinkPerObservation.IsNil() || !cfg.ModuleParams.LinkPerObservation.IsPositive() {
-		return sdkerrors.Wrap(ErrIncorrectConfig, "LinkPerObservation must be positive")
+		return errors.Wrap(ErrIncorrectConfig, "LinkPerObservation must be positive")
 	}
 
 	seenTransmitters := make(map[string]struct{}, len(cfg.Transmitters))
@@ -149,15 +150,15 @@ func checkConfigValid(
 	}
 
 	if f <= 0 {
-		return sdkerrors.Wrap(ErrIncorrectConfig, "f must be positive")
+		return errors.Wrap(ErrIncorrectConfig, "f must be positive")
 	}
 
 	if numSigners != numTransmitters {
-		return sdkerrors.Wrap(ErrIncorrectConfig, "oracle addresses out of registration")
+		return errors.Wrap(ErrIncorrectConfig, "oracle addresses out of registration")
 	}
 
 	if numSigners <= 3*f {
-		return sdkerrors.Wrapf(ErrIncorrectConfig, "faulty-oracle f too high: %d", f)
+		return errors.Wrapf(ErrIncorrectConfig, "faulty-oracle f too high: %d", f)
 	}
 
 	return nil
