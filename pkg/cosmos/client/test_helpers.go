@@ -220,7 +220,7 @@ func mustRandomPort() int {
 }
 
 // awaitTxCommitted waits for a transaction to be committed on chain and returns the tx receipt
-func awaitTxCommitted(t *testing.T, tc *Client, txHash string) (response *txtypes.GetTxResponse, success bool) {
+func AwaitTxCommitted(t *testing.T, tc *Client, txHash string) (response *txtypes.GetTxResponse, success bool) {
 	for i := 0; i < 10; i++ { // max poll attempts to wait for tx commitment
 		txReceipt, err := tc.Tx(txHash)
 		if err == nil {
