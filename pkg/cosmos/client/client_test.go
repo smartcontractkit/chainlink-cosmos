@@ -167,7 +167,7 @@ func TestCosmosClient(t *testing.T) {
 		require.NoError(t, err)
 		resp, err := tc.Broadcast(txBytes, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err)
-		tx, success := awaitTxCommitted(t, tc, resp.TxResponse.TxHash)
+		tx, success := AwaitTxCommitted(t, tc, resp.TxResponse.TxHash)
 		require.True(t, success)
 		require.Equal(t, types.CodeTypeOK, tx.TxResponse.Code)
 
@@ -227,7 +227,7 @@ func TestCosmosClient(t *testing.T) {
 		require.NoError(t, err)
 		resp1, err := tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err)
-		tx1, success := awaitTxCommitted(t, tc, resp1.TxResponse.TxHash)
+		tx1, success := AwaitTxCommitted(t, tc, resp1.TxResponse.TxHash)
 		require.True(t, success)
 		require.Equal(t, types.CodeTypeOK, tx1.TxResponse.Code)
 
@@ -242,7 +242,7 @@ func TestCosmosClient(t *testing.T) {
 		require.NoError(t, err)
 		resp2, err := tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err)
-		tx2, success := awaitTxCommitted(t, tc, resp2.TxResponse.TxHash)
+		tx2, success := AwaitTxCommitted(t, tc, resp2.TxResponse.TxHash)
 		require.True(t, success)
 		require.Equal(t, types.CodeTypeOK, tx2.TxResponse.Code)
 
@@ -345,7 +345,7 @@ func TestCosmosClient(t *testing.T) {
 
 				if tt.expCode == 0 {
 					require.NoError(t, err)
-					tx, success := awaitTxCommitted(t, tc, resp.TxResponse.TxHash)
+					tx, success := AwaitTxCommitted(t, tc, resp.TxResponse.TxHash)
 					require.True(t, success)
 					require.Equal(t, types.CodeTypeOK, tx.TxResponse.Code)
 					require.Equal(t, "", tx.TxResponse.Codespace)

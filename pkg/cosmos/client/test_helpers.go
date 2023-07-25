@@ -165,7 +165,7 @@ func DeployTestContract(t *testing.T, tendermintURL, chainID string, token strin
 	// wait for tx to be committed
 	txHash := gjson.Get(string(submitResp), "txhash")
 	require.True(t, txHash.Exists())
-	storeTx, success := awaitTxCommitted(t, tc, txHash.String())
+	storeTx, success := AwaitTxCommitted(t, tc, txHash.String())
 	require.True(t, success)
 
 	// get code id from tx receipt
@@ -188,7 +188,7 @@ func DeployTestContract(t *testing.T, tendermintURL, chainID string, token strin
 	require.NoError(t, err3)
 
 	// wait for tx to be committed
-	deployTxReceipt, success := awaitTxCommitted(t, tc, deployTx.TxResponse.TxHash)
+	deployTxReceipt, success := AwaitTxCommitted(t, tc, deployTx.TxResponse.TxHash)
 	require.True(t, success)
 
 	return GetContractAddr(t, deployTxReceipt.GetTxResponse())
@@ -219,7 +219,7 @@ func mustRandomPort() int {
 	return int(r.Int64() + 1024)
 }
 
-// awaitTxCommitted waits for a transaction to be committed on chain and returns the tx receipt
+// AwaitTxCommitted waits for a transaction to be committed on chain and returns the tx receipt
 func AwaitTxCommitted(t *testing.T, tc *Client, txHash string) (response *txtypes.GetTxResponse, success bool) {
 	for i := 0; i < 10; i++ { // max poll attempts to wait for tx commitment
 		txReceipt, err := tc.Tx(txHash)
