@@ -6,12 +6,10 @@ import { CATEGORIES } from '../../../lib/constants'
 import { getLatestOCRConfigEvent } from '../../../lib/inspection'
 import { serializeOffchainConfig, deserializeConfig, generateSecretWords } from '../../../lib/encoding'
 import { logger, diff, longs } from '@chainlink/gauntlet-core/dist/utils'
-import { encoding } from '@chainlink/gauntlet-contracts-ocr2'
+import { SetConfig, encoding, SetConfigInput } from '@chainlink/gauntlet-contracts-ocr2'
 
-export type CommandInput = {
+export interface CommandInput extends SetConfigInput {
   proposalId: string
-  offchainConfig: encoding.OffchainConfig
-  randomSecret?: string
 }
 
 export type ContractInput = {
@@ -20,18 +18,19 @@ export type ContractInput = {
   offchain_config: string
 }
 
-export const getOffchainConfigInput = (rdd: any, contract: string): encoding.OffchainConfig => {
+export const getSetConfigInputFromRDD = (
+  rdd: any,
+  contract: string,
+): { f: number; signers: string[]; transmitters: string[]; offchainConfig: encoding.OffchainConfig } => {
   const aggregator = rdd.contracts[contract]
   const config = aggregator.config
 
   const aggregatorOperators: any[] = aggregator.oracles.map((o) => rdd.operators[o.operator])
   const operatorsPublicKeys = aggregatorOperators.map((o) => o.ocr2OffchainPublicKey[0].replace('ocr2off_cosmos_', ''))
   const operatorsPeerIds = aggregatorOperators.map((o) => o.peerId[0])
-  const operatorConfigPublicKeys = aggregatorOperators.map((o) =>
-    o.ocr2ConfigPublicKey[0].replace('ocr2cfg_cosmos_', ''),
-  )
+  const operatorConfigPublicKeys = aggregatorOperators.map((o) => o.ocr2ConfigPublicKey[0])
 
-  const input: encoding.OffchainConfig = {
+  const offchainConfig: encoding.OffchainConfig = {
     deltaProgressNanoseconds: time.durationToNanoseconds(config.deltaProgress).toNumber(),
     deltaResendNanoseconds: time.durationToNanoseconds(config.deltaResend).toNumber(),
     deltaRoundNanoseconds: time.durationToNanoseconds(config.deltaRound).toNumber(),
@@ -59,7 +58,12 @@ export const getOffchainConfigInput = (rdd: any, contract: string): encoding.Off
       .toNumber(),
     configPublicKeys: operatorConfigPublicKeys,
   }
-  return input
+  return {
+    f: config.f,
+    signers: aggregatorOperators.map((o) => o.ocr2OnchainPublicKey[0]),
+    transmitters: aggregatorOperators.map((o) => o.ocrNodeAddress[0]),
+    offchainConfig,
+  }
 }
 
 export const prepareOffchainConfigForDiff = (config: encoding.OffchainConfig, extra?: Object): Object => {
@@ -77,15 +81,36 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     throw new Error('SECRET is not set in env!')
   }
 
-  const { rdd: rddPath, randomSecret } = flags
+  if (flags.rdd) {
+    const { rdd: rddPath, randomSecret } = flags
 
-  const rdd = RDD.getRDD(rddPath)
-  const contract = args[0]
+    const rdd = RDD.getRDD(rddPath)
+    const contract = args[0]
+    const { f, signers, transmitters, offchainConfig } = getSetConfigInputFromRDD(rdd, contract)
+
+    return {
+      proposalId: flags.proposalId,
+      f,
+      signers,
+      transmitters,
+      onchainConfig: [],
+      offchainConfig,
+      offchainConfigVersion: flags.offchainConfigVersion || 2,
+      secret: flags.secret || process.env.secret,
+      randomSecret: randomSecret || (await generateSecretWords()),
+    }
+  }
 
   return {
-    proposalId: flags.proposalId || flags.configProposal || flags.id, // -configProposal alias requested by eng ops
-    offchainConfig: getOffchainConfigInput(rdd, contract),
-    randomSecret: randomSecret || (await generateSecretWords()),
+    proposalId: flags.proposalId,
+    f: parseInt(flags.f),
+    signers: flags.signers,
+    transmitters: flags.transmitters,
+    onchainConfig: flags.onchainConfig,
+    offchainConfig: flags.offchainConfig,
+    offchainConfigVersion: parseInt(flags.offchainConfigVersion),
+    secret: flags.secret || process.env.secret,
+    randomSecret: flags.randomSecret || undefined,
   }
 }
 
@@ -117,20 +142,25 @@ const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context, inpu
 
   logger.info(
     `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
-    SECRET: ${input.user.randomSecret}`,
+    SECRET: ${input.user.secret}`,
   )
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
-  const { offchainConfig } = await serializeOffchainConfig(
-    input.offchainConfig,
-    process.env.SECRET!,
-    input.randomSecret,
+  input.offchainConfig.offchainPublicKeys = input.offchainConfig.offchainPublicKeys.map((k) =>
+    k.replace('ocr2off_cosmos_', ''),
   )
+  if (input.offchainConfig.configPublicKeys) {
+    input.offchainConfig.configPublicKeys = input.offchainConfig.configPublicKeys?.map((k) =>
+      k.replace('ocr2cfg_cosmos_', ''),
+    )
+  }
+
+  const { offchainConfig } = await serializeOffchainConfig(input.offchainConfig, input.secret, input.randomSecret)
 
   return {
     id: input.proposalId,
-    offchain_config_version: 2,
+    offchain_config_version: input.offchainConfigVersion,
     offchain_config: offchainConfig.toString('base64'),
   }
 }
@@ -139,10 +169,10 @@ const afterExecute: AfterExecute<CommandInput, ContractInput> = (_, input) => as
   logger.success(`Tx succeded at ${result.responses[0].tx.hash}`)
   logger.info(
     `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
-    SECRET: ${input.user.randomSecret}`,
+    SECRET: ${input.user.secret}`,
   )
   return {
-    secret: input.user.randomSecret,
+    secret: input.user.secret,
   }
 }
 

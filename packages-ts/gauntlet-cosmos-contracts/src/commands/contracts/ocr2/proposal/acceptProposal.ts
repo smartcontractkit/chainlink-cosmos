@@ -10,7 +10,7 @@ import {
   ValidateFn,
 } from '../../../abstract/executionWrapper'
 import { serializeOffchainConfig, deserializeConfig } from '../../../../lib/encoding'
-import { getOffchainConfigInput, prepareOffchainConfigForDiff } from '../proposeOffchainConfig'
+import { getSetConfigInputFromRDD, prepareOffchainConfigForDiff } from '../proposeOffchainConfig'
 import { getLatestOCRConfigEvent } from '../../../../lib/inspection'
 import assert from 'assert'
 
@@ -76,11 +76,12 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 
   const rdd = RDD.getRDD(rddPath)
   const contract = args[0]
+  const { offchainConfig } = getSetConfigInputFromRDD(rdd, contract)
 
   return {
     proposalId: flags.proposalId || flags.configProposal || flags.id, // --configProposal alias requested by eng ops
     digest: flags.digest,
-    offchainConfig: getOffchainConfigInput(rdd, contract),
+    offchainConfig,
     randomSecret: secret,
   }
 }

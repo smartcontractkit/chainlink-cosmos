@@ -1,15 +1,10 @@
 import { RDD } from '@chainlink/gauntlet-cosmos'
+import { DeployOCR2, DeployOCR2Input } from '@chainlink/gauntlet-contracts-ocr2'
 import { instructionToCommand, AbstractInstruction } from '../../abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
 
-type CommandInput = {
-  billingAccessController: string
+export interface CommandInput extends DeployOCR2Input {
   requesterAccessController: string
-  linkToken: string
-  decimals: number
-  description: string
-  maxAnswer: string
-  minAnswer: string
 }
 
 type ContractInput = {
@@ -24,18 +19,30 @@ type ContractInput = {
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const rdd = RDD.getRDD(flags.rdd)
-  const contract = args[0]
-  const aggregator = rdd.contracts[contract]
-  return {
-    maxAnswer: aggregator.maxSubmissionValue,
-    minAnswer: aggregator.minSubmissionValue,
-    decimals: aggregator.decimals,
-    description: aggregator.name,
-    billingAccessController: process.env.BILLING_ACCESS_CONTROLLER || '',
-    requesterAccessController: process.env.REQUESTER_ACCESS_CONTROLLER || '',
-    linkToken: process.env.LINK || '',
+  if (flags.rdd) {
+    const rdd = RDD.getRDD(flags.rdd)
+    const contract = args[0]
+    const aggregator = rdd.contracts[contract]
+    return {
+      maxAnswer: aggregator.maxSubmissionValue,
+      minAnswer: aggregator.minSubmissionValue,
+      decimals: aggregator.decimals,
+      description: aggregator.name,
+      billingAccessController: flags.billingAccessController || process.env.BILLING_ACCESS_CONTROLLER || '',
+      requesterAccessController: flags.requesterAccessController || process.env.REQUESTER_ACCESS_CONTROLLER || '',
+      linkToken: flags.link || process.env.LINK || '',
+    }
   }
+  flags.minSubmissionValue = parseInt(flags.minSubmissionValue)
+  flags.maxSubmissionValue = parseInt(flags.maxSubmissionValue)
+  flags.decimals = parseInt(flags.decimals)
+
+  return {
+    ...DeployOCR2.makeUserInput(flags as DeployOCR2Input, args, process.env),
+    billingAccessController: flags.billingAccessController || process.env.BILLING_ACCESS_CONTROLLER || '',
+    requesterAccessController: flags.requesterAccessController || process.env.REQUESTER_ACCESS_CONTROLLER || '',
+    linkToken: flags.link || process.env.LINK || '',
+  } as CommandInput
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
@@ -45,8 +52,8 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
     link_token: input.linkToken,
     decimals: input.decimals,
     description: input.description,
-    max_answer: input.maxAnswer,
-    min_answer: input.minAnswer,
+    max_answer: input.maxAnswer.toString(),
+    min_answer: input.minAnswer.toString(),
   }
 }
 

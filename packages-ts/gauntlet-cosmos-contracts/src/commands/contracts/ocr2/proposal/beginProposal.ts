@@ -30,8 +30,8 @@ const afterExecute = (context) => async (
   }
 
   try {
-    const proposalId = events.filter((element) => element.wasm[0].contract_address == context.contract)[0].wasm[0]
-      .proposal_id
+    const wasmEvent = events.filter(({ type }) => (type as any) == 'wasm')[0]
+    const proposalId = wasmEvent.attributes.find(({ key }) => key === 'proposal_id')?.value
 
     if (!proposalId) {
       throw new Error('ProposalId for the given contract does not exist inside events')

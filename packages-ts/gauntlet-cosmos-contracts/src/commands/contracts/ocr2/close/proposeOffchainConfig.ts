@@ -14,7 +14,13 @@ export const EMPTY_SECRET = 'EMPTY'
 
 const makeInput = async (flags): Promise<CommandInput> => {
   const defaultInput = {
+    f: 0,
+    signers: [],
+    transmitters: [],
+    onchainConfig: [],
     offchainConfig: makeEmptyOffchainConfig(),
+    offchainConfigVersion: 0,
+    secret: EMPTY_SECRET,
     randomSecret: EMPTY_SECRET,
   }
   if (flags.input) return { ...flags.input, ...defaultInput }
