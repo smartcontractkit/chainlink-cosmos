@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
@@ -22,6 +23,22 @@ type ErrMsgUnsupported struct {
 
 func (e *ErrMsgUnsupported) Error() string {
 	return fmt.Sprintf("unsupported message type %T: %s", e.Msg, e.Msg)
+}
+
+var initCosmosOnce sync.Once
+
+// initializing the SDK only once enables callers to instantiate
+// mulitple relayers. needed for BCF-2317
+func init() {
+	// TODO(BCI-915): Make this configurable and relayer-specific
+	// when doing so, core side will have to run each relayer in a LOOPP
+	initCosmosOnce.Do(
+		func() {
+			params.InitCosmosSdk(
+				/* bech32Prefix= */ "wasm",
+				/* token= */ "atom",
+			)
+		})
 }
 
 var _ relaytypes.Relayer = &Relayer{}
@@ -53,11 +70,7 @@ func (r *Relayer) Start(context.Context) error {
 	if r.chainSet == nil {
 		return errors.New("Cosmos unavailable")
 	}
-	// TODO(BCI-915): Make this configurable.
-	params.InitCosmosSdk(
-		/* bech32Prefix= */ "wasm",
-		/* token= */ "atom",
-	)
+
 	return nil
 }
 
