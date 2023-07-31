@@ -1,13 +1,11 @@
 import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { RDD } from '@chainlink/gauntlet-cosmos'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { SetBilling, SetBillingInput } from '@chainlink/gauntlet-contracts-ocr2'
 import { CATEGORIES } from '../../../lib/constants'
-import { CONTRACT_LIST } from '../../../lib/contracts'
 
-type CommandInput = {
+export interface CommandInput extends SetBillingInput {
   recommendedGasPriceMicro: string
-  observationPaymentGjuels: number
-  transmissionPaymentGjuels: number
 }
 
 type ContractInput = {
@@ -20,14 +18,22 @@ type ContractInput = {
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const rdd = RDD.getRDD(flags.rdd)
-  const contract = args[0]
-  const billingInfo = rdd.contracts[contract]?.billing
-  return {
-    observationPaymentGjuels: billingInfo.observationPaymentGjuels,
-    transmissionPaymentGjuels: billingInfo.transmissionPaymentGjuels,
-    recommendedGasPriceMicro: billingInfo.recommendedGasPriceMicro,
+
+  if (flags.rdd) {
+    const rdd = RDD.getRDD(flags.rdd)
+    const contract = args[0]
+    const billingInfo = rdd.contracts[contract]?.billing
+    return {
+      observationPaymentGjuels: billingInfo.observationPaymentGjuels,
+      transmissionPaymentGjuels: billingInfo.transmissionPaymentGjuels,
+      recommendedGasPriceMicro: billingInfo.recommendedGasPriceMicro,
+    } as CommandInput
   }
+
+  return {
+    ...SetBilling.makeUserInput(flags, args, process.env),
+    recommendedGasPriceMicro: flags.recommendedGasPriceMicro,
+  } as CommandInput
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {

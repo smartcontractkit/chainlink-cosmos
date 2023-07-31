@@ -5,7 +5,7 @@ import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { CATEGORIES, TOKEN_UNIT } from '../../../../lib/constants'
 import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
 import { deserializeConfig } from '../../../../lib/encoding'
-import { getOffchainConfigInput } from '../proposeOffchainConfig'
+import { getSetConfigInputFromRDD } from '../proposeOffchainConfig'
 import { getLatestOCRConfigEvent } from '../../../../lib/inspection'
 
 // Command input and expected info is the same here
@@ -38,6 +38,8 @@ const makeInput = async (flags: any, args: string[]): Promise<ContractExpectedIn
   const requesterAccessController = flags.requesterAccessController || process.env.REQUESTER_ACCESS_CONTROLLER
   const link = flags.link || process.env.LINK
 
+  const { offchainConfig } = getSetConfigInputFromRDD(rdd, contract)
+
   return {
     description: info.name,
     decimals: info.decimals,
@@ -50,7 +52,7 @@ const makeInput = async (flags: any, args: string[]): Promise<ContractExpectedIn
       recommendedGasPriceMicro: info.billing.recommendedGasPriceMicro,
       transmissionPaymentGjuels: info.billing.transmissionPaymentGjuels,
     },
-    offchainConfig: getOffchainConfigInput(rdd, contract),
+    offchainConfig,
   }
 }
 

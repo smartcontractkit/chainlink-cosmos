@@ -1,4 +1,3 @@
-import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress } from '@chainlink/gauntlet-cosmos'
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
@@ -34,6 +33,7 @@ const validateInput = (input: CommandInput): boolean => {
 }
 
 const deploy: AbstractInstruction<CommandInput, ContractInput> = {
+  examples: ['yarn gauntlet proxy_ocr2:deploy --network=<NETWORK> <OCR2_CONTRACT_ADDRESS>'],
   instruction: {
     category: CATEGORIES.PROXIES,
     contract: CONTRACT_LIST.PROXY_OCR_2,
