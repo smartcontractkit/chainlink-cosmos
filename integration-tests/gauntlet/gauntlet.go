@@ -2,7 +2,6 @@ package gauntlet
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 
@@ -135,16 +134,15 @@ func (cg *CosmosGauntlet) DeployLinkTokenContract() (string, error) {
 }
 
 func (cg *CosmosGauntlet) MintLinkToken(token, to, amount string) (string, error) {
-	// 	_, err := cg.G.ExecCommand([]string{"ERC20:mint", fmt.Sprintf("--account=%s", to), fmt.Sprintf("--amount=%s", amount), token}, *cg.options)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	cg.gr, err = cg.FetchGauntletJsonOutput()
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	return cg.gr.Responses[0].Contract, nil
-	return "", errors.New("TODO")
+	_, err := cg.G.ExecCommand([]string{"cw20_base:mint", fmt.Sprintf("--to=%s", to), fmt.Sprintf("--amount=%s", amount), token}, *cg.options)
+	if err != nil {
+		return "", err
+	}
+	cg.gr, err = cg.FetchGauntletJsonOutput()
+	if err != nil {
+		return "", err
+	}
+	return cg.gr.Responses[0].Contract, nil
 }
 
 func (cg *CosmosGauntlet) TransferToken(token, to, amount string) (string, error) {
@@ -184,7 +182,7 @@ func (cg *CosmosGauntlet) DeployAccessControllerContract() (string, error) {
 }
 
 func (cg *CosmosGauntlet) DeployOCR2ProxyContract(aggregator string) (string, error) {
-	_, err := cg.G.ExecCommand([]string{"proxy:deploy", fmt.Sprintf("--address=%s", aggregator)}, *cg.options)
+	_, err := cg.G.ExecCommand([]string{"proxy_ocr2:deploy", aggregator}, *cg.options)
 	if err != nil {
 		return "", err
 	}
@@ -195,8 +193,8 @@ func (cg *CosmosGauntlet) DeployOCR2ProxyContract(aggregator string) (string, er
 	return cg.gr.Responses[0].Contract, nil
 }
 
-func (cg *CosmosGauntlet) SetOCRBilling(observationPaymentGjuels int64, transmissionPaymentGjuels int64, ocrAddress string) (string, error) {
-	_, err := cg.G.ExecCommand([]string{"ocr2:set_billing", fmt.Sprintf("--observationPaymentGjuels=%d", observationPaymentGjuels), fmt.Sprintf("--transmissionPaymentGjuels=%d", transmissionPaymentGjuels), ocrAddress}, *cg.options)
+func (cg *CosmosGauntlet) SetOCRBilling(observationPaymentGjuels int64, transmissionPaymentGjuels int64, recommendedGasPriceMicro string, ocrAddress string) (string, error) {
+	_, err := cg.G.ExecCommand([]string{"ocr2:set_billing", fmt.Sprintf("--observationPaymentGjuels=%d", observationPaymentGjuels), fmt.Sprintf("--transmissionPaymentGjuels=%d", transmissionPaymentGjuels), fmt.Sprintf("--recommendedGasPriceMicro=%s", recommendedGasPriceMicro), ocrAddress}, *cg.options)
 	if err != nil {
 		return "", err
 	}
@@ -207,8 +205,21 @@ func (cg *CosmosGauntlet) SetOCRBilling(observationPaymentGjuels int64, transmis
 	return cg.gr.Responses[0].Contract, nil
 }
 
-func (cg *CosmosGauntlet) SetConfigDetails(cfg string, ocrAddress string) (string, error) {
-	_, err := cg.G.ExecCommand([]string{"ocr2:set_config", "--input=" + cfg, ocrAddress}, *cg.options)
+func (cg *CosmosGauntlet) BeginProposal(ocrAddress string) (string, error) {
+	_, err := cg.G.ExecCommand([]string{"ocr2:begin_proposal", ocrAddress}, *cg.options)
+	if err != nil {
+		return "", err
+	}
+	cg.gr, err = cg.FetchGauntletJsonOutput()
+	if err != nil {
+		return "", err
+	}
+	// TODO: return proposal id
+	return cg.gr.Responses[0].Contract, nil
+}
+
+func (cg *CosmosGauntlet) ProposeOffchainConfig(proposalId string, cfg string, ocrAddress string) (string, error) {
+	_, err := cg.G.ExecCommand([]string{"ocr2:propose_offchain_config", "--proposalId=" + proposalId, "--input=" + cfg, ocrAddress}, *cg.options)
 	if err != nil {
 		return "", err
 	}
