@@ -16,6 +16,7 @@ import (
 )
 
 func TestOCRBasic(t *testing.T) {
+	// Set up test
 	logger := common.GetTestLogger(t)
 	commonConfig := common.NewCommon()
 
@@ -31,24 +32,29 @@ func TestOCRBasic(t *testing.T) {
 	err = cg.SetupNetwork(commonConfig.NodeUrl, commonConfig.Mnemonic)
 	require.NoError(t, err, "Setting up gauntlet network should not fail")
 
-	// TODO: uncomment once we are ready to test rounds
-	// commonConfig.SetDefaultEnvironment(t)
+	commonConfig.SetDefaultEnvironment(t)
 
 	// TODO: fund nodes if necessary
 
-	// store the cw20_base contract so we have the token contract, and then deploy the LINK token.
+	// Upload contracts
 	_, err = cg.UploadContracts(nil)
-	require.NoError(t, err, "Could not upload cw20_base contract")
+	require.NoError(t, err, "Could not upload contracts")
 
+	// Deploy contracts
 	linkTokenAddress, err := cg.DeployLinkTokenContract()
 	require.NoError(t, err, "Could not deploy link token contract")
 	logger.Info().Str("address", linkTokenAddress).Msg("Deployed LINK token")
 	os.Setenv("LINK", linkTokenAddress)
 
-	accessControllerAddress, err := cg.DeployAccessControllerContract()
-	require.NoError(t, err, "Could not deploy access controller")
-	logger.Info().Str("address", accessControllerAddress).Msg("Deployed access controller")
-	os.Setenv("BILLING_ACCESS_CONTROLLER", accessControllerAddress)
+	billingAccessControllerAddress, err := cg.DeployAccessControllerContract()
+	require.NoError(t, err, "Could not deploy billing access controller")
+	logger.Info().Str("address", billingAccessControllerAddress).Msg("Deployed billing access controller")
+	os.Setenv("BILLING_ACCESS_CONTROLLER", billingAccessControllerAddress)
+
+	requesterAccessControllerAddress, err := cg.DeployAccessControllerContract()
+	require.NoError(t, err, "Could not deploy requester access controller")
+	logger.Info().Str("address", requesterAccessControllerAddress).Msg("Deployed requester access controller")
+	os.Setenv("REQUESTER_ACCESS_CONTROLLER", requesterAccessControllerAddress)
 
 	minSubmissionValue := int64(0)
 	maxSubmissionValue := int64(100000000000)
@@ -62,18 +68,23 @@ func TestOCRBasic(t *testing.T) {
 	require.NoError(t, err, "Could not deploy OCR2 proxy contract")
 	logger.Info().Str("address", ocrProxyAddress).Msg("Deployed OCR2 proxy contract")
 
-	_, err = cg.AddOCR2Access(ocrAddress, ocrProxyAddress)
-	require.NoError(t, err, "Could not add OCR2 access")
-	logger.Info().Msg("Added OCR2 access")
+	// TODO: is this step necessary?
+	// _, err = cg.AddOCR2Access(ocrAddress, ocrProxyAddress)
+	// require.NoError(t, err, "Could not add OCR2 access")
+	// logger.Info().Msg("Added OCR2 access")
 
+	// Mint LINK tokens to aggregator
 	_, err = cg.MintLinkToken(linkTokenAddress, ocrAddress, "100000000000000000000")
 	require.NoError(t, err, "Could not mint LINK token")
 
+	// Set OCR2 Billing
 	observationPaymentGjuels := int64(1)
 	transmissionPaymentGjuels := int64(1)
-	_, err = cg.SetOCRBilling(observationPaymentGjuels, transmissionPaymentGjuels, ocrAddress)
+	recommendedGasPriceMicro := "1"
+	_, err = cg.SetOCRBilling(observationPaymentGjuels, transmissionPaymentGjuels, recommendedGasPriceMicro, ocrAddress)
 	require.NoError(t, err, "Could not set OCR billing")
 
+	// OCR2 Config Proposal
 	chainlinkClient, err := common.NewChainlinkClient(commonConfig.Env, commonConfig.ChainName, commonConfig.ChainId, commonConfig.NodeUrl)
 	require.NoError(t, err, "Could not create chainlink client")
 
@@ -84,8 +95,11 @@ func TestOCRBasic(t *testing.T) {
 	parsedConfig, err = json.Marshal(cfg)
 	require.NoError(t, err, "Could not parse JSON config")
 
-	_, err = cg.SetConfigDetails(string(parsedConfig), ocrAddress)
-	require.NoError(t, err, "Could not set config details")
+	proposalId, err := cg.BeginProposal(ocrAddress)
+	require.NoError(t, err, "Could not begin proposal")
+
+	_, err = cg.ProposeOffchainConfig(proposalId, string(parsedConfig), ocrAddress)
+	require.NoError(t, err, "Could not propose config details")
 
 	//if !testState.Common.Testnet {
 	//testState.Devnet.AutoLoadState(testState.OCR2Client, testState.OCRAddr)

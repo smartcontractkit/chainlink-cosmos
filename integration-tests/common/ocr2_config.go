@@ -1,7 +1,5 @@
 package common
 
-// OCR2Config Default config for OCR2 for starknet
-// TODO: validate for cosmos
 type OCR2Config struct {
 	F                     int             `json:"f"`
 	Signers               []string        `json:"signers"`
