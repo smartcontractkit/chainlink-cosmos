@@ -32,11 +32,11 @@
   },
   "dependencies": {
     "@chainlink/gauntlet-core": "0.2.0",
-    "@cosmjs/cosmwasm-stargate": "^0.29.5",
-    "@cosmjs/encoding": "^0.29.5",
-    "@cosmjs/ledger-amino": "^0.29.5",
-    "@cosmjs/proto-signing": "^0.29.5",
-    "@cosmjs/stargate": "^0.29.5",
+    "@cosmjs/cosmwasm-stargate": "^0.31.0",
+    "@cosmjs/encoding": "^0.31.0",
+    "@cosmjs/ledger-amino": "^0.31.0",
+    "@cosmjs/proto-signing": "^0.31.0",
+    "@cosmjs/stargate": "^0.31.0",
     "@ledgerhq/hw-transport-node-hid": "^6.20.0"
   }
 }
