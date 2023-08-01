@@ -26,14 +26,12 @@ export const getLatestContractEvents = async (
   event: string,
   contract: AccAddress,
 ): Promise<Events> => {
-  let txs = await provider.searchTx({
-    tags: [
-      {
-        key: `${event}.contract_address`,
-        value: contract,
-      },
-    ],
-  }) // TODO: ORDER_BY_DESC
+  let txs = await provider.searchTx([
+    {
+      key: `${event}.contract_address`,
+      value: contract,
+    },
+  ]) // TODO: ORDER_BY_DESC
 
   if (txs.length === 0) return []
   const events = txs.map(({ events }) =>
