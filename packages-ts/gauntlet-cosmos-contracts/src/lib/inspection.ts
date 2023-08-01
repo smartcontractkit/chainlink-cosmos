@@ -16,7 +16,7 @@ export const getLatestOCRConfigEvent = async (provider: Client, contract: AccAdd
   const latestConfigDetails: any = await provider.queryContractSmart(contract, 'latest_config_details' as any)
   const setConfigTx = providerUtils.filterTxsByEvent(
     // TODO: there has to be a way to filter by tag for event then scan single block
-    await provider.searchTx({ height: latestConfigDetails.block_number }),
+    await provider.searchTx(`tx.height=${latestConfigDetails.block_number}`),
     'wasm-set_config',
   )
 
