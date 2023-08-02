@@ -1,6 +1,9 @@
 package cosmwasm
 
 import (
+	"math/big"
+	"time"
+
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
@@ -23,8 +26,8 @@ type LatestTransmissionDetails struct {
 	LatestConfigDigest types.ConfigDigest `json:"latest_config_digest"`
 	Epoch              uint32             `json:"epoch"`
 	Round              uint8              `json:"round"`
-	LatestAnswer       string             `json:"latest_answer"`
-	LatestTimestamp    int64              `json:"latest_timestamp"`
+	LatestAnswer       *big.Int           `json:"latest_answer"`
+	LatestTimestamp    time.Time          `json:"latest_timestamp"`
 }
 
 type LatestConfigDigestAndEpoch struct {

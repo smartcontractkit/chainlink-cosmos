@@ -26,34 +26,19 @@ const (
 	ChainBlockTimeSoak = "2s"
 )
 
-var (
-	observationSource = `
-			val [type="bridge" name="bridge-coinmetrics" requestData=<{"data": {"from":"LINK","to":"USD"}}>]
-			parse [type="jsonparse" path="result"]
-			val -> parse
-			`
-	juelsPerFeeCoinSource = `"""
-			sum  [type="sum" values=<[451000]> ]
-			sum
-			"""
-			`
-)
-
 type Common struct {
-	IsSoak                bool
-	P2PPort               string
-	ChainName             string
-	ChainId               string
-	NodeCount             int
-	TTL                   time.Duration
-	NodeUrl               string
-	Mnemonic              string
-	Account               string
-	ObservationSource     string
-	JuelsPerFeeCoinSource string
-	ClConfig              map[string]any
-	K8Config              *environment.Config
-	Env                   *environment.Environment
+	IsSoak    bool
+	P2PPort   string
+	ChainName string
+	ChainId   string
+	NodeCount int
+	TTL       time.Duration
+	NodeUrl   string
+	Mnemonic  string
+	Account   string
+	ClConfig  map[string]any
+	K8Config  *environment.Config
+	Env       *environment.Environment
 }
 
 // getEnv gets the environment variable if it exists and sets it for the remote runner
@@ -96,16 +81,14 @@ func getTTL() time.Duration {
 
 func NewCommon() *Common {
 	c := &Common{
-		IsSoak:                getEnv("SOAK") != "",
-		ChainName:             chainName,
-		ChainId:               chainID,
-		NodeCount:             getNodeCount(),
-		TTL:                   getTTL(),
-		NodeUrl:               getEnv("NODE_URL"),
-		Mnemonic:              getEnv("MNEMONIC"),
-		Account:               getEnv("ACCOUNT"),
-		ObservationSource:     observationSource,
-		JuelsPerFeeCoinSource: juelsPerFeeCoinSource,
+		IsSoak:    getEnv("SOAK") != "",
+		ChainName: chainName,
+		ChainId:   chainID,
+		NodeCount: getNodeCount(),
+		TTL:       getTTL(),
+		NodeUrl:   getEnv("NODE_URL"),
+		Mnemonic:  getEnv("MNEMONIC"),
+		Account:   getEnv("ACCOUNT"),
 	}
 	return c
 }
@@ -146,9 +129,13 @@ ListenAddresses = ['0.0.0.0:6690']
 		"replicas": c.NodeCount,
 		"toml":     baseTOML,
 	}
+	fmt.Println(c.ClConfig)
+	// replace this env with local docker
 	c.Env = environment.New(c.K8Config).
 		AddHelm(wasmd.New(nil)).
 		AddHelm(mockservercfg.New(nil)).
 		AddHelm(mockserver.New(nil)).
 		AddHelm(chainlink.New(0, c.ClConfig))
+
+	fmt.Println(c.Env)
 }

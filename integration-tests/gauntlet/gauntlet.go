@@ -23,20 +23,23 @@ type CosmosGauntlet struct {
 type GauntletResponse struct {
 	Responses []struct {
 		Tx struct {
-			Hash    string `json:"hash"`
-			Address string `json:"address"`
-			Status  string `json:"status"`
-			CodeId  int    `json:"codeId"`
-
-			Tx struct {
-				Address         string   `json:"address"`
-				Code            string   `json:"code"`
-				Result          []string `json:"result"`
-				TransactionHash string   `json:"transaction_hash"`
-			} `json:"tx"`
+			Logs            interface{} `json:"logs"`
+			Height          int         `json:"height"`
+			TransactionHash string      `json:"transactionHash"`
+			Events          []struct {
+				Type       string `json:"type"`
+				Attributes []struct {
+					Key   string `json:"key"`
+					Value string `json:"value"`
+				} `json:"attributes"`
+			} `json:"events"`
+			GasWanted int `json:"gasWanted"`
+			GasUsed   int `json:"gasUsed"`
+			CodeId    int `json:"codeId"` // only present in upload commands
 		} `json:"tx"`
 		Contract string `json:"contract"`
 	} `json:"responses"`
+	Data map[string]interface{} `json:"data"`
 }
 
 // NewCosmosGauntlet Creates a default gauntlet config
@@ -214,8 +217,7 @@ func (cg *CosmosGauntlet) BeginProposal(ocrAddress string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// TODO: return proposal id
-	return cg.gr.Responses[0].Contract, nil
+	return cg.gr.Data["proposalId"].(string), nil
 }
 
 func (cg *CosmosGauntlet) ProposeOffchainConfig(proposalId string, cfg string, ocrAddress string) (string, error) {

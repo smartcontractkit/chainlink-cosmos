@@ -129,18 +129,18 @@ func (cc *ContractCache) updateConfig(ctx context.Context) error {
 }
 
 func (cc *ContractCache) updateTransmission(ctx context.Context) error {
-	digest, epoch, round, latestAnswer, latestTimestamp, err := cc.reader.LatestTransmissionDetails(ctx)
+	res, err := cc.reader.LatestTransmissionDetails(ctx)
 	if err != nil {
 		return fmt.Errorf("fetch latest transmission: %w", err)
 	}
 	now := time.Now()
 	cc.transMu.Lock()
 	cc.transTS = now
-	cc.digest = digest
-	cc.epoch = epoch
-	cc.round = round
-	cc.latestAnswer = latestAnswer
-	cc.latestTimestamp = latestTimestamp
+	cc.digest = res.LatestConfigDigest
+	cc.epoch = res.Epoch
+	cc.round = res.Round
+	cc.latestAnswer = res.LatestAnswer
+	cc.latestTimestamp = res.LatestTimestamp
 	cc.transMu.Unlock()
 	cc.lggr.Infof("updated transmission details. [epoch %v, round %v, answer %v, ts %v]",
 		epoch, round, latestAnswer, latestTimestamp)

@@ -1,6 +1,8 @@
 package common
 
 import (
+	"fmt"
+
 	"github.com/smartcontractkit/chainlink-env/environment"
 	"github.com/smartcontractkit/chainlink/integration-tests/client"
 )
@@ -18,10 +20,12 @@ func NewChainlinkClient(env *environment.Environment, chainName string, chainId 
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(nodes)
 	nodeKeys, _, err := client.CreateNodeKeysBundle(nodes, chainName, chainId)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(nodeKeys)
 	for _, n := range nodes {
 		_, _, err = n.CreateCosmosChain(&client.CosmosChainAttributes{
 			ChainID: chainId,
@@ -47,23 +51,23 @@ func NewChainlinkClient(env *environment.Environment, chainName string, chainId 
 }
 
 func (cc *ChainlinkClient) LoadOCR2Config(accountAddresses []string) (*OCR2Config, error) {
-	var offChaiNKeys []string
-	var onChaiNKeys []string
+	var offChainKeys []string
+	var onChainKeys []string
 	var peerIds []string
 	var txKeys []string
 	var cfgKeys []string
 	for i, key := range cc.NodeKeys {
-		offChaiNKeys = append(offChaiNKeys, key.OCR2Key.Data.Attributes.OffChainPublicKey)
+		offChainKeys = append(offChainKeys, key.OCR2Key.Data.Attributes.OffChainPublicKey)
 		peerIds = append(peerIds, key.PeerID)
 		txKeys = append(txKeys, accountAddresses[i])
-		onChaiNKeys = append(onChaiNKeys, key.OCR2Key.Data.Attributes.OnChainPublicKey)
+		onChainKeys = append(onChainKeys, key.OCR2Key.Data.Attributes.OnChainPublicKey)
 		cfgKeys = append(cfgKeys, key.OCR2Key.Data.Attributes.ConfigPublicKey)
 	}
 
 	var payload = TestOCR2Config
-	payload.Signers = onChaiNKeys
+	payload.Signers = onChainKeys
 	payload.Transmitters = txKeys
-	payload.OffchainConfig.OffchainPublicKeys = offChaiNKeys
+	payload.OffchainConfig.OffchainPublicKeys = offChainKeys
 	payload.OffchainConfig.PeerIds = peerIds
 	payload.OffchainConfig.ConfigPublicKeys = cfgKeys
 	return &payload, nil

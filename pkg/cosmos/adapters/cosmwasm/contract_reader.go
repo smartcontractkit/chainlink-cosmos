@@ -8,7 +8,6 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
-	"time"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
@@ -219,11 +218,7 @@ func (e ErrAttrDupe) Error() string {
 
 // LatestTransmissionDetails fetches the latest transmission details from address state
 func (r *OCR2Reader) LatestTransmissionDetails(ctx context.Context) (
-	configDigest types.ConfigDigest,
-	epoch uint32,
-	round uint8,
-	latestAnswer *big.Int,
-	latestTimestamp time.Time,
+	transmissionDetails LatestTransmissionDetails,
 	err error,
 ) {
 	resp, err := r.chainReader.ContractState(r.address, []byte(`"latest_transmission_details"`))
@@ -242,28 +237,32 @@ func (r *OCR2Reader) LatestTransmissionDetails(ctx context.Context) (
 				if epoch != 0 {
 					r.lggr.Errorf("unexpected non-zero epoch %v and no transmissions found contract %v", epoch, r.address)
 				}
-				return digest, epoch, 0, big.NewInt(0), time.Unix(0, 0), nil
+				return LatestTransmissionDetails{
+					LatestConfigDigest: digest,
+					Epoch:              epoch,
+				}, nil
 			}
 			r.lggr.Errorf("error reading latest config digest and epoch err %v contract %v", err2, r.address)
 		}
 
 		// default response if there actually is an error
-		return types.ConfigDigest{}, 0, 0, big.NewInt(0), time.Now(), err
+		return LatestTransmissionDetails{}, err
 	}
 
 	// unmarshal
 	var details LatestTransmissionDetails
 	if err := json.Unmarshal(resp, &details); err != nil {
-		return types.ConfigDigest{}, 0, 0, big.NewInt(0), time.Now(), err
+		return LatestTransmissionDetails{}, err
 	}
 
 	// set answer big int
 	ans := new(big.Int)
 	if _, success := ans.SetString(details.LatestAnswer, 10); !success {
-		return types.ConfigDigest{}, 0, 0, big.NewInt(0), time.Now(), fmt.Errorf("Could not create *big.Int from %s", details.LatestAnswer)
+		return LatestTransmissionDetails{}, fmt.Errorf("Could not create *big.Int from %s", details.LatestAnswer)
 	}
+	details.LatestAnswer = ans
 
-	return details.LatestConfigDigest, details.Epoch, details.Round, ans, time.Unix(details.LatestTimestamp, 0), nil
+	return details, nil
 }
 
 // LatestRoundRequested fetches the latest round requested by filtering event logs

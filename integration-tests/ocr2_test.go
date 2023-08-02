@@ -18,8 +18,19 @@ import (
 func TestOCRBasic(t *testing.T) {
 	// Set up test
 	logger := common.GetTestLogger(t)
-	commonConfig := common.NewCommon()
+	t.Common := common.NewCommon()
+	t.Common.SetDefaultEnvironment(t)
+	t.Log(commonConfig.Env)
+	t.Log(commonConfig.Env.ChainlinkNodeDetails)
 
+	// Set up CL nodes
+	t.DeployCluster()
+	require.NoError(t, err, "Deploying cluster should not fail")
+	if testState.Common.Env.WillUseRemoteRunner() {
+		return // short circuit here if using a remote runner
+	}
+
+	// Set up gauntlet
 	gauntletWorkingDir := fmt.Sprintf("%s/", utils.ProjectRoot)
 	logger.Info().Str("working dir", gauntletWorkingDir).Msg("Initializing gauntlet")
 
@@ -31,8 +42,6 @@ func TestOCRBasic(t *testing.T) {
 
 	err = cg.SetupNetwork(commonConfig.NodeUrl, commonConfig.Mnemonic)
 	require.NoError(t, err, "Setting up gauntlet network should not fail")
-
-	commonConfig.SetDefaultEnvironment(t)
 
 	// TODO: fund nodes if necessary
 
