@@ -91,6 +91,10 @@ func (r *Relayer) NewMercuryProvider(rargs relaytypes.RelayArgs, pargs relaytype
 	return nil, errors.New("mercury is not supported for cosmos")
 }
 
+func (r *Relayer) NewFunctionsProvider(rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.FunctionsProvider, error) {
+	return nil, errors.New("functions are not supported for cosmos")
+}
+
 func (r *Relayer) NewConfigProvider(args relaytypes.RelayArgs) (relaytypes.ConfigProvider, error) {
 	configProvider, err := cosmwasm.NewConfigProvider(r.ctx, r.lggr, r.chainSet, args)
 	if err != nil {
