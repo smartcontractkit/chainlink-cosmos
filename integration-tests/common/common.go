@@ -24,6 +24,7 @@ const (
 	chainID            = "testing"
 	ChainBlockTime     = "200ms"
 	ChainBlockTimeSoak = "2s"
+	defaultNodeUrl     = "http://tendermint-rpc:26657"
 )
 
 var (
@@ -51,7 +52,7 @@ type Common struct {
 	Account               string
 	ObservationSource     string
 	JuelsPerFeeCoinSource string
-	ClConfig              map[string]any
+	ChainlinkConfig       string
 	K8Config              *environment.Config
 	Env                   *environment.Environment
 }
@@ -95,36 +96,11 @@ func getTTL() time.Duration {
 }
 
 func NewCommon() *Common {
-	c := &Common{
-		IsSoak:                getEnv("SOAK") != "",
-		ChainName:             chainName,
-		ChainId:               chainID,
-		NodeCount:             getNodeCount(),
-		TTL:                   getTTL(),
-		NodeUrl:               getEnv("NODE_URL"),
-		Mnemonic:              getEnv("MNEMONIC"),
-		Account:               getEnv("ACCOUNT"),
-		ObservationSource:     observationSource,
-		JuelsPerFeeCoinSource: juelsPerFeeCoinSource,
+	nodeUrl := getEnv("NODE_URL")
+	if nodeUrl == "" {
+		nodeUrl = defaultNodeUrl
 	}
-	return c
-}
-
-func (c *Common) SetDefaultEnvironment(t *testing.T) {
-	c.K8Config = &environment.Config{
-		NamespacePrefix: "cosmos-ocr",
-		TTL:             c.TTL,
-		Test:            t,
-	}
-	// These can be uncommented when toml configuration is supposrted for cosmos in the chainlink node
-	wasmdUrl := fmt.Sprintf("http://%s:%d", "tendermint-rpc", 26657)
-	//if c.Testnet {
-	//wasmdUrl = c.RPCUrl
-	//}
-	if c.NodeUrl != "" {
-		wasmdUrl = c.NodeUrl
-	}
-	baseTOML := fmt.Sprintf(`[[Cosmos]]
+	chainlinkConfig := fmt.Sprintf(`[[Cosmos]]
 Enabled = true
 ChainID = '%s'
 [[Cosmos.Nodes]]
@@ -140,15 +116,36 @@ Enabled = true
 DeltaDial = '5s'
 DeltaReconcile = '5s'
 ListenAddresses = ['0.0.0.0:6690']
-`, c.ChainId, wasmdUrl)
-	log.Debug().Str("toml", baseTOML).Msg("TOML")
-	c.ClConfig = map[string]any{
-		"replicas": c.NodeCount,
-		"toml":     baseTOML,
+`, chainID, nodeUrl)
+	log.Debug().Str("toml", chainlinkConfig).Msg("Created chainlink config")
+	c := &Common{
+		IsSoak:                getEnv("SOAK") != "",
+		ChainName:             chainName,
+		ChainId:               chainID,
+		NodeCount:             getNodeCount(),
+		TTL:                   getTTL(),
+		NodeUrl:               nodeUrl,
+		Mnemonic:              getEnv("MNEMONIC"),
+		Account:               getEnv("ACCOUNT"),
+		ObservationSource:     observationSource,
+		JuelsPerFeeCoinSource: juelsPerFeeCoinSource,
+		ChainlinkConfig:       chainlinkConfig,
+	}
+	return c
+}
+
+func (c *Common) SetDefaultEnvironment(t *testing.T) {
+	c.K8Config = &environment.Config{
+		NamespacePrefix: "cosmos-ocr",
+		TTL:             c.TTL,
+		Test:            t,
 	}
 	c.Env = environment.New(c.K8Config).
 		AddHelm(wasmd.New(nil)).
 		AddHelm(mockservercfg.New(nil)).
 		AddHelm(mockserver.New(nil)).
-		AddHelm(chainlink.New(0, c.ClConfig))
+		AddHelm(chainlink.New(0, map[string]any{
+			"replicas": c.NodeCount,
+			"toml":     c.ChainlinkConfig,
+		}))
 }
