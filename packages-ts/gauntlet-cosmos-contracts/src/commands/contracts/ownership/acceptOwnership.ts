@@ -2,6 +2,7 @@ import { AbstractInstruction, BeforeExecute } from '../../abstract/executionWrap
 import { RDD, logger, AccAddress } from '@chainlink/gauntlet-cosmos'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'
+import { RDDContract } from '@chainlink/gauntlet-cosmos/dist/lib/rdd'
 
 type CommandInput = {}
 
@@ -13,9 +14,13 @@ const validateInput = (input: CommandInput): boolean => true
 
 const beforeExecute: BeforeExecute<CommandInput, ContractInput> = (context) => async (signer) => {
   const currentOwner: AccAddress = await context.provider.queryContractSmart(context.contract, 'owner' as any)
-  const contract = RDD.getContractFromRDD(RDD.getRDD(context.flags.rdd), context.contract)
-  logger.info(`Accepting Ownership Transfer of contract of type "${contract.type}":
-    - Contract: ${logger.styleAddress(contract.address)} ${contract.description ? '- ' + contract.description : ''}
+  let contract: RDDContract | null = null
+  if (context.flags.rdd) {
+    contract = RDD.getContractFromRDD(RDD.getRDD(context.flags.rdd), context.contract)
+  }
+
+  logger.info(`Accepting Ownership Transfer of contract" ${contract ? ' of type' + contract.type : ''}":
+    - Contract: ${logger.styleAddress(context.contract)} ${contract?.description ? '- ' + contract.description : ''}
     - Current Owner: ${logger.styleAddress(currentOwner)}
     - Next Owner (Current signer): ${logger.styleAddress(signer)}
   `)

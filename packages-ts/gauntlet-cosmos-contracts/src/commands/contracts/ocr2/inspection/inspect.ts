@@ -29,30 +29,48 @@ type ContractExpectedInfo = {
 
 const makeInput = async (flags: any, args: string[]): Promise<ContractExpectedInfo> => {
   if (flags.input) return flags.input as ContractExpectedInfo
-  const rdd = RDD.getRDD(flags.rdd)
-  const contract = args[0]
-  const info = rdd.contracts[contract]
-  const aggregatorOperators: string[] = info.oracles.map((o) => o.operator)
-  const transmitters = aggregatorOperators.map((o) => rdd.operators[o].ocrNodeAddress[0])
-  const billingAccessController = flags.billingAccessController || process.env.BILLING_ACCESS_CONTROLLER
-  const requesterAccessController = flags.requesterAccessController || process.env.REQUESTER_ACCESS_CONTROLLER
-  const link = flags.link || process.env.LINK
 
-  const { offchainConfig } = getSetConfigInputFromRDD(rdd, contract)
+  if (flags.rdd) {
+    const rdd = RDD.getRDD(flags.rdd)
+    const contract = args[0]
+    const info = rdd.contracts[contract]
+    const aggregatorOperators: string[] = info.oracles.map((o) => o.operator)
+    const transmitters = aggregatorOperators.map((o) => rdd.operators[o].ocrNodeAddress[0])
+    const billingAccessController = flags.billingAccessController || process.env.BILLING_ACCESS_CONTROLLER
+    const requesterAccessController = flags.requesterAccessController || process.env.REQUESTER_ACCESS_CONTROLLER
+    const link = flags.link || process.env.LINK
+
+    const { offchainConfig } = getSetConfigInputFromRDD(rdd, contract)
+
+    return {
+      description: info.name,
+      decimals: info.decimals,
+      transmitters,
+      billingAccessController,
+      requesterAccessController,
+      link,
+      billing: {
+        observationPaymentGjuels: info.billing.observationPaymentGjuels,
+        recommendedGasPriceMicro: info.billing.recommendedGasPriceMicro,
+        transmissionPaymentGjuels: info.billing.transmissionPaymentGjuels,
+      },
+      offchainConfig,
+    }
+  }
 
   return {
-    description: info.name,
-    decimals: info.decimals,
-    transmitters,
-    billingAccessController,
-    requesterAccessController,
-    link,
+    description: flags.name,
+    decimals: flags.decimals,
+    transmitters: flags.transmitters,
+    billingAccessController: flags.billingAccessController || process.env.BILLING_ACCESS_CONTROLLER,
+    requesterAccessController: flags.requesterAccessController || process.env.REQUESTER_ACCESS_CONTROLLER,
+    link: flags.link || process.env.LINK,
     billing: {
-      observationPaymentGjuels: info.billing.observationPaymentGjuels,
-      recommendedGasPriceMicro: info.billing.recommendedGasPriceMicro,
-      transmissionPaymentGjuels: info.billing.transmissionPaymentGjuels,
+      observationPaymentGjuels: flags.observationPaymentGjuels,
+      recommendedGasPriceMicro: flags.recommendedGasPriceMicro,
+      transmissionPaymentGjuels: flags.transmissionPaymentGjuels,
     },
-    offchainConfig,
+    offchainConfig: <encoding.OffchainConfig>{}, //TODO: is this required?
   }
 }
 
