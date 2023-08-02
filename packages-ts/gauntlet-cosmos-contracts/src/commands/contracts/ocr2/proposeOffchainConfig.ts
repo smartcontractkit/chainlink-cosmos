@@ -26,7 +26,7 @@ export const getSetConfigInputFromRDD = (
   const config = aggregator.config
 
   const aggregatorOperators: any[] = aggregator.oracles.map((o) => rdd.operators[o.operator])
-  const operatorsPublicKeys = aggregatorOperators.map((o) => o.ocr2OffchainPublicKey[0].replace('ocr2off_cosmos_', ''))
+  const operatorsPublicKeys = aggregatorOperators.map((o) => o.ocr2OffchainPublicKey[0])
   const operatorsPeerIds = aggregatorOperators.map((o) => o.peerId[0])
   const operatorConfigPublicKeys = aggregatorOperators.map((o) => o.ocr2ConfigPublicKey[0])
 
@@ -89,7 +89,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     const { f, signers, transmitters, offchainConfig } = getSetConfigInputFromRDD(rdd, contract)
 
     return {
-      proposalId: flags.proposalId,
+      proposalId: flags.proposalId || flags.configProposal || flags.id, // -configProposal alias requested by eng ops
       f,
       signers,
       transmitters,
@@ -102,7 +102,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   }
 
   return {
-    proposalId: flags.proposalId,
+    proposalId: flags.proposalId || flags.configProposal || flags.id, // -configProposal alias requested by eng ops
     f: parseInt(flags.f),
     signers: flags.signers,
     transmitters: flags.transmitters,

@@ -74,9 +74,14 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     throw new Error('SECRET is not set in env!')
   }
 
-  const rdd = RDD.getRDD(rddPath)
-  const contract = args[0]
-  const { offchainConfig } = getSetConfigInputFromRDD(rdd, contract)
+  let offchainConfig = flags.offchainConfig
+
+  if (rddPath) {
+    const rdd = RDD.getRDD(rddPath)
+    const contract = args[0]
+    const { offchainConfig: offchainConfigRDD } = getSetConfigInputFromRDD(rdd, contract)
+    offchainConfig = offchainConfigRDD
+  }
 
   return {
     proposalId: flags.proposalId || flags.configProposal || flags.id, // --configProposal alias requested by eng ops

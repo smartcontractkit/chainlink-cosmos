@@ -24,15 +24,24 @@ type ContractExpectedInfo = {
 
 const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const rdd = RDD.getRDD(flags.rdd)
-  const contract = args[0]
-  const info = rdd.proxies[contract]
-  const decimals = rdd.contracts[rdd.proxies[contract].aggregator].decimals
+
+  if (flags.rdd) {
+    const rdd = RDD.getRDD(flags.rdd)
+    const contract = args[0]
+    const info = rdd.proxies[contract]
+    const decimals = rdd.contracts[rdd.proxies[contract].aggregator].decimals
+
+    return {
+      aggregator: info.aggregator,
+      description: info.name,
+      decimals,
+    }
+  }
 
   return {
-    aggregator: info.aggregator,
-    description: info.name,
-    decimals,
+    aggregator: args[0],
+    description: flags.description || '',
+    decimals: flags.decimals || '',
   }
 }
 

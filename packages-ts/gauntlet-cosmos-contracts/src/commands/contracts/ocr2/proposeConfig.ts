@@ -26,22 +26,31 @@ export type ContractInput = {
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
 
-  const { rdd: rddPath } = flags
-
-  const rdd = RDD.getRDD(rddPath)
-  const contract = args[0]
-  const aggregator = rdd.contracts[contract]
-  const aggregatorOperators: any[] = aggregator.oracles.map((o) => rdd.operators[o.operator])
-  const signers = aggregatorOperators.map((o) => o.ocr2OnchainPublicKey[0].replace('ocr2on_cosmos_', ''))
-  const transmitters = aggregatorOperators.map((o) => o.ocrNodeAddress[0])
-  const payees = aggregatorOperators.map((o) => o.adminAddress)
+  if (flags.rdd) {
+    const { rdd: rddPath } = flags
+    const rdd = RDD.getRDD(rddPath)
+    const contract = args[0]
+    const aggregator = rdd.contracts[contract]
+    const aggregatorOperators: any[] = aggregator.oracles.map((o) => rdd.operators[o.operator])
+    const signers = aggregatorOperators.map((o) => o.ocr2OnchainPublicKey[0].replace('ocr2on_cosmos_', ''))
+    const transmitters = aggregatorOperators.map((o) => o.ocrNodeAddress[0])
+    const payees = aggregatorOperators.map((o) => o.adminAddress)
+    return {
+      f: aggregator.config.f,
+      proposalId: flags.proposalId || flags.configProposal || flags.id, // -configProposal alias requested by eng ops
+      signers,
+      transmitters,
+      payees,
+      onchainConfig: '',
+    }
+  }
 
   return {
-    f: aggregator.config.f,
-    proposalId: flags.proposalId || flags.configProposal || flags.id, // -configProposal alias requested by eng ops
-    signers,
-    transmitters,
-    payees,
+    f: parseInt(flags.f),
+    proposalId: flags.proposalId,
+    signers: flags.signers,
+    transmitters: flags.transmitters,
+    payees: flags.payees,
     onchainConfig: '',
   }
 }

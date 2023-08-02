@@ -38,25 +38,45 @@ type NewTransmissionEventData = {
 
 const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const rdd = RDD.getRDD(flags.rdd)
-  const operators = rdd.operators
-  const aggregatorProps = rdd.contracts[args[0]]
-  const oracles = aggregatorProps['oracles']
-  const aggregatorOperators: string[] = oracles.map((o) => o.operator)
-  const transmitters = aggregatorOperators.map((o) => rdd.operators[o].ocrNodeAddress[0])
 
-  const aggregatorOracles = oracles.map((o) => {
+  if (flags.rdd) {
+    const rdd = RDD.getRDD(flags.rdd)
+    const aggregatorProps = rdd.contracts[args[0]]
+    const oracles = aggregatorProps['oracles']
+    const aggregatorOperators: string[] = oracles.map((o) => o.operator)
+    const transmitters = aggregatorOperators.map((o) => rdd.operators[o].ocrNodeAddress[0])
+
+    const aggregatorOracles = oracles.map((o) => {
+      return {
+        transmitter: rdd.operators[o.operator].ocrNodeAddress[0],
+        name: o.operator,
+        apis: o.api,
+      }
+    })
+
     return {
-      transmitter: operators[o.operator].ocrNodeAddress[0],
-      name: o.operator,
-      apis: o.api,
+      transmitters,
+      description: aggregatorProps.name,
+      aggregatorOracles,
+    }
+  }
+
+  if ((flags.operators.length != flags.apis.length) != flags.transmitters.length) {
+    throw Error("The number of operators, transmitters and apis don't match")
+  }
+
+  const aggregatorOracles = flags.transmitters.map((transmitter, i) => {
+    return {
+      transmitter,
+      name: flags.operators[i],
+      apis: flags.apis[i],
     }
   })
 
   return {
-    transmitters,
-    description: aggregatorProps.name,
-    aggregatorOracles,
+    transmitters: flags.transmitters,
+    description: flags.name,
+    aggregatorOracles: aggregatorOracles,
   }
 }
 
