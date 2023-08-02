@@ -6,7 +6,6 @@ genesis_account="wasm1lsagfzrm4gz28he4wunt63sts5xzmczwda8vl6"
 
 set -euo pipefail
 
-# Clean up first
 bash "$(dirname -- "$0")/wasmd-down.sh"
 
 echo "Starting wasmd container"
