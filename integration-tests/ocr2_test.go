@@ -32,7 +32,7 @@ func TestOCRBasic(t *testing.T) {
 	err = cg.SetupNetwork(commonConfig.NodeUrl, commonConfig.Mnemonic)
 	require.NoError(t, err, "Setting up gauntlet network should not fail")
 
-	commonConfig.SetDefaultEnvironment(t)
+	commonConfig.SetK8sEnvironment(t)
 
 	// TODO: fund nodes if necessary
 

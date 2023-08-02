@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+
 	"github.com/smartcontractkit/chainlink-env/environment"
 	"github.com/smartcontractkit/chainlink-env/pkg/alias"
 	"github.com/smartcontractkit/chainlink-env/pkg/helm/chainlink"
@@ -53,7 +54,7 @@ type Common struct {
 	ObservationSource     string
 	JuelsPerFeeCoinSource string
 	ChainlinkConfig       string
-	K8Config              *environment.Config
+	K8sConfig             *environment.Config
 	Env                   *environment.Environment
 }
 
@@ -134,13 +135,13 @@ ListenAddresses = ['0.0.0.0:6690']
 	return c
 }
 
-func (c *Common) SetDefaultEnvironment(t *testing.T) {
-	c.K8Config = &environment.Config{
+func (c *Common) SetK8sEnvironment(t *testing.T) {
+	c.K8sConfig = &environment.Config{
 		NamespacePrefix: "cosmos-ocr",
 		TTL:             c.TTL,
 		Test:            t,
 	}
-	c.Env = environment.New(c.K8Config).
+	c.Env = environment.New(c.K8sConfig).
 		AddHelm(wasmd.New(nil)).
 		AddHelm(mockservercfg.New(nil)).
 		AddHelm(mockserver.New(nil)).
