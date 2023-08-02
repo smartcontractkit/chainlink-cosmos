@@ -1,6 +1,8 @@
 package common
 
 import (
+	"errors"
+
 	"github.com/smartcontractkit/chainlink-env/environment"
 	"github.com/smartcontractkit/chainlink/integration-tests/client"
 )
@@ -18,9 +20,15 @@ func NewChainlinkClient(env *environment.Environment, chainName string, chainId 
 	if err != nil {
 		return nil, err
 	}
+	if nodes == nil || len(nodes) == 0 {
+		return nil, errors.New("No connected nodes")
+	}
 	nodeKeys, _, err := client.CreateNodeKeysBundle(nodes, chainName, chainId)
 	if err != nil {
 		return nil, err
+	}
+	if nodeKeys == nil || len(nodeKeys) == 0 {
+		return nil, errors.New("No node keys")
 	}
 	for _, n := range nodes {
 		_, _, err = n.CreateCosmosChain(&client.CosmosChainAttributes{
