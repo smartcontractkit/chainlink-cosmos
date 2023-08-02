@@ -18,7 +18,7 @@ import (
 func TestOCRBasic(t *testing.T) {
 	// Set up test
 	logger := common.GetTestLogger(t)
-	commonConfig := common.NewCommon()
+	commonConfig := common.NewCommon(t)
 
 	gauntletWorkingDir := fmt.Sprintf("%s/", utils.ProjectRoot)
 	logger.Info().Str("working dir", gauntletWorkingDir).Msg("Initializing gauntlet")
@@ -32,7 +32,7 @@ func TestOCRBasic(t *testing.T) {
 	err = cg.SetupNetwork(commonConfig.NodeUrl, commonConfig.Mnemonic)
 	require.NoError(t, err, "Setting up gauntlet network should not fail")
 
-	commonConfig.SetK8sEnvironment(t)
+	commonConfig.SetLocalEnvironment()
 
 	// TODO: fund nodes if necessary
 

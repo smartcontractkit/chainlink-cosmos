@@ -21,7 +21,7 @@ import (
 // TODO: those should be moved as a common part of chainlink-testing-framework
 
 const (
-	chainName          = "wasmd"
+	chainName          = "cosmos"
 	chainID            = "testing"
 	ChainBlockTime     = "200ms"
 	ChainBlockTimeSoak = "2s"
@@ -54,7 +54,6 @@ type Common struct {
 	ObservationSource     string
 	JuelsPerFeeCoinSource string
 	ChainlinkConfig       string
-	K8sConfig             *environment.Config
 	Env                   *environment.Environment
 }
 
@@ -96,7 +95,7 @@ func getTTL() time.Duration {
 	return t
 }
 
-func NewCommon() *Common {
+func NewCommon(t *testing.T) *Common {
 	nodeUrl := getEnv("NODE_URL")
 	if nodeUrl == "" {
 		nodeUrl = defaultNodeUrl
@@ -119,6 +118,14 @@ DeltaReconcile = '5s'
 ListenAddresses = ['0.0.0.0:6690']
 `, chainID, nodeUrl)
 	log.Debug().Str("toml", chainlinkConfig).Msg("Created chainlink config")
+
+	ttl := getTTL()
+
+	envConfig := &environment.Config{
+		NamespacePrefix: "cosmos-ocr",
+		TTL:             ttl,
+		Test:            t,
+	}
 	c := &Common{
 		IsSoak:                getEnv("SOAK") != "",
 		ChainName:             chainName,
@@ -131,18 +138,24 @@ ListenAddresses = ['0.0.0.0:6690']
 		ObservationSource:     observationSource,
 		JuelsPerFeeCoinSource: juelsPerFeeCoinSource,
 		ChainlinkConfig:       chainlinkConfig,
+		Env:                   environment.New(envConfig),
 	}
 	return c
 }
 
-func (c *Common) SetK8sEnvironment(t *testing.T) {
-	c.K8sConfig = &environment.Config{
-		NamespacePrefix: "cosmos-ocr",
-		TTL:             c.TTL,
-		Test:            t,
+func (c *Common) SetLocalEnvironment() {
+	c.Env.ChainlinkNodeDetails = []*environment.ChainlinkNodeDetail{
+		&environment.ChainlinkNodeDetail{
+			ChartName:  "unused",
+			PodName:    "unused",
+			LocalIP:    "http://127.0.0.1:6688",
+			InternalIP: "postgresql://postgres@172.17.0.1:35432/cosmos_test?sslmode=disable",
+		},
 	}
-	c.Env = environment.New(c.K8sConfig).
-		AddHelm(wasmd.New(nil)).
+}
+
+func (c *Common) SetK8sEnvironment() {
+	c.Env.AddHelm(wasmd.New(nil)).
 		AddHelm(mockservercfg.New(nil)).
 		AddHelm(mockserver.New(nil)).
 		AddHelm(chainlink.New(0, map[string]any{
