@@ -27,20 +27,6 @@ func (e *ErrMsgUnsupported) Error() string {
 
 var initCosmosOnce sync.Once
 
-// initializing the SDK only once enables callers to instantiate
-// mulitple relayers. needed for BCF-2317
-func init() {
-	// TODO(BCI-915): Make this configurable and relayer-specific
-	// when doing so, core side will have to run each relayer in a LOOPP
-	initCosmosOnce.Do(
-		func() {
-			params.InitCosmosSdk(
-				/* bech32Prefix= */ "wasm",
-				/* token= */ "atom",
-			)
-		})
-}
-
 var _ relaytypes.Relayer = &Relayer{}
 
 type Relayer struct {
@@ -70,6 +56,19 @@ func (r *Relayer) Start(context.Context) error {
 	if r.chainSet == nil {
 		return errors.New("Cosmos unavailable")
 	}
+
+	// initializing the SDK only once enables callers to instantiate
+	// mulitple relayers. needed for BCF-2317. Note that this is buried in
+	// Start to prevent conflicts with other tests
+	// TODO(BCI-915): Make this configurable and relayer-specific
+	// when doing so, core side will have to run each relayer in a LOOPP
+	initCosmosOnce.Do(
+		func() {
+			params.InitCosmosSdk(
+				/* bech32Prefix= */ "wasm",
+				/* token= */ "atom",
+			)
+		})
 
 	return nil
 }
