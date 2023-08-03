@@ -83,10 +83,8 @@ func TestOCRBasic(t *testing.T) {
 	proposalId, err := cg.BeginProposal(ocrAddress)
 	require.NoError(t, err, "Could not begin proposal")
 
-	cfg, err := chainlinkClient.LoadOCR2Config()
+	cfg, err := chainlinkClient.LoadOCR2Config(proposalId, []string{commonConfig.Account})
 	require.NoError(t, err, "Could not load OCR2 config")
-	cfg.ProposalId = proposalId
-	cfg.Payees = cfg.Transmitters // Set payees to same addresses as transmitters
 
 	var parsedConfig []byte
 	parsedConfig, err = json.Marshal(cfg)
@@ -128,9 +126,9 @@ func TestOCRBasic(t *testing.T) {
 	//err = testState.ValidateRounds(10, false)
 	//require.NoError(t, err, "Validating round should not fail")
 
-	// t.Cleanup(func() {
-	// 	// err = actions.TeardownSuite(t, commonConfig.Env, "./", nil, nil, zapcore.DPanicLevel, nil)
-	// 	err = actions.TeardownSuite(t, t.Common.Env, utils.ProjectRoot, t.Cc.ChainlinkNodes, nil, zapcore.ErrorLevel)
-	// 	require.NoError(t, err, "Error tearing down environment")
-	// })
+	t.Cleanup(func() {
+		err = actions.TeardownSuite(t, commonConfig.Env, "./", nil, nil, zapcore.DPanicLevel, nil)
+		//err = actions.TeardownSuite(t, t.Common.Env, utils.ProjectRoot, t.Cc.ChainlinkNodes, nil, zapcore.ErrorLevel)
+		require.NoError(t, err, "Error tearing down environment")
+	})
 }
