@@ -2,6 +2,7 @@ package params
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -40,7 +41,14 @@ func makeEncodingConfig() encodingConfig {
 // TODO: import as params.MakeEncoding config
 var config = makeEncodingConfig()
 
+var initOnce sync.Once
+
+// Initialize the cosmos sdk at most one time
 func InitCosmosSdk(bech32Prefix, token string) {
+	initOnce.Do(func() { initCosmosSdk(bech32Prefix, token) })
+}
+
+func initCosmosSdk(bech32Prefix, token string) {
 	// copied from wasmd https://github.com/CosmWasm/wasmd/blob/88e01a98ab8a87b98dc26c03715e6aef5c92781b/app/app.go#L163-L174
 	// NOTE: Bech32 is configured globally, blocked on https://github.com/cosmos/cosmos-sdk/issues/13140
 	var (
