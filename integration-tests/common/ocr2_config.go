@@ -1,6 +1,7 @@
 package common
 
 type OCR2Config struct {
+	ProposalId            string          `json:"proposalId"`
 	F                     int             `json:"f"`
 	Signers               []string        `json:"signers"`
 	Transmitters          []string        `json:"transmitters"`
@@ -38,6 +39,7 @@ type ReportingPluginConfig struct {
 }
 
 var TestOCR2Config = OCR2Config{
+	// ProposalId:       proposalId, // user defined
 	F: 1,
 	// Signers:       onChainKeys, // user defined
 	// Transmitters:  txKeys, // user defined
