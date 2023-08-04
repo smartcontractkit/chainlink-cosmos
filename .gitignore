@@ -25,3 +25,5 @@ integration-tests/smoke/logs
 integration-tests/soak/logs
 tmp-manifest-*
 artifacts
+.local-mock-server
+
