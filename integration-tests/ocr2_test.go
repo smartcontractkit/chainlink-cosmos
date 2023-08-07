@@ -116,6 +116,16 @@ func TestOCRBasic(t *testing.T) {
 	_, err = cg.AcceptProposal(string(parsedInput), ocrAddress)
 	require.NoError(t, err, "Could not accept proposed config")
 
+	p2pPort := "6690"
+	chainlinkClient.CreateJobsForContract(
+		commonConfig.ChainId,
+		p2pPort,
+		commonConfig.MockUrl,
+		commonConfig.ObservationSource,
+		commonConfig.JuelsPerFeeCoinSource,
+		ocrAddress,
+		[]string{commonConfig.Account})
+
 	//if !testState.Common.Testnet {
 	//testState.Devnet.AutoLoadState(testState.OCR2Client, testState.OCRAddr)
 	//}

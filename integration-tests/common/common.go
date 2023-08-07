@@ -49,6 +49,7 @@ type Common struct {
 	NodeCount             int
 	TTL                   time.Duration
 	NodeUrl               string
+	MockUrl               string
 	Mnemonic              string
 	Account               string
 	ObservationSource     string
@@ -133,6 +134,7 @@ ListenAddresses = ['0.0.0.0:6690']
 		NodeCount:             getNodeCount(),
 		TTL:                   getTTL(),
 		NodeUrl:               nodeUrl,
+		MockUrl:               "http://172.17.0.1:6060",
 		Mnemonic:              getEnv("MNEMONIC"),
 		Account:               getEnv("ACCOUNT"),
 		ObservationSource:     observationSource,
@@ -151,7 +153,8 @@ func (c *Common) SetLocalEnvironment() {
 			ChartName:  "unused",
 			PodName:    "unused",
 			LocalIP:    "http://127.0.0.1:" + strconv.Itoa(basePort+i),
-			InternalIP: "postgresql://postgres@172.17.0.1:35432/cosmos_test?sslmode=disable", // TODO: configure this per node
+			InternalIP: "http://host.docker.internal:6688",
+			DBLocalIP:  "postgresql://postgres@host.docker.internal:35432/cosmos_test?sslmode=disable",
 		})
 	}
 	c.Env.ChainlinkNodeDetails = nodeDetails
