@@ -90,7 +90,7 @@ func (cc *ChainlinkClient) LoadOCR2Config(proposalId string, accountAddresses []
 }
 
 // CreateJobsForContract Creates and sets up the boostrap jobs as well as OCR jobs
-func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort string, observationSource string, juelsPerFeeCoinSource string, ocrControllerAddress string, accountAddresses []string) error {
+func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort, mockUrl string, observationSource string, juelsPerFeeCoinSource string, ocrControllerAddress string, accountAddresses []string) error {
 	// TODO: fix up relay configs
 	// Define node[0] as bootstrap node
 	cc.bootstrapPeers = []client.P2PData{
@@ -132,12 +132,18 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort string, observ
 		p2pBootstrappers = append(p2pBootstrappers, cc.bootstrapPeers[i].P2PV2Bootstrapper())
 	}
 
+	sourceValueBridge := &client.BridgeTypeAttributes{
+		Name:        "bridge-mockadapter",
+		URL:         fmt.Sprintf("%s/%s", mockUrl, "five"),
+		RequestData: "{}",
+	}
+
 	// Setting up job specs
 	for nIdx, n := range cc.ChainlinkNodes {
 		if nIdx == 0 {
 			continue
 		}
-		_, err := n.CreateBridge(cc.bTypeAttr)
+		_, err := n.CreateBridge(sourceValueBridge)
 		if err != nil {
 			return err
 		}
