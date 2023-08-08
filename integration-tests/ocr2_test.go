@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -183,13 +184,15 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress string
 	}
 
 	linkResponse := struct {
-		amount int64 `json:"amount"`
+		amount string `json:"amount"`
 	}{}
 	if err := json.Unmarshal(resp, &linkResponse); err != nil {
 		return err
 	}
-	logger.Info().Int64("available", linkResponse.amount).Msg("Queried link available for payment")
-	require.GreaterOrEqual(t, linkResponse.amount, 1, "Aggregator should have non-zero balance")
+	availableLink, err := strconv.Atoi(linkResponse.amount)
+	require.NoError(t, err, "Could not convert link_available_for_payment response")
+	logger.Info().Int64("available", availableLink).Msg("Queried link available for payment")
+	require.GreaterOrEqual(t, availableLink, 1, "Aggregator should have non-zero balance")
 
 	//// validate balance in aggregator
 	//resLINK, errLINK := testState.Starknet.CallContract(ctx, starknet.CallOps{
