@@ -149,7 +149,7 @@ func (cg *CosmosGauntlet) MintLinkToken(token, to, amount string) (string, error
 }
 
 func (cg *CosmosGauntlet) TransferToken(token, to, amount string) (string, error) {
-	_, err := cg.G.ExecCommand([]string{"ERC20:transfer", fmt.Sprintf("--recipient=%s", to), fmt.Sprintf("--amount=%s", amount), token}, *cg.options)
+	_, err := cg.G.ExecCommand([]string{"cw20_base:transfer", fmt.Sprintf("--to=%s", to), fmt.Sprintf("--amount=%s", amount), token}, *cg.options)
 	if err != nil {
 		return "", err
 	}
