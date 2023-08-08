@@ -76,31 +76,4 @@ do
 done
 
 
-# port forwarder from 127 -> 172 for sharing with other containers
-
-#echo "Waiting for wasmd container to become ready.."
-#start_time=$(date +%s)
-#prev_output=""
-#while true; do
-#output=$(docker logs "${container_name}" 2>&1)
-#if [[ "${output}" != "${prev_output}" ]]; then
-#echo -n "${output#$prev_output}"
-#prev_output="${output}"
-#fi
-
-#if [[ $output == *"Replay: Done"* ]]; then
-#echo ""
-#echo "wasmd is ready."
-#exit 0
-#fi
-
-#current_time=$(date +%s)
-#elapsed_time=$((current_time - start_time))
-
-#if ((elapsed_time > 600)); then
-#echo "Error: Command did not become ready within 600 seconds"
-#exit 1
-#fi
-
-#sleep 3
-#done
+# todo: port forwarder from 127 -> 172 for communicating with other containers
