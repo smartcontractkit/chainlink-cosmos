@@ -103,7 +103,7 @@ const instruction: InspectInstruction<CommandInput, ContractExpectedInfo> = {
     category: CATEGORIES.OCR,
     contract: CONTRACT_LIST.OCR_2,
     id: 'inspect:operators',
-    examples: ['ocr2:inspect:operators <AGGREGATOR_ADDRESS>', 'ocr2:inspect:operators <AGGREGATOR_ADDRESS>'],
+    examples: ['ocr2:inspect:operators <AGGREGATOR_ADDRESS>'],
   },
   instructions: [
     {
