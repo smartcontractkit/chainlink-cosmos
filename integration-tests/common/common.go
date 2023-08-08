@@ -48,6 +48,7 @@ type Common struct {
 	ChainId               string
 	NodeCount             int
 	TTL                   time.Duration
+	TestDuration          time.Duration
 	NodeUrl               string
 	MockUrl               string
 	Mnemonic              string
@@ -86,6 +87,22 @@ func getTTL() time.Duration {
 		panic("Please define TTL of env")
 	}
 	duration, err := time.ParseDuration(ttlValue)
+	if err != nil {
+		panic(fmt.Sprintf("Please define a proper TTL for the test: %v", err))
+	}
+	t, err := time.ParseDuration(*alias.ShortDur(duration))
+	if err != nil {
+		panic(fmt.Sprintf("Please define a proper TTL for the test: %v", err))
+	}
+	return t
+}
+
+func getTestDuration() time.Duration {
+	testDurationValue := getEnv("TEST_DURATION")
+	if testDurationValue == "" {
+		return time.Duration(time.Minute * 15)
+	}
+	duration, err := time.ParseDuration(testDurationValue)
 	if err != nil {
 		panic(fmt.Sprintf("Please define a proper duration for the test: %v", err))
 	}
@@ -133,6 +150,7 @@ ListenAddresses = ['0.0.0.0:6690']
 		ChainId:               chainID,
 		NodeCount:             getNodeCount(),
 		TTL:                   getTTL(),
+		TestDuration:          getTestDuration(),
 		NodeUrl:               nodeUrl,
 		MockUrl:               "http://172.17.0.1:6060",
 		Mnemonic:              getEnv("MNEMONIC"),
