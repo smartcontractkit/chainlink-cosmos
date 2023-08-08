@@ -138,13 +138,14 @@ func TestOCRBasic(t *testing.T) {
 
 	p2pPort := "6690"
 
-	chainlinkClient.CreateJobsForContract(
+	err = chainlinkClient.CreateJobsForContract(
 		commonConfig.ChainId,
 		p2pPort,
 		commonConfig.MockUrl,
 		commonConfig.ObservationSource,
 		commonConfig.JuelsPerFeeCoinSource,
 		ocrAddress)
+	require.NoError(t, err, "Could not create jobs for contract")
 
 	err = validateRounds(t, cosmosClient, ocrAddress, commonConfig.IsSoak)
 	require.NoError(t, err, "Validating round should not fail")
@@ -184,12 +185,12 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress string
 	}
 
 	linkResponse := struct {
-		amount string `json:"amount"`
+		Amount string `json:"amount"`
 	}{}
 	if err := json.Unmarshal(resp, &linkResponse); err != nil {
 		return err
 	}
-	availableLink, err := strconv.Atoi(linkResponse.amount)
+	availableLink, err := strconv.ParseInt(linkResponse.Amount, 10, 64)
 	require.NoError(t, err, "Could not convert link_available_for_payment response")
 	logger.Info().Int64("available", availableLink).Msg("Queried link available for payment")
 	require.GreaterOrEqual(t, availableLink, 1, "Aggregator should have non-zero balance")
