@@ -5,6 +5,7 @@ type OCR2Config struct {
 	F                     int             `json:"f"`
 	Signers               []string        `json:"signers"`
 	Transmitters          []string        `json:"transmitters"`
+	Payees                []string        `json:"payees"`
 	OnchainConfig         string          `json:"onchainConfig"`
 	OffchainConfig        *OffchainConfig `json:"offchainConfig"`
 	OffchainConfigVersion int             `json:"offchainConfigVersion"`
@@ -80,10 +81,10 @@ var TestOnKeys = []string{
 }
 
 var TestTxKeys = []string{
-	"0x04cc1bfa99e282e434aef2815ca17337a923cd2c61cf0c7de5b326d7a8603734",
-	"0x04cc1bfa99e282e434aef2815ca17337a923cd2c61cf0c7de5b326d7a8603735",
-	"0x04cc1bfa99e282e434aef2815ca17337a923cd2c61cf0c7de5b326d7a8603736",
-	"0x04cc1bfa99e282e434aef2815ca17337a923cd2c61cf0c7de5b326d7a8603737",
+	"wasm1dd66lfqdcr9frs8vta7lwp9w565z6l7p2h6tmf",
+	"wasm15nl46kf8aldtwefw6wee38flnhyealel5uwkcg",
+	"wasm15xj6lehvtwgy0783znyj022twv784xfleacpn9",
+	"wasm14x4qe4qakyd9xsq2r8xg2ld6s2q0h4zyqrxn9d",
 }
 
 var TestOffKeys = []string{
