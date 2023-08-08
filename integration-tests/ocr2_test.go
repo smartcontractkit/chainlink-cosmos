@@ -1,8 +1,10 @@
 package ocr2_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"os"
 	"strconv"
 	"testing"
@@ -11,10 +13,12 @@ import (
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/gauntlet"
 	"github.com/smartcontractkit/chainlink-cosmos/ops/utils"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/cosmwasm"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	relaylogger "github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/chainlink/integration-tests/actions"
+	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting2/types"
 
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
@@ -147,7 +151,7 @@ func TestOCRBasic(t *testing.T) {
 		ocrAddress)
 	require.NoError(t, err, "Could not create jobs for contract")
 
-	err = validateRounds(t, cosmosClient, ocrAddress, commonConfig.IsSoak)
+	err = validateRounds(t, cosmosClient, types.MustAccAddressFromBech32(ocrAddress), types.MustAccAddressFromBech32(ocrProxyAddress), commonConfig.IsSoak, commonConfig.TestDuration)
 	require.NoError(t, err, "Validating round should not fail")
 
 	//if !testState.Common.Testnet {
@@ -167,17 +171,27 @@ func TestOCRBasic(t *testing.T) {
 	})
 }
 
-func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress string, isSoak bool) error {
+func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.AccAddress, ocrProxyAddress types.AccAddress, isSoak bool, testDuration time.Duration) error {
+	var rounds int
+	if isSoak {
+		rounds = 99999999
+	} else {
+		rounds = 10
+	}
+
+	// TODO: changing mock-adapter values
+	mockAdapterValue := 5
+
 	logger := common.GetTestLogger(t)
-	//ctx := context.Background() // context background used because timeout handled by requestTimeout param
+	ctx := context.Background() // context background used because timeout handled by requestTimeout param
 	// assert new rounds are occurring
 	//details := ocr2.TransmissionDetails{}
-	//increasing := 0 // track number of increasing rounds
-	//var stuck bool
-	//stuckCount := 0
-	//var positive bool
+	increasing := 0 // track number of increasing rounds
+	var stuck bool
+	stuckCount := 0
+	var positive bool
 	resp, err := cosmosClient.ContractState(
-		types.MustAccAddressFromBech32(ocrAddress),
+		ocrAddress,
 		[]byte(`"link_available_for_payment"`),
 	)
 	if err != nil {
@@ -217,99 +231,124 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress string
 	//assert.Equal(testState.T, balLINK.Cmp(big.NewInt(0)), 1, "Aggregator should have non-zero balance")
 	//assert.GreaterOrEqual(testState.T, balLINK.Cmp(balAgg), 0, "Aggregator payment balance should be <= actual LINK balance")
 
-	//for start := time.Now(); time.Since(start) < testState.Common.TestDuration; {
-	//l.Info().Msg(fmt.Sprintf("Elapsed time: %s, Round wait: %s ", time.Since(start), testState.Common.TestDuration))
-	//res, err := testState.OCR2Client.LatestTransmissionDetails(ctx, caigotypes.StrToFelt(testState.OCRAddr))
-	//require.NoError(testState.T, err, "Failed to get latest transmission details")
-	//// end condition: enough rounds have occurred
-	//if !isSoak && increasing >= rounds && positive {
-	//break
-	//}
+	// TODO: this needs to be able to support different readers
+	ocrLogger, err := relaylogger.New()
+	require.NoError(t, err, "Failed to create OCR relay logger")
+	ocrReader := cosmwasm.NewOCR2Reader(ocrAddress, cosmosClient, ocrLogger)
 
-	//// end condition: rounds have been stuck
-	//if stuck && stuckCount > 50 {
-	//l.Debug().Msg("failing to fetch transmissions means blockchain may have stopped")
-	//break
-	//}
+	type TransmissionDetails struct {
+		ConfigDigest    ocrtypes.ConfigDigest
+		Epoch           uint32
+		Round           uint8
+		LatestAnswer    *big.Int
+		LatestTimestamp time.Time
+	}
 
-	//l.Info().Msg(fmt.Sprintf("Setting adapter value to %d", mockServerValue))
-	//err = testState.SetMockServerValue("", mockServerValue)
-	//if err != nil {
-	//l.Error().Msg(fmt.Sprintf("Setting mock server value error: %+v", err))
-	//}
-	//// try to fetch rounds
-	//time.Sleep(5 * time.Second)
+	previous := TransmissionDetails{}
 
-	//if err != nil {
-	//l.Error().Msg(fmt.Sprintf("Transmission Error: %+v", err))
-	//continue
-	//}
-	//l.Info().Msg(fmt.Sprintf("Transmission Details: %+v", res))
+	for start := time.Now(); time.Since(start) < testDuration; {
+		logger.Info().Msg(fmt.Sprintf("Elapsed time: %s, Round wait: %s ", time.Since(start), testDuration))
+		configDigest, epoch, round, latestAnswer, latestTimestamp, err := ocrReader.LatestTransmissionDetails(ctx)
+		require.NoError(t, err, "Failed to get latest transmission details")
+		// end condition: enough rounds have occurred
+		if !isSoak && increasing >= rounds && positive {
+			break
+		}
 
-	//// continue if no changes
-	//if res.Epoch == 0 && res.Round == 0 {
-	//continue
-	//}
+		// end condition: rounds have been stuck
+		if stuck && stuckCount > 50 {
+			logger.Debug().Msg("failing to fetch transmissions means blockchain may have stopped")
+			break
+		}
 
-	//ansCmp := res.LatestAnswer.Cmp(big.NewInt(0))
-	//positive = ansCmp == 1 || positive
+		//logger.Info().Msg(fmt.Sprintf("Setting adapter value to %d", mockServerValue))
+		//err = testState.SetMockServerValue("", mockServerValue)
+		//if err != nil {
+		//l.Error().Msg(fmt.Sprintf("Setting mock server value error: %+v", err))
+		//}
 
-	//// if changes from zero values set (should only initially)
-	//if res.Epoch > 0 && details.Epoch == 0 {
-	//if !isSoak {
-	//assert.Greater(testState.T, res.Epoch, details.Epoch)
-	//assert.GreaterOrEqual(testState.T, res.Round, details.Round)
-	//assert.NotEqual(testState.T, ansCmp, 0) // assert changed from 0
-	//assert.NotEqual(testState.T, res.Digest, details.Digest)
-	//assert.Equal(testState.T, details.LatestTimestamp.Before(res.LatestTimestamp), true)
-	//}
-	//details = res
-	//continue
-	//}
-	//// check increasing rounds
-	//if !isSoak {
-	//assert.Equal(testState.T, res.Digest, details.Digest, "Config digest should not change")
-	//} else {
-	//if res.Digest != details.Digest {
-	//l.Error().Msg(fmt.Sprintf("Config digest should not change, expected %s got %s", details.Digest, res.Digest))
-	//}
-	//}
-	//if (res.Epoch > details.Epoch || (res.Epoch == details.Epoch && res.Round > details.Round)) && details.LatestTimestamp.Before(res.LatestTimestamp) {
-	//increasing++
-	//stuck = false
-	//stuckCount = 0 // reset counter
-	//continue
-	//}
+		// try to fetch rounds
+		time.Sleep(5 * time.Second)
 
-	//// reach this point, answer has not changed
-	//stuckCount++
-	//if stuckCount > 30 {
-	//stuck = true
-	//increasing = 0
-	//}
-	//}
-	//if !isSoak {
-	//assert.GreaterOrEqual(testState.T, increasing, rounds, "Round + epochs should be increasing")
-	//assert.Equal(testState.T, positive, true, "Positive value should have been submitted")
-	//assert.Equal(testState.T, stuck, false, "Round + epochs should not be stuck")
-	//}
+		if err != nil {
+			logger.Error().Msg(fmt.Sprintf("Transmission Error: %+v", err))
+			continue
+		}
+		logger.Info().Msg(fmt.Sprintf("Transmission Details: configDigest: %+v, epoch: %+v, round: %+v, latestAnswer: %+v, latestTimestamp: %+v", configDigest, epoch, round, latestAnswer, latestTimestamp))
 
-	//// Test proxy reading
-	//// TODO: would be good to test proxy switching underlying feeds
-	//roundDataRaw, err := testState.Starknet.CallContract(ctx, starknet.CallOps{
-	//ContractAddress: caigotypes.StrToFelt(testState.ProxyAddr),
-	//Selector:        "latest_round_data",
-	//})
-	//if !isSoak {
-	//require.NoError(testState.T, err, "Reading round data from proxy should not fail")
-	//assert.Equal(testState.T, len(roundDataRaw), 5, "Round data from proxy should match expected size")
-	//}
-	//valueBig, err := starknet.HexToUnsignedBig(roundDataRaw[1])
-	//require.NoError(testState.T, err)
-	//value := valueBig.Int64()
-	//if value < 0 {
-	//assert.Equal(testState.T, value, int64(mockServerValue), "Reading from proxy should return correct value")
-	//}
+		// continue if no changes
+		if epoch == 0 && round == 0 {
+			continue
+		}
+
+		ansCmp := latestAnswer.Cmp(big.NewInt(0))
+		positive = ansCmp == 1 || positive
+
+		// if changes from zero values set (should only initially)
+		if epoch > 0 && previous.Epoch == 0 {
+			if !isSoak {
+				require.Greater(t, epoch, previous.Epoch)
+				require.GreaterOrEqual(t, round, previous.Round)
+				require.NotEqual(t, ansCmp, 0) // require changed from 0
+				require.NotEqual(t, configDigest, previous.ConfigDigest)
+				require.Equal(t, previous.LatestTimestamp.Before(latestTimestamp), true)
+			}
+			previous = TransmissionDetails{
+				ConfigDigest:    configDigest,
+				Epoch:           epoch,
+				Round:           round,
+				LatestAnswer:    latestAnswer,
+				LatestTimestamp: latestTimestamp,
+			}
+			continue
+		}
+		// check increasing rounds
+		if !isSoak {
+			require.Equal(t, configDigest, previous.ConfigDigest, "Config digest should not change")
+		} else {
+			if configDigest != previous.ConfigDigest {
+				logger.Error().Msg(fmt.Sprintf("Config digest should not change, expected %s got %s", previous.ConfigDigest, configDigest))
+			}
+		}
+		if (epoch > previous.Epoch || (epoch == previous.Epoch && round > previous.Round)) && previous.LatestTimestamp.Before(latestTimestamp) {
+			increasing++
+			stuck = false
+			stuckCount = 0 // reset counter
+			continue
+		}
+
+		// reach this point, answer has not changed
+		stuckCount++
+		if stuckCount > 30 {
+			stuck = true
+			increasing = 0
+		}
+	}
+	if !isSoak {
+		require.GreaterOrEqual(t, increasing, rounds, "Round + epochs should be increasing")
+		require.Equal(t, positive, true, "Positive value should have been submitted")
+		require.Equal(t, stuck, false, "Round + epochs should not be stuck")
+	}
+
+	// Test proxy reading
+	// TODO: would be good to test proxy switching underlying feeds
+	resp, err = cosmosClient.ContractState(ocrProxyAddress, []byte(`"latest_round_data"`))
+	if !isSoak {
+		require.NoError(t, err, "Reading round data from proxy should not fail")
+		//assert.Equal(t, len(roundDataRaw), 5, "Round data from proxy should match expected size")
+	}
+	roundData := struct {
+		Answer string `json:"answer"`
+	}{}
+	err = json.Unmarshal(resp, &roundData)
+	require.NoError(t, err, "Failed to unmarshal round data")
+
+	valueBig, success := new(big.Int).SetString(roundData.Answer, 10)
+	require.True(t, success, "Failed to parse round data")
+	value := valueBig.Int64()
+	if value < 0 {
+		require.Equal(t, value, int64(mockAdapterValue), "Reading from proxy should return correct value")
+	}
 
 	return nil
 }
