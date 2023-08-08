@@ -6,7 +6,7 @@ cache_path="$(git rev-parse --show-toplevel)/.local-mock-server"
 binary_name="dummy-external-adapter"
 binary_path="${cache_path}/bin/${binary_name}"
 
-bash "$(dirname -- "$0")/mock-adapter-down.sh"
+bash "$(dirname -- "$0")/mock-adapter.down.sh"
 
 listen_address="127.0.0.1:6060"
 if [ $# -gt 0 ]; then
