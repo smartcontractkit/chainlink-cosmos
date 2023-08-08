@@ -10,7 +10,6 @@ bash "$(dirname -- "$0")/wasmd.down.sh"
 
 echo "Starting wasmd container"
 
-# we need to replace the entrypoint because starknet-devnet's docker builds at 0.5.1 don't include cargo or gcc.
 docker run \
 	-p 127.0.0.1:26657:26657 \
 	-d \
