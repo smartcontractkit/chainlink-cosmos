@@ -220,8 +220,44 @@ func (cg *CosmosGauntlet) BeginProposal(ocrAddress string) (string, error) {
 	return cg.gr.Data["proposalId"].(string), nil
 }
 
+func (cg *CosmosGauntlet) ProposeConfig(cfg string, ocrAddress string) (string, error) {
+	_, err := cg.G.ExecCommand([]string{"ocr2:propose_config", "--input=" + cfg, ocrAddress}, *cg.options)
+	if err != nil {
+		return "", err
+	}
+	cg.gr, err = cg.FetchGauntletJsonOutput()
+	if err != nil {
+		return "", err
+	}
+	return cg.gr.Responses[0].Contract, nil
+}
+
 func (cg *CosmosGauntlet) ProposeOffchainConfig(cfg string, ocrAddress string) (string, error) {
 	_, err := cg.G.ExecCommand([]string{"ocr2:propose_offchain_config", "--input=" + cfg, ocrAddress}, *cg.options)
+	if err != nil {
+		return "", err
+	}
+	cg.gr, err = cg.FetchGauntletJsonOutput()
+	if err != nil {
+		return "", err
+	}
+	return cg.gr.Responses[0].Contract, nil
+}
+
+func (cg *CosmosGauntlet) FinalizeProposal(proposalId string, ocrAddress string) (string, error) {
+	_, err := cg.G.ExecCommand([]string{"ocr2:finalize_proposal", "--proposalId=" + proposalId, ocrAddress}, *cg.options)
+	if err != nil {
+		return "", err
+	}
+	cg.gr, err = cg.FetchGauntletJsonOutput()
+	if err != nil {
+		return "", err
+	}
+	return cg.gr.Data["digest"].(string), nil
+}
+
+func (cg *CosmosGauntlet) AcceptProposal(cfg string, ocrAddress string) (string, error) {
+	_, err := cg.G.ExecCommand([]string{"ocr2:accept_proposal", "--input=" + cfg, ocrAddress}, *cg.options)
 	if err != nil {
 		return "", err
 	}

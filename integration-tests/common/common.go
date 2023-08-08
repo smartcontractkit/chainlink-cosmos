@@ -144,14 +144,17 @@ ListenAddresses = ['0.0.0.0:6690']
 }
 
 func (c *Common) SetLocalEnvironment() {
-	c.Env.ChainlinkNodeDetails = []*environment.ChainlinkNodeDetail{
-		&environment.ChainlinkNodeDetail{
+	var nodeDetails []*environment.ChainlinkNodeDetail
+	var basePort = 6688
+	for i := 0; i < c.NodeCount; i++ {
+		nodeDetails = append(nodeDetails, &environment.ChainlinkNodeDetail{
 			ChartName:  "unused",
 			PodName:    "unused",
-			LocalIP:    "http://127.0.0.1:6688",
-			InternalIP: "postgresql://postgres@172.17.0.1:35432/cosmos_test?sslmode=disable",
-		},
+			LocalIP:    "http://127.0.0.1:" + strconv.Itoa(basePort+i),
+			InternalIP: "postgresql://postgres@172.17.0.1:35432/cosmos_test?sslmode=disable", // TODO: configure this per node
+		})
 	}
+	c.Env.ChainlinkNodeDetails = nodeDetails
 }
 
 func (c *Common) SetK8sEnvironment() {

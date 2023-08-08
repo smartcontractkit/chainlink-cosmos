@@ -9,14 +9,12 @@ import (
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/gauntlet"
 	"github.com/smartcontractkit/chainlink-cosmos/ops/utils"
-	"github.com/smartcontractkit/chainlink/integration-tests/actions"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
 )
 
 func TestOCRBasic(t *testing.T) {
-	// Set up test
+	// Set up test environment
 	logger := common.GetTestLogger(t)
 	commonConfig := common.NewCommon(t)
 	commonConfig.SetLocalEnvironment()
@@ -70,11 +68,6 @@ func TestOCRBasic(t *testing.T) {
 	require.NoError(t, err, "Could not deploy OCR2 proxy contract")
 	logger.Info().Str("address", ocrProxyAddress).Msg("Deployed OCR2 proxy contract")
 
-	// TODO: is this step necessary?
-	// _, err = cg.AddOCR2Access(ocrAddress, ocrProxyAddress)
-	// require.NoError(t, err, "Could not add OCR2 access")
-	// logger.Info().Msg("Added OCR2 access")
-
 	// Mint LINK tokens to aggregator
 	_, err = cg.MintLinkToken(linkTokenAddress, ocrAddress, "100000000000000000000")
 	require.NoError(t, err, "Could not mint LINK token")
@@ -90,21 +83,46 @@ func TestOCRBasic(t *testing.T) {
 	proposalId, err := cg.BeginProposal(ocrAddress)
 	require.NoError(t, err, "Could not begin proposal")
 
-	cfg, err := chainlinkClient.LoadOCR2Config([]string{commonConfig.Account})
+	cfg, err := chainlinkClient.LoadOCR2Config()
 	require.NoError(t, err, "Could not load OCR2 config")
 	cfg.ProposalId = proposalId
+	cfg.Payees = cfg.Transmitters // Set payees to same addresses as transmitters
 
 	var parsedConfig []byte
 	parsedConfig, err = json.Marshal(cfg)
 	require.NoError(t, err, "Could not parse JSON config")
 
+	_, err = cg.ProposeConfig(string(parsedConfig), ocrAddress)
+	require.NoError(t, err, "Could not propose config")
+
 	_, err = cg.ProposeOffchainConfig(string(parsedConfig), ocrAddress)
-	require.NoError(t, err, "Could not propose config details")
+	require.NoError(t, err, "Could not propose offchain config")
+
+	digest, err := cg.FinalizeProposal(proposalId, ocrAddress)
+	require.NoError(t, err, "Could not finalize proposal")
+
+	var acceptProposalInput = struct {
+		ProposalId     string            `json:"proposalId"`
+		Digest         string            `json:"digest"`
+		OffchainConfig common.OCR2Config `json:"offchainConfig"`
+		RandomSecret   string            `json:"randomSecret"`
+	}{
+		ProposalId:     proposalId,
+		Digest:         digest,
+		OffchainConfig: *cfg,
+		RandomSecret:   cfg.Secret,
+	}
+	var parsedInput []byte
+	parsedInput, err = json.Marshal(acceptProposalInput)
+	require.NoError(t, err, "Could not parse JSON input")
+	_, err = cg.AcceptProposal(string(parsedInput), ocrAddress)
+	require.NoError(t, err, "Could not accept proposed config")
 
 	//if !testState.Common.Testnet {
 	//testState.Devnet.AutoLoadState(testState.OCR2Client, testState.OCRAddr)
 	//}
 	//mockServerVal = 900000000
+
 	//testState.SetUpNodes(mockServerVal)
 
 	//err = testState.ValidateRounds(10, false)
