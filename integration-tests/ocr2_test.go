@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/gauntlet"
 	"github.com/smartcontractkit/chainlink-cosmos/ops/utils"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 
 	"github.com/stretchr/testify/require"
 )
@@ -21,6 +23,13 @@ func TestOCRBasic(t *testing.T) {
 
 	chainlinkClient, err := common.NewChainlinkClient(commonConfig.Env, commonConfig.ChainName, commonConfig.ChainId, commonConfig.NodeUrl)
 	require.NoError(t, err, "Could not create chainlink client")
+
+	_, err = client.NewClient(
+		commonConfig.ChainId,
+		commonConfig.NodeUrl,
+		30*time.Second,
+		logger)
+	require.NoError(t, err, "Could not create cosmos client")
 
 	gauntletWorkingDir := fmt.Sprintf("%s/", utils.ProjectRoot)
 	logger.Info().Str("working dir", gauntletWorkingDir).Msg("Initializing gauntlet")
