@@ -9,6 +9,7 @@ require (
 	github.com/smartcontractkit/chainlink-cosmos v0.4.1-0.20230525203711-20bed74ac906
 	github.com/smartcontractkit/chainlink-cosmos/ops v0.0.0-20230615043323-5fe39e28b7ee
 	github.com/smartcontractkit/chainlink-env v0.32.8
+	github.com/smartcontractkit/chainlink-relay v0.1.7-0.20230606234201-cca3103bf8a6
 	github.com/smartcontractkit/chainlink-testing-framework v1.11.6
 	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20230610030307-281eedc27b1f
 	github.com/smartcontractkit/chainlink/v2 v2.2.0-mercury-20230608.0.20230610030307-281eedc27b1f
@@ -293,7 +294,6 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/slack-go/slack v0.12.2 // indirect
 	github.com/smartcontractkit/caigo v0.0.0-20230530082629-53a5a4bdb25e // indirect
-	github.com/smartcontractkit/chainlink-relay v0.1.7-0.20230606234201-cca3103bf8a6 // indirect
 	github.com/smartcontractkit/libocr v0.0.0-20230606215712-82b910bef5c1 // indirect
 	github.com/smartcontractkit/ocr2keepers v0.7.0 // indirect
 	github.com/smartcontractkit/ocr2vrf v0.0.0-20230607140106-3de6d0aed120 // indirect
