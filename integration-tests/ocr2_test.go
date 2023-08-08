@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 	"os"
-	"strconv"
 	"testing"
 	"time"
 
@@ -204,10 +203,11 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 	if err := json.Unmarshal(resp, &linkResponse); err != nil {
 		return err
 	}
-	availableLink, err := strconv.ParseInt(linkResponse.Amount, 10, 64)
-	require.NoError(t, err, "Could not convert link_available_for_payment response")
-	logger.Info().Int64("available", availableLink).Msg("Queried link available for payment")
-	require.GreaterOrEqual(t, availableLink, 1, "Aggregator should have non-zero balance")
+	logger.Info().Str("amount", linkResponse.Amount).Msg("Queried link available for payment")
+
+	availableLink, success := new(big.Int).SetString(linkResponse.Amount, 10)
+	require.True(t, success, "Could not convert link_available_for_payment response")
+	require.True(t, availableLink.Cmp(big.NewInt(0)) > 0, "Aggregator should have non-zero balance")
 
 	//// validate balance in aggregator
 	//resLINK, errLINK := testState.Starknet.CallContract(ctx, starknet.CallOps{
