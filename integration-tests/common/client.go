@@ -62,9 +62,17 @@ func NewChainlinkClient(env *environment.Environment, chainName string, chainId 
 	}, nil
 }
 
-func (cc *ChainlinkClient) LoadOCR2Config(proposalId string, accountAddresses []string) (*OCR2Config, error) {
-	var offChaiNKeys []string
-	var onChaiNKeys []string
+func (cc *ChainlinkClient) GetNodeAddresses() []string {
+	var addresses []string
+	for _, nodeKey := range cc.NodeKeys {
+		addresses = append(addresses, nodeKey.TXKey.Data.Attributes.PublicKey)
+	}
+	return addresses
+}
+
+func (cc *ChainlinkClient) LoadOCR2Config(proposalId string) (*OCR2Config, error) {
+	var offChainKeys []string
+	var onChainKeys []string
 	var peerIds []string
 	var txKeys []string
 	var cfgKeys []string
@@ -81,7 +89,7 @@ func (cc *ChainlinkClient) LoadOCR2Config(proposalId string, accountAddresses []
 	}
 	var payload = TestOCR2Config
 	payload.ProposalId = proposalId
-	payload.Signers = onChaiNKeys
+	payload.Signers = onChainKeys
 	payload.Transmitters = txKeys
 	payload.OffchainConfig.OffchainPublicKeys = offChainKeys
 	payload.OffchainConfig.PeerIds = peerIds
