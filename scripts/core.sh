@@ -22,6 +22,13 @@ if [ ! -f "${config_path}" ]; then
 	exit 1
 fi
 
+if [ -n "${CORE_IMAGE:-}" ]; then
+	image_name="${CORE_IMAGE}"
+else
+	image_name="smartcontract/chainlink:${container_version}"
+fi
+echo "Using core image: ${image_name}"
+
 docker_ip=$(docker network inspect bridge -f '{{range .IPAM.Config}}{{.Gateway}}{{end}}')
 if [ -z "${docker_ip}" ]; then
 	echo "Could not fetch docker ip."
@@ -52,11 +59,10 @@ for ((i = 1; i <= NODE_COUNT; i++)); do
 		-p "${docker_ip}:$(($core_p2p_base_port + $i - 1)):$core_p2p_base_port" \
 		-e "CL_CONFIG=$(cat "${config_path}")" \
 		-e "CL_DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5432/cosmos_test_${i}?sslmode=disable" \
-		-e 'CL_DATABASE_ALLOW_SIMPLE_PASSWORDS=true' \
 		-e 'CL_PASSWORD_KEYSTORE=asdfasdfasdfasdf' \
 		--name "${container_name}.$i" \
 		--entrypoint bash \
-		"smartcontract/chainlink:${container_version}" \
+		"${image_name}" \
 		-c \
 		"echo -e \"${api_email}\\n${api_password}\" > /tmp/api_credentials && chainlink node start --api /tmp/api_credentials"
 
