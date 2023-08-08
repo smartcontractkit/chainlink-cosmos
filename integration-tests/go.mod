@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/rs/zerolog v1.29.1
+	github.com/smartcontractkit/chainlink-cosmos v0.4.1-0.20230525203711-20bed74ac906
 	github.com/smartcontractkit/chainlink-cosmos/ops v0.0.0-20230615043323-5fe39e28b7ee
 	github.com/smartcontractkit/chainlink-env v0.32.8
 	github.com/smartcontractkit/chainlink-testing-framework v1.11.6
@@ -385,7 +386,8 @@ replace (
 
 	github.com/prometheus/common => github.com/prometheus/common v0.10.0
 
-	// Make sure we're working with the latest ops
+	// Make sure we're working with the latest pkg and ops
+	github.com/smartcontractkit/chainlink-cosmos => ../
 	github.com/smartcontractkit/chainlink-cosmos/ops => ../ops
 
 	// K8s imports are weird
