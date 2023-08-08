@@ -4,7 +4,7 @@
 echo "Cleaning up wasmd container.."
 
 echo "Checking for existing 'chainlink-cosmos.wasmd' docker container..."
-dpid=`docker ps | grep chainlink-cosmos.wasmd | awk '{print $1}'`;
+dpid=`docker ps -a | grep chainlink-cosmos.wasmd | awk '{print $1}'`;
 if [ -z "$dpid" ]
 then
     echo "No docker wasmd container running.";
