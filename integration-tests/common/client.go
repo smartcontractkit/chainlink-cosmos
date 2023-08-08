@@ -90,7 +90,7 @@ func (cc *ChainlinkClient) LoadOCR2Config(proposalId string, accountAddresses []
 }
 
 // CreateJobsForContract Creates and sets up the boostrap jobs as well as OCR jobs
-func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort, mockUrl string, observationSource string, juelsPerFeeCoinSource string, ocrControllerAddress string, accountAddresses []string) error {
+func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort, mockUrl string, observationSource string, juelsPerFeeCoinSource string, ocrControllerAddress string) error {
 	// TODO: fix up relay configs
 	// Define node[0] as bootstrap node
 	cc.bootstrapPeers = []client.P2PData{
@@ -103,9 +103,8 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort, mockUrl strin
 
 	// Defining relay config
 	bootstrapRelayConfig := job.JSONConfig{
-		"nodeName":       fmt.Sprintf("\"cosmos-OCRv2-%s-%s\"", "node", uuid.NewString()),
-		"accountAddress": fmt.Sprintf("\"%s\"", accountAddresses[0]),
-		"chainID":        fmt.Sprintf("\"%s\"", chainId),
+		"nodeName": fmt.Sprintf("\"cosmos-OCRv2-%s-%s\"", "node", uuid.NewString()),
+		"chainID":  fmt.Sprintf("\"%s\"", chainId),
 	}
 
 	oracleSpec := job.OCR2OracleSpec{
@@ -148,9 +147,8 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort, mockUrl strin
 			return err
 		}
 		relayConfig := job.JSONConfig{
-			"nodeName":       bootstrapRelayConfig["nodeName"],
-			"accountAddress": fmt.Sprintf("\"%s\"", accountAddresses[nIdx]),
-			"chainID":        bootstrapRelayConfig["chainID"],
+			"nodeName": bootstrapRelayConfig["nodeName"],
+			"chainID":  bootstrapRelayConfig["chainID"],
 		}
 
 		oracleSpec = job.OCR2OracleSpec{
