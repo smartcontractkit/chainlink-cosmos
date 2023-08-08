@@ -38,15 +38,14 @@ const afterExecute = (context) => async (
     logger.error('Could not retrieve events from tx')
     return
   }
-
-  var responseWasm = events.filter((element) => element.wasm[0].contract_address == context.contract)[0].wasm[0]
-
-  if (!responseWasm) {
+  const wasmEvent = events.filter(({ type }) => (type as any) == 'wasm')[0]
+  if (!wasmEvent) {
     throw new Error('Response data for the given contract does not exist inside events')
   }
 
-  const proposalId = responseWasm.proposal_id
-  const digest = responseWasm.digest
+  const proposalId = wasmEvent.attributes.find(({ key }) => key === 'proposal_id')?.value
+  const digest = wasmEvent.attributes.find(({ key }) => key === 'digest')?.value
+
   logger.success(`Config Proposal ${proposalId} finalized`)
   logger.line()
   logger.info('Important: Save the config proposal DIGEST to accept the proposal in the future:')
