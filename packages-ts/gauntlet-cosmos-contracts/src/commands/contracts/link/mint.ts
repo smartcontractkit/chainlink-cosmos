@@ -17,9 +17,6 @@ type ContractInput = {
 
 const makeCommandInput = async (flags, args): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  console.log(flags.to)
-  console.log(flags.amount)
-  console.log(args)
   return {
     to: flags.to,
     amount: flags.amount,

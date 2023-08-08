@@ -32,7 +32,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     const contract = args[0]
     const aggregator = rdd.contracts[contract]
     const aggregatorOperators: any[] = aggregator.oracles.map((o) => rdd.operators[o.operator])
-    const signers = aggregatorOperators.map((o) => o.ocr2OnchainPublicKey[0].replace('ocr2on_cosmos_', ''))
+    const signers = aggregatorOperators.map((o) => o.ocr2OnchainPublicKey[0])
     const transmitters = aggregatorOperators.map((o) => o.ocrNodeAddress[0])
     const payees = aggregatorOperators.map((o) => o.adminAddress)
     return {
@@ -56,7 +56,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 }
 
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
-  const signers = input.signers.map((s) => Buffer.from(s, 'hex').toString('base64'))
+  const signers = input.signers.map((s) => Buffer.from(s.replace('ocr2on_cosmos_', ''), 'hex').toString('base64'))
 
   return {
     f: Number(input.f),
@@ -76,6 +76,11 @@ const validateInput = (input: CommandInput): boolean => {
     throw new Error(`Signers and Trasmitters length are different`)
 
   if (input.transmitters.length !== input.payees.length) throw new Error(`Trasmitters and Payees length are different`)
+
+  if (new Set(input.signers).size !== input.signers.length) throw new Error(`Signers array contains duplicates`)
+
+  if (new Set(input.transmitters).size !== input.transmitters.length)
+    throw new Error(`Transmitters array contains duplicates`)
 
   return true
 }
