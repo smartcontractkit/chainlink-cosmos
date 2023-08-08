@@ -28,23 +28,30 @@ if [ -z "${docker_ip}" ]; then
 	exit 1
 fi
 
-declare -i postgres_base_port=5432
+NODE_COUNT="${NODE_COUNT:-4}"
+
 declare -i core_base_port=6688
 declare -i core_p2p_base_port=6695
 
-for i in {1..4}; do
+for ((i = 1; i <= NODE_COUNT; i++)); do
+	database_name="cosmos_test_${i}"
+	echo "Creating database: ${database_name}"
+	host_postgres_url="postgresql://postgres:postgres@${docker_ip}:5432/postgres"
+	psql "${host_postgres_url}" -c "DROP DATABASE ${database_name};" &>/dev/null || true
+	psql "${host_postgres_url}" -c "CREATE DATABASE ${database_name};" &>/dev/null
+
 	echo "Starting core container $i"
 	docker run \
-		-it --rm \
+		--rm \
+		-d \
 		--add-host=host.docker.internal:host-gateway \
 		--platform linux/amd64 \
-		-d \
 		-p 127.0.0.1:$(($core_base_port + $i - 1)):$core_base_port \
 		-p 127.0.0.1:$(($core_p2p_base_port + $i - 1)):$core_p2p_base_port \
 		-p "${docker_ip}:$(($core_base_port + $i - 1)):$core_base_port" \
 		-p "${docker_ip}:$(($core_p2p_base_port + $i - 1)):$core_p2p_base_port" \
 		-e "CL_CONFIG=$(cat "${config_path}")" \
-		-e "CL_DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:$(($postgres_base_port + $i - 1))/cosmos_test?sslmode=disable" \
+		-e "CL_DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5432/cosmos_test_${i}?sslmode=disable" \
 		-e 'CL_DATABASE_ALLOW_SIMPLE_PASSWORDS=true' \
 		-e 'CL_PASSWORD_KEYSTORE=asdfasdfasdfasdf' \
 		--name "${container_name}.$i" \
