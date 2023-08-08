@@ -149,12 +149,13 @@ func (c *Common) SetLocalEnvironment() {
 	var nodeDetails []*environment.ChainlinkNodeDetail
 	var basePort = 6688
 	for i := 0; i < c.NodeCount; i++ {
+		dbLocalIP := fmt.Sprintf("postgresql://postgres:postgres@host.docker.internal:5432/cosmos_test_%d?sslmode=disable", i+1)
 		nodeDetails = append(nodeDetails, &environment.ChainlinkNodeDetail{
 			ChartName:  "unused",
 			PodName:    "unused",
 			LocalIP:    "http://127.0.0.1:" + strconv.Itoa(basePort+i),
-			InternalIP: "http://host.docker.internal:6688",
-			DBLocalIP:  "postgresql://postgres@host.docker.internal:35432/cosmos_test?sslmode=disable",
+			InternalIP: "http://host.docker.internal:" + strconv.Itoa(basePort+i),
+			DBLocalIP:  dbLocalIP,
 		})
 	}
 	c.Env.ChainlinkNodeDetails = nodeDetails
