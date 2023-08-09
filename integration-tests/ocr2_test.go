@@ -145,7 +145,6 @@ func TestOCRBasic(t *testing.T) {
 		commonConfig.ChainId,
 		p2pPort,
 		commonConfig.MockUrl,
-		commonConfig.ObservationSource,
 		commonConfig.JuelsPerFeeCoinSource,
 		ocrAddress)
 	require.NoError(t, err, "Could not create jobs for contract")

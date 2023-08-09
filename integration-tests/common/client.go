@@ -95,7 +95,7 @@ func (cc *ChainlinkClient) LoadOCR2Config(proposalId string) (*OCR2Config, error
 }
 
 // CreateJobsForContract Creates and sets up the boostrap jobs as well as OCR jobs
-func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort, mockUrl string, observationSource string, juelsPerFeeCoinSource string, ocrControllerAddress string) error {
+func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort, mockUrl string, juelsPerFeeCoinSource string, ocrControllerAddress string) error {
 	// TODO: fix up relay configs
 	// Define node[0] as bootstrap node
 	cc.bootstrapPeers = []client.P2PData{
@@ -138,7 +138,7 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort, mockUrl strin
 	}
 
 	sourceValueBridge := &client.BridgeTypeAttributes{
-		Name:        "bridge-mockadapter",
+		Name:        "mockserver-bridge",
 		URL:         fmt.Sprintf("%s/%s", mockUrl, "five"),
 		RequestData: "{}",
 	}
@@ -172,10 +172,10 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort, mockUrl strin
 		}
 
 		jobSpec = &client.OCR2TaskJobSpec{
-			Name:              fmt.Sprintf("starknet-OCRv2-%d-%s", nIdx, uuid.NewString()),
+			Name:              fmt.Sprintf("cosmos-OCRv2-%d-%s", nIdx, uuid.NewString()),
 			JobType:           "offchainreporting2",
 			OCR2OracleSpec:    oracleSpec,
-			ObservationSource: observationSource,
+			ObservationSource: client.ObservationSourceSpecBridge(sourceValueBridge),
 		}
 		_, _, err = n.CreateJob(jobSpec)
 		if err != nil {
