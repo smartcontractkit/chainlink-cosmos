@@ -126,7 +126,7 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort, mockUrl strin
 		OCR2OracleSpec: oracleSpec,
 	}
 
-	_, _, err := cc.ChainlinkNodes[0].CreateJob(jobSpec)
+	_, err := cc.ChainlinkNodes[0].MustCreateJob(jobSpec)
 	if err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort, mockUrl strin
 			OCR2OracleSpec:    oracleSpec,
 			ObservationSource: client.ObservationSourceSpecBridge(sourceValueBridge),
 		}
-		_, _, err = n.CreateJob(jobSpec)
+		_, err = n.MustCreateJob(jobSpec)
 		if err != nil {
 			return err
 		}
