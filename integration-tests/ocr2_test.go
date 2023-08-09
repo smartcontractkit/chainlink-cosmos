@@ -21,6 +21,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zapcore"
 )
 
 func TestOCRBasic(t *testing.T) {
@@ -106,7 +107,7 @@ func TestOCRBasic(t *testing.T) {
 	proposalId, err := cg.BeginProposal(ocrAddress)
 	require.NoError(t, err, "Could not begin proposal")
 
-	cfg, err := chainlinkClient.LoadOCR2Config(proposalId, []string{commonConfig.Account})
+	cfg, err := chainlinkClient.LoadOCR2Config(proposalId)
 	require.NoError(t, err, "Could not load OCR2 config")
 
 	var parsedConfig []byte
