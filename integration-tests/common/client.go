@@ -76,13 +76,10 @@ func (cc *ChainlinkClient) LoadOCR2Config(proposalId string) (*OCR2Config, error
 	var peerIds []string
 	var txKeys []string
 	var cfgKeys []string
-	for i, key := range cc.NodeKeys {
+	for _, key := range cc.NodeKeys {
 		offChainKeys = append(offChainKeys, key.OCR2Key.Data.Attributes.OffChainPublicKey)
 		peerIds = append(peerIds, key.PeerID)
-		// TODO: This uses a hardcoded array of test addresses with 'wasm' bech32 prefix as the keystore generates
-		// addresses with the 'cosmos' prefix by default. We can use  key.TXKey.Data.ID after refactoring
-		// the keystore to allow bech32 prefixes to be defined.
-		txKeys = append(txKeys, TestTxKeys[i])
+		txKeys = append(txKeys, key.TXKey.Data.ID)
 		// txKeys = append(txKeys, key.TXKey.Data.ID)
 		onChainKeys = append(onChainKeys, key.OCR2Key.Data.Attributes.OnChainPublicKey)
 		cfgKeys = append(cfgKeys, key.OCR2Key.Data.Attributes.ConfigPublicKey)
