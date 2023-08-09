@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,6 +34,7 @@ func TestOCRBasic(t *testing.T) {
 	chainlinkClient, err := common.NewChainlinkClient(commonConfig.Env, commonConfig.ChainName, commonConfig.ChainId, commonConfig.NodeUrl)
 	require.NoError(t, err, "Could not create chainlink client")
 
+	logger.Info().Str("node addresses", strings.Join(chainlinkClient.GetNodeAddresses(), " ")).Msg("Created chainlink client")
 	params.InitCosmosSdk(
 		/* bech32Prefix= */ "wasm",
 		/* token= */ "atom",
