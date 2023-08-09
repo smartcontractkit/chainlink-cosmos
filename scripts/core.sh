@@ -44,16 +44,17 @@ else
 fi
 echo "Using core image: ${image_name}"
 
-docker_ip=""
-if [ "$(uname)" != "Darwin" ]; then
+listen_ips=""
+if [ "$(uname)" = "Darwin" ]; then
+	echo "Listening on all interfaces on MacOS"
+	listen_ips="0.0.0.0"
+else
 	docker_ip=$(docker network inspect bridge -f '{{range .IPAM.Config}}{{.Gateway}}{{end}}')
 	if [ -z "${docker_ip}" ]; then
 		echo "Could not fetch docker ip."
 		exit 1
 	fi
-	echo "Docker IP: ${docker_ip}"
-else
-	echo "Listening on all interfaces on MacOS"
+	listen_ips="127.0.0.1 ${docker_ip}"
 fi
 
 NODE_COUNT="${NODE_COUNT:-4}"
@@ -68,16 +69,19 @@ for ((i = 1; i <= NODE_COUNT; i++)); do
 	psql "${host_postgres_url}" -c "DROP DATABASE ${database_name};" &>/dev/null || true
 	psql "${host_postgres_url}" -c "CREATE DATABASE ${database_name};" &>/dev/null
 
+	listen_args=()
+	for ip in $listen_ips; do
+		listen_args+=("-p" "${ip}:$((core_base_port + i - 1)):6688")
+		listen_args+=("-p" "${ip}:$((core_p2p_base_port + i - 1)):6691")
+	done
+
 	echo "Starting core container $i"
 	docker run \
 		--rm \
 		-d \
 		--add-host=host.docker.internal:host-gateway \
 		--platform linux/amd64 \
-		-p 127.0.0.1:$((core_base_port + i - 1)):6688 \
-		-p 127.0.0.1:$((core_p2p_base_port + i - 1)):6691 \
-		-p "${docker_ip}:$((core_base_port + i - 1)):6688" \
-		-p "${docker_ip}:$((core_p2p_base_port + i - 1)):6691" \
+		"${listen_args[@]}" \
 		-e "CL_CONFIG=${core_config}" \
 		-e "CL_DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5432/${database_name}?sslmode=disable" \
 		-e 'CL_PASSWORD_KEYSTORE=asdfasdfasdfasdf' \

@@ -7,21 +7,28 @@ set -euo pipefail
 
 bash "$(dirname -- "$0")/postgres.down.sh"
 
-docker_ip=""
-if [ "$(uname)" != "Darwin" ]; then
+listen_ips=""
+if [ "$(uname)" = "Darwin" ]; then
+	echo "Listening on all interfaces on MacOS"
+	listen_ips="0.0.0.0"
+else
 	docker_ip=$(docker network inspect bridge -f '{{range .IPAM.Config}}{{.Gateway}}{{end}}')
 	if [ -z "${docker_ip}" ]; then
 		echo "Could not fetch docker ip."
 		exit 1
 	fi
-	echo "Docker IP: ${docker_ip}"
-else
-	echo "Listening on all interfaces on MacOS"
+	listen_ips="127.0.0.1 ${docker_ip}"
 fi
 
 echo "Starting postgres container"
+
+listen_args=()
+for ip in $listen_ips; do
+	listen_args+=("-p" "${ip}:5432:5432")
+done
+
 docker run \
-	-p "${docker_ip}:5432:5432" \
+	"${listen_args[@]}" \
 	-d \
 	--name "${container_name}" \
 	-e POSTGRES_USER=postgres \
