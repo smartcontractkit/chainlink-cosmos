@@ -165,7 +165,7 @@ ListenAddresses = ['0.0.0.0:6690']
 
 func (c *Common) SetLocalEnvironment() {
 	var nodeDetails []*environment.ChainlinkNodeDetail
-	var basePort = 6688
+	var basePort = 50100
 	for i := 0; i < c.NodeCount; i++ {
 		dbLocalIP := fmt.Sprintf("postgresql://postgres:postgres@host.docker.internal:5432/cosmos_test_%d?sslmode=disable", i+1)
 		nodeDetails = append(nodeDetails, &environment.ChainlinkNodeDetail{
