@@ -50,7 +50,7 @@ func (r *OCR2Reader) LatestConfigDetails(ctx context.Context) (changedInBlock ui
 }
 
 func (r *OCR2Reader) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
-	query := []string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm-set_config.contract_address='%s'", r.address)}
+	query := []string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm-set_config._contract_address='%s'", r.address)}
 	res, err := r.chainReader.TxsEvents(query, nil)
 	if err != nil {
 		return types.ContractConfig{}, err
