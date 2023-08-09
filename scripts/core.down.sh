@@ -1,3 +1,5 @@
+#!/bin/bash
+
 echo "Cleaning up core containers.."
 
 echo "Checking for existing 'chainlink-cosmos.core' docker containers..."
