@@ -56,7 +56,7 @@ func (r *Relayer) Start(context.Context) error {
 	// TODO(BCI-915): Make this configurable.
 	params.InitCosmosSdk(
 		/* bech32Prefix= */ "wasm",
-		/* token= */ "atom",
+		/* token= */ "cosm",
 	)
 	return nil
 }
