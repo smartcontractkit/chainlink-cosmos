@@ -108,7 +108,8 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort, mockUrl strin
 
 	// Defining relay config
 	bootstrapRelayConfig := job.JSONConfig{
-		"nodeName": fmt.Sprintf("\"cosmos-OCRv2-%s-%s\"", "node", uuid.NewString()),
+		//"nodeName": fmt.Sprintf("\"cosmos-OCRv2-%s-%s\"", "node", uuid.NewString()),
+		"nodeName": "primary",
 		"chainID":  fmt.Sprintf("\"%s\"", chainId),
 	}
 
