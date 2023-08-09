@@ -37,7 +37,7 @@ func TestOCRBasic(t *testing.T) {
 	logger.Info().Str("node addresses", strings.Join(chainlinkClient.GetNodeAddresses(), " ")).Msg("Created chainlink client")
 	params.InitCosmosSdk(
 		/* bech32Prefix= */ "wasm",
-		/* token= */ "atom",
+		/* token= */ "cosm",
 	)
 	clientLogger, err := relaylogger.New()
 	require.NoError(t, err, "Could not create relay logger")
