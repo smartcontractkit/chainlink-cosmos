@@ -73,7 +73,7 @@ for ((i = 1; i <= NODE_COUNT; i++)); do
 		-p "${docker_ip}:$((core_base_port + i - 1)):6688" \
 		-p "${docker_ip}:$((core_p2p_base_port + i - 1)):6691" \
 		-e "CL_CONFIG=${core_config}" \
-		-e "CL_DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5432/cosmos_test_${i}?sslmode=disable" \
+		-e "CL_DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5432/${database_name}?sslmode=disable" \
 		-e 'CL_PASSWORD_KEYSTORE=asdfasdfasdfasdf' \
 		--name "${container_name}.$i" \
 		--entrypoint bash \
