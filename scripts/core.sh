@@ -11,16 +11,31 @@ container_version="2.3.0"
 api_email="notreal@fakeemail.ch"
 api_password="fj293fbBnlQ!f9vNs"
 
-if [ $# -lt 1 ]; then
-	echo "No config path" >&2
-	exit 1
-fi
+core_config="
+[[Cosmos]]
+Enabled = true
+ChainID = 'testing'
+[[Cosmos.Nodes]]
+Name = 'primary'
+TendermintURL = 'http://host.docker.internal:26657'
 
-config_path="$1"
-if [ ! -f "${config_path}" ]; then
-	echo "Config path not found." >&2
-	exit 1
-fi
+[OCR2]
+Enabled = true
+
+[P2P]
+[P2P.V1]
+Enabled = false
+[P2P.V2]
+Enabled = true
+DeltaDial = '5s'
+DeltaReconcile = '5s'
+ListenAddresses = ['0.0.0.0:6691']
+
+[WebServer]
+HTTPPort = 6688
+[WebServer.TLS]
+HTTPSPort = 0
+"
 
 if [ -n "${CORE_IMAGE:-}" ]; then
 	image_name="${CORE_IMAGE}"
@@ -37,8 +52,8 @@ fi
 
 NODE_COUNT="${NODE_COUNT:-4}"
 
-declare -i core_base_port=6688
-declare -i core_p2p_base_port=6695
+declare -i core_base_port=50100
+declare -i core_p2p_base_port=50200
 
 for ((i = 1; i <= NODE_COUNT; i++)); do
 	database_name="cosmos_test_${i}"
@@ -53,11 +68,11 @@ for ((i = 1; i <= NODE_COUNT; i++)); do
 		-d \
 		--add-host=host.docker.internal:host-gateway \
 		--platform linux/amd64 \
-		-p 127.0.0.1:$(($core_base_port + $i - 1)):$core_base_port \
-		-p 127.0.0.1:$(($core_p2p_base_port + $i - 1)):$core_p2p_base_port \
-		-p "${docker_ip}:$(($core_base_port + $i - 1)):$core_base_port" \
-		-p "${docker_ip}:$(($core_p2p_base_port + $i - 1)):$core_p2p_base_port" \
-		-e "CL_CONFIG=$(cat "${config_path}")" \
+		-p 127.0.0.1:$((core_base_port + i - 1)):6688 \
+		-p 127.0.0.1:$((core_p2p_base_port + i - 1)):6691 \
+		-p "${docker_ip}:$((core_base_port + i - 1)):6688" \
+		-p "${docker_ip}:$((core_p2p_base_port + i - 1)):6691" \
+		-e "CL_CONFIG=${core_config}" \
 		-e "CL_DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5432/cosmos_test_${i}?sslmode=disable" \
 		-e 'CL_PASSWORD_KEYSTORE=asdfasdfasdfasdf' \
 		--name "${container_name}.$i" \
