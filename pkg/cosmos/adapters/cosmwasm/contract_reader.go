@@ -50,7 +50,10 @@ func (r *OCR2Reader) LatestConfigDetails(ctx context.Context) (changedInBlock ui
 }
 
 func (r *OCR2Reader) LatestConfig(ctx context.Context, changedInBlock uint64) (types.ContractConfig, error) {
-	query := []string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm-set_config._contract_address='%s'", r.address)}
+	// previously we queried with constraint "wasm-set_config._contract_address='address'" directly, but that does not
+	// work with wasmd 0.41.0, which is at cosmos-sdk v0.47.4, which contains the following regex for each event query string:
+	// https://github.com/cosmos/cosmos-sdk/blob/3b509c187e1643757f5ef8a0b5ae3decca0c7719/x/auth/tx/service.go#L49
+	query := []string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm._contract_address='%s'", r.address)}
 	res, err := r.chainReader.TxsEvents(query, nil)
 	if err != nil {
 		return types.ContractConfig{}, err
