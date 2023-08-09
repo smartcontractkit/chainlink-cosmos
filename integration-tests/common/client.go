@@ -88,6 +88,7 @@ func (cc *ChainlinkClient) LoadOCR2Config(proposalId string) (*OCR2Config, error
 	payload.ProposalId = proposalId
 	payload.Signers = onChainKeys
 	payload.Transmitters = txKeys
+	payload.Payees = txKeys // Set payees to same addresses as transmitters
 	payload.OffchainConfig.OffchainPublicKeys = offChainKeys
 	payload.OffchainConfig.PeerIds = peerIds
 	payload.OffchainConfig.ConfigPublicKeys = cfgKeys
