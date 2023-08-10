@@ -52,7 +52,6 @@ type Common struct {
 	NodeUrl               string
 	MockUrl               string
 	Mnemonic              string
-	Account               string
 	ObservationSource     string
 	JuelsPerFeeCoinSource string
 	ChainlinkConfig       string
@@ -154,7 +153,6 @@ ListenAddresses = ['0.0.0.0:6691']
 		NodeUrl:               nodeUrl,
 		MockUrl:               "http://172.17.0.1:6060",
 		Mnemonic:              getEnv("MNEMONIC"),
-		Account:               getEnv("ACCOUNT"),
 		ObservationSource:     observationSource,
 		JuelsPerFeeCoinSource: juelsPerFeeCoinSource,
 		ChainlinkConfig:       chainlinkConfig,
