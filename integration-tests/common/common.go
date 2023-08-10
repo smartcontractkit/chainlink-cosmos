@@ -133,7 +133,7 @@ Enabled = true
 Enabled = true
 DeltaDial = '5s'
 DeltaReconcile = '5s'
-ListenAddresses = ['0.0.0.0:6690']
+ListenAddresses = ['0.0.0.0:6691']
 `, chainID, nodeUrl)
 	log.Debug().Str("toml", chainlinkConfig).Msg("Created chainlink config")
 
