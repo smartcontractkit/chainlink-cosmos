@@ -186,16 +186,6 @@ func TestOCRBasic(t *testing.T) {
 	err = validateRounds(t, cosmosClient, types.MustAccAddressFromBech32(ocrAddress), types.MustAccAddressFromBech32(ocrProxyAddress), commonConfig.IsSoak, commonConfig.TestDuration)
 	require.NoError(t, err, "Validating round should not fail")
 
-	//if !testState.Common.Testnet {
-	//testState.Devnet.AutoLoadState(testState.OCR2Client, testState.OCRAddr)
-	//}
-	//mockServerVal = 900000000
-
-	//testState.SetUpNodes(mockServerVal)
-
-	//err = testState.ValidateRounds(10, false)
-	//require.NoError(t, err, "Validating round should not fail")
-
 	t.Cleanup(func() {
 		err = actions.TeardownSuite(t, commonConfig.Env, "./", nil, nil, zapcore.DPanicLevel, nil)
 		//err = actions.TeardownSuite(t, t.Common.Env, utils.ProjectRoot, t.Cc.ChainlinkNodes, nil, zapcore.ErrorLevel)
@@ -211,13 +201,12 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 		rounds = 10
 	}
 
-	// TODO: changing mock-adapter values
+	// TODO(BCI-1746): dynamic mock-adapter values
 	mockAdapterValue := 5
 
 	logger := common.GetTestLogger(t)
 	ctx := context.Background() // context background used because timeout handled by requestTimeout param
 	// assert new rounds are occurring
-	//details := ocr2.TransmissionDetails{}
 	increasing := 0 // track number of increasing rounds
 	var stuck bool
 	stuckCount := 0
@@ -242,29 +231,7 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 	require.True(t, success, "Could not convert link_available_for_payment response")
 	require.True(t, availableLink.Cmp(big.NewInt(0)) > 0, "Aggregator should have non-zero balance")
 
-	//// validate balance in aggregator
-	//resLINK, errLINK := testState.Starknet.CallContract(ctx, starknet.CallOps{
-	//ContractAddress: caigotypes.StrToFelt(testState.LinkTokenAddr),
-	//Selector:        "balance_of",
-	//Calldata:        []string{testState.OCRAddr},
-	//})
-	//require.NoError(testState.T, errLINK, "Reader balance from LINK contract should not fail")
-	//resAgg, errAgg := testState.Starknet.CallContract(ctx, starknet.CallOps{
-	//ContractAddress: caigotypes.StrToFelt(testState.OCRAddr),
-	//Selector:        "link_available_for_payment",
-	//})
-	//require.NoError(testState.T, errAgg, "Reader balance from LINK contract should not fail")
-	//balLINK, _ := new(big.Int).SetString(resLINK[0], 0)
-	//balAgg, _ := new(big.Int).SetString(resAgg[1], 0)
-	//isNegative, _ := new(big.Int).SetString(resAgg[0], 0)
-	//if isNegative.Sign() > 0 {
-	//balAgg = new(big.Int).Neg(balAgg)
-	//}
-
-	//assert.Equal(testState.T, balLINK.Cmp(big.NewInt(0)), 1, "Aggregator should have non-zero balance")
-	//assert.GreaterOrEqual(testState.T, balLINK.Cmp(balAgg), 0, "Aggregator payment balance should be <= actual LINK balance")
-
-	// TODO: this needs to be able to support different readers
+	// TODO(BCI-1767): this needs to be able to support different readers
 	ocrLogger, err := relaylogger.New()
 	require.NoError(t, err, "Failed to create OCR relay logger")
 	ocrReader := cosmwasm.NewOCR2Reader(ocrAddress, cosmosClient, ocrLogger)
@@ -293,12 +260,6 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 			logger.Debug().Msg("failing to fetch transmissions means blockchain may have stopped")
 			break
 		}
-
-		//logger.Info().Msg(fmt.Sprintf("Setting adapter value to %d", mockServerValue))
-		//err = testState.SetMockServerValue("", mockServerValue)
-		//if err != nil {
-		//l.Error().Msg(fmt.Sprintf("Setting mock server value error: %+v", err))
-		//}
 
 		// try to fetch rounds
 		time.Sleep(5 * time.Second)
