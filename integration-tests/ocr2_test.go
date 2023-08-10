@@ -48,7 +48,8 @@ func TestOCRBasic(t *testing.T) {
 		clientLogger)
 	require.NoError(t, err, "Could not create cosmos client")
 
-	chainlinkClient, err := common.NewChainlinkClient(commonConfig.Env, commonConfig.ChainName, commonConfig.ChainId, commonConfig.NodeUrl)
+	nodeName := "primary"
+	chainlinkClient, err := common.NewChainlinkClient(commonConfig.Env, commonConfig.ChainId, nodeName, commonConfig.NodeUrl)
 	require.NoError(t, err, "Could not create chainlink client")
 
 	logger.Info().Str("node addresses", strings.Join(chainlinkClient.GetNodeAddresses(), " ")).Msg("Created chainlink client")
@@ -175,6 +176,7 @@ func TestOCRBasic(t *testing.T) {
 	p2pPort := "50200"
 	err = chainlinkClient.CreateJobsForContract(
 		commonConfig.ChainId,
+		nodeName,
 		p2pPort,
 		commonConfig.MockUrl,
 		commonConfig.JuelsPerFeeCoinSource,
