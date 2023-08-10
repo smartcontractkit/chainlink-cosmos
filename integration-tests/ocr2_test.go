@@ -35,10 +35,6 @@ func TestOCRBasic(t *testing.T) {
 	commonConfig := common.NewCommon(t)
 	commonConfig.SetLocalEnvironment()
 
-	chainlinkClient, err := common.NewChainlinkClient(commonConfig.Env, commonConfig.ChainName, commonConfig.ChainId, commonConfig.NodeUrl)
-	require.NoError(t, err, "Could not create chainlink client")
-
-	logger.Info().Str("node addresses", strings.Join(chainlinkClient.GetNodeAddresses(), " ")).Msg("Created chainlink client")
 	params.InitCosmosSdk(
 		/* bech32Prefix= */ "wasm",
 		/* token= */ "cosm",
@@ -52,6 +48,38 @@ func TestOCRBasic(t *testing.T) {
 		clientLogger)
 	require.NoError(t, err, "Could not create cosmos client")
 
+	chainlinkClient, err := common.NewChainlinkClient(commonConfig.Env, commonConfig.ChainName, commonConfig.ChainId, commonConfig.NodeUrl)
+	require.NoError(t, err, "Could not create chainlink client")
+
+	logger.Info().Str("node addresses", strings.Join(chainlinkClient.GetNodeAddresses(), " ")).Msg("Created chainlink client")
+	privateKey, testAccount, err := testutil.CreateKeyFromMnemonic(commonConfig.Mnemonic)
+	require.NoError(t, err, "Could not create private key from mnemonic")
+	logger.Info().Str("from", testAccount.String()).Msg("Funding nodes")
+
+	gasPrice := types.NewDecCoinFromDec("ucosm", types.MustNewDecFromStr("1"))
+	amount := []types.Coin{types.NewCoin("ucosm", types.NewInt(int64(10000000)))}
+	accountNumber, sequenceNumber, err := cosmosClient.Account(testAccount)
+	require.NoError(t, err, "Could not get account")
+
+	for i, nodeAddr := range chainlinkClient.GetNodeAddresses() {
+		to := types.MustAccAddressFromBech32(nodeAddr)
+		msgSend := banktypes.NewMsgSend(testAccount, to, amount)
+		resp, err := cosmosClient.SignAndBroadcast([]types.Msg{msgSend}, accountNumber, sequenceNumber+uint64(i), gasPrice, privateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+		require.NoError(t, err, "Could not send tokens")
+		logger.Info().Str("txHash", resp.TxResponse.TxHash).Msg("Waiting for tx to be committed")
+		tx, success := client.AwaitTxCommitted(t, cosmosClient, resp.TxResponse.TxHash)
+		require.True(t, success)
+		require.Equal(t, cometbfttypes.CodeTypeOK, tx.TxResponse.Code)
+		logger.Info().Str("from", testAccount.String()).
+			Str("to", nodeAddr).
+			Str("amount", "10000000").
+			Str("token", "ucosm").
+			Msg("Sucessfully sent native tokens")
+		balance, err := cosmosClient.Balance(to, "ucosm")
+		require.NoError(t, err, "Could not fetch ucosm balance")
+		require.Equal(t, balance.String(), "10000000ucosm")
+	}
+
 	gauntletWorkingDir := fmt.Sprintf("%s/", utils.ProjectRoot)
 	logger.Info().Str("working dir", gauntletWorkingDir).Msg("Initializing gauntlet")
 
@@ -63,38 +91,6 @@ func TestOCRBasic(t *testing.T) {
 
 	err = cg.SetupNetwork(commonConfig.NodeUrl, commonConfig.Mnemonic)
 	require.NoError(t, err, "Setting up gauntlet network should not fail")
-
-	// Fund nodes with native tokens for gas
-	gpe := client.NewFixedGasPriceEstimator(map[string]types.DecCoin{
-		"ucosm": types.NewDecCoinFromDec("ucosm", types.MustNewDecFromStr("0.01")),
-	})
-	gasPrices, err := gpe.GasPrices()
-	require.NoError(t, err, "Could not get gas prices")
-	from := types.MustAccAddressFromBech32(commonConfig.Account)
-	amount := []types.Coin{types.NewCoin("ucosm", types.NewInt(int64(10000000)))}
-	accountNumber, sequenceNumber, err := cosmosClient.Account(from)
-	require.NoError(t, err, "Could not get account")
-	privateKey, _, err := testutil.CreateKeyFromMnemonic(commonConfig.Mnemonic)
-	require.NoError(t, err, "Could not create private key from mnemonic")
-
-	for i, nodeAddr := range chainlinkClient.GetNodeAddresses() {
-		to := types.MustAccAddressFromBech32(nodeAddr)
-		msgSend := banktypes.NewMsgSend(from, to, amount)
-		resp, err := cosmosClient.SignAndBroadcast([]types.Msg{msgSend}, accountNumber, sequenceNumber+uint64(i), gasPrices["ucosm"], privateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
-		require.NoError(t, err, "Could not send tokens")
-		logger.Info().Str("txHash", resp.TxResponse.TxHash).Msg("Waiting for tx to be committed")
-		tx, success := client.AwaitTxCommitted(t, cosmosClient, resp.TxResponse.TxHash)
-		require.True(t, success)
-		require.Equal(t, cometbfttypes.CodeTypeOK, tx.TxResponse.Code)
-		logger.Info().Str("from", commonConfig.Account).
-			Str("to", nodeAddr).
-			Str("amount", "10000000").
-			Str("token", "ucosm").
-			Msg("Sucessfully sent native tokens")
-		balance, err := cosmosClient.Balance(to, "ucosm")
-		require.NoError(t, err, "Could not fetch ucosm balance")
-		require.Equal(t, balance.String(), "10000000ucosm")
-	}
 
 	// Upload contracts
 	_, err = cg.UploadContracts(nil)
