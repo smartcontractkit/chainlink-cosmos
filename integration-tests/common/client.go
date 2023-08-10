@@ -23,7 +23,7 @@ type ChainlinkClient struct {
 }
 
 // CreateKeys Creates node keys and defines chain and nodes for each node
-func NewChainlinkClient(env *environment.Environment, chainName string, chainId string, tendermintURL string) (*ChainlinkClient, error) {
+func NewChainlinkClient(env *environment.Environment, nodeName string, chainId string, tendermintURL string) (*ChainlinkClient, error) {
 	nodes, err := client.ConnectChainlinkNodes(env)
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func NewChainlinkClient(env *environment.Environment, chainName string, chainId 
 			return nil, err
 		}
 		_, _, err = n.CreateCosmosNode(&client.CosmosNodeAttributes{
-			Name:          chainName,
+			Name:          nodeName,
 			CosmosChainID: chainId,
 			TendermintURL: tendermintURL,
 		})
@@ -96,8 +96,7 @@ func (cc *ChainlinkClient) LoadOCR2Config(proposalId string) (*OCR2Config, error
 }
 
 // CreateJobsForContract Creates and sets up the boostrap jobs as well as OCR jobs
-func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort, mockUrl string, juelsPerFeeCoinSource string, ocrControllerAddress string) error {
-	// TODO: fix up relay configs
+func (cc *ChainlinkClient) CreateJobsForContract(chainId, nodeName, p2pPort, mockUrl string, juelsPerFeeCoinSource string, ocrControllerAddress string) error {
 	// Define node[0] as bootstrap node
 	cc.bootstrapPeers = []client.P2PData{
 		{
@@ -109,8 +108,7 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, p2pPort, mockUrl strin
 
 	// Defining relay config
 	bootstrapRelayConfig := job.JSONConfig{
-		//"nodeName": fmt.Sprintf("\"cosmos-OCRv2-%s-%s\"", "node", uuid.NewString()),
-		"nodeName": "\"primary\"",
+		"nodeName": fmt.Sprintf("\"%s\"", nodeName),
 		"chainID":  fmt.Sprintf("\"%s\"", chainId),
 	}
 
