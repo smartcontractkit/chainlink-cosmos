@@ -61,24 +61,23 @@ func (r *OCR2Reader) LatestConfig(ctx context.Context, changedInBlock uint64) (t
 	if len(res.TxResponses) == 0 {
 		return types.ContractConfig{}, fmt.Errorf("No transactions found for block %d, query %v", changedInBlock, query)
 	}
-	// Use the first tx and log set, which are most recent.
-	if len(res.TxResponses[0].Logs) == 0 {
-		return types.ContractConfig{}, fmt.Errorf("No logs found for tx %s, query %v", res.TxResponses[0].TxHash, query)
-	}
-	if len(res.TxResponses[0].Logs[0].Events) == 0 {
-		return types.ContractConfig{}, fmt.Errorf("No events found for tx %s, query %v", res.TxResponses[0].TxHash, query)
-	}
 
-	for _, event := range res.TxResponses[0].Logs[0].Events {
-		if event.Type == "wasm-set_config" {
-			cc, unknown, err := parseAttributes(event.Attributes)
-			if len(unknown) > 0 {
-				r.lggr.Warnf("wasm-set_config event contained unrecognized attributes: %v", unknown)
+	// Use the first matching tx we find, since results are in descending order.
+	for _, txResponse := range res.TxResponses {
+		if len(txResponse.Logs) == 0 {
+			continue
+		}
+		for _, event := range txResponse.Logs[0].Events {
+			if event.Type == "wasm-set_config" {
+				cc, unknown, err := parseAttributes(event.Attributes)
+				if len(unknown) > 0 {
+					r.lggr.Warnf("wasm-set_config event contained unrecognized attributes: %v", unknown)
+				}
+				return cc, err
 			}
-			return cc, err
 		}
 	}
-	return types.ContractConfig{}, fmt.Errorf("No set_config event found for tx %s", res.TxResponses[0].TxHash)
+	return types.ContractConfig{}, fmt.Errorf("No set_config event found in block %d", changedInBlock)
 }
 
 // parseAttributes returns a ContractConfig parsed from attrs.
