@@ -53,11 +53,14 @@ func (r *Relayer) Start(context.Context) error {
 	if r.chainSet == nil {
 		return errors.New("Cosmos unavailable")
 	}
-	// TODO(BCI-915): Make this configurable.
+
+	// TODO(BCI-915): Make this configurable and relayer-specific
+	// when doing so, core side will have to run each relayer in a LOOPP
 	params.InitCosmosSdk(
 		/* bech32Prefix= */ "wasm",
 		/* token= */ "cosm",
 	)
+
 	return nil
 }
 
