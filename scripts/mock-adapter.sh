@@ -8,10 +8,21 @@ binary_path="${cache_path}/bin/${binary_name}"
 
 bash "$(dirname -- "$0")/mock-adapter.down.sh"
 
-listen_address="127.0.0.1:6060"
 if [ $# -gt 0 ]; then
 	listen_address="$1"
+elif [ "$(uname)" = "Darwin" ]; then
+	echo "Listening on all interfaces on MacOS"
+	listen_address="0.0.0.0:6060"
+else
+	docker_ip=$(docker network inspect bridge -f '{{range .IPAM.Config}}{{.Gateway}}{{end}}')
+	if [ -z "${docker_ip}" ]; then
+		echo "Could not fetch docker ip."
+		exit 1
+	fi
+  echo "Listening on docker interface"
+  listen_address="${docker_ip}:6060"
 fi
+
 echo "Listen address: ${listen_address}"
 
 if [ ! -f "${binary_path}" ]; then
