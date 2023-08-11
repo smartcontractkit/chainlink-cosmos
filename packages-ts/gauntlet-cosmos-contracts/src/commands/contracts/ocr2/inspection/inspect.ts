@@ -236,7 +236,7 @@ const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedIn
 
   logger.line()
   logger.info('Inspection results:')
-  logger.info(`Ownership: 
+  logger.info(`Ownership:
     - Owner: ${onchainData.owner}
   `)
   logger.info(`Funding:
