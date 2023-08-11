@@ -31,29 +31,14 @@ func NewChainlinkClient(env *environment.Environment, nodeName string, chainId s
 	if nodes == nil || len(nodes) == 0 {
 		return nil, errors.New("No connected nodes")
 	}
+
 	nodeKeys, _, err := client.CreateNodeKeysBundle(nodes, chainName, chainId)
 	if err != nil {
 		return nil, err
 	}
+
 	if nodeKeys == nil || len(nodeKeys) == 0 {
 		return nil, errors.New("No node keys")
-	}
-	for _, n := range nodes {
-		_, _, err = n.CreateCosmosChain(&client.CosmosChainAttributes{
-			ChainID: chainId,
-			Config:  client.CosmosChainConfig{},
-		})
-		if err != nil {
-			return nil, err
-		}
-		_, _, err = n.CreateCosmosNode(&client.CosmosNodeAttributes{
-			Name:          nodeName,
-			CosmosChainID: chainId,
-			TendermintURL: tendermintURL,
-		})
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return &ChainlinkClient{
@@ -176,6 +161,7 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, nodeName, p2pPort, moc
 			OCR2OracleSpec:    oracleSpec,
 			ObservationSource: client.ObservationSourceSpecBridge(sourceValueBridge),
 		}
+
 		_, err = n.MustCreateJob(jobSpec)
 		if err != nil {
 			return err
