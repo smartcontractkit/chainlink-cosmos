@@ -2,7 +2,9 @@ package client
 
 import (
 	"fmt"
+	"math/big"
 
+	"github.com/smartcontractkit/chainlink-relay/pkg/fee"
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"go.uber.org/multierr"
 
@@ -17,14 +19,75 @@ var _ GasPricesEstimator = (*FixedGasPriceEstimator)(nil)
 
 type FixedGasPriceEstimator struct {
 	gasPrices map[string]sdk.DecCoin
+	lggr      logger.SugaredLogger
 }
 
-func NewFixedGasPriceEstimator(prices map[string]sdk.DecCoin) *FixedGasPriceEstimator {
-	return &FixedGasPriceEstimator{gasPrices: prices}
+func NewFixedGasPriceEstimator(prices map[string]sdk.DecCoin, lggr logger.SugaredLogger) *FixedGasPriceEstimator {
+	return &FixedGasPriceEstimator{gasPrices: prices, lggr: lggr}
 }
 
 func (gpe *FixedGasPriceEstimator) GasPrices() (map[string]sdk.DecCoin, error) {
 	return gpe.gasPrices, nil
+}
+
+func (gpe *FixedGasPriceEstimator) GasPrice(coin string) sdk.DecCoin {
+	return gpe.gasPrices[coin]
+}
+
+func (gpe *FixedGasPriceEstimator) SetGasPrice(coin string, price sdk.DecCoin) {
+	gpe.gasPrices[coin] = price
+}
+
+// CalculateGasPrice calculates the minimum of the maximum input gas prices.
+// Parameters:
+// - maxGasPrice: max gas price set by the user or operator
+// - defaultGasPrice: default gas price
+// - maxGasPriceConfigured: max gas price originally configured for the node
+func (gpe *FixedGasPriceEstimator) CalculateGasPrice(
+	coin string,
+	maxGasPrice,
+	defaultGasPrice,
+	maxGasPriceConfigured sdk.DecCoin,
+) sdk.DecCoin {
+	calculatedGasPrice := fee.CalculateFee(
+		maxGasPrice.Amount.BigInt(),
+		defaultGasPrice.Amount.BigInt(),
+		maxGasPriceConfigured.Amount.BigInt(),
+	)
+	return sdk.NewDecCoinFromDec(coin, sdk.NewDecFromBigIntWithPrec(calculatedGasPrice, 18))
+}
+
+// BumpGasPrice calculates a new gas price by bumping the current gas price by a percentage.
+// Parameters:
+// - currentGasPrice: current gas price (could be after bumping)
+// - originalGasPrice: original gas price (before bumping)
+// - maxGasPrice: max gas price
+// - maxBumpPrice: max gas price that can be bumped to
+// - bumpMin: min gas price that can be bumped by
+// - bumpPercent: percentage to bump by
+func (gpe *FixedGasPriceEstimator) CalculateBumpGasPrice(
+	coin string,
+	currentGasPrice,
+	originalGasPrice,
+	maxGasPrice,
+	maxBumpPrice,
+	bumpMin sdk.DecCoin,
+	bumpPercent uint16,
+) (sdk.DecCoin, error) {
+	bumpedGasPrice, err := fee.CalculateBumpedFee(
+		gpe.lggr,
+		currentGasPrice.Amount.BigInt(),
+		originalGasPrice.Amount.BigInt(),
+		maxGasPrice.Amount.BigInt(),
+		maxBumpPrice.Amount.BigInt(),
+		bumpMin.Amount.BigInt(),
+		bumpPercent,
+		FormatGasPrice,
+	)
+	if err != nil {
+		return sdk.DecCoin{}, err
+	}
+	return sdk.NewDecCoinFromDec(coin, sdk.NewDecFromBigIntWithPrec(bumpedGasPrice, 18)), nil
 }
 
 // Useful for hot reloads of configured prices
@@ -87,4 +150,8 @@ func (gpe *ComposedGasPriceEstimator) GasPrices() map[string]sdk.DecCoin {
 		return latestPrices
 	}
 	panic(fmt.Sprintf("no estimator succeeded errs %v", finalError))
+}
+
+func FormatGasPrice(gasPrice *big.Int) string {
+	return sdk.NewDecFromBigInt(gasPrice).String()
 }

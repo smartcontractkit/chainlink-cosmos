@@ -135,16 +135,14 @@ func TestCosmosClient(t *testing.T) {
 	minGasPrice := sdk.NewDecCoinFromDec("ucosm", defaultCoin)
 	// Local only for now, could maybe run on CI if we install terrad there?
 	accounts, testdir, tendermintURL := SetupLocalCosmosNode(t, "42", "ucosm")
-	lggr := logger.Test(t)
+	lggr := logger.Sugared(logger.Test(t))
 	tc, err := NewClient(
 		"42",
 		tendermintURL,
 		DefaultTimeout,
 		lggr)
 	require.NoError(t, err)
-	gpe := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
-		"ucosm": sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.01")),
-	})
+	gpe := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{"ucosm": sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.01"))}, lggr)
 	contract := DeployTestContract(t, tendermintURL, "42", "ucosm", accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 
 	t.Run("send tx between accounts", func(t *testing.T) {
