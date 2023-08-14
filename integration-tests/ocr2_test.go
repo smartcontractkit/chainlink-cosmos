@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -18,7 +19,7 @@ import (
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/testutil"
 	relaylogger "github.com/smartcontractkit/chainlink-relay/pkg/logger"
-	"github.com/smartcontractkit/chainlink/integration-tests/actions"
+	// "github.com/smartcontractkit/chainlink/integration-tests/actions"
 	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting2/types"
 
 	cometbfttypes "github.com/cometbft/cometbft/abci/types"
@@ -26,7 +27,7 @@ import (
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
+	// "go.uber.org/zap/zapcore"
 )
 
 func TestOCRBasic(t *testing.T) {
@@ -34,6 +35,23 @@ func TestOCRBasic(t *testing.T) {
 	logger := common.GetTestLogger(t)
 	commonConfig := common.NewCommon(t)
 	commonConfig.SetLocalEnvironment()
+
+	logger.Info().Msg("Starting wasmd container...")
+	err := exec.Command("../scripts/wasmd.sh").Run()
+	require.NoError(t, err, "Could not start wasmd container")
+	logger.Info().Msg("Starting postgres container...")
+	err = exec.Command("../scripts/postgres.sh").Run()
+	require.NoError(t, err, "Could not start postgres container")
+	logger.Info().Msg("Starting mock adapter...")
+	err = exec.Command("../scripts/mock-adapter.sh").Run()
+	require.NoError(t, err, "Could not start mock adapter")
+	logger.Info().Msg("Starting core nodes...")
+	cmd := exec.Command("../scripts/core.sh")
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, fmt.Sprintf("CL_CONFIG=%s", commonConfig.ChainlinkConfig))
+	err = cmd.Run()
+	require.NoError(t, err, "Could not start core nodes")
+	logger.Info().Msg("Set up local stack complete.")
 
 	params.InitCosmosSdk(
 		/* bech32Prefix= */ "wasm",
@@ -67,15 +85,15 @@ func TestOCRBasic(t *testing.T) {
 		msgSend := banktypes.NewMsgSend(testAccount, to, amount)
 		resp, err := cosmosClient.SignAndBroadcast([]types.Msg{msgSend}, accountNumber, sequenceNumber+uint64(i), gasPrice, privateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err, "Could not send tokens")
-		logger.Info().Str("txHash", resp.TxResponse.TxHash).Msg("Waiting for tx to be committed")
-		tx, success := client.AwaitTxCommitted(t, cosmosClient, resp.TxResponse.TxHash)
-		require.True(t, success)
-		require.Equal(t, cometbfttypes.CodeTypeOK, tx.TxResponse.Code)
 		logger.Info().Str("from", testAccount.String()).
 			Str("to", nodeAddr).
 			Str("amount", "10000000").
 			Str("token", "ucosm").
-			Msg("Sucessfully sent native tokens")
+			Str("txHash", resp.TxResponse.TxHash).
+			Msg("Sending native tokens")
+		tx, success := client.AwaitTxCommitted(t, cosmosClient, resp.TxResponse.TxHash)
+		require.True(t, success)
+		require.Equal(t, cometbfttypes.CodeTypeOK, tx.TxResponse.Code)
 		balance, err := cosmosClient.Balance(to, "ucosm")
 		require.NoError(t, err, "Could not fetch ucosm balance")
 		require.Equal(t, balance.String(), "10000000ucosm")
@@ -186,11 +204,26 @@ func TestOCRBasic(t *testing.T) {
 	err = validateRounds(t, cosmosClient, types.MustAccAddressFromBech32(ocrAddress), types.MustAccAddressFromBech32(ocrProxyAddress), commonConfig.IsSoak, commonConfig.TestDuration)
 	require.NoError(t, err, "Validating round should not fail")
 
-	t.Cleanup(func() {
-		err = actions.TeardownSuite(t, commonConfig.Env, "./", nil, nil, zapcore.DPanicLevel, nil)
-		//err = actions.TeardownSuite(t, t.Common.Env, utils.ProjectRoot, t.Cc.ChainlinkNodes, nil, zapcore.ErrorLevel)
-		require.NoError(t, err, "Error tearing down environment")
-	})
+	// Tear down local stack
+	logger.Info().Msg("Tearing down core nodes...")
+	err = exec.Command("../scripts/core.down.sh").Run()
+	require.NoError(t, err, "Could not tear down core nodes")
+	logger.Info().Msg("Tearing down mock adapter...")
+	err = exec.Command("../scripts/mock-adapter.down.sh").Run()
+	require.NoError(t, err, "Could not tear down mock adapter")
+	logger.Info().Msg("Tearing down postgres container...")
+	err = exec.Command("../scripts/postgres.down.sh").Run()
+	require.NoError(t, err, "Could not tear down postgres container")
+	logger.Info().Msg("Tearing down wasmd container...")
+	err = exec.Command("../scripts/wasmd.down.sh").Run()
+	require.NoError(t, err, "Could not tear down wasmd container")
+	logger.Info().Msg("Tear down local stack complete.")
+
+	// t.Cleanup(func() {
+	// 	err = actions.TeardownSuite(t, commonConfig.Env, "./", nil, nil, zapcore.DPanicLevel, nil)
+	// 	//err = actions.TeardownSuite(t, t.Common.Env, utils.ProjectRoot, t.Cc.ChainlinkNodes, nil, zapcore.ErrorLevel)
+	// 	require.NoError(t, err, "Error tearing down environment")
+	// })
 }
 
 func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.AccAddress, ocrProxyAddress types.AccAddress, isSoak bool, testDuration time.Duration) error {
