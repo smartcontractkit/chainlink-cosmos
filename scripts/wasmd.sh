@@ -31,7 +31,7 @@ done
 docker run \
 	"${listen_args[@]}" \
 	-d \
-        --platform linux/amd64 \
+	--platform linux/amd64 \
 	--name "${container_name}" \
 	"cosmwasm/wasmd:${container_version}" \
 	"./setup_and_run.sh" \

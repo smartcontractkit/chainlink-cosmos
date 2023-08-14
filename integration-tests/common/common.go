@@ -122,18 +122,25 @@ Enabled = true
 ChainID = '%s'
 [[Cosmos.Nodes]]
 Name = 'primary'
-TendermintURL = '%s'
+TendermintURL = 'http://host.docker.internal:26657'
 
 [OCR2]
 Enabled = true
 
 [P2P]
+[P2P.V1]
+Enabled = false
 [P2P.V2]
 Enabled = true
 DeltaDial = '5s'
 DeltaReconcile = '5s'
 ListenAddresses = ['0.0.0.0:6691']
-`, chainID, nodeUrl)
+
+[WebServer]
+HTTPPort = 6688
+[WebServer.TLS]
+HTTPSPort = 0
+`, chainID)
 	log.Debug().Str("toml", chainlinkConfig).Msg("Created chainlink config")
 
 	ttl := getTTL()
