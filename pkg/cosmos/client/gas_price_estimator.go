@@ -59,8 +59,8 @@ func (gpe *FixedGasPriceEstimator) CalculateGasPrice(
 
 // BumpGasPrice calculates a new gas price by bumping the current gas price by a percentage.
 // Parameters:
-// - currentGasPrice: current gas price (could be after bumping)
-// - originalGasPrice: original gas price (before bumping)
+// - currentGasPrice: The current gas price before bumping in the current round. May have already been bumped previously.
+// - originalGasPrice: The original base gas price before any bumping.
 // - maxGasPrice: max gas price
 // - maxBumpPrice: max gas price that can be bumped to
 // - bumpMin: min gas price that can be bumped by
