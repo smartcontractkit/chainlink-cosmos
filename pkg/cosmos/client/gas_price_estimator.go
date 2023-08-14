@@ -54,7 +54,7 @@ func (gpe *FixedGasPriceEstimator) CalculateGasPrice(
 		defaultGasPrice.Amount.BigInt(),
 		maxGasPriceConfigured.Amount.BigInt(),
 	)
-	return sdk.NewDecCoinFromDec(coin, sdk.NewDecFromBigIntWithPrec(calculatedGasPrice, 18))
+	return sdk.NewDecCoinFromDec(coin, sdk.NewDecFromBigIntWithPrec(calculatedGasPrice, sdk.Precision))
 }
 
 // BumpGasPrice calculates a new gas price by bumping the current gas price by a percentage.

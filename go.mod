@@ -12,7 +12,7 @@ require (
 	github.com/pelletier/go-toml v1.9.5
 	github.com/prometheus/client_golang v1.15.0
 	github.com/shopspring/decimal v1.3.1
-	github.com/smartcontractkit/chainlink-relay v0.1.7-0.20230810155736-fc449f75f4fe
+	github.com/smartcontractkit/chainlink-relay v0.1.7-0.20230811180125-2823a324cef4
 	github.com/smartcontractkit/libocr v0.0.0-20230802221916-2271752fa829
 	github.com/stretchr/testify v1.8.4
 	github.com/tidwall/gjson v1.14.4

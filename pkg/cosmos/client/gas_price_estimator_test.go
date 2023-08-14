@@ -2,6 +2,7 @@ package client
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
@@ -139,6 +140,7 @@ func TestFixedPriceGasEstimator(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				got := gpeFixed.CalculateGasPrice("ucosm", tt.maxGasPrice, tt.defaultGasPrice, tt.maxGasPriceNode)
+				fmt.Println(tt.maxGasPrice.Amount)
 				assert.Equal(t, tt.want, got)
 			})
 		}
