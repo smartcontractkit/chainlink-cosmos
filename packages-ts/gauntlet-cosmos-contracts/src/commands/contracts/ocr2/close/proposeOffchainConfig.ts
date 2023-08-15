@@ -3,11 +3,11 @@ import { extendCommandInstruction, instructionToCommand } from '../../../abstrac
 import ProposeOffchainConfig, { CommandInput, instruction } from '../proposeOffchainConfig'
 
 export const makeEmptyOffchainConfig = (): encoding.OffchainConfig => {
-  return ({
+  return {
     offchainPublicKeys: [],
     configPublicKeys: [],
     peerIds: [],
-  } as unknown) as encoding.OffchainConfig
+  } as unknown as encoding.OffchainConfig
 }
 
 export const EMPTY_SECRET = 'EMPTY'

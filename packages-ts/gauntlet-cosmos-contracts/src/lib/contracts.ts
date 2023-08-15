@@ -6,7 +6,7 @@ import fetch from 'node-fetch'
 import { DEFAULT_RELEASE_VERSION, DEFAULT_CWPLUS_VERSION } from './constants'
 import { assertions } from '@chainlink/gauntlet-core/dist/utils'
 
-export type CONTRACT_LIST = typeof CONTRACT_LIST[keyof typeof CONTRACT_LIST]
+export type CONTRACT_LIST = (typeof CONTRACT_LIST)[keyof typeof CONTRACT_LIST]
 export const CONTRACT_LIST = {
   FLAGS: 'flags',
   DEVIATION_FLAGGING_VALIDATOR: 'deviation_flagging_validator',
@@ -58,7 +58,9 @@ export abstract class Contract {
     if (version === 'local') {
       // Possible paths depending on how/where gauntlet is being executed
       const possibleContractPaths = [
+        path.join(__dirname, '../../../../artifacts'),
         path.join(__dirname, '../../artifacts/bin'),
+
         path.join(process.cwd(), './artifacts'),
         path.join(process.cwd(), './artifacts/bin'),
         path.join(process.cwd(), './tests/e2e/common_artifacts'),
@@ -68,6 +70,7 @@ export abstract class Contract {
       const codes = possibleContractPaths
         .filter((contractPath) => existsSync(`${contractPath}/${this.id}.wasm`))
         .map((contractPath) => readFileSync(`${contractPath}/${this.id}.wasm`))
+
       this.bytecode = codes[0]
     } else {
       const url = `${this.downloadUrl}${version}/${this.id}.wasm`
@@ -86,6 +89,9 @@ export abstract class Contract {
     const cwd = process.cwd()
     const possibleContractPaths = [
       path.join(__dirname, '../../../../contracts'),
+      path.join(__dirname, '../../../gauntlet-cosmos-cw-plus/artifacts/contracts'),
+      path.join(__dirname, '../../../gauntlet-cosmos-contracts/artifacts/contracts'),
+
       path.join(cwd, './contracts'),
       path.join(cwd, '../../contracts'),
       path.join(cwd, './packages-ts/gauntlet-cosmos-contracts/artifacts/contracts'),
@@ -95,19 +101,14 @@ export abstract class Contract {
     const abi = possibleContractPaths
       .filter((path) => existsSync(`${path}/${this.dirName}/schema`))
       .map((contractPath) => {
-        const toPath = (type) => {
-          if (this.id == CONTRACT_LIST.CW20_BASE && type == 'execute_msg') {
-            return path.join(contractPath, `./${this.dirName}/schema/cw20_${type}`)
-          } else {
-            return path.join(contractPath, `./${this.dirName}/schema/${type}`)
-          }
-        }
+        const toPath = (type) => path.join(contractPath, `./${this.dirName}/schema/raw/${type}`)
         return {
-          execute: io.readJSON(toPath('execute_msg')),
-          query: io.readJSON(toPath('query_msg')),
-          instantiate: io.readJSON(toPath('instantiate_msg')),
+          execute: io.readJSON(toPath('execute')),
+          query: io.readJSON(toPath('query')),
+          instantiate: io.readJSON(toPath('instantiate')),
         }
       })
+
     if (abi.length === 0) {
       logger.error(`ABI not found for contract ${this.id}`)
     }

@@ -1,19 +1,40 @@
 use std::env::current_dir;
-use std::fs::create_dir_all;
+use std::fs::{create_dir_all, remove_dir_all, rename};
 
-use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
+use cosmwasm_schema::{export_schema, remove_schemas, schema_for, write_api};
 
 use deviation_flagging_validator::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use deviation_flagging_validator::state::State;
 
 fn main() {
+    // clean directory
     let mut out_dir = current_dir().unwrap();
     out_dir.push("schema");
+    remove_dir_all(&out_dir).unwrap();
     create_dir_all(&out_dir).unwrap();
-    remove_schemas(&out_dir).unwrap();
 
-    export_schema(&schema_for!(InstantiateMsg), &out_dir);
-    export_schema(&schema_for!(ExecuteMsg), &out_dir);
-    export_schema(&schema_for!(QueryMsg), &out_dir);
-    export_schema(&schema_for!(State), &out_dir);
+    write_api! {
+        instantiate: InstantiateMsg,
+        execute: ExecuteMsg,
+        query: QueryMsg,
+    }
+
+    // put main schema under main folder for codegen.js (else it will error)
+    let mut main_dir = out_dir.clone();
+    main_dir.push("main");
+    create_dir_all(&main_dir).unwrap();
+
+    let mut main_file = out_dir.clone();
+    main_file.push("deviation-flagging-validator.json");
+
+    let mut new_location = main_dir.clone();
+    new_location.push("deviation-flagging-validator.json");
+    rename(&main_file, &new_location).unwrap();
+
+    // put other hand-exported schemas in seperate folder
+    let mut other_dir = out_dir.clone();
+    other_dir.push("other");
+    create_dir_all(&other_dir).unwrap();
+    export_schema(&schema_for!(State), &other_dir);
+
 }

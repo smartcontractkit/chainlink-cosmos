@@ -80,39 +80,37 @@ const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   }
 }
 
-const makeOnchainData = (provider: Client) => async (
-  instructionsData: any[],
-  input: CommandInput,
-  aggregator: string,
-): Promise<ContractExpectedInfo> => {
-  const latestRoundData = instructionsData[0]
-  const transmitters = instructionsData[1]
-  const description = instructionsData[2]
+const makeOnchainData =
+  (provider: Client) =>
+  async (instructionsData: any[], input: CommandInput, aggregator: string): Promise<ContractExpectedInfo> => {
+    const latestRoundData = instructionsData[0]
+    const transmitters = instructionsData[1]
+    const description = instructionsData[2]
 
-  const onchainEvent = await getLatestOCRNewTransmissionEvents(provider, aggregator)[0]
+    const onchainEvent = await getLatestOCRNewTransmissionEvents(provider, aggregator)[0]
 
-  return {
-    transmitters: transmitters.addresses,
-    description,
-    aggregatorAddress: aggregator,
-    latestRoundData: {
-      roundId: latestRoundData.round_id,
-      answer: latestRoundData.answer,
-      observationsTimestamp: latestRoundData.observations_timestamp,
-      transmissionTimestamp: latestRoundData.transmission_timestamp,
-    },
-    ...(onchainEvent && {
-      event: {
-        answer: Number(onchainEvent.answer[0]),
-        transmitter: onchainEvent.transmitter[0],
-        observations: onchainEvent.observations.map((o) => Number(o)),
-        observers: onchainEvent.observers[0],
-        observations_timestamp: Number(onchainEvent.observations_timestamp[0]),
-        aggregator_round_id: Number(onchainEvent.aggregator_round_id[0]),
+    return {
+      transmitters: transmitters.addresses,
+      description,
+      aggregatorAddress: aggregator,
+      latestRoundData: {
+        roundId: latestRoundData.round_id,
+        answer: latestRoundData.answer,
+        observationsTimestamp: latestRoundData.observations_timestamp,
+        transmissionTimestamp: latestRoundData.transmission_timestamp,
       },
-    }),
+      ...(onchainEvent && {
+        event: {
+          answer: Number(onchainEvent.answer[0]),
+          transmitter: onchainEvent.transmitter[0],
+          observations: onchainEvent.observations.map((o) => Number(o)),
+          observers: onchainEvent.observers[0],
+          observations_timestamp: Number(onchainEvent.observations_timestamp[0]),
+          aggregator_round_id: Number(onchainEvent.aggregator_round_id[0]),
+        },
+      }),
+    }
   }
-}
 
 const parseObserversByLength = (observers: string, observersNumber: number): number[] =>
   (observers.substring(0, observersNumber * 2).match(/.{2}/g) || []).map((s) => parseInt(s, 16))

@@ -24,47 +24,45 @@ const makeInput = async (flags: any, _args: string[]): Promise<CommandInput> => 
   return {}
 }
 
-const makeOnchainData = (provider: Client) => async (
-  instructionsData: any[],
-  _input: CommandInput,
-  aggregator: string,
-): Promise<ContractExpectedInfo> => {
-  const transmitters = instructionsData[0]
+const makeOnchainData =
+  (provider: Client) =>
+  async (instructionsData: any[], _input: CommandInput, aggregator: string): Promise<ContractExpectedInfo> => {
+    const transmitters = instructionsData[0]
 
-  logger.loading('Fetching latest transmission events...')
-  const events = await getLatestOCRNewTransmissionEvents(provider, aggregator)
+    logger.loading('Fetching latest transmission events...')
+    const events = await getLatestOCRNewTransmissionEvents(provider, aggregator)
 
-  const transmissionsPerTransmitter = events.reduce(
-    (agg, e) => {
-      const transmitter = e['wasm-new_transmission'][0].transmitter
-      if (agg[transmitter]) return agg
-      return {
-        ...agg,
-        [transmitter]: {
-          answer: e['wasm-new_transmission'][0].answer,
-          timestamp: Number(e['wasm-new_transmission'][0].observations_timestamp),
-        },
-      }
-    },
-    {} as {
-      [key: string]: {
-        answer: string
-        timestamp: number
-      }
-    },
-  )
+    const transmissionsPerTransmitter = events.reduce(
+      (agg, e) => {
+        const transmitter = e['wasm-new_transmission'][0].transmitter
+        if (agg[transmitter]) return agg
+        return {
+          ...agg,
+          [transmitter]: {
+            answer: e['wasm-new_transmission'][0].answer,
+            timestamp: Number(e['wasm-new_transmission'][0].observations_timestamp),
+          },
+        }
+      },
+      {} as {
+        [key: string]: {
+          answer: string
+          timestamp: number
+        }
+      },
+    )
 
-  logger.loading('Fetching transmitters balances...')
-  const balances: (string | null)[] = await Promise.all(
-    transmitters.addresses.map((t) => providerUtils.getBalance(provider, t, 'ucosm')),
-  )
+    logger.loading('Fetching transmitters balances...')
+    const balances: (string | null)[] = await Promise.all(
+      transmitters.addresses.map((t) => providerUtils.getBalance(provider, t, 'ucosm')),
+    )
 
-  return {
-    transmitters: transmitters.addresses,
-    balances: balances.reduce((agg, bal, i) => ({ ...agg, [transmitters.addresses[i]]: bal }), {}),
-    latestTransmissions: transmissionsPerTransmitter,
+    return {
+      transmitters: transmitters.addresses,
+      balances: balances.reduce((agg, bal, i) => ({ ...agg, [transmitters.addresses[i]]: bal }), {}),
+      latestTransmissions: transmissionsPerTransmitter,
+    }
   }
-}
 
 const inspect = (inputData: CommandInput, onchainData: ContractExpectedInfo): boolean => {
   const balancesMsg = Object.entries(onchainData.balances).reduce((agg, [transmitter, bal]) => {

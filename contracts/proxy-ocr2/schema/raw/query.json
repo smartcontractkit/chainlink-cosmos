@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QueryMsg",
+  "oneOf": [
+    {
+      "type": "string",
+      "enum": [
+        "decimals",
+        "version",
+        "description",
+        "latest_round_data",
+        "proposed_latest_round_data",
+        "aggregator",
+        "phase_id",
+        "proposed_aggregator",
+        "owner"
+      ]
+    },
+    {
+      "type": "object",
+      "required": [
+        "round_data"
+      ],
+      "properties": {
+        "round_data": {
+          "type": "object",
+          "required": [
+            "round_id"
+          ],
+          "properties": {
+            "round_id": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "proposed_round_data"
+      ],
+      "properties": {
+        "proposed_round_data": {
+          "type": "object",
+          "required": [
+            "round_id"
+          ],
+          "properties": {
+            "round_id": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "phase_aggregators"
+      ],
+      "properties": {
+        "phase_aggregators": {
+          "type": "object",
+          "required": [
+            "phase_id"
+          ],
+          "properties": {
+            "phase_id": {
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

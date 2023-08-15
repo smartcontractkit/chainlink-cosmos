@@ -2,13 +2,6 @@
 
 pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
-    (rust-bin.stable.latest.default.override {
-      extensions = ["rust-src"];
-      targets = [
-        "x86_64-unknown-linux-gnu" # Used on CI
-        "wasm32-unknown-unknown"
-      ];
-    })
     cargo-generate
     cargo-tarpaulin
     gcc
@@ -23,6 +16,9 @@ pkgs.mkShell {
     delve
     golangci-lint
     gotools
+    
+    docker-client
+    libiconv
 
     # needed for test
     kube3d

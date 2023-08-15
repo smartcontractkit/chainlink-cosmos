@@ -35,8 +35,7 @@ export default class DeployLink extends CosmosCommand {
       marketing: {
         project: 'Chainlink',
         logo: {
-          url:
-            'https://assets-global.website-files.com/5e8c4efdc725c62673645017/5e981c33430c9765dba5a098_Symbol%20White.svg',
+          url: 'https://assets-global.website-files.com/5e8c4efdc725c62673645017/5e981c33430c9765dba5a098_Symbol%20White.svg',
         },
       },
       mint: {

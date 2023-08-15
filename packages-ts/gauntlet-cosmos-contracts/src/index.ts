@@ -27,6 +27,7 @@ const commands = {
   try {
     const networkPossiblePaths = [path.join(process.cwd(), './networks'), path.join(__dirname, '../networks')]
     const networkPath = networkPossiblePaths.filter((networkPath) => existsSync(networkPath))[0]
+    console.log('network Path', networkPath)
     const result = await executeCLI(commands, networkPath)
     if (result) {
       io.saveJSON(result, process.env['REPORT_NAME'] ? process.env['REPORT_NAME'] : 'report')

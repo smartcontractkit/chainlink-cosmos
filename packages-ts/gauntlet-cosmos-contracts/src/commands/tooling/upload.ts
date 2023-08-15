@@ -23,6 +23,7 @@ export default class UploadContractCode extends CosmosCommand {
 
   constructor(flags, args: string[]) {
     super(flags, args)
+    console.log('upload constructor')
   }
 
   makeRawTransaction = async () => {
@@ -30,6 +31,7 @@ export default class UploadContractCode extends CosmosCommand {
   }
 
   execute = async () => {
+    console.log('begin execute')
     const askedContracts = !!this.args.length
       ? Object.keys(CONTRACT_LIST)
           .filter((contractId) => this.args.includes(CONTRACT_LIST[contractId]))

@@ -1,6 +1,5 @@
 use cosmwasm_std::Addr;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_schema::{cw_serde, QueryResponses};
 
 // TODO: Deduplicate (also declared in 'contracts/ocr2/src/state.rs')
 // https://github.com/smartcontractkit/chainlink-cosmos/issues/18
@@ -23,7 +22,8 @@ pub mod bignum {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
+#[derive(Eq)]
 pub struct InstantiateMsg {
     /// The address of the flags contract
     pub flags: String,
@@ -33,8 +33,8 @@ pub struct InstantiateMsg {
     pub flagging_threshold: u32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(Eq)]
 pub enum ExecuteMsg {
     /// Initiate contract ownership transfer to another address.
     /// Can be used only by owner
@@ -70,12 +70,13 @@ pub enum ExecuteMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(Eq, QueryResponses)]
 pub enum QueryMsg {
     /// Check whether the parameters count is valid by comparing the difference
     /// change to the flagging threshold
-    /// Response: [`bool`]
+    /// Res
+    #[returns(bool)]
     IsValid {
         /// Previous answer, used as the median of difference with the current
         /// answer to determine if the deviation threshold has been exceeded
@@ -89,14 +90,17 @@ pub enum QueryMsg {
         answer: i128,
     },
     /// Query the flagging threshold
-    /// Response: [`u32`]
+    /// Response: [`FlaggingThresholdResponse`]
+    #[returns(FlaggingThresholdResponse)]
     FlaggingThreshold,
     /// Returns contract owner's address
     /// Response [`Addr`]
+    #[returns(Addr)]
     Owner,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
+#[derive(Eq)]
 pub struct FlaggingThresholdResponse {
     pub threshold: u32,
 }

@@ -4,7 +4,7 @@ container_name="chainlink-cosmos.wasmd"
 container_version="v0.40.1"
 genesis_account="wasm1lsagfzrm4gz28he4wunt63sts5xzmczwda8vl6"
 
-set -euo pipefail
+set -euox pipefail
 
 bash "$(dirname -- "$0")/wasmd.down.sh"
 
@@ -35,7 +35,8 @@ docker run \
 	--name "${container_name}" \
 	"cosmwasm/wasmd:${container_version}" \
 	"./setup_and_run.sh" \
-	"${genesis_account}"
+	"${genesis_account}" \
+	"$@"
 
 echo "Waiting for wasmd container to become ready.."
 start_time=$(date +%s)

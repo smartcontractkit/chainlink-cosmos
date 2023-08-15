@@ -1,9 +1,12 @@
 mod integration_tests;
 
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Deps, DepsMut, Empty, Env, Event, MessageInfo, QueryResponse,
-    Response, StdError,
+    Response, StdError, 
 };
+
+use ocr2;
 
 use cw_storage_plus::{Item, Map};
 
@@ -60,13 +63,15 @@ pub mod state {
 pub mod msg {
     use super::*;
 
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+    #[cw_serde]
+    #[derive(Eq)]
+    #[serde(rename_all = "snake_case")]
     pub struct InstantiateMsg {
         pub contract_address: String,
     }
 
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
+    #[cw_serde]
+    #[derive(Eq)]
     pub enum ExecuteMsg {
         ProposeContract {
             address: String,
@@ -84,23 +89,32 @@ pub mod msg {
         AcceptOwnership,
     }
 
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-    #[serde(rename_all = "snake_case")]
+    #[cw_serde]
+    #[derive(Eq, QueryResponses)]
     pub enum QueryMsg {
+        #[returns(u8)]
         Decimals,
+        #[returns(str)]
         Version,
+        #[returns(str)]
         Description,
-
+        #[returns(ocr2::state::Round)]
         RoundData { round_id: u64 },
+        #[returns(ocr2::state::Round)]
         LatestRoundData,
+        #[returns(ocr2::state::Round)]
         ProposedRoundData { round_id: u32 },
+        #[returns(ocr2::state::Round)]
         ProposedLatestRoundData,
-
+        #[returns(Addr)]
         Aggregator,
+        #[returns(u16)]
         PhaseId,
+        #[returns(Addr)]
         PhaseAggregators { phase_id: u16 },
+        #[returns(Addr)]
         ProposedAggregator,
-
+        #[returns(Addr)]
         Owner,
     }
 }
@@ -253,11 +267,11 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
             Ok(to_binary(&round)?)
         }
         QueryMsg::Aggregator => {
-            let contract_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
+            let contract_address: Addr = CURRENT_PHASE.load(deps.storage)?.contract_address;
             Ok(to_binary(&contract_address)?)
         }
         QueryMsg::PhaseId => {
-            let phase_id = CURRENT_PHASE.load(deps.storage)?.id;
+            let phase_id: u16 = CURRENT_PHASE.load(deps.storage)?.id;
             Ok(to_binary(&phase_id)?)
         }
         QueryMsg::PhaseAggregators { phase_id } => {
