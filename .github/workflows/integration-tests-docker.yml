@@ -7,6 +7,10 @@ on:
       - main
   pull_request:
 
+concurrency:
+  group: docker-tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   integration_tests_docker:
     name: Run docker tests
@@ -14,6 +18,9 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+
+      - name: Build contracts
+        run: mkdir -p -m 777 target/debug artifacts && make build_contracts
 
       - name: Run Test
         env:
