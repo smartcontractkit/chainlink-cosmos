@@ -75,4 +75,4 @@ jobs:
         run: make contracts_compile
           
       - run: nix develop -c yarn install --frozen-lockfile
-      - run: nix develop -c yarn test
+      - run: nix develop -c yarn test:ci
