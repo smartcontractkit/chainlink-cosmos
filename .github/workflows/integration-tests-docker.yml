@@ -1,0 +1,27 @@
+name: Integration Test (Docker)
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+
+jobs:
+  integration_tests_docker:
+    name: Run docker tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+
+      - name: Run Test
+        env:
+          # temp smartcontractkit/chainlink image built on branch `cosmos-test-keys`
+          CORE_IMAGE: 'alaucf/cosmos_tmp:latest'
+          DEFAULT_GAS_PRICE: '0.025ucosm'
+          MNEMONIC: 'surround miss nominee dream gap cross assault thank captain prosper drop duty group candy wealth weather scale put'
+          NODE_URL: 'http://127.0.0.1:26657'
+          TTL: '1m'
+          NODE_COUNT: '4'
+        run: cd integration-tests && go test --timeout=1h -v ./
