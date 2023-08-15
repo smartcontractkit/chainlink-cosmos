@@ -16,19 +16,46 @@ jobs:
     name: Run docker tests
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout chainlink repo
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        with:
+          repository: smartcontractkit/chainlink
+          # TEMP: cosmos-test-keys branch with fixes
+          ref: 9c95732370e5c39a5dccf21e6db9fe167abe8d09
+          path: temp/chainlink
+
+      - name: Update chainlink-cosmos sha
+        env:
+          COMMIT_SHA: ${{ github.event_name == 'push' && github.sha || github.event.pull_request.head.sha }}
+        run: |
+          cd temp/chainlink
+          sed -i -E "/.*\/chainlink-cosmos \S+/ s/(.*\/chainlink-cosmos) \S+/\1 ${COMMIT_SHA}/g" go.mod
+          GIT_PAGER= git diff
+          make gomodtidy
+
+      - name: Build chainlink image
+        run: |
+          cd temp/chainlink
+          docker buildx build --build-arg COMMIT_SHA=$(git rev-parse HEAD) -t local_chainlink -f core/chainlink.Dockerfile .
+
       - name: Checkout sources
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
 
       - name: Build contracts
-        run: mkdir -p -m 777 target/debug artifacts && make build_contracts
+        run: |
+          # necessary so that we don't get "Permission denied" errors after docker execution.
+          mkdir -p -m 777 target/debug artifacts
+          make build_contracts
 
       - name: Run Test
         env:
           # temp smartcontractkit/chainlink image built on branch `cosmos-test-keys`
-          CORE_IMAGE: 'alaucf/cosmos_tmp:latest'
+          CORE_IMAGE: 'local_chainlink'
           DEFAULT_GAS_PRICE: '0.025ucosm'
           MNEMONIC: 'surround miss nominee dream gap cross assault thank captain prosper drop duty group candy wealth weather scale put'
           NODE_URL: 'http://127.0.0.1:26657'
           TTL: '1m'
           NODE_COUNT: '4'
-        run: cd integration-tests && go test --timeout=1h -v ./
+        run: |
+          cd integration-tests
+          go test --timeout=1h -v ./
