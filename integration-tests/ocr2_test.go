@@ -343,9 +343,7 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 	valueBig, success := new(big.Int).SetString(roundData.Answer, 10)
 	require.True(t, success, "Failed to parse round data")
 	value := valueBig.Int64()
-	if value < 0 {
-		require.Equal(t, value, int64(mockAdapterValue), "Reading from proxy should return correct value")
-	}
+	require.Equal(t, value, int64(mockAdapterValue), "Reading from proxy should return correct value")
 
 	return nil
 }
