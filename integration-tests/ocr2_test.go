@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -34,24 +33,7 @@ func TestOCRBasic(t *testing.T) {
 	// Set up test environment
 	logger := common.GetTestLogger(t)
 	commonConfig := common.NewCommon(t)
-	commonConfig.SetLocalEnvironment()
-
-	logger.Info().Msg("Starting wasmd container...")
-	err := exec.Command("../scripts/wasmd.sh").Run()
-	require.NoError(t, err, "Could not start wasmd container")
-	logger.Info().Msg("Starting postgres container...")
-	err = exec.Command("../scripts/postgres.sh").Run()
-	require.NoError(t, err, "Could not start postgres container")
-	logger.Info().Msg("Starting mock adapter...")
-	err = exec.Command("../scripts/mock-adapter.sh").Run()
-	require.NoError(t, err, "Could not start mock adapter")
-	logger.Info().Msg("Starting core nodes...")
-	cmd := exec.Command("../scripts/core.sh")
-	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, fmt.Sprintf("CL_CONFIG=%s", commonConfig.ChainlinkConfig))
-	err = cmd.Run()
-	require.NoError(t, err, "Could not start core nodes")
-	logger.Info().Msg("Set up local stack complete.")
+	commonConfig.SetLocalEnvironment(t)
 
 	params.InitCosmosSdk(
 		/* bech32Prefix= */ "wasm",
@@ -205,19 +187,7 @@ func TestOCRBasic(t *testing.T) {
 	require.NoError(t, err, "Validating round should not fail")
 
 	// Tear down local stack
-	logger.Info().Msg("Tearing down core nodes...")
-	err = exec.Command("../scripts/core.down.sh").Run()
-	require.NoError(t, err, "Could not tear down core nodes")
-	logger.Info().Msg("Tearing down mock adapter...")
-	err = exec.Command("../scripts/mock-adapter.down.sh").Run()
-	require.NoError(t, err, "Could not tear down mock adapter")
-	logger.Info().Msg("Tearing down postgres container...")
-	err = exec.Command("../scripts/postgres.down.sh").Run()
-	require.NoError(t, err, "Could not tear down postgres container")
-	logger.Info().Msg("Tearing down wasmd container...")
-	err = exec.Command("../scripts/wasmd.down.sh").Run()
-	require.NoError(t, err, "Could not tear down wasmd container")
-	logger.Info().Msg("Tear down local stack complete.")
+	commonConfig.TearDownLocalEnvironment(t)
 
 	// t.Cleanup(func() {
 	// 	err = actions.TeardownSuite(t, commonConfig.Env, "./", nil, nil, zapcore.DPanicLevel, nil)
