@@ -4,7 +4,7 @@
 echo "Cleaning up postgres container.."
 
 echo "Checking for existing 'chainlink-cosmos.postgres' docker container..."
-dpid=$(docker ps | grep chainlink-cosmos.postgres | awk '{print $1}')
+dpid=$(docker ps -a | grep chainlink-cosmos.postgres | awk '{print $1}')
 if [ -z "$dpid" ]; then
 	echo "No docker postgres container running."
 else
