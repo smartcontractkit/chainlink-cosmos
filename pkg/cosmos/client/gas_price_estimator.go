@@ -30,31 +30,12 @@ func (gpe *FixedGasPriceEstimator) GasPrices() (map[string]sdk.DecCoin, error) {
 	return gpe.gasPrices, nil
 }
 
-func (gpe *FixedGasPriceEstimator) GasPrice(coin string) sdk.DecCoin {
-	return gpe.gasPrices[coin]
-}
-
-func (gpe *FixedGasPriceEstimator) SetGasPrice(coin string, price sdk.DecCoin) {
-	gpe.gasPrices[coin] = price
-}
-
-// CalculateGasPrice calculates the minimum of the maximum input gas prices.
-// Parameters:
-// - maxGasPrice: max gas price set by the user or operator
-// - defaultGasPrice: default gas price
-// - maxGasPriceConfigured: max gas price originally configured for the node
-func (gpe *FixedGasPriceEstimator) CalculateGasPrice(
-	coin string,
-	maxGasPrice,
-	defaultGasPrice,
-	maxGasPriceConfigured sdk.DecCoin,
-) sdk.DecCoin {
-	calculatedGasPrice := fee.CalculateFee(
-		maxGasPrice.Amount.BigInt(),
-		defaultGasPrice.Amount.BigInt(),
-		maxGasPriceConfigured.Amount.BigInt(),
-	)
-	return sdk.NewDecCoinFromDec(coin, sdk.NewDecFromBigIntWithPrec(calculatedGasPrice, sdk.Precision))
+func (gpe *FixedGasPriceEstimator) GasPrice(coin string) (sdk.DecCoin, error) {
+	price, ok := gpe.gasPrices[coin]
+	if !ok {
+		return sdk.DecCoin{}, fmt.Errorf("no gas price for coin %s", coin)
+	}
+	return price, nil
 }
 
 // BumpGasPrice calculates a new gas price by bumping the current gas price by a percentage.

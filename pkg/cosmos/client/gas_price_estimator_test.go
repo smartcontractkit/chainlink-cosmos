@@ -2,14 +2,12 @@ package client
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
 	"go.uber.org/zap"
 
-	"github.com/cosmos/cosmos-sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/stretchr/testify/assert"
@@ -110,86 +108,6 @@ func TestGasPriceEstimators(t *testing.T) {
 func TestFixedPriceGasEstimator(t *testing.T) {
 	lggr := logger.Sugared(logger.Test(t))
 
-	t.Run("calculate gas price", func(t *testing.T) {
-		gpeFixed := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{}, lggr)
-		tests := []struct {
-			name            string
-			defaultGasPrice sdk.DecCoin
-			maxGasPrice     sdk.DecCoin
-			maxGasPriceNode sdk.DecCoin
-			want            sdk.DecCoin
-		}{
-			{name: "Returns default price when maxGasPrice and maxGasPriceNode are greater",
-				defaultGasPrice: sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.001")),
-				maxGasPrice:     sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.0011")),
-				maxGasPriceNode: sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.0012")),
-				want:            sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.001")),
-			},
-			{name: "Returns maxGasPrice when maxGasPrice is lower than defaultGasPrice and maxGasPriceNode",
-				defaultGasPrice: sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.01")),
-				maxGasPrice:     sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.009")),
-				maxGasPriceNode: sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.012")),
-				want:            sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.009")),
-			},
-			{name: "Returns maxGasPriceNode when maxGasPriceNode is lower than defaultGasPrice and maxGasPrice",
-				defaultGasPrice: sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.010")),
-				maxGasPrice:     sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.011")),
-				maxGasPriceNode: sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.008")),
-				want:            sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.008")),
-			},
-		}
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				got := gpeFixed.CalculateGasPrice("ucosm", tt.maxGasPrice, tt.defaultGasPrice, tt.maxGasPriceNode)
-				fmt.Println(tt.maxGasPrice.Amount)
-				assert.Equal(t, tt.want, got)
-			})
-		}
-	})
-
-	t.Run("Set Gas Price", func(t *testing.T) {
-		tests := []struct {
-			name     string
-			gasToSet sdk.DecCoin
-			gpeFixed *FixedGasPriceEstimator
-			want     sdk.DecCoin
-		}{
-			{
-				name:     "Empty map adds the gas price",
-				gasToSet: sdk.NewDecCoinFromDec("ucosm", types.MustNewDecFromStr("0.001")),
-				gpeFixed: NewFixedGasPriceEstimator(map[string]sdk.DecCoin{}, nil),
-				want:     sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.001")),
-			},
-			{
-				name:     "Map with same key updates the gas price",
-				gasToSet: sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.002")),
-				gpeFixed: NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
-					"ucosm": sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.001")),
-				}, nil),
-				want: sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.002")),
-			},
-			{name: "Map with different key adds the gas price",
-				gasToSet: sdk.NewDecCoinFromDec("uatom", sdk.MustNewDecFromStr("0.001")),
-				gpeFixed: NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
-					"ucosm": sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.001")),
-				}, nil),
-				want: sdk.NewDecCoinFromDec("uatom", sdk.MustNewDecFromStr("0.001")),
-			},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				// Set gas price
-				tt.gpeFixed.SetGasPrice("ucosm", tt.gasToSet)
-
-				// Check the value
-				got, ok := tt.gpeFixed.gasPrices["ucosm"]
-				assert.True(t, ok, "coin type not found in gas prices map")
-				assert.Equal(t, tt.want, got, "calculated gas price does not match expected")
-			})
-		}
-	})
-
 	t.Run("bump gas price", func(t *testing.T) {
 		tests := []struct {
 			name             string
@@ -231,8 +149,10 @@ func TestFixedPriceGasEstimator(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				bumpedGasPrice, err := gpeFixed.CalculateBumpGasPrice("ucosm", tt.currentGasPrice, tt.originalGasPrice, tt.maxGasPrice, tt.maxBumpPrice, tt.minBumpPrice, tt.bumpPercent)
 				require.NoError(t, err)
-				gpeFixed.SetGasPrice("ucosm", bumpedGasPrice)
-				assert.Equal(t, tt.want, gpeFixed.GasPrice("ucosm"))
+				gpeFixed.gasPrices["ucosm"] = bumpedGasPrice
+				actualGasPrice, err := gpeFixed.GasPrice("ucosm")
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, actualGasPrice)
 			})
 		}
 	})
