@@ -13,7 +13,6 @@ require (
 	github.com/smartcontractkit/chainlink-env v0.36.0
 	github.com/smartcontractkit/chainlink-relay v0.1.7-0.20230814221409-567a8f84b413
 	github.com/smartcontractkit/chainlink-testing-framework v1.15.1
-	// github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20230610030307-281eedc27b1f
 	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20230809180636-8e89b62488d7
 	github.com/smartcontractkit/chainlink/v2 v2.2.1-0.20230809180636-8e89b62488d7
 	github.com/smartcontractkit/libocr v0.0.0-20230802221916-2271752fa829

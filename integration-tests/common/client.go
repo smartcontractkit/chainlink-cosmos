@@ -16,7 +16,7 @@ import (
 )
 
 type ChainlinkClient struct {
-	ChainlinkNodes []*client.ChainlinkK8sClient
+	ChainlinkNodes []*client.ChainlinkClient
 	NodeKeys       []client.NodeKeysBundle
 	bTypeAttr      *client.BridgeTypeAttributes
 	bootstrapPeers []client.P2PData
