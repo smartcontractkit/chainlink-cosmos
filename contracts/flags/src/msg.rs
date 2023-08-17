@@ -1,19 +1,17 @@
-use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_schema::QueryResponses;
 use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[cw_serde]
-#[derive(Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-
 pub struct InstantiateMsg {
     pub raising_access_controller: String,
     pub lowering_access_controller: String,
 }
 
-#[cw_serde]
-#[derive(Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Initiate contract ownership transfer to another address.
     /// Can be used only by owner
@@ -37,8 +35,7 @@ pub enum ExecuteMsg {
     },
 }
 
-#[cw_serde]
-#[derive(Eq, QueryResponses)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, QueryResponses)]
 pub enum QueryMsg {
     #[returns(Addr)]
     Owner,

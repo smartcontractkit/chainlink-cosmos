@@ -1,10 +1,12 @@
 mod integration_tests;
 
-use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_schema::QueryResponses;
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Deps, DepsMut, Empty, Env, Event, MessageInfo, QueryResponse,
     Response, StdError,
 };
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 use ocr2;
 
@@ -63,15 +65,14 @@ pub mod state {
 pub mod msg {
     use super::*;
 
-    #[cw_serde]
-    #[derive(Eq)]
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
     #[serde(rename_all = "snake_case")]
     pub struct InstantiateMsg {
         pub contract_address: String,
     }
 
-    #[cw_serde]
-    #[derive(Eq)]
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
     pub enum ExecuteMsg {
         ProposeContract {
             address: String,
@@ -89,8 +90,8 @@ pub mod msg {
         AcceptOwnership,
     }
 
-    #[cw_serde]
-    #[derive(Eq, QueryResponses)]
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, QueryResponses)]
+    #[serde(rename_all = "snake_case")]
     pub enum QueryMsg {
         #[returns(u8)]
         Decimals,

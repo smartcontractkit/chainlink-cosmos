@@ -1,5 +1,7 @@
-use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_schema::QueryResponses;
 use cosmwasm_std::Addr;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 // TODO: Deduplicate (also declared in 'contracts/ocr2/src/state.rs')
 // https://github.com/smartcontractkit/chainlink-cosmos/issues/18
@@ -22,8 +24,8 @@ pub mod bignum {
     }
 }
 
-#[cw_serde]
-#[derive(Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct InstantiateMsg {
     /// The address of the flags contract
     pub flags: String,
@@ -33,8 +35,8 @@ pub struct InstantiateMsg {
     pub flagging_threshold: u32,
 }
 
-#[cw_serde]
-#[derive(Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Initiate contract ownership transfer to another address.
     /// Can be used only by owner
@@ -70,8 +72,8 @@ pub enum ExecuteMsg {
     },
 }
 
-#[cw_serde]
-#[derive(Eq, QueryResponses)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, QueryResponses)]
+#[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     /// Check whether the parameters count is valid by comparing the difference
     /// change to the flagging threshold
@@ -99,8 +101,8 @@ pub enum QueryMsg {
     Owner,
 }
 
-#[cw_serde]
-#[derive(Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct FlaggingThresholdResponse {
     pub threshold: u32,
 }

@@ -1,10 +1,11 @@
 use crate::state::{bignum, Billing, Proposal, ProposalId, Round, Validator};
-use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_schema::QueryResponses;
 use cosmwasm_std::{Addr, Binary, Uint128};
 use cw20::Cw20ReceiveMsg;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
-#[cw_serde]
-#[derive(Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct InstantiateMsg {
     /// LINK token contract address
@@ -25,7 +26,8 @@ pub struct InstantiateMsg {
     pub description: String,
 }
 
-#[cw_serde]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     BeginProposal,
     ClearProposal {
@@ -107,8 +109,8 @@ pub enum ExecuteMsg {
     },
 }
 
-#[cw_serde]
-#[derive(Eq, QueryResponses)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, QueryResponses)]
+#[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     // BASE:
     #[returns(LatestConfigDetailsResponse)]
@@ -149,22 +151,22 @@ pub enum QueryMsg {
     Owner,
 }
 
-#[cw_serde]
-#[derive(Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct LatestConfigDetailsResponse {
     pub config_count: u32,
     pub block_number: u64,
     pub config_digest: [u8; 32],
 }
 
-#[cw_serde]
-#[derive(Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct TransmittersResponse {
     pub addresses: Vec<Addr>,
 }
 
-#[cw_serde]
-#[derive(Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct LatestTransmissionDetailsResponse {
     pub latest_config_digest: [u8; 32],
     pub epoch: u32,
@@ -175,16 +177,16 @@ pub struct LatestTransmissionDetailsResponse {
     pub latest_timestamp: u32,
 }
 
-#[cw_serde]
-#[derive(Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct LatestConfigDigestAndEpochResponse {
     pub scan_logs: bool,
     pub config_digest: [u8; 32],
     pub epoch: u32,
 }
 
-#[cw_serde]
-#[derive(Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct LinkAvailableForPaymentResponse {
     #[serde(with = "bignum")]
     #[schemars(with = "String")]
