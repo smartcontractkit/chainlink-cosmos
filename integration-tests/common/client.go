@@ -38,7 +38,7 @@ func NewChainlinkClient(env *environment.Environment, nodeName string, chainId s
 		nodes = append(nodes, chainlinkK8Nodes[i].ChainlinkClient)
 	}
 
-	nodeKeys, _, err := client.CreateNodeKeysBundle(nodes, nodeName, chainId)
+	nodeKeys, _, err := client.CreateNodeKeysBundle(nodes, chainName, chainId)
 	if err != nil {
 		return nil, err
 	}
