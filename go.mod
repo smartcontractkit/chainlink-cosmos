@@ -160,4 +160,7 @@ replace (
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/hashicorp/go-plugin => github.com/jmank88/go-plugin v0.0.0-20230604120638-7bb12ec27e75
+
+	// until merged upstream: https://github.com/mwitkow/grpc-proxy/pull/69
+	github.com/mwitkow/grpc-proxy => github.com/jmank88/grpc-proxy v0.0.0-20230731114312-86ed94c93231
 )
