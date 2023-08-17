@@ -14,9 +14,6 @@ use cw_storage_plus::{Item, Map};
 
 use thiserror::Error;
 
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
 use owned::Auth;
 
 #[derive(Error, Debug)]
