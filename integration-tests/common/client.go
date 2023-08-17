@@ -16,7 +16,7 @@ import (
 )
 
 type ChainlinkClient struct {
-	ChainlinkNodes []*client.Chainlink
+	ChainlinkNodes []*client.ChainlinkK8sClient
 	NodeKeys       []client.NodeKeysBundle
 	bTypeAttr      *client.BridgeTypeAttributes
 	bootstrapPeers []client.P2PData
@@ -24,15 +24,21 @@ type ChainlinkClient struct {
 
 // CreateKeys Creates node keys and defines chain and nodes for each node
 func NewChainlinkClient(env *environment.Environment, nodeName string, chainId string, tendermintURL string) (*ChainlinkClient, error) {
-	nodes, err := client.ConnectChainlinkNodes(env)
+	chainlinkK8Nodes, err := client.ConnectChainlinkNodes(env)
 	if err != nil {
 		return nil, err
 	}
-	if nodes == nil || len(nodes) == 0 {
+	if chainlinkK8Nodes == nil || len(chainlinkK8Nodes) == 0 {
 		return nil, errors.New("No connected nodes")
 	}
 
-	nodeKeys, _, err := client.CreateNodeKeysBundle(nodes, chainName, chainId)
+	// extract client from k8s client
+	nodes := []*client.ChainlinkClient{}
+	for i := range chainlinkK8Nodes {
+		nodes = append(nodes, chainlinkK8Nodes[i].ChainlinkClient)
+	}
+
+	nodeKeys, _, err := client.CreateNodeKeysBundle(nodes, nodeName, chainId)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +48,7 @@ func NewChainlinkClient(env *environment.Environment, nodeName string, chainId s
 	}
 
 	return &ChainlinkClient{
-		ChainlinkNodes: nodes,
+		ChainlinkNodes: chainlinkK8Nodes,
 		NodeKeys:       nodeKeys,
 	}, nil
 }
