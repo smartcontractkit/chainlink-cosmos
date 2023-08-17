@@ -10,18 +10,17 @@ use ocr2::msg::{
 use ocr2::state::{Billing, Config, Proposal, Transmitter, Validator};
 
 fn main() {
-     // clean directory
-     let mut out_dir = current_dir().unwrap();
-     out_dir.push("schema");
-     remove_dir_all(&out_dir).unwrap();
-     create_dir_all(&out_dir).unwrap();
+    // clean directory
+    let mut out_dir = current_dir().unwrap();
+    out_dir.push("schema");
+    remove_dir_all(&out_dir).unwrap();
+    create_dir_all(&out_dir).unwrap();
 
     write_api! {
         instantiate: InstantiateMsg,
         execute: ExecuteMsg,
         query: QueryMsg,
     }
-
 
     // put main schema under main folder for codegen.js (else it will error)
     let mut main_dir = out_dir.clone();
@@ -34,7 +33,6 @@ fn main() {
     let mut new_location = main_dir.clone();
     new_location.push("ocr2.json");
     rename(&main_file, &new_location).unwrap();
-
 
     // put other hand-exported schemas in seperate folder
     let mut other_dir = out_dir.clone();

@@ -1,7 +1,7 @@
 use std::env::current_dir;
 use std::fs::create_dir_all;
 
-use cosmwasm_schema::{write_api};
+use cosmwasm_schema::write_api;
 
 use proxy_ocr2::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 

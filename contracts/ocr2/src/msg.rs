@@ -1,7 +1,7 @@
-use crate::state::{bignum, Billing, ProposalId, Validator, Round, Proposal};
+use crate::state::{bignum, Billing, Proposal, ProposalId, Round, Validator};
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Binary, Uint128};
 use cw20::Cw20ReceiveMsg;
-use cosmwasm_schema::{cw_serde, QueryResponses};
 
 #[cw_serde]
 #[derive(Eq)]

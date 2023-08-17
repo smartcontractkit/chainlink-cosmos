@@ -1,7 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Addr;
 
-
 #[cw_serde]
 #[derive(Eq)]
 #[serde(rename_all = "snake_case")]
@@ -15,7 +14,6 @@ pub enum ExecuteMsg {
     TransferOwnership { to: String },
     AcceptOwnership,
 }
-
 
 #[cw_serde]
 #[derive(Eq, QueryResponses)]

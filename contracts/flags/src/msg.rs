@@ -1,7 +1,7 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Addr;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 #[cw_serde]
 #[derive(Eq)]
@@ -43,13 +43,9 @@ pub enum QueryMsg {
     #[returns(Addr)]
     Owner,
     #[returns(bool)]
-    Flag {
-        subject: String,
-    },
+    Flag { subject: String },
     #[returns(Vec<bool>)]
-    Flags {
-        subjects: Vec<String>,
-    },
+    Flags { subjects: Vec<String> },
     #[returns(Addr)]
     RaisingAccessController,
 }

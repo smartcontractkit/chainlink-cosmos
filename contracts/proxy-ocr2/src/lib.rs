@@ -3,7 +3,7 @@ mod integration_tests;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Deps, DepsMut, Empty, Env, Event, MessageInfo, QueryResponse,
-    Response, StdError, 
+    Response, StdError,
 };
 
 use ocr2;

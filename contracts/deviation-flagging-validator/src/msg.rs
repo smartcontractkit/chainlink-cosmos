@@ -1,5 +1,5 @@
-use cosmwasm_std::Addr;
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Addr;
 
 // TODO: Deduplicate (also declared in 'contracts/ocr2/src/state.rs')
 // https://github.com/smartcontractkit/chainlink-cosmos/issues/18

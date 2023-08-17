@@ -36,5 +36,4 @@ fn main() {
     other_dir.push("other");
     create_dir_all(&other_dir).unwrap();
     export_schema(&schema_for!(State), &other_dir);
-
 }
