@@ -24,7 +24,7 @@ integration-tests/logs
 integration-tests/smoke/logs
 integration-tests/soak/logs
 tmp-manifest-*
-artifacts
+/artifacts
 .local-mock-server
 codegen
 devAccounts.json
