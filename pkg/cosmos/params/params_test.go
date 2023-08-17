@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestInitCosmosSdk(t *testing.T) {
@@ -21,7 +22,9 @@ func TestInitCosmosSdk(t *testing.T) {
 
 func TestRegisterToken(t *testing.T) {
 	// Register single token
-	assert.NotPanics(t, func() { RegisterTokenCosmosSdk("atom") })
+	err := RegisterTokenCosmosSdk("atom")
+	require.NoError(t, err)
+
 	_, ok := sdk.GetDenomUnit("atom")
 	assert.True(t, ok)
 	_, ok = sdk.GetDenomUnit("uatom")
@@ -33,13 +36,15 @@ func TestRegisterToken(t *testing.T) {
 	_, ok = sdk.GetDenomUnit("cosmos")
 	assert.False(t, ok)
 
-	// Register multiple tokens
-	assert.NotPanics(t, func() { RegisterTokenCosmosSdk("cosmos") })
+	// Register another token
+	err = RegisterTokenCosmosSdk("cosmos")
+	require.NoError(t, err)
 	_, ok = sdk.GetDenomUnit("atom")
 	assert.True(t, ok)
 	_, ok = sdk.GetDenomUnit("cosmos")
 	assert.True(t, ok)
 
 	// Registering the same token twice panics
-	assert.Panics(t, func() { RegisterTokenCosmosSdk("atom") })
+	err = RegisterTokenCosmosSdk("atom")
+	require.Error(t, err)
 }
