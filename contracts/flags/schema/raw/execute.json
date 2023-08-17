@@ -19,8 +19,7 @@
               "description": "Address to transfer ownership to",
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -47,8 +46,7 @@
             "subject": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -71,8 +69,7 @@
                 "type": "string"
               }
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -95,8 +92,7 @@
                 "type": "string"
               }
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -116,8 +112,7 @@
             "rac_address": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false

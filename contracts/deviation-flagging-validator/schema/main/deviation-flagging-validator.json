@@ -21,8 +21,7 @@
         "description": "The address of the flags contract",
         "type": "string"
       }
-    },
-    "additionalProperties": false
+    }
   },
   "execute": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -45,8 +44,7 @@
                 "description": "Address to transfer ownership to",
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -76,8 +74,7 @@
                 "format": "uint32",
                 "minimum": 0.0
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -98,8 +95,7 @@
               "flags": {
                 "$ref": "#/definitions/Addr"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -140,8 +136,7 @@
                 "format": "uint32",
                 "minimum": 0.0
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -180,8 +175,7 @@
                 "description": "Previous answer, used as the median of difference with the current answer to determine if the deviation threshold has been exceeded",
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -218,8 +212,7 @@
           "format": "uint32",
           "minimum": 0.0
         }
-      },
-      "additionalProperties": false
+      }
     },
     "is_valid": {
       "$schema": "http://json-schema.org/draft-07/schema#",

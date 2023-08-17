@@ -23,8 +23,7 @@
             "address": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -44,8 +43,7 @@
             "address": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -65,8 +63,7 @@
             "to": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false

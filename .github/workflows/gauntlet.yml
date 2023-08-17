@@ -68,7 +68,7 @@ jobs:
           cache-name: cache-wasmd-artifacts
         with:
           path: artifacts
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('artifacts') }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('contracts') }}
 
       - if: ${{ steps.cache-wasmd-artifacts.outputs.cache-hit != 'true' }}
         name: Build Wasmd Artifacts

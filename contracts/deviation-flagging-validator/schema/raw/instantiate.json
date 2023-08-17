@@ -17,6 +17,5 @@
       "description": "The address of the flags contract",
       "type": "string"
     }
-  },
-  "additionalProperties": false
+  }
 }

@@ -13,6 +13,5 @@
     "raising_access_controller": {
       "type": "string"
     }
-  },
-  "additionalProperties": false
+  }
 }

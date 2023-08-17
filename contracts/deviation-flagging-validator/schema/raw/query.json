@@ -24,8 +24,7 @@
               "description": "Previous answer, used as the median of difference with the current answer to determine if the deviation threshold has been exceeded",
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
