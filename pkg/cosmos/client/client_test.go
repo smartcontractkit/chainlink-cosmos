@@ -24,8 +24,8 @@ func TestMain(m *testing.M) {
 	// these are hardcoded in test_helpers.go.
 	params.InitCosmosSdk(
 		/* bech32Prefix= */ "wasm",
-		/* token= */ "cosm",
 	)
+	params.RegisterTokenCosmosSdk("cosm")
 	code := m.Run()
 	os.Exit(code)
 }

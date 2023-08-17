@@ -36,6 +36,25 @@ type Relayer struct {
 // Note: constructed in core
 func NewRelayer(lggr logger.Logger, chainSet adapters.ChainSet) *Relayer {
 	ctx, cancel := context.WithCancel(context.Background())
+
+	// Register tokens on Cosmos SDK
+	// TODO: Currently only registers the first chain's token. Increase limit if more chains are added.
+	chainStatuses, _, err := chainSet.ChainStatuses(ctx, 0, 1)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, chainStatus := range chainStatuses {
+		chain, err := chainSet.Chain(ctx, chainStatus.ID)
+		if err != nil {
+			panic(err)
+		}
+		err = params.RegisterTokenCosmosSdk(chain.Config().FeeToken())
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	return &Relayer{
 		lggr:     lggr,
 		chainSet: chainSet,
@@ -58,7 +77,6 @@ func (r *Relayer) Start(context.Context) error {
 	// when doing so, core side will have to run each relayer in a LOOPP
 	params.InitCosmosSdk(
 		/* bech32Prefix= */ "wasm",
-		/* token= */ "cosm",
 	)
 
 	return nil

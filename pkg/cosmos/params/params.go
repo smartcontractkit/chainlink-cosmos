@@ -44,11 +44,11 @@ var config = makeEncodingConfig()
 var initOnce sync.Once
 
 // Initialize the cosmos sdk at most one time
-func InitCosmosSdk(bech32Prefix, token string) {
-	initOnce.Do(func() { initCosmosSdk(bech32Prefix, token) })
+func InitCosmosSdk(bech32Prefix string) {
+	initOnce.Do(func() { initCosmosSdk(bech32Prefix) })
 }
 
-func initCosmosSdk(bech32Prefix, token string) {
+func initCosmosSdk(bech32Prefix string) {
 	// copied from wasmd https://github.com/CosmWasm/wasmd/blob/88e01a98ab8a87b98dc26c03715e6aef5c92781b/app/app.go#L163-L174
 	// NOTE: Bech32 is configured globally, blocked on https://github.com/cosmos/cosmos-sdk/issues/13140
 	var (
@@ -79,7 +79,9 @@ func initCosmosSdk(bech32Prefix, token string) {
 	sdkConfig.SetBech32PrefixForValidator(bech32PrefixValAddr, bech32PrefixValPub)
 	sdkConfig.SetBech32PrefixForConsensusNode(bech32PrefixConsAddr, bech32PrefixConsPub)
 	sdkConfig.Seal()
+}
 
+func RegisterTokenCosmosSdk(token string) error {
 	for _, d := range []struct {
 		denom    string
 		decimals int64
@@ -91,9 +93,10 @@ func initCosmosSdk(bech32Prefix, token string) {
 	} {
 		dec := sdk.NewDecWithPrec(1, d.decimals)
 		if err := sdk.RegisterDenom(d.denom, dec); err != nil {
-			panic(fmt.Errorf("failed to register denomination %q: %w", d.denom, err))
+			return fmt.Errorf("failed to register denomination %q: %w", d.denom, err)
 		}
 	}
+	return nil
 }
 
 func NewClientContext() client.Context {
