@@ -51,11 +51,6 @@ export const withProvider: Middleware = async (c: CosmosCommand, next: Next) => 
 
   logger.info(`Operator address is ${c.signer.address}`)
 
-  logger.info('something something')
-
-  logger.info(nodeURL)
-  logger.info(wallet.getAccounts()[0])
-
   c.provider = await SigningCosmWasmClient.connectWithSigner(nodeURL, wallet, {
     gasPrice: GasPrice.fromString(c.flags.defaultGasPrice || process.env.DEFAULT_GAS_PRICE),
   })
