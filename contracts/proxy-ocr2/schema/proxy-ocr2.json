@@ -95,18 +95,40 @@
     "title": "QueryMsg",
     "oneOf": [
       {
-        "type": "string",
-        "enum": [
-          "decimals",
-          "version",
-          "description",
-          "latest_round_data",
-          "proposed_latest_round_data",
-          "aggregator",
-          "phase_id",
-          "proposed_aggregator",
-          "owner"
-        ]
+        "type": "object",
+        "required": [
+          "decimals"
+        ],
+        "properties": {
+          "decimals": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "properties": {
+          "version": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "description"
+        ],
+        "properties": {
+          "description": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
       },
       {
         "type": "object",
@@ -126,6 +148,18 @@
                 "minimum": 0.0
               }
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "latest_round_data"
+        ],
+        "properties": {
+          "latest_round_data": {
+            "type": "object"
           }
         },
         "additionalProperties": false
@@ -155,6 +189,42 @@
       {
         "type": "object",
         "required": [
+          "proposed_latest_round_data"
+        ],
+        "properties": {
+          "proposed_latest_round_data": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "aggregator"
+        ],
+        "properties": {
+          "aggregator": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "phase_id"
+        ],
+        "properties": {
+          "phase_id": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
           "phase_aggregators"
         ],
         "properties": {
@@ -170,6 +240,30 @@
                 "minimum": 0.0
               }
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "proposed_aggregator"
+        ],
+        "properties": {
+          "proposed_aggregator": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "owner"
+        ],
+        "properties": {
+          "owner": {
+            "type": "object"
           }
         },
         "additionalProperties": false

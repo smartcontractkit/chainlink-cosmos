@@ -94,11 +94,11 @@ pub enum QueryMsg {
     /// Query the flagging threshold
     /// Response: [`FlaggingThresholdResponse`]
     #[returns(FlaggingThresholdResponse)]
-    FlaggingThreshold,
+    FlaggingThreshold {},
     /// Returns contract owner's address
     /// Response [`Addr`]
     #[returns(Addr)]
-    Owner,
+    Owner {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

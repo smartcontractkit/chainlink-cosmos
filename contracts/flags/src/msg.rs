@@ -38,11 +38,11 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, QueryResponses)]
 pub enum QueryMsg {
     #[returns(Addr)]
-    Owner,
+    Owner {},
     #[returns(bool)]
     Flag { subject: String },
     #[returns(Vec<bool>)]
     Flags { subjects: Vec<String> },
     #[returns(Addr)]
-    RaisingAccessController,
+    RaisingAccessController {},
 }

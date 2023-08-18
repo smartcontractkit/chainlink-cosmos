@@ -182,17 +182,29 @@
       },
       {
         "description": "Query the flagging threshold Response: [`FlaggingThresholdResponse`]",
-        "type": "string",
-        "enum": [
+        "type": "object",
+        "required": [
           "flagging_threshold"
-        ]
+        ],
+        "properties": {
+          "flagging_threshold": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
       },
       {
         "description": "Returns contract owner's address Response [`Addr`]",
-        "type": "string",
-        "enum": [
+        "type": "object",
+        "required": [
           "owner"
-        ]
+        ],
+        "properties": {
+          "owner": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
       }
     ]
   },

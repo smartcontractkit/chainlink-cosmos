@@ -85,8 +85,8 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             let flagging_threshold = CONFIG.load(deps.storage)?.flagging_threshold;
             to_binary(&is_valid(flagging_threshold, previous_answer, answer)?)
         }
-        QueryMsg::FlaggingThreshold => to_binary(&query_flagging_threshold(deps)?),
-        QueryMsg::Owner => Ok(to_binary(&OWNER.query_owner(deps)?)?),
+        QueryMsg::FlaggingThreshold {} => to_binary(&query_flagging_threshold(deps)?),
+        QueryMsg::Owner {} => Ok(to_binary(&OWNER.query_owner(deps)?)?),
     }
 }
 

@@ -206,32 +206,32 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::LatestConfigDetails => to_binary(&query_latest_config_details(deps)?),
-        QueryMsg::Transmitters => to_binary(&query_transmitters(deps)?),
-        QueryMsg::LatestConfigDigestAndEpoch => {
+        QueryMsg::LatestConfigDetails {} => to_binary(&query_latest_config_details(deps)?),
+        QueryMsg::Transmitters {} => to_binary(&query_transmitters(deps)?),
+        QueryMsg::LatestConfigDigestAndEpoch {} => {
             to_binary(&query_latest_config_digest_and_epoch(deps)?)
         }
-        QueryMsg::LatestTransmissionDetails => to_binary(&query_latest_transmission_details(deps)?),
+        QueryMsg::LatestTransmissionDetails {} => to_binary(&query_latest_transmission_details(deps)?),
         // v3
-        QueryMsg::Description => to_binary(&query_description(deps)?),
-        QueryMsg::Decimals => to_binary(&query_decimals(deps)?),
+        QueryMsg::Description {} => to_binary(&query_description(deps)?),
+        QueryMsg::Decimals {} => to_binary(&query_decimals(deps)?),
         QueryMsg::RoundData { round_id } => to_binary(&query_round_data(deps, round_id)?),
-        QueryMsg::LatestRoundData => to_binary(&query_latest_round_data(deps)?),
+        QueryMsg::LatestRoundData {} => to_binary(&query_latest_round_data(deps)?),
 
-        QueryMsg::LinkToken => to_binary(&query_link_token(deps)?),
-        QueryMsg::Billing => to_binary(&query_billing(deps)?),
-        QueryMsg::BillingAccessController => to_binary(&query_billing_access_controller(deps)?),
-        QueryMsg::RequesterAccessController => to_binary(&query_requester_access_controller(deps)?),
+        QueryMsg::LinkToken {} => to_binary(&query_link_token(deps)?),
+        QueryMsg::Billing {} => to_binary(&query_billing(deps)?),
+        QueryMsg::BillingAccessController {} => to_binary(&query_billing_access_controller(deps)?),
+        QueryMsg::RequesterAccessController {} => to_binary(&query_requester_access_controller(deps)?),
         QueryMsg::OwedPayment { transmitter } => to_binary(&query_owed_payment(deps, transmitter)?),
-        QueryMsg::LinkAvailableForPayment => {
+        QueryMsg::LinkAvailableForPayment {} => {
             to_binary(&query_link_available_for_payment(deps, env)?)
         }
         QueryMsg::OracleObservationCount { transmitter } => {
             to_binary(&query_oracle_observation_count(deps, transmitter)?)
         }
         QueryMsg::Proposal { id } => to_binary(&query_proposal(deps, id)?),
-        QueryMsg::Version => Ok(to_binary(CONTRACT_VERSION)?),
-        QueryMsg::Owner => Ok(to_binary(&OWNER.query_owner(deps)?)?),
+        QueryMsg::Version {} => Ok(to_binary(CONTRACT_VERSION)?),
+        QueryMsg::Owner {} => Ok(to_binary(&OWNER.query_owner(deps)?)?),
     }
 }
 

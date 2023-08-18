@@ -577,23 +577,76 @@
     "title": "QueryMsg",
     "oneOf": [
       {
-        "type": "string",
-        "enum": [
-          "latest_config_details",
-          "transmitters",
-          "latest_transmission_details",
-          "latest_config_digest_and_epoch",
-          "description",
-          "decimals",
-          "latest_round_data",
-          "link_token",
-          "billing",
-          "billing_access_controller",
-          "requester_access_controller",
-          "link_available_for_payment",
-          "version",
-          "owner"
-        ]
+        "type": "object",
+        "required": [
+          "latest_config_details"
+        ],
+        "properties": {
+          "latest_config_details": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "transmitters"
+        ],
+        "properties": {
+          "transmitters": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "latest_transmission_details"
+        ],
+        "properties": {
+          "latest_transmission_details": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "latest_config_digest_and_epoch"
+        ],
+        "properties": {
+          "latest_config_digest_and_epoch": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "description"
+        ],
+        "properties": {
+          "description": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "decimals"
+        ],
+        "properties": {
+          "decimals": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
       },
       {
         "type": "object",
@@ -620,6 +673,66 @@
       {
         "type": "object",
         "required": [
+          "latest_round_data"
+        ],
+        "properties": {
+          "latest_round_data": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "link_token"
+        ],
+        "properties": {
+          "link_token": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "billing"
+        ],
+        "properties": {
+          "billing": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "billing_access_controller"
+        ],
+        "properties": {
+          "billing_access_controller": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "requester_access_controller"
+        ],
+        "properties": {
+          "requester_access_controller": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
           "owed_payment"
         ],
         "properties": {
@@ -633,6 +746,18 @@
                 "type": "string"
               }
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "link_available_for_payment"
+        ],
+        "properties": {
+          "link_available_for_payment": {
+            "type": "object"
           }
         },
         "additionalProperties": false
@@ -673,6 +798,30 @@
                 "$ref": "#/definitions/Uint128"
               }
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "properties": {
+          "version": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "owner"
+        ],
+        "properties": {
+          "owner": {
+            "type": "object"
           }
         },
         "additionalProperties": false

@@ -114,41 +114,41 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     // BASE:
     #[returns(LatestConfigDetailsResponse)]
-    LatestConfigDetails,
+    LatestConfigDetails {},
     #[returns(TransmittersResponse)]
-    Transmitters,
+    Transmitters {},
     #[returns(LatestTransmissionDetailsResponse)]
-    LatestTransmissionDetails,
+    LatestTransmissionDetails {},
     #[returns(LatestConfigDigestAndEpochResponse)]
-    LatestConfigDigestAndEpoch,
+    LatestConfigDigestAndEpoch {},
     #[returns(String)]
-    Description,
+    Description {},
     #[returns(u8)]
-    Decimals,
+    Decimals {},
     #[returns(Round)]
     RoundData { round_id: u32 },
     #[returns(Round)]
-    LatestRoundData,
+    LatestRoundData {},
     #[returns(Addr)]
-    LinkToken,
+    LinkToken {},
     #[returns(Billing)]
-    Billing,
+    Billing {},
     #[returns(Addr)]
-    BillingAccessController,
+    BillingAccessController {},
     #[returns(Addr)]
-    RequesterAccessController,
+    RequesterAccessController {},
     #[returns(Uint128)]
     OwedPayment { transmitter: String },
     #[returns(LinkAvailableForPaymentResponse)]
-    LinkAvailableForPayment,
+    LinkAvailableForPayment {},
     #[returns(u32)]
     OracleObservationCount { transmitter: String },
     #[returns(Proposal)]
     Proposal { id: ProposalId },
     #[returns(str)]
-    Version,
+    Version {},
     #[returns(Addr)]
-    Owner,
+    Owner {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

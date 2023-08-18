@@ -3,11 +3,16 @@
   "title": "QueryMsg",
   "oneOf": [
     {
-      "type": "string",
-      "enum": [
-        "Owner",
-        "RaisingAccessController"
-      ]
+      "type": "object",
+      "required": [
+        "Owner"
+      ],
+      "properties": {
+        "Owner": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     },
     {
       "type": "object",
@@ -48,6 +53,18 @@
               }
             }
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "RaisingAccessController"
+      ],
+      "properties": {
+        "RaisingAccessController": {
+          "type": "object"
         }
       },
       "additionalProperties": false
