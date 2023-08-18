@@ -45,32 +45,34 @@ const makeInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   }
 }
 
-const makeOnchainData =
-  (provider: Client) =>
-  async (instructionsData: any[], input: CommandInput, proxyContract: string): Promise<ContractExpectedInfo> => {
-    const aggregator = instructionsData[0]
-    const version = instructionsData[1]
-    const description = instructionsData[2]
-    const phaseId = instructionsData[3]
-    const decimals = instructionsData[4]
-    const owner = instructionsData[5]
-    const latestRoundData = instructionsData[6]
+const makeOnchainData = (provider: Client) => async (
+  instructionsData: any[],
+  input: CommandInput,
+  proxyContract: string,
+): Promise<ContractExpectedInfo> => {
+  const aggregator = instructionsData[0]
+  const version = instructionsData[1]
+  const description = instructionsData[2]
+  const phaseId = instructionsData[3]
+  const decimals = instructionsData[4]
+  const owner = instructionsData[5]
+  const latestRoundData = instructionsData[6]
 
-    return {
-      aggregator,
-      version,
-      description,
-      phaseId,
-      decimals,
-      owner,
-      latestRoundData: {
-        roundId: latestRoundData.round_id,
-        answer: latestRoundData.answer,
-        observationsTimestamp: latestRoundData.observations_timestamp,
-        transmissionTimestamp: latestRoundData.transmission_timestamp,
-      },
-    }
+  return {
+    aggregator,
+    version,
+    description,
+    phaseId,
+    decimals,
+    owner,
+    latestRoundData: {
+      roundId: latestRoundData.round_id,
+      answer: latestRoundData.answer,
+      observationsTimestamp: latestRoundData.observations_timestamp,
+      transmissionTimestamp: latestRoundData.transmission_timestamp,
+    },
   }
+}
 
 const inspect = (expected: CommandInput, onchainData: ContractExpectedInfo): boolean => {
   let inspections: inspection.Inspection[] = [

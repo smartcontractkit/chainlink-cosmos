@@ -98,9 +98,9 @@ export const wrapCommand = (command) => {
     }
 
     makeRawTransaction = async (signer: AccAddress) => {
-      const rawTxs = (await Promise.all(this.subCommands.map((c) => c.makeRawTransaction(signer)))).reduce(
-        (agg, txs) => [...agg, ...txs],
-      )
+      const rawTxs = (
+        await Promise.all(this.subCommands.map((c) => c.makeRawTransaction(signer)))
+      ).reduce((agg, txs) => [...agg, ...txs])
       return rawTxs
     }
 

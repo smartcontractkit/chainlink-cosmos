@@ -49,12 +49,13 @@ export interface AbstractInstruction<UserInput, ContractInput> {
   }
 }
 
-const defaultBeforeExecute =
-  <UserInput, ContractInput>(context: ExecutionContext, input: Input<UserInput, ContractInput>) =>
-  async () => {
-    logger.loading(`Executing ${context.id} from contract ${context.contract}`)
-    logger.log('Input Params:', input.contract)
-  }
+const defaultBeforeExecute = <UserInput, ContractInput>(
+  context: ExecutionContext,
+  input: Input<UserInput, ContractInput>,
+) => async () => {
+  logger.loading(`Executing ${context.id} from contract ${context.contract}`)
+  logger.log('Input Params:', input.contract)
+}
 
 export const extendCommandInstruction = <UserInput, ContractInput>(
   instruction: AbstractInstruction<UserInput, ContractInput>,

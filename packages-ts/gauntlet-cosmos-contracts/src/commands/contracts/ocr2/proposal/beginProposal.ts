@@ -20,32 +20,32 @@ const validateInput = (input: CommandInput): boolean => {
   return true
 }
 
-const afterExecute =
-  (context) =>
-  async (response: Result<TransactionResponse>): Promise<{ proposalId: string } | undefined> => {
-    const events = response.responses[0].tx.events
-    if (!events) {
-      logger.error('No events found. Config Proposal ID could not be retrieved')
-      return
-    }
-
-    try {
-      const wasmEvent = events.filter(({ type }) => (type as any) == 'wasm')[0]
-      const proposalId = wasmEvent.attributes.find(({ key }) => key === 'proposal_id')?.value
-
-      if (!proposalId) {
-        throw new Error('ProposalId for the given contract does not exist inside events')
-      }
-
-      logger.success(`New config proposal created on ${context.contract} with Config Proposal ID: ${proposalId}`)
-      return {
-        proposalId,
-      }
-    } catch (e) {
-      logger.error('Config Proposal ID not found inside events')
-      return
-    }
+const afterExecute = (context) => async (
+  response: Result<TransactionResponse>,
+): Promise<{ proposalId: string } | undefined> => {
+  const events = response.responses[0].tx.events
+  if (!events) {
+    logger.error('No events found. Config Proposal ID could not be retrieved')
+    return
   }
+
+  try {
+    const wasmEvent = events.filter(({ type }) => (type as any) == 'wasm')[0]
+    const proposalId = wasmEvent.attributes.find(({ key }) => key === 'proposal_id')?.value
+
+    if (!proposalId) {
+      throw new Error('ProposalId for the given contract does not exist inside events')
+    }
+
+    logger.success(`New config proposal created on ${context.contract} with Config Proposal ID: ${proposalId}`)
+    return {
+      proposalId,
+    }
+  } catch (e) {
+    logger.error('Config Proposal ID not found inside events')
+    return
+  }
+}
 
 const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   examples: ['yarn ocr2:begin_proposal --network=<NETWORK> <CONTRACT_ADDRESS>'],

@@ -74,61 +74,63 @@ const makeInput = async (flags: any, args: string[]): Promise<ContractExpectedIn
   }
 }
 
-const makeOnchainData =
-  (provider: Client) =>
-  async (instructionsData: any[], input: ContractExpectedInfo, aggregator: string): Promise<ContractExpectedInfo> => {
-    const latestConfigDetails = instructionsData[0]
-    const description = instructionsData[1]
-    const transmitters = instructionsData[2]
-    const decimals = instructionsData[3]
-    const billing = instructionsData[4]
-    const billingAC = instructionsData[5]
-    const requesterAC = instructionsData[6]
-    const link = instructionsData[7]
-    const linkAvailable = instructionsData[8]
-    const owner = instructionsData[9]
+const makeOnchainData = (provider: Client) => async (
+  instructionsData: any[],
+  input: ContractExpectedInfo,
+  aggregator: string,
+): Promise<ContractExpectedInfo> => {
+  const latestConfigDetails = instructionsData[0]
+  const description = instructionsData[1]
+  const transmitters = instructionsData[2]
+  const decimals = instructionsData[3]
+  const billing = instructionsData[4]
+  const billingAC = instructionsData[5]
+  const requesterAC = instructionsData[6]
+  const link = instructionsData[7]
+  const linkAvailable = instructionsData[8]
+  const owner = instructionsData[9]
 
-    const owedPerTransmitter: string[] = await Promise.all(
-      transmitters.addresses.map((t) => {
-        return provider.queryContractSmart(aggregator, {
-          owed_payment: {
-            transmitter: t,
-          },
-        })
-      }),
-    )
+  const owedPerTransmitter: string[] = await Promise.all(
+    transmitters.addresses.map((t) => {
+      return provider.queryContractSmart(aggregator, {
+        owed_payment: {
+          transmitter: t,
+        },
+      })
+    }),
+  )
 
-    const event = await getLatestOCRConfigEvent(provider, aggregator)
-    const offchain_config = event?.attributes.find(({ key }) => key === 'offchain_config')?.value
-    let offchainConfig = {} as encoding.OffchainConfig
+  const event = await getLatestOCRConfigEvent(provider, aggregator)
+  const offchain_config = event?.attributes.find(({ key }) => key === 'offchain_config')?.value
+  let offchainConfig = {} as encoding.OffchainConfig
 
-    if (offchain_config) {
-      try {
-        offchainConfig = deserializeConfig(Buffer.from(offchain_config, 'base64'))
-      } catch (e) {
-        logger.warn('Could not deserialize offchain config')
-      }
-    }
-
-    const totalOwed = owedPerTransmitter.reduce((agg: BN, v) => agg.add(new BN(v)), new BN(0)).toString()
-    return {
-      description,
-      decimals,
-      transmitters: transmitters.addresses,
-      billingAccessController: billingAC,
-      requesterAccessController: requesterAC,
-      link,
-      linkAvailable: linkAvailable.amount,
-      billing: {
-        observationPaymentGjuels: billing.observation_payment_gjuels,
-        transmissionPaymentGjuels: billing.transmission_payment_gjuels,
-        recommendedGasPriceMicro: billing.recommended_gas_price_micro,
-      },
-      totalOwed,
-      owner,
-      offchainConfig,
+  if (offchain_config) {
+    try {
+      offchainConfig = deserializeConfig(Buffer.from(offchain_config, 'base64'))
+    } catch (e) {
+      logger.warn('Could not deserialize offchain config')
     }
   }
+
+  const totalOwed = owedPerTransmitter.reduce((agg: BN, v) => agg.add(new BN(v)), new BN(0)).toString()
+  return {
+    description,
+    decimals,
+    transmitters: transmitters.addresses,
+    billingAccessController: billingAC,
+    requesterAccessController: requesterAC,
+    link,
+    linkAvailable: linkAvailable.amount,
+    billing: {
+      observationPaymentGjuels: billing.observation_payment_gjuels,
+      transmissionPaymentGjuels: billing.transmission_payment_gjuels,
+      recommendedGasPriceMicro: billing.recommended_gas_price_micro,
+    },
+    totalOwed,
+    owner,
+    offchainConfig,
+  }
+}
 
 const inspect = (expected: ContractExpectedInfo, onchainData: ContractExpectedInfo): boolean => {
   let inspections: inspection.Inspection[] = [

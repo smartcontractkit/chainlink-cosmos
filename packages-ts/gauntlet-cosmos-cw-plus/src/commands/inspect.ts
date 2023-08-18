@@ -31,74 +31,75 @@ export default class Inspect extends CosmosCommand {
   }
 }
 
-export const fetchProposalState =
-  (provider: Client) =>
-  async (multisig: string, proposalId?: number): Promise<State> => {
-    const _queryMultisig = (params) => (): Promise<any> => provider.queryContractSmart(multisig, params)
-    const _queryContractInfo = (): Promise<any> => provider.getContract(multisig)
+export const fetchProposalState = (provider: Client) => async (
+  multisig: string,
+  proposalId?: number,
+): Promise<State> => {
+  const _queryMultisig = (params) => (): Promise<any> => provider.queryContractSmart(multisig, params)
+  const _queryContractInfo = (): Promise<any> => provider.getContract(multisig)
 
-    const multisigQueries = [
-      _queryContractInfo,
-      _queryMultisig({
-        list_voters: {},
-      }),
-      _queryMultisig({
-        threshold: {},
-      }),
-    ]
-    const proposalQueries = [
-      _queryMultisig({
-        proposal: {
-          proposal_id: proposalId,
-        },
-      }),
-      _queryMultisig({
-        list_votes: {
-          proposal_id: proposalId,
-        },
-      }),
-    ]
-    const queries = !!proposalId ? multisigQueries.concat(proposalQueries) : multisigQueries
+  const multisigQueries = [
+    _queryContractInfo,
+    _queryMultisig({
+      list_voters: {},
+    }),
+    _queryMultisig({
+      threshold: {},
+    }),
+  ]
+  const proposalQueries = [
+    _queryMultisig({
+      proposal: {
+        proposal_id: proposalId,
+      },
+    }),
+    _queryMultisig({
+      list_votes: {
+        proposal_id: proposalId,
+      },
+    }),
+  ]
+  const queries = !!proposalId ? multisigQueries.concat(proposalQueries) : multisigQueries
 
-    const [contractInfo, groupState, thresholdState, proposalState, votes] = await Promise.all(queries.map((q) => q()))
+  const [contractInfo, groupState, thresholdState, proposalState, votes] = await Promise.all(queries.map((q) => q()))
 
-    const admin = (await provider.queryContractSmart(contractInfo.init_msg.group_addr, { admin: {} })) as any
-    const multisigState = {
-      address: multisig,
-      threshold: thresholdState.absolute_count.weight,
-      owners: groupState.voters.map((m) => m.addr),
-      maxVotingPeriod: contractInfo.init_msg.max_voting_period.time,
-      admin: admin?.admin as AccAddress,
-      groupAddress: contractInfo.init_msg.group_addr,
-    }
-    if (!proposalId) {
-      return {
-        multisig: multisigState,
-        proposal: {
-          nextAction: Action.CREATE,
-          approvers: [],
-        },
-      }
-    }
-    const toNextAction = {
-      passed: Action.EXECUTE,
-      open: Action.APPROVE,
-      pending: Action.APPROVE,
-      rejected: Action.NONE,
-      executed: Action.NONE,
-    }
+  const admin = (await provider.queryContractSmart(contractInfo.init_msg.group_addr, { admin: {} })) as any
+  const multisigState = {
+    address: multisig,
+    threshold: thresholdState.absolute_count.weight,
+    owners: groupState.voters.map((m) => m.addr),
+    maxVotingPeriod: contractInfo.init_msg.max_voting_period.time,
+    admin: admin?.admin as AccAddress,
+    groupAddress: contractInfo.init_msg.group_addr,
+  }
+  if (!proposalId) {
     return {
       multisig: multisigState,
       proposal: {
-        id: proposalId,
-        nextAction: toNextAction[proposalState.status],
-        currentStatus: proposalState.status,
-        data: proposalState.msgs,
-        approvers: votes.votes.filter((v) => v.vote === Vote.YES).map((v) => v.voter),
-        expiresAt: proposalState.expires.at_time ? new Date(proposalState.expires.at_time / 1e6) : null,
+        nextAction: Action.CREATE,
+        approvers: [],
       },
     }
   }
+  const toNextAction = {
+    passed: Action.EXECUTE,
+    open: Action.APPROVE,
+    pending: Action.APPROVE,
+    rejected: Action.NONE,
+    executed: Action.NONE,
+  }
+  return {
+    multisig: multisigState,
+    proposal: {
+      id: proposalId,
+      nextAction: toNextAction[proposalState.status],
+      currentStatus: proposalState.status,
+      data: proposalState.msgs,
+      approvers: votes.votes.filter((v) => v.vote === Vote.YES).map((v) => v.voter),
+      expiresAt: proposalState.expires.at_time ? new Date(proposalState.expires.at_time / 1e6) : null,
+    },
+  }
+}
 
 export const makeInspectionMessage = (state: State): string => {
   const newline = `\n`

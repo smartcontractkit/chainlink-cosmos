@@ -28,7 +28,7 @@ const deployLink = async () => {
     [],
   )
   await cmd.invokeMiddlewares(cmd, cmd.middlewares)
-  const result = (await cmd.execute()) as unknown as DeployResponse
+  const result = ((await cmd.execute()) as unknown) as DeployResponse
   return result.responses[0].contract
 }
 

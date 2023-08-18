@@ -165,18 +165,16 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   }
 }
 
-const afterExecute: AfterExecute<CommandInput, ContractInput> =
-  (_, input) =>
-  async (result): Promise<any> => {
-    logger.success(`Tx succeded at ${result.responses[0].tx.hash}`)
-    logger.info(
-      `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
+const afterExecute: AfterExecute<CommandInput, ContractInput> = (_, input) => async (result): Promise<any> => {
+  logger.success(`Tx succeded at ${result.responses[0].tx.hash}`)
+  logger.info(
+    `Important: The following secret was used to encode offchain config. You will need to provide it to approve the config proposal: 
     SECRET: ${input.user.secret}`,
-    )
-    return {
-      secret: input.user.secret,
-    }
+  )
+  return {
+    secret: input.user.secret,
   }
+}
 
 const validateOffchainConfig = async (input) => {
   const { offchainConfig } = input
