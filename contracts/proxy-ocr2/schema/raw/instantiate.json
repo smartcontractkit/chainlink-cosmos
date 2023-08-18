@@ -9,6 +9,5 @@
     "contract_address": {
       "type": "string"
     }
-  },
-  "additionalProperties": false
+  }
 }

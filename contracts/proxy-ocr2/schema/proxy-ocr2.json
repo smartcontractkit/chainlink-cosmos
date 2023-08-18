@@ -13,8 +13,7 @@
       "contract_address": {
         "type": "string"
       }
-    },
-    "additionalProperties": false
+    }
   },
   "execute": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -35,8 +34,7 @@
               "address": {
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -56,8 +54,7 @@
               "address": {
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -79,8 +76,7 @@
                 "description": "Address to transfer ownership to",
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -129,8 +125,7 @@
                 "format": "uint64",
                 "minimum": 0.0
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -152,8 +147,7 @@
                 "format": "uint32",
                 "minimum": 0.0
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -175,8 +169,7 @@
                 "format": "uint16",
                 "minimum": 0.0
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false

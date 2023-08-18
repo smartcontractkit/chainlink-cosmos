@@ -38,8 +38,7 @@
               "format": "uint32",
               "minimum": 0.0
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -59,8 +58,7 @@
             "transmitter": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -80,8 +78,7 @@
             "transmitter": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -101,8 +98,7 @@
             "id": {
               "$ref": "#/definitions/Uint128"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false

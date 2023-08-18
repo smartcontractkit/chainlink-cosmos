@@ -9,6 +9,5 @@
     "amount": {
       "type": "string"
     }
-  },
-  "additionalProperties": false
+  }
 }

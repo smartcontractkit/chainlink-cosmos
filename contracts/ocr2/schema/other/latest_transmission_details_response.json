@@ -38,6 +38,5 @@
       "format": "uint8",
       "minimum": 0.0
     }
-  },
-  "additionalProperties": false
+  }
 }

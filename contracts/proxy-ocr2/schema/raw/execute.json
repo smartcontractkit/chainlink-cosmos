@@ -17,8 +17,7 @@
             "address": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -38,8 +37,7 @@
             "address": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -61,8 +59,7 @@
               "description": "Address to transfer ownership to",
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false

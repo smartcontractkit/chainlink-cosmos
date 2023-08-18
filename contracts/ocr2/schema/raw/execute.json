@@ -25,8 +25,7 @@
             "id": {
               "$ref": "#/definitions/Uint128"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -46,8 +45,7 @@
             "id": {
               "$ref": "#/definitions/Uint128"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -71,8 +69,7 @@
             "id": {
               "$ref": "#/definitions/Uint128"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -123,8 +120,7 @@
                 "type": "string"
               }
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -154,8 +150,7 @@
               "format": "uint64",
               "minimum": 0.0
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -175,8 +170,7 @@
             "to": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -207,8 +201,7 @@
                 "$ref": "#/definitions/Binary"
               }
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -228,8 +221,7 @@
             "config": {
               "$ref": "#/definitions/Billing"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -253,8 +245,7 @@
                 }
               ]
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -274,8 +265,7 @@
             "access_controller": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -295,8 +285,7 @@
             "access_controller": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -316,8 +305,7 @@
             "transmitter": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -341,8 +329,7 @@
             "recipient": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -366,8 +353,7 @@
             "recipient": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -404,8 +390,7 @@
             "transmitter": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -425,8 +410,7 @@
             "transmitter": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false

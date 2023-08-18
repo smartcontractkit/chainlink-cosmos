@@ -42,8 +42,7 @@
         "description": "RequestNewRound access controller address",
         "type": "string"
       }
-    },
-    "additionalProperties": false
+    }
   },
   "execute": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -72,8 +71,7 @@
               "id": {
                 "$ref": "#/definitions/Uint128"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -93,8 +91,7 @@
               "id": {
                 "$ref": "#/definitions/Uint128"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -118,8 +115,7 @@
               "id": {
                 "$ref": "#/definitions/Uint128"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -170,8 +166,7 @@
                   "type": "string"
                 }
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -201,8 +196,7 @@
                 "format": "uint64",
                 "minimum": 0.0
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -222,8 +216,7 @@
               "to": {
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -254,8 +247,7 @@
                   "$ref": "#/definitions/Binary"
                 }
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -275,8 +267,7 @@
               "config": {
                 "$ref": "#/definitions/Billing"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -300,8 +291,7 @@
                   }
                 ]
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -321,8 +311,7 @@
               "access_controller": {
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -342,8 +331,7 @@
               "access_controller": {
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -363,8 +351,7 @@
               "transmitter": {
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -388,8 +375,7 @@
               "recipient": {
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -413,8 +399,7 @@
               "recipient": {
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -451,8 +436,7 @@
               "transmitter": {
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -472,8 +456,7 @@
               "transmitter": {
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -629,8 +612,7 @@
                 "format": "uint32",
                 "minimum": 0.0
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -650,8 +632,7 @@
               "transmitter": {
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -671,8 +652,7 @@
               "transmitter": {
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -692,8 +672,7 @@
               "id": {
                 "$ref": "#/definitions/Uint128"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -818,8 +797,7 @@
           "maxItems": 32,
           "minItems": 32
         }
-      },
-      "additionalProperties": false
+      }
     },
     "latest_config_digest_and_epoch": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -849,8 +827,7 @@
         "scan_logs": {
           "type": "boolean"
         }
-      },
-      "additionalProperties": false
+      }
     },
     "latest_round_data": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -923,8 +900,7 @@
           "format": "uint8",
           "minimum": 0.0
         }
-      },
-      "additionalProperties": false
+      }
     },
     "link_available_for_payment": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -937,8 +913,7 @@
         "amount": {
           "type": "string"
         }
-      },
-      "additionalProperties": false
+      }
     },
     "link_token": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1080,7 +1055,6 @@
           }
         }
       },
-      "additionalProperties": false,
       "definitions": {
         "Addr": {
           "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",

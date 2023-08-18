@@ -38,6 +38,5 @@
       "description": "RequestNewRound access controller address",
       "type": "string"
     }
-  },
-  "additionalProperties": false
+  }
 }

@@ -26,6 +26,5 @@
     "scan_logs": {
       "type": "boolean"
     }
-  },
-  "additionalProperties": false
+  }
 }

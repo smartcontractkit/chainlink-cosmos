@@ -8,8 +8,6 @@ use cosmwasm_std::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use ocr2;
-
 use cw_storage_plus::{Item, Map};
 
 use thiserror::Error;
