@@ -3,22 +3,7 @@ import MintLinkCmd from '../../src/commands/contracts/link/mint'
 import TransferLinkCmd from '../../src/commands/contracts/link/transfer'
 import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import { CW20BaseQueryClient } from '../../codegen/CW20Base.client'
-import { endWasmd, CMD_FLAGS, maybeInitWasmd } from '../utils'
-
-type DeployResponse = {
-  responses: {
-    tx: string
-    contract: string
-  }[]
-}
-
-const ONE_TOKEN = BigInt('1000000000000000000')
-const MNEMONIC =
-  'surround miss nominee dream gap cross assault thank captain prosper drop duty group candy wealth weather scale put'
-const NODE_URL = 'http://127.0.0.1:26657'
-const DEFAULT_GAS_PRICE = '0.025ucosm'
-const NETWORK = 'local'
-const TIMEOUT = 90000
+import { endWasmd, CMD_FLAGS, maybeInitWasmd, NODE_URL, TIMEOUT, ONE_TOKEN, DeployResponse } from '../utils'
 
 const deployLink = async () => {
   const cmd = new DeployLinkCmd(

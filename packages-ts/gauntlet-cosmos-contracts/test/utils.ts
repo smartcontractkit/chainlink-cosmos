@@ -7,15 +7,21 @@ import UploadCmd from '../src/commands/tooling/upload'
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import { GasPrice } from '@cosmjs/stargate'
 
-const MNEMONIC =
+export type DeployResponse = {
+  responses: {
+    tx: string
+    contract: string
+  }[]
+}
+export const ONE_TOKEN = BigInt('1000000000000000000')
+
+export const MNEMONIC =
   'surround miss nominee dream gap cross assault thank captain prosper drop duty group candy wealth weather scale put'
-const NODE_URL = 'http://127.0.0.1:26657'
-const DEFAULT_GAS_PRICE = '0.025ucosm'
-const NETWORK = 'local'
+export const NODE_URL = 'http://127.0.0.1:26657'
+export const DEFAULT_GAS_PRICE = '0.025ucosm'
+export const NETWORK = 'local'
 
-const TIMEOUT = 90000
-
-const WASMD_ACCOUNTS = path.join(__dirname, './devAccounts.json')
+export const TIMEOUT = 90000
 
 export const CMD_FLAGS = {
   network: NETWORK,
@@ -33,6 +39,8 @@ export const endWasmd = async () => {
   execSync(`${downScript}`)
 }
 
+const WASMD_ACCOUNTS = path.join(__dirname, './devAccounts.json')
+
 /**
  * Initializes Wasmd and Contracts, unless SKIP_WASMD_SETUP=true
  * Can save time for debugging / local testing if Wasmd and base contracts have been setup already
@@ -42,10 +50,9 @@ export const endWasmd = async () => {
  * @returns {string[]} Initialized account addresses
  */
 export const maybeInitWasmd = async () => {
-  const wasmdAccountsPath = path.join(__dirname, './devAccounts.json')
 
   if (process.env.SKIP_WASMD_SETUP) {
-    const rawData = readFileSync(wasmdAccountsPath, 'utf8')
+    const rawData = readFileSync(WASMD_ACCOUNTS, 'utf8')
     let data: { accounts: string[] } = JSON.parse(rawData)
     return data.accounts
   }

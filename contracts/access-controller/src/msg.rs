@@ -1,4 +1,4 @@
-use cosmwasm_schema::QueryResponses;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -16,11 +16,11 @@ pub enum ExecuteMsg {
     AcceptOwnership,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, QueryResponses)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses, Eq)]
 pub enum QueryMsg {
     #[returns(bool)]
     HasAccess { address: String },
     #[returns(Addr)]
-    Owner,
+    Owner {},
 }
