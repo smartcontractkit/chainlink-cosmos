@@ -24,9 +24,10 @@ type ChainlinkClient struct {
 	bootstrapPeers []client.P2PData
 }
 
+// TODO: Remove env. See https://github.com/smartcontractkit/chainlink-cosmos/pull/350#discussion_r1298071289
 // CreateKeys Creates node keys and defines chain and nodes for each node
 func NewChainlinkClient(env *environment.Environment, nodeName string, chainId string, tendermintURL string) (*ChainlinkClient, error) {
-	nodes, err := ConnectChainlinkNodes(env)
+	nodes, err := connectChainlinkNodes(env)
 	if err != nil {
 		return nil, err
 	}
@@ -172,10 +173,10 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, nodeName, p2pPort, moc
 	return nil
 }
 
-// ConnectChainlinkNodes creates a chainlink client for each node in the environment
+// connectChainlinkNodes creates a chainlink client for each node in the environment
 // This is a non k8s version of the function in chainlink_k8s.go
 // https://github.com/smartcontractkit/chainlink/blob/cosmos-test-keys/integration-tests/client/chainlink_k8s.go#L77
-func ConnectChainlinkNodes(e *environment.Environment) ([]*client.ChainlinkClient, error) {
+func connectChainlinkNodes(e *environment.Environment) ([]*client.ChainlinkClient, error) {
 	var clients []*client.ChainlinkClient
 	for _, nodeDetails := range e.ChainlinkNodeDetails {
 		c, err := client.NewChainlinkClient(&client.ChainlinkConfig{
