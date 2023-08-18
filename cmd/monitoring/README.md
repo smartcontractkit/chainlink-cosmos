@@ -4,7 +4,6 @@
 
 ```bash
 COSMOS_TENDERMINT_URL="<some terra url>" \
-COSMOS_FCD_URL="https://fcd.cosmos.dev/" \
 COSMOS_NETWORK_NAME="cosmos-devnet" \
 COSMOS_NETWORK_ID="cosmos-devnet" \
 COSMOS_CHAIN_ID="1" \
