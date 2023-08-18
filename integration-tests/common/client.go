@@ -3,10 +3,12 @@ package common
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/smartcontractkit/chainlink-env/environment"
@@ -24,18 +26,12 @@ type ChainlinkClient struct {
 
 // CreateKeys Creates node keys and defines chain and nodes for each node
 func NewChainlinkClient(env *environment.Environment, nodeName string, chainId string, tendermintURL string) (*ChainlinkClient, error) {
-	chainlinkK8Nodes, err := client.ConnectChainlinkNodes(env)
+	nodes, err := ConnectChainlinkNodes(env)
 	if err != nil {
 		return nil, err
 	}
-	if chainlinkK8Nodes == nil || len(chainlinkK8Nodes) == 0 {
+	if nodes == nil || len(nodes) == 0 {
 		return nil, errors.New("No connected nodes")
-	}
-
-	// extract client from k8s client
-	nodes := []*client.ChainlinkClient{}
-	for i := range chainlinkK8Nodes {
-		nodes = append(nodes, chainlinkK8Nodes[i].ChainlinkClient)
 	}
 
 	nodeKeys, _, err := client.CreateNodeKeysBundle(nodes, chainName, chainId)
@@ -48,7 +44,7 @@ func NewChainlinkClient(env *environment.Environment, nodeName string, chainId s
 	}
 
 	return &ChainlinkClient{
-		ChainlinkNodes: chainlinkK8Nodes,
+		ChainlinkNodes: nodes,
 		NodeKeys:       nodeKeys,
 	}, nil
 }
@@ -174,4 +170,35 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, nodeName, p2pPort, moc
 		}
 	}
 	return nil
+}
+
+// ConnectChainlinkNodes creates a chainlink client for each node in the environment
+// This is a non k8s version of the function in chainlink_k8s.go
+// https://github.com/smartcontractkit/chainlink/blob/cosmos-test-keys/integration-tests/client/chainlink_k8s.go#L77
+func ConnectChainlinkNodes(e *environment.Environment) ([]*client.ChainlinkClient, error) {
+	var clients []*client.ChainlinkClient
+	for _, nodeDetails := range e.ChainlinkNodeDetails {
+		c, err := client.NewChainlinkClient(&client.ChainlinkConfig{
+			URL:        nodeDetails.LocalIP,
+			Email:      "notreal@fakeemail.ch",
+			Password:   "fj293fbBnlQ!f9vNs",
+			InternalIP: parseHostname(nodeDetails.InternalIP),
+		})
+		if err != nil {
+			return nil, err
+		}
+		log.Debug().
+			Str("URL", c.Config.URL).
+			Str("Internal IP", c.Config.InternalIP).
+			Str("Chart Name", nodeDetails.ChartName).
+			Str("Pod Name", nodeDetails.PodName).
+			Msg("Connected to Chainlink node")
+		clients = append(clients, c)
+	}
+	return clients, nil
+}
+
+func parseHostname(s string) string {
+	r := regexp.MustCompile(`://(?P<Host>.*):`)
+	return r.FindStringSubmatch(s)[1]
 }
