@@ -6,6 +6,9 @@ on:
       - develop
       - main
   pull_request:
+    # edited is not one of the default events, re-run incase the core-ref was modified
+    # in the PR body
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: docker-tests-${{ github.ref }}
@@ -15,13 +18,26 @@ jobs:
   integration_tests_docker:
     name: Run docker tests
     runs-on: ubuntu-latest
+    env:
+      # TEMP: cosmos-test-keys branch with fixes
+      # TODO: replace with develop when ready
+      DEFAULT_CORE_REF: 9c95732370e5c39a5dccf21e6db9fe167abe8d09
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: Get core ref from PR body
+        if: github.event_name == 'pull_request'
+        run: |
+          comment=$(gh pr view https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }} --json body -q '.body')
+          core_ref=$(echo $comment | grep -oP 'core ref: \K\S+' || true)
+          if [ ! -z "$core_ref" ]; then
+            echo "CUSTOM_CORE_REF=${core_ref}" >> "${GITHUB_ENV}"
+          fi
+
       - name: Checkout chainlink repo
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
         with:
           repository: smartcontractkit/chainlink
-          # TEMP: cosmos-test-keys branch with fixes
-          ref: 9c95732370e5c39a5dccf21e6db9fe167abe8d09
+          ref: ${{ env.CUSTOM_CORE_REF || env.DEFAULT_CORE_REF }}
           path: temp/chainlink
 
       - name: Update chainlink-cosmos sha
@@ -49,7 +65,6 @@ jobs:
 
       - name: Run Test
         env:
-          # temp smartcontractkit/chainlink image built on branch `cosmos-test-keys`
           CORE_IMAGE: 'local_chainlink'
           DEFAULT_GAS_PRICE: '0.025ucosm'
           MNEMONIC: 'surround miss nominee dream gap cross assault thank captain prosper drop duty group candy wealth weather scale put'
