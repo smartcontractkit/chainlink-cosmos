@@ -552,8 +552,8 @@ github.com/shopspring/decimal v1.3.1 h1:2Usl1nmF/WZucqkFZhnfFYxxxu8LG21F6nPQBE5g
 github.com/shopspring/decimal v1.3.1/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
-github.com/smartcontractkit/chainlink-relay v0.1.7-0.20230814221409-567a8f84b413 h1:TSgJDGt6XT/iMao8QJlkEFtBEJO/JQVlcj/bfibc/ag=
-github.com/smartcontractkit/chainlink-relay v0.1.7-0.20230814221409-567a8f84b413/go.mod h1:gWclxGW7rLkbjXn7FGizYlyKhp/boekto4MEYGyiMG4=
+github.com/smartcontractkit/chainlink-relay v0.1.7-0.20230821022808-d561e3bd5ace h1:TYiBD43SEE0a7qmc8TEr01NEXLZo78dU70uoROKvrqs=
+github.com/smartcontractkit/chainlink-relay v0.1.7-0.20230821022808-d561e3bd5ace/go.mod h1:Lv+rb15WVqKCQKPkLkcqeOwun72f1TFsFshu2E3qq+w=
 github.com/smartcontractkit/libocr v0.0.0-20230802221916-2271752fa829 h1:fzefK1SzoRSHzZduOCzIJ2kmkBMPKwIf3FgeBlw7Jjk=
 github.com/smartcontractkit/libocr v0.0.0-20230802221916-2271752fa829/go.mod h1:2lyRkw/qLQgUWlrWWmq5nj0y90rWeO6Y+v+fCakRgb0=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
