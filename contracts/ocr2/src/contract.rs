@@ -211,7 +211,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::LatestConfigDigestAndEpoch {} => {
             to_binary(&query_latest_config_digest_and_epoch(deps)?)
         }
-        QueryMsg::LatestTransmissionDetails {} => to_binary(&query_latest_transmission_details(deps)?),
+        QueryMsg::LatestTransmissionDetails {} => {
+            to_binary(&query_latest_transmission_details(deps)?)
+        }
         // v3
         QueryMsg::Description {} => to_binary(&query_description(deps)?),
         QueryMsg::Decimals {} => to_binary(&query_decimals(deps)?),
@@ -221,7 +223,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::LinkToken {} => to_binary(&query_link_token(deps)?),
         QueryMsg::Billing {} => to_binary(&query_billing(deps)?),
         QueryMsg::BillingAccessController {} => to_binary(&query_billing_access_controller(deps)?),
-        QueryMsg::RequesterAccessController {} => to_binary(&query_requester_access_controller(deps)?),
+        QueryMsg::RequesterAccessController {} => {
+            to_binary(&query_requester_access_controller(deps)?)
+        }
         QueryMsg::OwedPayment { transmitter } => to_binary(&query_owed_payment(deps, transmitter)?),
         QueryMsg::LinkAvailableForPayment {} => {
             to_binary(&query_link_available_for_payment(deps, env)?)
