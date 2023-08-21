@@ -1,4 +1,5 @@
-use crate::state::{bignum, Billing, ProposalId, Validator};
+use crate::state::{bignum, Billing, Proposal, ProposalId, Round, Validator};
+use cosmwasm_schema::QueryResponses;
 use cosmwasm_std::{Addr, Binary, Uint128};
 use cw20::Cw20ReceiveMsg;
 use schemars::JsonSchema;
@@ -108,33 +109,50 @@ pub enum ExecuteMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, QueryResponses)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     // BASE:
-    LatestConfigDetails,
-    Transmitters,
-    LatestTransmissionDetails,
-    LatestConfigDigestAndEpoch,
-
-    Description,
-    Decimals,
+    #[returns(LatestConfigDetailsResponse)]
+    LatestConfigDetails {},
+    #[returns(TransmittersResponse)]
+    Transmitters {},
+    #[returns(LatestTransmissionDetailsResponse)]
+    LatestTransmissionDetails {},
+    #[returns(LatestConfigDigestAndEpochResponse)]
+    LatestConfigDigestAndEpoch {},
+    #[returns(String)]
+    Description {},
+    #[returns(u8)]
+    Decimals {},
+    #[returns(Round)]
     RoundData { round_id: u32 },
-    LatestRoundData,
-
-    LinkToken,
-    Billing,
-    BillingAccessController,
-    RequesterAccessController,
+    #[returns(Round)]
+    LatestRoundData {},
+    #[returns(Addr)]
+    LinkToken {},
+    #[returns(Billing)]
+    Billing {},
+    #[returns(Addr)]
+    BillingAccessController {},
+    #[returns(Addr)]
+    RequesterAccessController {},
+    #[returns(Uint128)]
     OwedPayment { transmitter: String },
-    LinkAvailableForPayment,
+    #[returns(LinkAvailableForPaymentResponse)]
+    LinkAvailableForPayment {},
+    #[returns(u32)]
     OracleObservationCount { transmitter: String },
+    #[returns(Proposal)]
     Proposal { id: ProposalId },
-    Version,
-    Owner,
+    #[returns(str)]
+    Version {},
+    #[returns(Addr)]
+    Owner {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct LatestConfigDetailsResponse {
     pub config_count: u32,
     pub block_number: u64,
@@ -142,11 +160,13 @@ pub struct LatestConfigDetailsResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct TransmittersResponse {
     pub addresses: Vec<Addr>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct LatestTransmissionDetailsResponse {
     pub latest_config_digest: [u8; 32],
     pub epoch: u32,
@@ -158,6 +178,7 @@ pub struct LatestTransmissionDetailsResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct LatestConfigDigestAndEpochResponse {
     pub scan_logs: bool,
     pub config_digest: [u8; 32],
@@ -165,6 +186,7 @@ pub struct LatestConfigDigestAndEpochResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct LinkAvailableForPaymentResponse {
     #[serde(with = "bignum")]
     #[schemars(with = "String")]

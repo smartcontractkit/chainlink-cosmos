@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Round",
+  "type": "object",
+  "required": [
+    "answer",
+    "observations_timestamp",
+    "round_id",
+    "transmission_timestamp"
+  ],
+  "properties": {
+    "answer": {
+      "type": "string"
+    },
+    "observations_timestamp": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
+    },
+    "round_id": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
+    },
+    "transmission_timestamp": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
+    }
+  }
+}

@@ -1,0 +1,180 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QueryMsg",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "decimals"
+      ],
+      "properties": {
+        "decimals": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "version"
+      ],
+      "properties": {
+        "version": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "description"
+      ],
+      "properties": {
+        "description": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "round_data"
+      ],
+      "properties": {
+        "round_data": {
+          "type": "object",
+          "required": [
+            "round_id"
+          ],
+          "properties": {
+            "round_id": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "latest_round_data"
+      ],
+      "properties": {
+        "latest_round_data": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "proposed_round_data"
+      ],
+      "properties": {
+        "proposed_round_data": {
+          "type": "object",
+          "required": [
+            "round_id"
+          ],
+          "properties": {
+            "round_id": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "proposed_latest_round_data"
+      ],
+      "properties": {
+        "proposed_latest_round_data": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "aggregator"
+      ],
+      "properties": {
+        "aggregator": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "phase_id"
+      ],
+      "properties": {
+        "phase_id": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "phase_aggregators"
+      ],
+      "properties": {
+        "phase_aggregators": {
+          "type": "object",
+          "required": [
+            "phase_id"
+          ],
+          "properties": {
+            "phase_id": {
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "proposed_aggregator"
+      ],
+      "properties": {
+        "proposed_aggregator": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "owner"
+      ],
+      "properties": {
+        "owner": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

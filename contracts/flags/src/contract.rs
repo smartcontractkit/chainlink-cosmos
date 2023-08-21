@@ -68,10 +68,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
     match msg {
         QueryMsg::Flag { subject } => Ok(to_binary(&query_flag(deps, subject)?)?),
         QueryMsg::Flags { subjects } => Ok(to_binary(&query_flags(deps, subjects)?)?),
-        QueryMsg::RaisingAccessController => {
+        QueryMsg::RaisingAccessController {} => {
             Ok(to_binary(&query_raising_access_controller(deps)?)?)
         }
-        QueryMsg::Owner => Ok(to_binary(&OWNER.query_owner(deps)?)?),
+        QueryMsg::Owner {} => Ok(to_binary(&OWNER.query_owner(deps)?)?),
     }
 }
 
