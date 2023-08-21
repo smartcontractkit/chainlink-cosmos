@@ -98,8 +98,7 @@
               "address": {
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -111,8 +110,7 @@
         ],
         "properties": {
           "owner": {
-            "type": "object",
-            "additionalProperties": false
+            "type": "object"
           }
         },
         "additionalProperties": false
