@@ -37,10 +37,8 @@ func TestOCRBasic(t *testing.T) {
 
 	params.InitCosmosSdk(
 		/* bech32Prefix= */ "wasm",
+		/* token= */ "cosm",
 	)
-	err := params.RegisterTokenCosmosSdk("cosm")
-	require.NoError(t, err, "Could not register cosm token on Cosmos SDK")
-
 	clientLogger, err := relaylogger.New()
 	require.NoError(t, err, "Could not create relay logger")
 	cosmosClient, err := client.NewClient(
