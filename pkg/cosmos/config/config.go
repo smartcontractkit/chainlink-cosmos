@@ -1,7 +1,6 @@
 package config
 
 import (
-	"net/url"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -52,7 +51,6 @@ type Config interface {
 	BlocksUntilTxTimeout() int64
 	ConfirmPollPeriod() time.Duration
 	FallbackGasPrice() sdk.Dec
-	FCDURL() url.URL
 	GasLimitMultiplier() float64
 	MaxMsgsPerBatch() int64
 	OCR2CachePollPeriod() time.Duration
@@ -67,7 +65,6 @@ type configSet struct {
 	BlocksUntilTxTimeout int64
 	ConfirmPollPeriod    time.Duration
 	FallbackGasPrice     sdk.Dec
-	FCDURL               url.URL
 	GasLimitMultiplier   float64
 	MaxMsgsPerBatch      int64
 	OCR2CachePollPeriod  time.Duration
@@ -81,7 +78,6 @@ type Chain struct {
 	BlocksUntilTxTimeout *int64
 	ConfirmPollPeriod    *utils.Duration
 	FallbackGasPrice     *decimal.Decimal
-	FCDURL               *utils.URL
 	GasLimitMultiplier   *decimal.Decimal
 	MaxMsgsPerBatch      *int64
 	OCR2CachePollPeriod  *utils.Duration
@@ -103,9 +99,6 @@ func (c *Chain) SetDefaults() {
 	if c.FallbackGasPrice == nil {
 		d := decimal.NewFromBigInt(defaultConfigSet.FallbackGasPrice.BigInt(), -sdk.Precision)
 		c.FallbackGasPrice = &d
-	}
-	if c.FCDURL == nil {
-		c.FCDURL = (*utils.URL)(&defaultConfigSet.FCDURL)
 	}
 	if c.GasLimitMultiplier == nil {
 		d := decimal.NewFromFloat(defaultConfigSet.GasLimitMultiplier)
