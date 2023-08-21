@@ -1,9 +1,11 @@
-import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
+import { DirectSecp256k1HdWallet, coins } from '@cosmjs/proto-signing'
 import { execSync } from 'child_process'
 import { readFileSync, writeFileSync } from 'fs'
 import path from 'path'
 
 import UploadCmd from '../src/commands/tooling/upload'
+import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
+import { GasPrice } from '@cosmjs/stargate'
 
 const MNEMONIC =
   'surround miss nominee dream gap cross assault thank captain prosper drop duty group candy wealth weather scale put'
@@ -70,20 +72,26 @@ export const startWasmdAndUpload = async () => {
   const otherAddresses = accounts.map((a) => a.address).join(' ')
   const wasmdScript = path.join(__dirname, '../../../scripts/wasmd.sh')
 
-  execSync(`${wasmdScript} ${otherAddresses}`)
+  execSync(wasmdScript)
 
-  // retrieve default deployer account
-  const deployerAccount = await (async () => {
-    const deployerWallet = await DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, { prefix: 'wasm' })
-    const deployerAccounts = await deployerWallet.getAccounts()
-    return deployerAccounts[0]
-  })()
+   // querying wasmd too soon will result in errors
+   await new Promise((f) => setTimeout(f, 10000))
+
+  const deployerWallet = await DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, { prefix: 'wasm' })
+  const deployerAccounts = await deployerWallet.getAccounts()
+  const deployerAccount = deployerAccounts[0]
+  const deployer = await SigningCosmWasmClient.connectWithSigner(NODE_URL, deployerWallet, {
+    gasPrice: GasPrice.fromString(DEFAULT_GAS_PRICE),
+  })
+
+  // initialize other accounts with some tokens
+  for (const a of accounts) {
+    await deployer.sendTokens(deployerAccount.address, a.address, coins("1", "ucosm"), "auto")
+  }
+
   accounts = [deployerAccount, ...accounts]
 
   console.log(`All accounts initialized ${deployerAccount.address} ${otherAddresses}`)
-
-  // querying wasmd too soon will result in errors
-  await new Promise((f) => setTimeout(f, 10000))
 
   // upload contracts
   process.env.SKIP_PROMPTS = 'true'
@@ -94,7 +102,7 @@ export const startWasmdAndUpload = async () => {
       mnemonic: MNEMONIC,
       nodeURL: NODE_URL,
       gauntletTest: true,
-      defaultGasPrice: '0.025ucosm',
+      defaultGasPrice: DEFAULT_GAS_PRICE,
     },
     [],
   )

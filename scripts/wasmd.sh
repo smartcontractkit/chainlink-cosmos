@@ -35,8 +35,7 @@ docker run \
 	--name "${container_name}" \
 	"cosmwasm/wasmd:${container_version}" \
 	"./setup_and_run.sh" \
-	"${genesis_account}" \
-	"$@"
+	"${genesis_account}"
 
 echo "Waiting for wasmd container to become ready.."
 start_time=$(date +%s)
