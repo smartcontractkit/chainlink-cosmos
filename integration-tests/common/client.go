@@ -3,10 +3,12 @@ package common
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/smartcontractkit/chainlink-env/environment"
@@ -16,15 +18,16 @@ import (
 )
 
 type ChainlinkClient struct {
-	ChainlinkNodes []*client.Chainlink
+	ChainlinkNodes []*client.ChainlinkClient
 	NodeKeys       []client.NodeKeysBundle
 	bTypeAttr      *client.BridgeTypeAttributes
 	bootstrapPeers []client.P2PData
 }
 
+// TODO: Remove env. See https://github.com/smartcontractkit/chainlink-cosmos/pull/350#discussion_r1298071289
 // CreateKeys Creates node keys and defines chain and nodes for each node
 func NewChainlinkClient(env *environment.Environment, nodeName string, chainId string, tendermintURL string) (*ChainlinkClient, error) {
-	nodes, err := client.ConnectChainlinkNodes(env)
+	nodes, err := connectChainlinkNodes(env)
 	if err != nil {
 		return nil, err
 	}
@@ -168,4 +171,35 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, nodeName, p2pPort, moc
 		}
 	}
 	return nil
+}
+
+// connectChainlinkNodes creates a chainlink client for each node in the environment
+// This is a non k8s version of the function in chainlink_k8s.go
+// https://github.com/smartcontractkit/chainlink/blob/cosmos-test-keys/integration-tests/client/chainlink_k8s.go#L77
+func connectChainlinkNodes(e *environment.Environment) ([]*client.ChainlinkClient, error) {
+	var clients []*client.ChainlinkClient
+	for _, nodeDetails := range e.ChainlinkNodeDetails {
+		c, err := client.NewChainlinkClient(&client.ChainlinkConfig{
+			URL:        nodeDetails.LocalIP,
+			Email:      "notreal@fakeemail.ch",
+			Password:   "fj293fbBnlQ!f9vNs",
+			InternalIP: parseHostname(nodeDetails.InternalIP),
+		})
+		if err != nil {
+			return nil, err
+		}
+		log.Debug().
+			Str("URL", c.Config.URL).
+			Str("Internal IP", c.Config.InternalIP).
+			Str("Chart Name", nodeDetails.ChartName).
+			Str("Pod Name", nodeDetails.PodName).
+			Msg("Connected to Chainlink node")
+		clients = append(clients, c)
+	}
+	return clients, nil
+}
+
+func parseHostname(s string) string {
+	r := regexp.MustCompile(`://(?P<Host>.*):`)
+	return r.FindStringSubmatch(s)[1]
 }
