@@ -43,6 +43,7 @@ var defaultConfigSet = configSet{
 	OCR2CachePollPeriod: 4 * time.Second,
 	OCR2CacheTTL:        time.Minute,
 	TxMsgTimeout:        10 * time.Minute,
+	Bech32Prefix:        "wasm",  // note: this shouldn't be used outside of tests
 	FeeToken:            "ucosm", // note: this shouldn't be used outside of tests
 }
 
@@ -56,6 +57,7 @@ type Config interface {
 	OCR2CachePollPeriod() time.Duration
 	OCR2CacheTTL() time.Duration
 	TxMsgTimeout() time.Duration
+	Bech32Prefix() string
 	FeeToken() string
 }
 
@@ -70,6 +72,7 @@ type configSet struct {
 	OCR2CachePollPeriod  time.Duration
 	OCR2CacheTTL         time.Duration
 	TxMsgTimeout         time.Duration
+	Bech32Prefix         string
 	FeeToken             string
 }
 
@@ -83,6 +86,7 @@ type Chain struct {
 	OCR2CachePollPeriod  *utils.Duration
 	OCR2CacheTTL         *utils.Duration
 	TxMsgTimeout         *utils.Duration
+	Bech32Prefix         *string
 	FeeToken             *string
 }
 
@@ -115,6 +119,9 @@ func (c *Chain) SetDefaults() {
 	}
 	if c.TxMsgTimeout == nil {
 		c.TxMsgTimeout = utils.MustNewDuration(defaultConfigSet.TxMsgTimeout)
+	}
+	if c.Bech32Prefix == nil {
+		c.Bech32Prefix = &defaultConfigSet.Bech32Prefix
 	}
 	if c.FeeToken == nil {
 		c.FeeToken = &defaultConfigSet.FeeToken
