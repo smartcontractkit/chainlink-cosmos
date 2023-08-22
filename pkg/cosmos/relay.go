@@ -36,6 +36,23 @@ type Relayer struct {
 // Note: constructed in core
 func NewRelayer(lggr logger.Logger, chainSet adapters.ChainSet) *Relayer {
 	ctx, cancel := context.WithCancel(context.Background())
+
+	// Initialize Cosmos SDK
+	// TODO: Currently only uses config from the first chain in the chain set as InitCosmosSdk can only be called once.
+	// To revist when LOOP plugins enable one relayer/sdk instance per Cosmos chain
+	chainStatuses, _, err := chainSet.ChainStatuses(ctx, 0, 1)
+	if err != nil {
+		panic(err)
+	}
+	chain, err := chainSet.Chain(ctx, chainStatuses[0].ID)
+	if err != nil {
+		panic(err)
+	}
+	params.InitCosmosSdk(
+		chain.Config().Bech32Prefix(),
+		chain.Config().FeeToken(),
+	)
+
 	return &Relayer{
 		lggr:     lggr,
 		chainSet: chainSet,
@@ -53,14 +70,6 @@ func (r *Relayer) Start(context.Context) error {
 	if r.chainSet == nil {
 		return errors.New("Cosmos unavailable")
 	}
-
-	// TODO(BCI-915): Make this configurable and relayer-specific
-	// when doing so, core side will have to run each relayer in a LOOPP
-	params.InitCosmosSdk(
-		/* bech32Prefix= */ "wasm",
-		/* token= */ "cosm",
-	)
-
 	return nil
 }
 
