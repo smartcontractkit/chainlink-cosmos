@@ -14,7 +14,7 @@ import (
 	txmgrtypes "github.com/smartcontractkit/chainlink-relay/pkg/txmgr/types"
 )
 
-// Type aliases for Cosmos
+// Type aliases for Cosmos specific implementation of generic txmgr
 type (
 	TxRequest = txmgrtypes.TxRequest[Address, TxHash]
 )
