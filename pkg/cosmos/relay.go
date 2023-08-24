@@ -27,37 +27,26 @@ func (e *ErrMsgUnsupported) Error() string {
 var _ relaytypes.Relayer = &Relayer{}
 
 type Relayer struct {
-	lggr     logger.Logger
-	chainSet adapters.ChainSet
-	ctx      context.Context
-	cancel   func()
+	lggr   logger.Logger
+	chain  adapters.Chain
+	ctx    context.Context
+	cancel func()
 }
 
 // Note: constructed in core
-func NewRelayer(lggr logger.Logger, chainSet adapters.ChainSet) *Relayer {
+func NewRelayer(lggr logger.Logger, chain adapters.Chain) *Relayer {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Initialize Cosmos SDK
-	// TODO: Currently only uses config from the first chain in the chain set as InitCosmosSdk can only be called once.
-	// To revist when LOOP plugins enable one relayer/sdk instance per Cosmos chain
-	chainStatuses, _, err := chainSet.ChainStatuses(ctx, 0, 1)
-	if err != nil {
-		panic(err)
-	}
-	chain, err := chainSet.Chain(ctx, chainStatuses[0].ID)
-	if err != nil {
-		panic(err)
-	}
 	params.InitCosmosSdk(
 		chain.Config().Bech32Prefix(),
 		chain.Config().FeeToken(),
 	)
 
 	return &Relayer{
-		lggr:     lggr,
-		chainSet: chainSet,
-		ctx:      ctx,
-		cancel:   cancel,
+		lggr:   lggr,
+		chain:  chain,
+		ctx:    ctx,
+		cancel: cancel,
 	}
 }
 
@@ -67,7 +56,7 @@ func (r *Relayer) Name() string {
 
 // Start starts the relayer respecting the given context.
 func (r *Relayer) Start(context.Context) error {
-	if r.chainSet == nil {
+	if r.chain == nil {
 		return errors.New("Cosmos unavailable")
 	}
 	return nil
@@ -79,11 +68,11 @@ func (r *Relayer) Close() error {
 }
 
 func (r *Relayer) Ready() error {
-	return r.chainSet.Ready()
+	return r.chain.Ready()
 }
 
 func (r *Relayer) HealthReport() map[string]error {
-	return r.chainSet.HealthReport()
+	return r.chain.HealthReport()
 }
 
 func (r *Relayer) NewMercuryProvider(rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MercuryProvider, error) {
@@ -95,7 +84,7 @@ func (r *Relayer) NewFunctionsProvider(rargs relaytypes.RelayArgs, pargs relayty
 }
 
 func (r *Relayer) NewConfigProvider(args relaytypes.RelayArgs) (relaytypes.ConfigProvider, error) {
-	configProvider, err := cosmwasm.NewConfigProvider(r.ctx, r.lggr, r.chainSet, args)
+	configProvider, err := cosmwasm.NewConfigProvider(r.ctx, r.lggr, r.chain, args)
 	if err != nil {
 		// Never return (*configProvider)(nil)
 		return nil, err
@@ -104,7 +93,7 @@ func (r *Relayer) NewConfigProvider(args relaytypes.RelayArgs) (relaytypes.Confi
 }
 
 func (r *Relayer) NewMedianProvider(rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MedianProvider, error) {
-	configProvider, err := cosmwasm.NewMedianProvider(r.ctx, r.lggr, r.chainSet, rargs, pargs)
+	configProvider, err := cosmwasm.NewMedianProvider(r.ctx, r.lggr, r.chain, rargs, pargs)
 	if err != nil {
 		return nil, err
 	}
