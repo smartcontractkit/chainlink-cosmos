@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos"
+
 	txmgrtypes "github.com/smartcontractkit/chainlink-relay/pkg/txmgr/types"
 )
 
@@ -49,7 +50,6 @@ func EncodePayload(msg sdk.Msg) ([]byte, error) {
 	return raw, nil
 }
 
-// Decodes bytes into cosmos native txn type
 func DecodePayload(msgType string, raw []byte) (msg sdk.Msg, err error) {
 	switch msgType {
 	case typeMsgSend:
@@ -75,13 +75,14 @@ func DecodePayload(msgType string, raw []byte) (msg sdk.Msg, err error) {
 // https://docs.cosmos.network/v0.46/basics/accounts.html#keys-accounts-addresses-and-signatures
 type Address [32]byte
 
-// Create a new Address from a sdk.Address
+// Create a new generic txmgr Address from a sdk.Address
 func NewAddress(addr sdk.AccAddress) Address {
 	var a Address
 	copy(a[:], addr[:])
 	return a
 }
 
+// Convert a generic txmgr Address to a Cosmos sdk.AccAddress
 func ToCosmosAddress(addr Address) sdk.AccAddress {
 	return sdk.AccAddress(bytes.TrimRight(addr[:], "\x00"))
 }

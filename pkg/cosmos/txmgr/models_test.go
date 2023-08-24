@@ -39,7 +39,6 @@ func TestAddress(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 20, len(addr20.Bytes()))
 
-	// Test cases
 	testCases := []struct {
 		name       string
 		accAddress sdk.AccAddress
