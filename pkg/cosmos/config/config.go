@@ -48,49 +48,52 @@ var defaultConfigSet = configSet{
 }
 
 type Config interface {
+	Bech32Prefix() string
 	BlockRate() time.Duration
 	BlocksUntilTxTimeout() int64
 	ConfirmPollPeriod() time.Duration
 	FallbackGasPrice() sdk.Dec
+	FeeToken() string
 	GasLimitMultiplier() float64
 	MaxMsgsPerBatch() int64
 	OCR2CachePollPeriod() time.Duration
 	OCR2CacheTTL() time.Duration
 	TxMsgTimeout() time.Duration
-	Bech32Prefix() string
-	FeeToken() string
 }
 
 // opt: remove
 type configSet struct {
+	Bech32Prefix         string
 	BlockRate            time.Duration
 	BlocksUntilTxTimeout int64
 	ConfirmPollPeriod    time.Duration
 	FallbackGasPrice     sdk.Dec
+	FeeToken             string
 	GasLimitMultiplier   float64
 	MaxMsgsPerBatch      int64
 	OCR2CachePollPeriod  time.Duration
 	OCR2CacheTTL         time.Duration
 	TxMsgTimeout         time.Duration
-	Bech32Prefix         string
-	FeeToken             string
 }
 
 type Chain struct {
+	Bech32Prefix         *string
 	BlockRate            *utils.Duration
 	BlocksUntilTxTimeout *int64
 	ConfirmPollPeriod    *utils.Duration
 	FallbackGasPrice     *decimal.Decimal
+	FeeToken             *string
 	GasLimitMultiplier   *decimal.Decimal
 	MaxMsgsPerBatch      *int64
 	OCR2CachePollPeriod  *utils.Duration
 	OCR2CacheTTL         *utils.Duration
 	TxMsgTimeout         *utils.Duration
-	Bech32Prefix         *string
-	FeeToken             *string
 }
 
 func (c *Chain) SetDefaults() {
+	if c.Bech32Prefix == nil {
+		c.Bech32Prefix = &defaultConfigSet.Bech32Prefix
+	}
 	if c.BlockRate == nil {
 		c.BlockRate = utils.MustNewDuration(defaultConfigSet.BlockRate)
 	}
@@ -103,6 +106,9 @@ func (c *Chain) SetDefaults() {
 	if c.FallbackGasPrice == nil {
 		d := decimal.NewFromBigInt(defaultConfigSet.FallbackGasPrice.BigInt(), -sdk.Precision)
 		c.FallbackGasPrice = &d
+	}
+	if c.FeeToken == nil {
+		c.FeeToken = &defaultConfigSet.FeeToken
 	}
 	if c.GasLimitMultiplier == nil {
 		d := decimal.NewFromFloat(defaultConfigSet.GasLimitMultiplier)
@@ -119,12 +125,6 @@ func (c *Chain) SetDefaults() {
 	}
 	if c.TxMsgTimeout == nil {
 		c.TxMsgTimeout = utils.MustNewDuration(defaultConfigSet.TxMsgTimeout)
-	}
-	if c.Bech32Prefix == nil {
-		c.Bech32Prefix = &defaultConfigSet.Bech32Prefix
-	}
-	if c.FeeToken == nil {
-		c.FeeToken = &defaultConfigSet.FeeToken
 	}
 }
 
