@@ -30,8 +30,7 @@ type configProvider struct {
 	contractAddr  cosmosSDK.AccAddress
 }
 
-// TODO: pass chain instead of chainSet
-func NewConfigProvider(ctx context.Context, lggr logger.Logger, chainSet adapters.ChainSet, args relaytypes.RelayArgs) (*configProvider, error) {
+func NewConfigProvider(ctx context.Context, lggr logger.Logger, chain adapters.Chain, args relaytypes.RelayArgs) (*configProvider, error) {
 	var relayConfig adapters.RelayConfig
 	err := json.Unmarshal(args.RelayConfig, &relayConfig)
 	if err != nil {
@@ -41,10 +40,7 @@ func NewConfigProvider(ctx context.Context, lggr logger.Logger, chainSet adapter
 	if err != nil {
 		return nil, err
 	}
-	chain, err := chainSet.Chain(ctx, relayConfig.ChainID)
-	if err != nil {
-		return nil, err
-	}
+
 	chainReader, err := chain.Reader(relayConfig.NodeName)
 	if err != nil {
 		return nil, err
@@ -102,8 +98,8 @@ type medianProvider struct {
 	transmitter types.ContractTransmitter
 }
 
-func NewMedianProvider(ctx context.Context, lggr logger.Logger, chainSet adapters.ChainSet, rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MedianProvider, error) {
-	configProvider, err := NewConfigProvider(ctx, lggr, chainSet, rargs)
+func NewMedianProvider(ctx context.Context, lggr logger.Logger, chain adapters.Chain, rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MedianProvider, error) {
+	configProvider, err := NewConfigProvider(ctx, lggr, chain, rargs)
 	if err != nil {
 		return nil, err
 	}
