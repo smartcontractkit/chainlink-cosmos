@@ -12,7 +12,12 @@ import (
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/cosmwasm"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
+)
+
+const (
+	InjectivePrefix string = "inj"
 )
 
 // ErrMsgUnsupported is returned when an unsupported type of message is encountered.
@@ -37,9 +42,11 @@ type Relayer struct {
 func NewRelayer(lggr logger.Logger, chain adapters.Chain) *Relayer {
 	ctx, cancel := context.WithCancel(context.Background())
 
+	bech32Prefix := chain.Config().Bech32Prefix()
+	feeToken := chain.Config().FeeToken()
 	params.InitCosmosSdk(
-		chain.Config().Bech32Prefix(),
-		chain.Config().FeeToken(),
+		bech32Prefix,
+		feeToken,
 	)
 
 	return &Relayer{
@@ -84,11 +91,18 @@ func (r *Relayer) NewFunctionsProvider(rargs relaytypes.RelayArgs, pargs relayty
 }
 
 func (r *Relayer) NewConfigProvider(args relaytypes.RelayArgs) (relaytypes.ConfigProvider, error) {
-	configProvider, err := cosmwasm.NewConfigProvider(r.ctx, r.lggr, r.chain, args)
+	var configProvider relaytypes.ConfigProvider
+	var err error
+	if r.chain.Config().Bech32Prefix() == InjectivePrefix {
+		configProvider, err = injective.NewConfigProvider(r.ctx, r.lggr, r.chain, args)
+	} else {
+		// Default to cosmwasm adapter
+		configProvider, err = cosmwasm.NewConfigProvider(r.ctx, r.lggr, r.chain, args)
+	}
 	if err != nil {
-		// Never return (*configProvider)(nil)
 		return nil, err
 	}
+
 	return configProvider, err
 }
 
