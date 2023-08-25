@@ -16,18 +16,9 @@ import (
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 )
 
-type CosmosChainType string
-
 const (
-	Wasm      CosmosChainType = "wasm"
-	Injective CosmosChainType = "injective"
+	InjectivePrefix string = "inj"
 )
-
-var Bech32PrefixToCosmosChainType = map[string]CosmosChainType{
-	"cosmos": Wasm,
-	"wasm":   Wasm,
-	"inj":    Injective,
-}
 
 // ErrMsgUnsupported is returned when an unsupported type of message is encountered.
 type ErrMsgUnsupported struct {
@@ -41,11 +32,10 @@ func (e *ErrMsgUnsupported) Error() string {
 var _ relaytypes.Relayer = &Relayer{}
 
 type Relayer struct {
-	lggr            logger.Logger
-	chain           adapters.Chain
-	ctx             context.Context
-	cancel          func()
-	cosmosChainType CosmosChainType
+	lggr   logger.Logger
+	chain  adapters.Chain
+	ctx    context.Context
+	cancel func()
 }
 
 // Note: constructed in core
@@ -60,11 +50,10 @@ func NewRelayer(lggr logger.Logger, chain adapters.Chain) *Relayer {
 	)
 
 	return &Relayer{
-		lggr:            lggr,
-		chain:           chain,
-		ctx:             ctx,
-		cancel:          cancel,
-		cosmosChainType: Bech32PrefixToCosmosChainType[bech32Prefix],
+		lggr:   lggr,
+		chain:  chain,
+		ctx:    ctx,
+		cancel: cancel,
 	}
 }
 
@@ -104,19 +93,14 @@ func (r *Relayer) NewFunctionsProvider(rargs relaytypes.RelayArgs, pargs relayty
 func (r *Relayer) NewConfigProvider(args relaytypes.RelayArgs) (relaytypes.ConfigProvider, error) {
 	var configProvider relaytypes.ConfigProvider
 	var err error
-	if r.cosmosChainType == Wasm {
-		configProvider, err = cosmwasm.NewConfigProvider(r.ctx, r.lggr, r.chain, args)
-		if err != nil {
-			// Never return (*configProvider)(nil)
-			return nil, err
-		}
-	} else if r.cosmosChainType == Injective {
+	if r.chain.Config().Bech32Prefix() == InjectivePrefix {
 		configProvider, err = injective.NewConfigProvider(r.ctx, r.lggr, r.chain, args)
-		if err != nil {
-			return nil, err
-		}
 	} else {
-		return nil, fmt.Errorf("unrecognized cosmos chain type: %s", r.cosmosChainType)
+		// Default to cosmwasm adapter
+		configProvider, err = cosmwasm.NewConfigProvider(r.ctx, r.lggr, r.chain, args)
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	return configProvider, err
