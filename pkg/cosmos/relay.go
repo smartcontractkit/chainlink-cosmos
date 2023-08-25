@@ -115,6 +115,8 @@ func (r *Relayer) NewConfigProvider(args relaytypes.RelayArgs) (relaytypes.Confi
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		return nil, fmt.Errorf("unrecognized cosmos chain type: %s", r.cosmosChainType)
 	}
 
 	return configProvider, err
