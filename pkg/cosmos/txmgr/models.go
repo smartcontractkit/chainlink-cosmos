@@ -70,7 +70,7 @@ func DecodePayload(msgType string, raw []byte) (msg sdk.Msg, err error) {
 	return nil, errors.Errorf("unrecognized message type: %s", msgType)
 }
 
-// A wrapper for sdk.Address. Uses fixed max address size of 32-byte size to satisfy Hashable interface.
+// A wrapper for sdk.Address. Uses fixed max address size of 32-byte size to satisfy comparable constraint in Hashable interface.
 // Cosmos addresses shorter than 32 bytes are zero-padded.
 // https://docs.cosmos.network/v0.46/basics/accounts.html#keys-accounts-addresses-and-signatures
 type Address [32]byte
