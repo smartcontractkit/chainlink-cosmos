@@ -19,9 +19,7 @@ jobs:
     name: Run docker tests
     runs-on: ubuntu-latest
     env:
-      # TEMP: cosmos-test-keys branch with fixes
-      # TODO: replace with develop when ready
-      DEFAULT_CORE_REF: 9c95732370e5c39a5dccf21e6db9fe167abe8d09
+      DEFAULT_CORE_REF: develop
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Get core ref from PR body
