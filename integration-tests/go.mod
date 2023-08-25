@@ -10,12 +10,12 @@ require (
 	github.com/rs/zerolog v1.29.1
 	github.com/smartcontractkit/chainlink-cosmos v0.4.1-0.20230811192642-2299ce672665
 	github.com/smartcontractkit/chainlink-cosmos/ops v0.0.0-20230615043323-5fe39e28b7ee
-	github.com/smartcontractkit/chainlink-env v0.36.0
-	github.com/smartcontractkit/chainlink-relay v0.1.7-0.20230814221409-567a8f84b413
-	github.com/smartcontractkit/chainlink-testing-framework v1.15.3
-	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20230818010150-dc7e03125cd0
-	github.com/smartcontractkit/chainlink/v2 v2.2.1-0.20230814120914-9c95732370e5
-	github.com/smartcontractkit/libocr v0.0.0-20230816220705-665e93233ae5
+	github.com/smartcontractkit/chainlink-env v0.32.8
+	github.com/smartcontractkit/chainlink-relay v0.1.7-0.20230821022808-d561e3bd5ace
+	github.com/smartcontractkit/chainlink-testing-framework v1.11.6
+	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20230610030307-281eedc27b1f
+	github.com/smartcontractkit/chainlink/v2 v2.2.0-mercury-20230608.0.20230610030307-281eedc27b1f
+	github.com/smartcontractkit/libocr v0.0.0-20230802221916-2271752fa829
 	github.com/stretchr/testify v1.8.4
 	gopkg.in/guregu/null.v4 v4.0.0
 )
@@ -62,7 +62,7 @@ require (
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/pebble v0.0.0-20230209160836-829675f94811 // indirect
 	github.com/cockroachdb/redact v1.1.3 // indirect
-	github.com/cometbft/cometbft-db v0.8.0 // indirect
+	github.com/cometbft/cometbft-db v0.7.0 // indirect
 	github.com/confio/ics23/go v0.9.0 // indirect
 	github.com/cosmos/btcutil v1.0.5 // indirect
 	github.com/cosmos/cosmos-proto v1.0.0-beta.2 // indirect
@@ -295,8 +295,8 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.12 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/smartcontractkit/caigo v0.0.0-20230621050857-b29a4ca8c704 // indirect
-	github.com/smartcontractkit/ocr2vrf v0.0.0-20230804151440-2f1eb1e20687 // indirect
+	github.com/smartcontractkit/caigo v0.0.0-20230530082629-53a5a4bdb25e // indirect
+	github.com/smartcontractkit/ocr2vrf v0.0.0-20230607140106-3de6d0aed120 // indirect
 	github.com/smartcontractkit/sqlx v1.3.5-0.20210805004948-4be295aacbeb // indirect
 	github.com/smartcontractkit/wsrpc v0.7.2 // indirect
 	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
@@ -343,7 +343,7 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/arch v0.4.0 // indirect
+	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
