@@ -33,18 +33,14 @@ type configProvider struct {
 	feedID          string
 }
 
-// TODO: pass chain instead of chainSet
-func NewConfigProvider(ctx context.Context, lggr logger.Logger, chainSet adapters.ChainSet, args relaytypes.RelayArgs) (*configProvider, error) {
+func NewConfigProvider(ctx context.Context, lggr logger.Logger, chain adapters.Chain, args relaytypes.RelayArgs) (*configProvider, error) {
 	var relayConfig adapters.RelayConfig
 	err := json.Unmarshal(args.RelayConfig, &relayConfig)
 	if err != nil {
 		return nil, err
 	}
 	feedID := args.ContractID // TODO: probably not bech32
-	chain, err := chainSet.Chain(ctx, relayConfig.ChainID)
-	if err != nil {
-		return nil, err
-	}
+
 	// TODO: share cosmos.Client or extract the inner clientCtx
 	reader, err := chain.Reader(relayConfig.NodeName)
 	if err != nil {
@@ -105,8 +101,8 @@ type medianProvider struct {
 	transmitter types.ContractTransmitter
 }
 
-func NewMedianProvider(ctx context.Context, lggr logger.Logger, chainSet adapters.ChainSet, rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MedianProvider, error) {
-	configProvider, err := NewConfigProvider(ctx, lggr, chainSet, rargs)
+func NewMedianProvider(ctx context.Context, lggr logger.Logger, chain adapters.Chain, rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MedianProvider, error) {
+	configProvider, err := NewConfigProvider(ctx, lggr, chain, rargs)
 	if err != nil {
 		return nil, err
 	}
