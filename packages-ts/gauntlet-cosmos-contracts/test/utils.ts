@@ -25,7 +25,7 @@ export const NODE_URL = 'http://127.0.0.1:26657'
 export const DEFAULT_GAS_PRICE = '0.025ucosm'
 export const NETWORK = 'local'
 
-export const TIMEOUT = 90000
+export const TIMEOUT = 180000
 
 export const CMD_FLAGS = {
   network: NETWORK,
