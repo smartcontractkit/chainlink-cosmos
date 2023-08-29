@@ -1,11 +1,9 @@
 import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
 
-type CommandInput = {
-}
+type CommandInput = {}
 
-type ContractInput = {
-}
+type ContractInput = {}
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   return {}

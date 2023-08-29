@@ -43,11 +43,7 @@ const validateRandomSecret: ValidateFn<CommandInput> = async (input) => {
 }
 
 const validateOffchainConfig: ValidateFn<CommandInput> = async (input, context) => {
-  const { offchainConfig } = await serializeOffchainConfig(
-    input.offchainConfig,
-    input.secret,
-    input.randomSecret,
-  )
+  const { offchainConfig } = await serializeOffchainConfig(input.offchainConfig, input.secret, input.randomSecret)
   const proposal: any = await context.provider.queryContractSmart(context.contract, {
     proposal: {
       id: input.proposalId,

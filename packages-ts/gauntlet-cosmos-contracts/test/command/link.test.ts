@@ -4,7 +4,6 @@ import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import { CW20BaseQueryClient } from '../../codegen/CW20Base.client'
 import { endWasmd, CMD_FLAGS, maybeInitWasmd, NODE_URL, TIMEOUT, ONE_TOKEN, toAddr, deployLink } from '../utils'
 
-
 describe('Link', () => {
   let Link: CW20BaseQueryClient
   let linkAddr: string

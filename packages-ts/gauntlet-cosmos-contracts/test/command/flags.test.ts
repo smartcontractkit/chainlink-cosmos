@@ -2,7 +2,6 @@ import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import { FlagsQueryClient } from '../../codegen/Flags.client'
 import { endWasmd, maybeInitWasmd, NODE_URL, TIMEOUT, toAddr, deployFlags } from '../utils'
 
-
 describe('Flags', () => {
   let Flags: FlagsQueryClient
   let flagsAddr: string
@@ -29,13 +28,17 @@ describe('Flags', () => {
     Flags = new FlagsQueryClient(cosmClient, flagsAddr)
   }, TIMEOUT)
 
-  it('Deploys', async () => {
-    const owner = await Flags.owner()
-    expect(owner).toBe(deployerAddr)
+  it(
+    'Deploys',
+    async () => {
+      const owner = await Flags.owner()
+      expect(owner).toBe(deployerAddr)
 
-    expect(await Flags.raisingAccessController()).toBe(mockRaiseACAddr)
+      expect(await Flags.raisingAccessController()).toBe(mockRaiseACAddr)
 
-    // flag is unset for random address
-    expect(await Flags.flag({ subject: aliceAddr })).toBe(false)
-  }, TIMEOUT)
+      // flag is unset for random address
+      expect(await Flags.flag({ subject: aliceAddr })).toBe(false)
+    },
+    TIMEOUT,
+  )
 })

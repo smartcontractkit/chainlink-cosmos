@@ -36,11 +36,11 @@ export const CMD_FLAGS = {
 }
 
 /// Deploy Commands
-export const deployOCR2 = async ( params: {[key: string]: any} ) => {
+export const deployOCR2 = async (params: { [key: string]: any }) => {
   const cmd = new DeployOCR2(
     {
       ...CMD_FLAGS,
-      ...params
+      ...params,
     },
     [],
   )
@@ -118,12 +118,11 @@ const WASMD_ACCOUNTS = path.join(__dirname, './devAccounts.json')
  * @returns {string[]} Initialized account addresses
  */
 export const maybeInitWasmd = async () => {
-
   if (process.env.SKIP_WASMD_SETUP) {
     const rawData = readFileSync(WASMD_ACCOUNTS, 'utf8')
-    let { accounts }: { accounts: {address: string, mnemonic: string}[] } = JSON.parse(rawData)
+    let { accounts }: { accounts: { address: string; mnemonic: string }[] } = JSON.parse(rawData)
     return await Promise.all(
-      accounts.map(async (a) => DirectSecp256k1HdWallet.fromMnemonic(a.mnemonic, { prefix: 'wasm' }))
+      accounts.map(async (a) => DirectSecp256k1HdWallet.fromMnemonic(a.mnemonic, { prefix: 'wasm' })),
     )
   }
 
@@ -144,9 +143,11 @@ export const toAddr = async (wallet: DirectSecp256k1HdWallet) => {
  */
 export const startWasmdAndUpload = async () => {
   // create test wallets
-  let testWallets = await Promise.all(Array.from({ length: 4 }, async () => {
-    return await DirectSecp256k1HdWallet.generate(12, { prefix: 'wasm' })
-  }))
+  let testWallets = await Promise.all(
+    Array.from({ length: 4 }, async () => {
+      return await DirectSecp256k1HdWallet.generate(12, { prefix: 'wasm' })
+    }),
+  )
   // add deployer wallet
   const deployerWallet = await DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, { prefix: 'wasm' })
 
@@ -159,17 +160,16 @@ export const startWasmdAndUpload = async () => {
 
   execSync(wasmdScript)
 
-   // querying wasmd too soon will result in errors
-   await new Promise((f) => setTimeout(f, 10000))
+  // querying wasmd too soon will result in errors
+  await new Promise((f) => setTimeout(f, 10000))
 
-  
   const deployer = await SigningCosmWasmClient.connectWithSigner(NODE_URL, deployerWallet, {
     gasPrice: GasPrice.fromString(DEFAULT_GAS_PRICE),
   })
 
   // initialize other accounts with some tokens
   for (const testAddr of otherAddresses) {
-    await deployer.sendTokens(deployerAddress, testAddr, coins("1", "ucosm"), "auto")
+    await deployer.sendTokens(deployerAddress, testAddr, coins('1', 'ucosm'), 'auto')
   }
 
   console.log(`All accounts initialized ${testAddresses}`)
@@ -189,15 +189,12 @@ export const startWasmdAndUpload = async () => {
   )
   await cmd.run()
 
-
   // write to local file system for SKIP_WASMD_SETUP=true
   writeFileSync(
-    WASMD_ACCOUNTS, 
-    JSON.stringify(
-      { 
-        accounts: testWallets.map((w, i) => ({address: testAddresses[i], mnemonic: w.mnemonic }))
-      }
-    )
+    WASMD_ACCOUNTS,
+    JSON.stringify({
+      accounts: testWallets.map((w, i) => ({ address: testAddresses[i], mnemonic: w.mnemonic })),
+    }),
   )
 
   return testWallets

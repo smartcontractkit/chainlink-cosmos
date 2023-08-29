@@ -25,34 +25,41 @@ describe('Access Controller', () => {
     AccessController = new AccessControllerQueryClient(cosmClient, ACAddr)
   }, TIMEOUT)
 
-  it('Deploys', async () => {
-    const owner = await AccessController.owner()
-    expect(owner).toBe(deployerAddr)
-    expect(await AccessController.hasAccess({ address: deployerAddr})).toBe(false)
-  }, TIMEOUT)
+  it(
+    'Deploys',
+    async () => {
+      const owner = await AccessController.owner()
+      expect(owner).toBe(deployerAddr)
+      expect(await AccessController.hasAccess({ address: deployerAddr })).toBe(false)
+    },
+    TIMEOUT,
+  )
 
-  it('Add/Remove Access', async () => {
-    const addCmd = new AddAccess(
-      {
-        ...CMD_FLAGS,
-        address: aliceAddr
-      }
-      , 
-      [ACAddr]
-    )
-    await addCmd.run()
+  it(
+    'Add/Remove Access',
+    async () => {
+      const addCmd = new AddAccess(
+        {
+          ...CMD_FLAGS,
+          address: aliceAddr,
+        },
+        [ACAddr],
+      )
+      await addCmd.run()
 
-    expect(await AccessController.hasAccess({ address: aliceAddr })).toBe(true)
+      expect(await AccessController.hasAccess({ address: aliceAddr })).toBe(true)
 
-    const removeCmd = new RemoveAccess(
-      {
-        ...CMD_FLAGS,
-        address: aliceAddr
-      },
-      [ACAddr]
-    )
-    await removeCmd.run()
+      const removeCmd = new RemoveAccess(
+        {
+          ...CMD_FLAGS,
+          address: aliceAddr,
+        },
+        [ACAddr],
+      )
+      await removeCmd.run()
 
-    expect(await AccessController.hasAccess({ address: aliceAddr })).toBe(false)
-  }, TIMEOUT)
+      expect(await AccessController.hasAccess({ address: aliceAddr })).toBe(false)
+    },
+    TIMEOUT,
+  )
 })

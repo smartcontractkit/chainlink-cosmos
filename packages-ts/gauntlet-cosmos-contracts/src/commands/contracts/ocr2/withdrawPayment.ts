@@ -47,9 +47,9 @@ const afterExecute = () => async (response: Result<TransactionResponse>) => {
     logger.error('Could not retrieve events from tx')
     return
   }
-  const paidEvent =  events.find(e => e['type'] as any === 'wasm-set_config')
+  const paidEvent = events.find((e) => (e['type'] as any) === 'wasm-set_config')
 
-  if(!paidEvent) {
+  if (!paidEvent) {
     logger.info('0 LINK was owed/paid to payee')
   }
 
