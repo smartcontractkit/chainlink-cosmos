@@ -70,8 +70,8 @@ jobs:
           path: artifacts
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('contracts') }}
 
-      - if: ${{ steps.cache-wasmd-artifacts.outputs.cache-hit != 'true' }}
-        name: Build Wasmd Artifacts
+      - name: Build Wasmd Artifacts
+        if: steps.cache-wasmd-artifacts.outputs.cache-hit != 'true'
         run: make contracts_compile
           
       - run: nix develop -c yarn install --frozen-lockfile
