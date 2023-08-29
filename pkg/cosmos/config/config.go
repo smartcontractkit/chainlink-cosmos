@@ -1,7 +1,6 @@
 package config
 
 import (
-	"net/url"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -44,14 +43,17 @@ var defaultConfigSet = configSet{
 	OCR2CachePollPeriod: 4 * time.Second,
 	OCR2CacheTTL:        time.Minute,
 	TxMsgTimeout:        10 * time.Minute,
+	Bech32Prefix:        "wasm",  // note: this shouldn't be used outside of tests
+	FeeToken:            "ucosm", // note: this shouldn't be used outside of tests
 }
 
 type Config interface {
+	Bech32Prefix() string
 	BlockRate() time.Duration
 	BlocksUntilTxTimeout() int64
 	ConfirmPollPeriod() time.Duration
 	FallbackGasPrice() sdk.Dec
-	FCDURL() url.URL
+	FeeToken() string
 	GasLimitMultiplier() float64
 	MaxMsgsPerBatch() int64
 	OCR2CachePollPeriod() time.Duration
@@ -61,11 +63,12 @@ type Config interface {
 
 // opt: remove
 type configSet struct {
+	Bech32Prefix         string
 	BlockRate            time.Duration
 	BlocksUntilTxTimeout int64
 	ConfirmPollPeriod    time.Duration
 	FallbackGasPrice     sdk.Dec
-	FCDURL               url.URL
+	FeeToken             string
 	GasLimitMultiplier   float64
 	MaxMsgsPerBatch      int64
 	OCR2CachePollPeriod  time.Duration
@@ -74,11 +77,12 @@ type configSet struct {
 }
 
 type Chain struct {
+	Bech32Prefix         *string
 	BlockRate            *utils.Duration
 	BlocksUntilTxTimeout *int64
 	ConfirmPollPeriod    *utils.Duration
 	FallbackGasPrice     *decimal.Decimal
-	FCDURL               *utils.URL
+	FeeToken             *string
 	GasLimitMultiplier   *decimal.Decimal
 	MaxMsgsPerBatch      *int64
 	OCR2CachePollPeriod  *utils.Duration
@@ -87,6 +91,9 @@ type Chain struct {
 }
 
 func (c *Chain) SetDefaults() {
+	if c.Bech32Prefix == nil {
+		c.Bech32Prefix = &defaultConfigSet.Bech32Prefix
+	}
 	if c.BlockRate == nil {
 		c.BlockRate = utils.MustNewDuration(defaultConfigSet.BlockRate)
 	}
@@ -100,8 +107,8 @@ func (c *Chain) SetDefaults() {
 		d := decimal.NewFromBigInt(defaultConfigSet.FallbackGasPrice.BigInt(), -sdk.Precision)
 		c.FallbackGasPrice = &d
 	}
-	if c.FCDURL == nil {
-		c.FCDURL = (*utils.URL)(&defaultConfigSet.FCDURL)
+	if c.FeeToken == nil {
+		c.FeeToken = &defaultConfigSet.FeeToken
 	}
 	if c.GasLimitMultiplier == nil {
 		d := decimal.NewFromFloat(defaultConfigSet.GasLimitMultiplier)

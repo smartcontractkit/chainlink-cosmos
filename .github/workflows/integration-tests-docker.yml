@@ -1,0 +1,74 @@
+name: Integration Test (Docker)
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    # edited is not one of the default events, re-run incase the core-ref was modified
+    # in the PR body
+    types: [opened, synchronize, reopened, edited]
+
+concurrency:
+  group: docker-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration_tests_docker:
+    name: Run docker tests
+    runs-on: ubuntu-latest
+    env:
+      DEFAULT_CORE_REF: develop
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Get core ref from PR body
+        if: github.event_name == 'pull_request'
+        run: |
+          comment=$(gh pr view https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }} --json body -q '.body')
+          core_ref=$(echo $comment | grep -oP 'core ref: \K\S+' || true)
+          if [ ! -z "$core_ref" ]; then
+            echo "CUSTOM_CORE_REF=${core_ref}" >> "${GITHUB_ENV}"
+          fi
+
+      - name: Checkout chainlink repo
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        with:
+          repository: smartcontractkit/chainlink
+          ref: ${{ env.CUSTOM_CORE_REF || env.DEFAULT_CORE_REF }}
+          path: temp/chainlink
+
+      - name: Update chainlink-cosmos sha
+        env:
+          COMMIT_SHA: ${{ github.event_name == 'push' && github.sha || github.event.pull_request.head.sha }}
+        run: |
+          cd temp/chainlink
+          sed -i -E "/.*\/chainlink-cosmos \S+/ s/(.*\/chainlink-cosmos) \S+/\1 ${COMMIT_SHA}/g" go.mod
+          GIT_PAGER= git diff
+          make gomodtidy
+
+      - name: Build chainlink image
+        run: |
+          cd temp/chainlink
+          docker buildx build --build-arg COMMIT_SHA=$(git rev-parse HEAD) -t local_chainlink -f core/chainlink.Dockerfile .
+
+      - name: Checkout sources
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+
+      - name: Build contracts
+        run: |
+          # necessary so that we don't get "Permission denied" errors after docker execution.
+          mkdir -p -m 777 target/debug artifacts
+          make build_contracts
+
+      - name: Run Test
+        env:
+          CORE_IMAGE: 'local_chainlink'
+          DEFAULT_GAS_PRICE: '0.025ucosm'
+          MNEMONIC: 'surround miss nominee dream gap cross assault thank captain prosper drop duty group candy wealth weather scale put'
+          NODE_URL: 'http://127.0.0.1:26657'
+          TTL: '1m'
+          NODE_COUNT: '4'
+        run: |
+          cd integration-tests
+          go test --timeout=1h -v ./

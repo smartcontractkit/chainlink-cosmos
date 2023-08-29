@@ -1,13 +1,16 @@
 name: e2e_tests_custom_cl
-on:
-  pull_request:
-  workflow_dispatch:
-    inputs:
-      cl_branch_ref:
-        description: Chainlink repo branch to integrate with
-        required: true
-        default: develop
-        type: string
+
+# Disabled for now, as the image build fails, and the ocr2 test is currently specific to the docker setup.
+# See integration-tests-docker.yml
+#on:
+  #pull_request:
+  #workflow_dispatch:
+    #inputs:
+      #cl_branch_ref:
+        #description: Chainlink repo branch to integrate with
+        #required: true
+        #default: develop
+        #type: string
 
 concurrency:
   group: integration-tests-cosmos-${{ github.ref }}

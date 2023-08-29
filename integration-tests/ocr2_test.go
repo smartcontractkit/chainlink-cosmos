@@ -18,7 +18,7 @@ import (
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/testutil"
 	relaylogger "github.com/smartcontractkit/chainlink-relay/pkg/logger"
-	"github.com/smartcontractkit/chainlink/integration-tests/actions"
+	// "github.com/smartcontractkit/chainlink/integration-tests/actions"
 	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting2/types"
 
 	cometbfttypes "github.com/cometbft/cometbft/abci/types"
@@ -26,14 +26,14 @@ import (
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
+	// "go.uber.org/zap/zapcore"
 )
 
 func TestOCRBasic(t *testing.T) {
 	// Set up test environment
 	logger := common.GetTestLogger(t)
 	commonConfig := common.NewCommon(t)
-	commonConfig.SetLocalEnvironment()
+	commonConfig.SetLocalEnvironment(t)
 
 	params.InitCosmosSdk(
 		/* bech32Prefix= */ "wasm",
@@ -67,15 +67,15 @@ func TestOCRBasic(t *testing.T) {
 		msgSend := banktypes.NewMsgSend(testAccount, to, amount)
 		resp, err := cosmosClient.SignAndBroadcast([]types.Msg{msgSend}, accountNumber, sequenceNumber+uint64(i), gasPrice, privateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err, "Could not send tokens")
-		logger.Info().Str("txHash", resp.TxResponse.TxHash).Msg("Waiting for tx to be committed")
-		tx, success := client.AwaitTxCommitted(t, cosmosClient, resp.TxResponse.TxHash)
-		require.True(t, success)
-		require.Equal(t, cometbfttypes.CodeTypeOK, tx.TxResponse.Code)
 		logger.Info().Str("from", testAccount.String()).
 			Str("to", nodeAddr).
 			Str("amount", "10000000").
 			Str("token", "ucosm").
-			Msg("Sucessfully sent native tokens")
+			Str("txHash", resp.TxResponse.TxHash).
+			Msg("Sending native tokens")
+		tx, success := client.AwaitTxCommitted(t, cosmosClient, resp.TxResponse.TxHash)
+		require.True(t, success)
+		require.Equal(t, cometbfttypes.CodeTypeOK, tx.TxResponse.Code)
 		balance, err := cosmosClient.Balance(to, "ucosm")
 		require.NoError(t, err, "Could not fetch ucosm balance")
 		require.Equal(t, balance.String(), "10000000ucosm")
@@ -186,11 +186,14 @@ func TestOCRBasic(t *testing.T) {
 	err = validateRounds(t, cosmosClient, types.MustAccAddressFromBech32(ocrAddress), types.MustAccAddressFromBech32(ocrProxyAddress), commonConfig.IsSoak, commonConfig.TestDuration)
 	require.NoError(t, err, "Validating round should not fail")
 
-	t.Cleanup(func() {
-		err = actions.TeardownSuite(t, commonConfig.Env, "./", nil, nil, zapcore.DPanicLevel, nil)
-		//err = actions.TeardownSuite(t, t.Common.Env, utils.ProjectRoot, t.Cc.ChainlinkNodes, nil, zapcore.ErrorLevel)
-		require.NoError(t, err, "Error tearing down environment")
-	})
+	// Tear down local stack
+	commonConfig.TearDownLocalEnvironment(t)
+
+	// t.Cleanup(func() {
+	// 	err = actions.TeardownSuite(t, commonConfig.Env, "./", nil, nil, zapcore.DPanicLevel, nil)
+	// 	//err = actions.TeardownSuite(t, t.Common.Env, utils.ProjectRoot, t.Cc.ChainlinkNodes, nil, zapcore.ErrorLevel)
+	// 	require.NoError(t, err, "Error tearing down environment")
+	// })
 }
 
 func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.AccAddress, ocrProxyAddress types.AccAddress, isSoak bool, testDuration time.Duration) error {
@@ -340,9 +343,7 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 	valueBig, success := new(big.Int).SetString(roundData.Answer, 10)
 	require.True(t, success, "Failed to parse round data")
 	value := valueBig.Int64()
-	if value < 0 {
-		require.Equal(t, value, int64(mockAdapterValue), "Reading from proxy should return correct value")
-	}
+	require.Equal(t, value, int64(mockAdapterValue), "Reading from proxy should return correct value")
 
 	return nil
 }

@@ -3,11 +3,13 @@ package common
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"github.com/stretchr/testify/require"
 
 	"github.com/smartcontractkit/chainlink-env/environment"
 	"github.com/smartcontractkit/chainlink-env/pkg/alias"
@@ -21,11 +23,12 @@ import (
 // TODO: those should be moved as a common part of chainlink-testing-framework
 
 const (
-	chainName          = "cosmos"
-	chainID            = "testing"
-	ChainBlockTime     = "200ms"
-	ChainBlockTimeSoak = "2s"
-	defaultNodeUrl     = "http://tendermint-rpc:26657"
+	chainName              = "cosmos"
+	chainID                = "testing"
+	ChainBlockTime         = "200ms"
+	ChainBlockTimeSoak     = "2s"
+	defaultNodeUrl         = "http://127.0.0.1:26657"
+	defaultInternalNodeUrl = "http://host.docker.internal:26657"
 )
 
 var (
@@ -117,6 +120,10 @@ func NewCommon(t *testing.T) *Common {
 	if nodeUrl == "" {
 		nodeUrl = defaultNodeUrl
 	}
+	internalNodeUrl := getEnv("INTERNAL_NODE_URL")
+	if internalNodeUrl == "" {
+		internalNodeUrl = defaultInternalNodeUrl
+	}
 	chainlinkConfig := fmt.Sprintf(`[[Cosmos]]
 Enabled = true
 ChainID = '%s'
@@ -128,12 +135,19 @@ TendermintURL = '%s'
 Enabled = true
 
 [P2P]
+[P2P.V1]
+Enabled = false
 [P2P.V2]
 Enabled = true
 DeltaDial = '5s'
 DeltaReconcile = '5s'
 ListenAddresses = ['0.0.0.0:6691']
-`, chainID, nodeUrl)
+
+[WebServer]
+HTTPPort = 6688
+[WebServer.TLS]
+HTTPSPort = 0
+`, chainID, internalNodeUrl)
 	log.Debug().Str("toml", chainlinkConfig).Msg("Created chainlink config")
 
 	ttl := getTTL()
@@ -161,7 +175,25 @@ ListenAddresses = ['0.0.0.0:6691']
 	return c
 }
 
-func (c *Common) SetLocalEnvironment() {
+func (c *Common) SetLocalEnvironment(t *testing.T) {
+	// Run scripts to set up local test environment
+	log.Info().Msg("Starting wasmd container...")
+	err := exec.Command("../scripts/wasmd.sh").Run()
+	require.NoError(t, err, "Could not start wasmd container")
+	log.Info().Msg("Starting postgres container...")
+	err = exec.Command("../scripts/postgres.sh").Run()
+	require.NoError(t, err, "Could not start postgres container")
+	log.Info().Msg("Starting mock adapter...")
+	err = exec.Command("../scripts/mock-adapter.sh").Run()
+	require.NoError(t, err, "Could not start mock adapter")
+	log.Info().Msg("Starting core nodes...")
+	cmd := exec.Command("../scripts/core.sh")
+	cmd.Env = append(os.Environ(), fmt.Sprintf("CL_CONFIG=%s", c.ChainlinkConfig))
+	err = cmd.Run()
+	require.NoError(t, err, "Could not start core nodes")
+	log.Info().Msg("Set up local stack complete.")
+
+	// Set ChainlinkNodeDetails
 	var nodeDetails []*environment.ChainlinkNodeDetail
 	var basePort = 50100
 	for i := 0; i < c.NodeCount; i++ {
@@ -175,6 +207,22 @@ func (c *Common) SetLocalEnvironment() {
 		})
 	}
 	c.Env.ChainlinkNodeDetails = nodeDetails
+}
+
+func (c *Common) TearDownLocalEnvironment(t *testing.T) {
+	log.Info().Msg("Tearing down core nodes...")
+	err := exec.Command("../scripts/core.down.sh").Run()
+	require.NoError(t, err, "Could not tear down core nodes")
+	log.Info().Msg("Tearing down mock adapter...")
+	err = exec.Command("../scripts/mock-adapter.down.sh").Run()
+	require.NoError(t, err, "Could not tear down mock adapter")
+	log.Info().Msg("Tearing down postgres container...")
+	err = exec.Command("../scripts/postgres.down.sh").Run()
+	require.NoError(t, err, "Could not tear down postgres container")
+	log.Info().Msg("Tearing down wasmd container...")
+	err = exec.Command("../scripts/wasmd.down.sh").Run()
+	require.NoError(t, err, "Could not tear down wasmd container")
+	log.Info().Msg("Tear down local stack complete.")
 }
 
 func (c *Common) SetK8sEnvironment() {

@@ -11,36 +11,17 @@ container_version="2.3.0"
 api_email="notreal@fakeemail.ch"
 api_password="fj293fbBnlQ!f9vNs"
 
-core_config="
-[[Cosmos]]
-Enabled = true
-ChainID = 'testing'
-[[Cosmos.Nodes]]
-Name = 'primary'
-TendermintURL = 'http://host.docker.internal:26657'
+if [[ -z "${CL_CONFIG:-}" ]]; then
+	echo "No CL_CONFIG env var provided." >&2
+	exit 1
+fi
 
-[OCR2]
-Enabled = true
-
-[P2P]
-[P2P.V1]
-Enabled = false
-[P2P.V2]
-Enabled = true
-DeltaDial = '5s'
-DeltaReconcile = '5s'
-ListenAddresses = ['0.0.0.0:6691']
-
-[WebServer]
-HTTPPort = 6688
-[WebServer.TLS]
-HTTPSPort = 0
-"
-
+platform_arg=""
 if [ -n "${CORE_IMAGE:-}" ]; then
 	image_name="${CORE_IMAGE}"
 else
 	image_name="smartcontract/chainlink:${container_version}"
+	platform_arg="--platform linux/amd64"
 fi
 echo "Using core image: ${image_name}"
 
@@ -80,9 +61,9 @@ for ((i = 1; i <= NODE_COUNT; i++)); do
 		--rm \
 		-d \
 		--add-host=host.docker.internal:host-gateway \
-		--platform linux/amd64 \
+		$platform_arg \
 		"${listen_args[@]}" \
-		-e "CL_CONFIG=${core_config}" \
+		-e "CL_CONFIG=${CL_CONFIG}" \
 		-e "CL_DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5432/${database_name}?sslmode=disable" \
 		-e 'CL_PASSWORD_KEYSTORE=asdfasdfasdfasdf' \
 		--name "${container_name}.$i" \

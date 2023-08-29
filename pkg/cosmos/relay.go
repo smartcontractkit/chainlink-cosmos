@@ -12,7 +12,12 @@ import (
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/cosmwasm"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
+)
+
+const (
+	InjectivePrefix string = "inj"
 )
 
 // ErrMsgUnsupported is returned when an unsupported type of message is encountered.
@@ -27,20 +32,28 @@ func (e *ErrMsgUnsupported) Error() string {
 var _ relaytypes.Relayer = &Relayer{}
 
 type Relayer struct {
-	lggr     logger.Logger
-	chainSet adapters.ChainSet
-	ctx      context.Context
-	cancel   func()
+	lggr   logger.Logger
+	chain  adapters.Chain
+	ctx    context.Context
+	cancel func()
 }
 
 // Note: constructed in core
-func NewRelayer(lggr logger.Logger, chainSet adapters.ChainSet) *Relayer {
+func NewRelayer(lggr logger.Logger, chain adapters.Chain) *Relayer {
 	ctx, cancel := context.WithCancel(context.Background())
+
+	bech32Prefix := chain.Config().Bech32Prefix()
+	feeToken := chain.Config().FeeToken()
+	params.InitCosmosSdk(
+		bech32Prefix,
+		feeToken,
+	)
+
 	return &Relayer{
-		lggr:     lggr,
-		chainSet: chainSet,
-		ctx:      ctx,
-		cancel:   cancel,
+		lggr:   lggr,
+		chain:  chain,
+		ctx:    ctx,
+		cancel: cancel,
 	}
 }
 
@@ -50,17 +63,9 @@ func (r *Relayer) Name() string {
 
 // Start starts the relayer respecting the given context.
 func (r *Relayer) Start(context.Context) error {
-	if r.chainSet == nil {
+	if r.chain == nil {
 		return errors.New("Cosmos unavailable")
 	}
-
-	// TODO(BCI-915): Make this configurable and relayer-specific
-	// when doing so, core side will have to run each relayer in a LOOPP
-	params.InitCosmosSdk(
-		/* bech32Prefix= */ "wasm",
-		/* token= */ "cosm",
-	)
-
 	return nil
 }
 
@@ -70,11 +75,11 @@ func (r *Relayer) Close() error {
 }
 
 func (r *Relayer) Ready() error {
-	return r.chainSet.Ready()
+	return r.chain.Ready()
 }
 
 func (r *Relayer) HealthReport() map[string]error {
-	return r.chainSet.HealthReport()
+	return r.chain.HealthReport()
 }
 
 func (r *Relayer) NewMercuryProvider(rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MercuryProvider, error) {
@@ -86,16 +91,23 @@ func (r *Relayer) NewFunctionsProvider(rargs relaytypes.RelayArgs, pargs relayty
 }
 
 func (r *Relayer) NewConfigProvider(args relaytypes.RelayArgs) (relaytypes.ConfigProvider, error) {
-	configProvider, err := cosmwasm.NewConfigProvider(r.ctx, r.lggr, r.chainSet, args)
+	var configProvider relaytypes.ConfigProvider
+	var err error
+	if r.chain.Config().Bech32Prefix() == InjectivePrefix {
+		configProvider, err = injective.NewConfigProvider(r.ctx, r.lggr, r.chain, args)
+	} else {
+		// Default to cosmwasm adapter
+		configProvider, err = cosmwasm.NewConfigProvider(r.ctx, r.lggr, r.chain, args)
+	}
 	if err != nil {
-		// Never return (*configProvider)(nil)
 		return nil, err
 	}
+
 	return configProvider, err
 }
 
 func (r *Relayer) NewMedianProvider(rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MedianProvider, error) {
-	configProvider, err := cosmwasm.NewMedianProvider(r.ctx, r.lggr, r.chainSet, rargs, pargs)
+	configProvider, err := cosmwasm.NewMedianProvider(r.ctx, r.lggr, r.chain, rargs, pargs)
 	if err != nil {
 		return nil, err
 	}
