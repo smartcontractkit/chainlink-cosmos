@@ -1,21 +1,9 @@
-import DeployLinkCmd from '../../src/commands/contracts/link/deploy'
 import MintLinkCmd from '../../src/commands/contracts/link/mint'
 import TransferLinkCmd from '../../src/commands/contracts/link/transfer'
 import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import { CW20BaseQueryClient } from '../../codegen/CW20Base.client'
-import { endWasmd, CMD_FLAGS, maybeInitWasmd, NODE_URL, TIMEOUT, ONE_TOKEN, DeployResponse } from '../utils'
+import { endWasmd, CMD_FLAGS, maybeInitWasmd, NODE_URL, TIMEOUT, ONE_TOKEN, toAddr, deployLink } from '../utils'
 
-const deployLink = async () => {
-  const cmd = new DeployLinkCmd(
-    {
-      ...CMD_FLAGS,
-    },
-    [],
-  )
-  await cmd.invokeMiddlewares(cmd, cmd.middlewares)
-  const result = ((await cmd.execute()) as unknown) as DeployResponse
-  return result.responses[0].contract
-}
 
 describe('Link', () => {
   let Link: CW20BaseQueryClient
@@ -23,7 +11,6 @@ describe('Link', () => {
   let deployerAddr: string
   let aliceAddr: string
   let bobAddr: string
-  let usersAddr: string[]
 
   afterAll(async () => {
     await endWasmd()
@@ -31,7 +18,11 @@ describe('Link', () => {
 
   beforeAll(async () => {
     // Ideally, we'd start wasmd beforEach() but it takes too long
-    ;[deployerAddr, aliceAddr, bobAddr, ...usersAddr] = await maybeInitWasmd()
+    const [deployer, alice, bob] = await maybeInitWasmd()
+    deployerAddr = await toAddr(deployer)
+    aliceAddr = await toAddr(alice)
+    bobAddr = await toAddr(bob)
+
     linkAddr = await deployLink()
 
     const cosmClient = await CosmWasmClient.connect(NODE_URL)

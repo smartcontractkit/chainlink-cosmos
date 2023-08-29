@@ -26,7 +26,6 @@ export const withProvider: Middleware = async (c: CosmosCommand, next: Next) => 
     }
     const TransportNodeHid = require('@ledgerhq/hw-transport-node-hid')
 
-    console.log('DOING LEDGER')
     // TODO: allow specifying custom path, using stringToPath. BIP44_ATOM_PATH was different for example
     // const rawPath = c.flags.ledgerPath || BIP44_ATOM_PATH
     const transport = await TransportNodeHid.create()

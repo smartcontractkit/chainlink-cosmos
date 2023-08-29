@@ -2,10 +2,14 @@ import { DirectSecp256k1HdWallet, coins } from '@cosmjs/proto-signing'
 import { execSync } from 'child_process'
 import { readFileSync, writeFileSync } from 'fs'
 import path from 'path'
-
 import UploadCmd from '../src/commands/tooling/upload'
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import { GasPrice } from '@cosmjs/stargate'
+import DeployAC from '../src/commands/contracts/access_controller/deploy'
+import DeployLink from '../src/commands/contracts/link/deploy'
+import DeployFlags from '../src/commands/contracts/flags/deploy'
+import DeployValidator from '../src/commands/contracts/deviation_flagging_validator/deploy'
+import DeployOCR2 from '../src/commands/contracts/ocr2/deploy'
 
 export type DeployResponse = {
   responses: {
@@ -31,6 +35,70 @@ export const CMD_FLAGS = {
   defaultGasPrice: DEFAULT_GAS_PRICE,
 }
 
+/// Deploy Commands
+export const deployOCR2 = async ( params: {[key: string]: any} ) => {
+  const cmd = new DeployOCR2(
+    {
+      ...CMD_FLAGS,
+      ...params
+    },
+    [],
+  )
+  const result = await cmd.run()
+  return result['responses'][0]['contract'] as string
+}
+
+export const deployAC = async () => {
+  const cmd = new DeployAC(
+    {
+      ...CMD_FLAGS,
+    },
+    [],
+  )
+  const result = await cmd.run()
+  return result['responses'][0]['contract'] as string
+}
+
+export const deployLink = async () => {
+  const cmd = new DeployLink(
+    {
+      ...CMD_FLAGS,
+    },
+    [],
+  )
+  await cmd.invokeMiddlewares(cmd, cmd.middlewares)
+  const result = ((await cmd.execute()) as unknown) as DeployResponse
+  return result.responses[0].contract
+}
+
+export const deployFlags = async (raiseAC: string, lowerAC: string) => {
+  const cmd = new DeployFlags(
+    {
+      ...CMD_FLAGS,
+      raisingAccessController: raiseAC,
+      loweringAccessController: lowerAC,
+    },
+    [],
+  )
+  const result = await cmd.run()
+  return result['responses'][0]['contract'] as string
+}
+
+export const deployValidator = async (flagsAddr: string, threshold: string) => {
+  const cmd = new DeployValidator(
+    {
+      ...CMD_FLAGS,
+      flags: flagsAddr,
+      flaggingThreshold: threshold,
+    },
+    [],
+  )
+  const result = await cmd.run()
+  return result['responses'][0]['contract'] as string
+}
+
+/// Setup and Teardown Helpers
+
 export const endWasmd = async () => {
   if (process.env.SKIP_WASMD_SETUP) {
     return
@@ -53,13 +121,20 @@ export const maybeInitWasmd = async () => {
 
   if (process.env.SKIP_WASMD_SETUP) {
     const rawData = readFileSync(WASMD_ACCOUNTS, 'utf8')
-    let data: { accounts: string[] } = JSON.parse(rawData)
-    return data.accounts
+    let { accounts }: { accounts: {address: string, mnemonic: string}[] } = JSON.parse(rawData)
+    return await Promise.all(
+      accounts.map(async (a) => DirectSecp256k1HdWallet.fromMnemonic(a.mnemonic, { prefix: 'wasm' }))
+    )
   }
 
-  const accountAddresses = await startWasmdAndUpload()
+  const wallets = await startWasmdAndUpload()
 
-  return accountAddresses
+  return wallets
+}
+
+export const toAddr = async (wallet: DirectSecp256k1HdWallet) => {
+  const account = await wallet.getAccounts()
+  return account[0].address
 }
 
 /**
@@ -68,15 +143,18 @@ export const maybeInitWasmd = async () => {
  * @returns {string[]} Initialized account addresses
  */
 export const startWasmdAndUpload = async () => {
-  // create other accounts for testing purposes
-  const otherAccounts = Array.from({ length: 4 }, async () => {
-    const wallet = await DirectSecp256k1HdWallet.generate(12, { prefix: 'wasm' })
-    const account = await wallet.getAccounts()
-    return account[0]
-  })
-  let accounts = await Promise.all(otherAccounts)
+  // create test wallets
+  let testWallets = await Promise.all(Array.from({ length: 4 }, async () => {
+    return await DirectSecp256k1HdWallet.generate(12, { prefix: 'wasm' })
+  }))
+  // add deployer wallet
+  const deployerWallet = await DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, { prefix: 'wasm' })
 
-  const otherAddresses = accounts.map((a) => a.address).join(' ')
+  testWallets = [deployerWallet, ...testWallets]
+  const testAddresses = await Promise.all(testWallets.map(async (wallet) => await toAddr(wallet)))
+  const deployerAddress = testAddresses[0]
+  const otherAddresses = testAddresses.slice(1)
+
   const wasmdScript = path.join(__dirname, '../../../scripts/wasmd.sh')
 
   execSync(wasmdScript)
@@ -84,21 +162,17 @@ export const startWasmdAndUpload = async () => {
    // querying wasmd too soon will result in errors
    await new Promise((f) => setTimeout(f, 10000))
 
-  const deployerWallet = await DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, { prefix: 'wasm' })
-  const deployerAccounts = await deployerWallet.getAccounts()
-  const deployerAccount = deployerAccounts[0]
+  
   const deployer = await SigningCosmWasmClient.connectWithSigner(NODE_URL, deployerWallet, {
     gasPrice: GasPrice.fromString(DEFAULT_GAS_PRICE),
   })
 
   // initialize other accounts with some tokens
-  for (const a of accounts) {
-    await deployer.sendTokens(deployerAccount.address, a.address, coins("1", "ucosm"), "auto")
+  for (const testAddr of otherAddresses) {
+    await deployer.sendTokens(deployerAddress, testAddr, coins("1", "ucosm"), "auto")
   }
 
-  accounts = [deployerAccount, ...accounts]
-
-  console.log(`All accounts initialized ${deployerAccount.address} ${otherAddresses}`)
+  console.log(`All accounts initialized ${testAddresses}`)
 
   // upload contracts
   process.env.SKIP_PROMPTS = 'true'
@@ -115,10 +189,16 @@ export const startWasmdAndUpload = async () => {
   )
   await cmd.run()
 
-  const allAddresses = accounts.map((a) => a.address)
 
   // write to local file system for SKIP_WASMD_SETUP=true
-  writeFileSync(WASMD_ACCOUNTS, JSON.stringify({ accounts: allAddresses }))
+  writeFileSync(
+    WASMD_ACCOUNTS, 
+    JSON.stringify(
+      { 
+        accounts: testWallets.map((w, i) => ({address: testAddresses[i], mnemonic: w.mnemonic }))
+      }
+    )
+  )
 
-  return allAddresses
+  return testWallets
 }

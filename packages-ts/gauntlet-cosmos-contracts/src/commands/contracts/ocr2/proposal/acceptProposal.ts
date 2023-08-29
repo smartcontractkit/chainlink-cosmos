@@ -18,6 +18,7 @@ export type CommandInput = {
   proposalId: string
   digest: string
   offchainConfig: encoding.OffchainConfig
+  secret: string
   randomSecret: string
 }
 
@@ -44,7 +45,7 @@ const validateRandomSecret: ValidateFn<CommandInput> = async (input) => {
 const validateOffchainConfig: ValidateFn<CommandInput> = async (input, context) => {
   const { offchainConfig } = await serializeOffchainConfig(
     input.offchainConfig,
-    process.env.SECRET!,
+    input.secret,
     input.randomSecret,
   )
   const proposal: any = await context.provider.queryContractSmart(context.contract, {
@@ -87,6 +88,7 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     proposalId: flags.proposalId || flags.configProposal || flags.id, // --configProposal alias requested by eng ops
     digest: flags.digest,
     offchainConfig,
+    secret: process.env.SECRET,
     randomSecret: secret,
   }
 }

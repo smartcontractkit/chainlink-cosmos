@@ -1,26 +1,14 @@
-import DeployAC from '../../src/commands/contracts/access_controller/deploy'
+import AddAccess from '../../src/commands/contracts/access_controller/addAccess'
+import RemoveAccess from '../../src/commands/contracts/access_controller/removeAccess'
 import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import { AccessControllerQueryClient } from '../../codegen/AccessController.client'
-import { endWasmd, CMD_FLAGS, maybeInitWasmd, NODE_URL, TIMEOUT, ONE_TOKEN, DeployResponse } from '../utils'
+import { endWasmd, CMD_FLAGS, maybeInitWasmd, toAddr, NODE_URL, TIMEOUT, deployAC } from '../utils'
 
-const deployAC = async () => {
-  const cmd = new DeployAC(
-    {
-      ...CMD_FLAGS,
-    },
-    [],
-  )
-  const result = await cmd.run()
-  return result
-}
-
-describe('Link', () => {
+describe('Access Controller', () => {
   let AccessController: AccessControllerQueryClient
   let ACAddr: string
   let deployerAddr: string
   let aliceAddr: string
-  let bobAddr: string
-  let usersAddr: string[]
 
   afterAll(async () => {
     await endWasmd()
@@ -28,19 +16,43 @@ describe('Link', () => {
 
   beforeAll(async () => {
     // Ideally, we'd start wasmd beforEach() but it takes too long
-    [deployerAddr, aliceAddr, bobAddr, ...usersAddr] = await maybeInitWasmd()
-    const res = await deployAC()
-    ACAddr = res['responses'][0]['contract'] as string
-    console.log(ACAddr, 'pinenut')
+    const [deployer, alice] = await maybeInitWasmd()
+    deployerAddr = await toAddr(deployer)
+    aliceAddr = await toAddr(alice)
+    ACAddr = await deployAC()
 
     const cosmClient = await CosmWasmClient.connect(NODE_URL)
     AccessController = new AccessControllerQueryClient(cosmClient, ACAddr)
   }, TIMEOUT)
 
-  it.only('Deploys', async () => {
-
+  it('Deploys', async () => {
     const owner = await AccessController.owner()
     expect(owner).toBe(deployerAddr)
+    expect(await AccessController.hasAccess({ address: deployerAddr})).toBe(false)
   }, TIMEOUT)
 
+  it('Add/Remove Access', async () => {
+    const addCmd = new AddAccess(
+      {
+        ...CMD_FLAGS,
+        address: aliceAddr
+      }
+      , 
+      [ACAddr]
+    )
+    await addCmd.run()
+
+    expect(await AccessController.hasAccess({ address: aliceAddr })).toBe(true)
+
+    const removeCmd = new RemoveAccess(
+      {
+        ...CMD_FLAGS,
+        address: aliceAddr
+      },
+      [ACAddr]
+    )
+    await removeCmd.run()
+
+    expect(await AccessController.hasAccess({ address: aliceAddr })).toBe(false)
+  }, TIMEOUT)
 })
