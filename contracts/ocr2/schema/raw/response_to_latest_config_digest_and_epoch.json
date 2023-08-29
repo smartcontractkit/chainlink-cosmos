@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LatestConfigDigestAndEpochResponse",
+  "type": "object",
+  "required": [
+    "config_digest",
+    "epoch",
+    "scan_logs"
+  ],
+  "properties": {
+    "config_digest": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "format": "uint8",
+        "minimum": 0.0
+      },
+      "maxItems": 32,
+      "minItems": 32
+    },
+    "epoch": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
+    },
+    "scan_logs": {
+      "type": "boolean"
+    }
+  }
+}

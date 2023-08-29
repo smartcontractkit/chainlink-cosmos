@@ -3,7 +3,7 @@
   "title": "QueryMsg",
   "oneOf": [
     {
-      "description": "Check whether the parameters count is valid by comparing the difference change to the flagging threshold Response: [`bool`]",
+      "description": "Check whether the parameters count is valid by comparing the difference change to the flagging threshold Res",
       "type": "object",
       "required": [
         "is_valid"
@@ -30,18 +30,30 @@
       "additionalProperties": false
     },
     {
-      "description": "Query the flagging threshold Response: [`u32`]",
-      "type": "string",
-      "enum": [
+      "description": "Query the flagging threshold Response: [`FlaggingThresholdResponse`]",
+      "type": "object",
+      "required": [
         "flagging_threshold"
-      ]
+      ],
+      "properties": {
+        "flagging_threshold": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     },
     {
       "description": "Returns contract owner's address Response [`Addr`]",
-      "type": "string",
-      "enum": [
+      "type": "object",
+      "required": [
         "owner"
-      ]
+      ],
+      "properties": {
+        "owner": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     }
   ]
 }

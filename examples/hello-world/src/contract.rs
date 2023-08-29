@@ -54,7 +54,7 @@ pub fn instantiate(
 
     let decimals = deps
         .querier
-        .query_wasm_smart(&feed, &ChainlinkQueryMsg::Decimals)?;
+        .query_wasm_smart(&feed, &ChainlinkQueryMsg::Decimals {})?;
 
     CONFIG.save(deps.storage, &Config { feed, decimals })?;
 
@@ -87,7 +87,7 @@ fn execute_run(deps: DepsMut, _env: Env, _info: MessageInfo) -> Result<Response,
     // Query the oracle network
     let round = deps
         .querier
-        .query_wasm_smart(config.feed, &ChainlinkQueryMsg::LatestRoundData)?;
+        .query_wasm_smart(config.feed, &ChainlinkQueryMsg::LatestRoundData {})?;
 
     PRICE.save(deps.storage, &round)?;
 

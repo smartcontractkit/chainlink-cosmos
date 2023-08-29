@@ -1,7 +1,10 @@
+use cosmwasm_schema::QueryResponses;
+use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct InstantiateMsg {
     pub raising_access_controller: String,
     pub lowering_access_controller: String,
@@ -32,17 +35,14 @@ pub enum ExecuteMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, QueryResponses)]
 pub enum QueryMsg {
-    /// Returns contract owner's address
-    /// Response [`Addr`]
-    Owner,
-    Flag {
-        subject: String,
-    },
-    Flags {
-        subjects: Vec<String>,
-    },
-    RaisingAccessController,
+    #[returns(Addr)]
+    Owner {},
+    #[returns(bool)]
+    Flag { subject: String },
+    #[returns(Vec<bool>)]
+    Flags { subjects: Vec<String> },
+    #[returns(Addr)]
+    RaisingAccessController {},
 }

@@ -59,8 +59,8 @@ mod mock {
         }
         pub fn query(_deps: Deps, _env: Env, msg: ChainlinkQueryMsg) -> StdResult<Binary> {
             match msg {
-                ChainlinkQueryMsg::Decimals => to_binary(&DECIMALS),
-                ChainlinkQueryMsg::LatestRoundData => to_binary(&ROUND),
+                ChainlinkQueryMsg::Decimals {} => to_binary(&DECIMALS),
+                ChainlinkQueryMsg::LatestRoundData {} => to_binary(&ROUND),
                 _ => unimplemented!(),
             }
         }

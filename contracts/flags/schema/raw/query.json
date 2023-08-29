@@ -3,25 +3,24 @@
   "title": "QueryMsg",
   "oneOf": [
     {
-      "type": "string",
-      "enum": [
-        "raising_access_controller"
-      ]
-    },
-    {
-      "description": "Returns contract owner's address Response [`Addr`]",
-      "type": "string",
-      "enum": [
-        "owner"
-      ]
+      "type": "object",
+      "required": [
+        "Owner"
+      ],
+      "properties": {
+        "Owner": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     },
     {
       "type": "object",
       "required": [
-        "flag"
+        "Flag"
       ],
       "properties": {
-        "flag": {
+        "Flag": {
           "type": "object",
           "required": [
             "subject"
@@ -38,10 +37,10 @@
     {
       "type": "object",
       "required": [
-        "flags"
+        "Flags"
       ],
       "properties": {
-        "flags": {
+        "Flags": {
           "type": "object",
           "required": [
             "subjects"
@@ -54,6 +53,18 @@
               }
             }
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "RaisingAccessController"
+      ],
+      "properties": {
+        "RaisingAccessController": {
+          "type": "object"
         }
       },
       "additionalProperties": false

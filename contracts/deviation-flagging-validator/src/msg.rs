@@ -1,3 +1,4 @@
+use cosmwasm_schema::QueryResponses;
 use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -24,6 +25,7 @@ pub mod bignum {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct InstantiateMsg {
     /// The address of the flags contract
     pub flags: String,
@@ -70,12 +72,13 @@ pub enum ExecuteMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, QueryResponses)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     /// Check whether the parameters count is valid by comparing the difference
     /// change to the flagging threshold
-    /// Response: [`bool`]
+    /// Res
+    #[returns(bool)]
     IsValid {
         /// Previous answer, used as the median of difference with the current
         /// answer to determine if the deviation threshold has been exceeded
@@ -89,14 +92,17 @@ pub enum QueryMsg {
         answer: i128,
     },
     /// Query the flagging threshold
-    /// Response: [`u32`]
-    FlaggingThreshold,
+    /// Response: [`FlaggingThresholdResponse`]
+    #[returns(FlaggingThresholdResponse)]
+    FlaggingThreshold {},
     /// Returns contract owner's address
     /// Response [`Addr`]
-    Owner,
+    #[returns(Addr)]
+    Owner {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct FlaggingThresholdResponse {
     pub threshold: u32,
 }

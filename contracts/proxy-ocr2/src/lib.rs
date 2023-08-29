@@ -1,16 +1,16 @@
 mod integration_tests;
 
+use cosmwasm_schema::QueryResponses;
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Deps, DepsMut, Empty, Env, Event, MessageInfo, QueryResponse,
     Response, StdError,
 };
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 use cw_storage_plus::{Item, Map};
 
 use thiserror::Error;
-
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
 use owned::Auth;
 
@@ -61,6 +61,7 @@ pub mod msg {
     use super::*;
 
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+    #[serde(rename_all = "snake_case")]
     pub struct InstantiateMsg {
         pub contract_address: String,
     }
@@ -84,24 +85,33 @@ pub mod msg {
         AcceptOwnership,
     }
 
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, QueryResponses)]
     #[serde(rename_all = "snake_case")]
     pub enum QueryMsg {
-        Decimals,
-        Version,
-        Description,
-
+        #[returns(u8)]
+        Decimals {},
+        #[returns(str)]
+        Version {},
+        #[returns(str)]
+        Description {},
+        #[returns(ocr2::state::Round)]
         RoundData { round_id: u64 },
-        LatestRoundData,
+        #[returns(ocr2::state::Round)]
+        LatestRoundData {},
+        #[returns(ocr2::state::Round)]
         ProposedRoundData { round_id: u32 },
-        ProposedLatestRoundData,
-
-        Aggregator,
-        PhaseId,
+        #[returns(ocr2::state::Round)]
+        ProposedLatestRoundData {},
+        #[returns(Addr)]
+        Aggregator {},
+        #[returns(u16)]
+        PhaseId {},
+        #[returns(Addr)]
         PhaseAggregators { phase_id: u16 },
-        ProposedAggregator,
-
-        Owner,
+        #[returns(Addr)]
+        ProposedAggregator {},
+        #[returns(Addr)]
+        Owner {},
     }
 }
 
@@ -198,25 +208,25 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, ContractError> {
     match msg {
-        QueryMsg::Decimals => {
+        QueryMsg::Decimals {} => {
             let contract_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
             let decimals: u8 = deps
                 .querier
-                .query_wasm_smart(contract_address, &ocr2::msg::QueryMsg::Decimals)?;
+                .query_wasm_smart(contract_address, &ocr2::msg::QueryMsg::Decimals {})?;
             Ok(to_binary(&decimals)?)
         }
-        QueryMsg::Version => {
+        QueryMsg::Version {} => {
             let contract_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
             let version: String = deps
                 .querier
-                .query_wasm_smart(contract_address, &ocr2::msg::QueryMsg::Version)?;
+                .query_wasm_smart(contract_address, &ocr2::msg::QueryMsg::Version {})?;
             Ok(to_binary(&version)?)
         }
-        QueryMsg::Description => {
+        QueryMsg::Description {} => {
             let contract_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
             let description: String = deps
                 .querier
-                .query_wasm_smart(contract_address, &ocr2::msg::QueryMsg::Description)?;
+                .query_wasm_smart(contract_address, &ocr2::msg::QueryMsg::Description {})?;
             Ok(to_binary(&description)?)
         }
         QueryMsg::RoundData { round_id } => {
@@ -229,11 +239,11 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
             )?;
             Ok(to_binary(&with_phase_id(round, phase_id))?)
         }
-        QueryMsg::LatestRoundData => {
+        QueryMsg::LatestRoundData {} => {
             let phase = CURRENT_PHASE.load(deps.storage)?;
             let round: ocr2::state::Round = deps.querier.query_wasm_smart(
                 phase.contract_address,
-                &ocr2::msg::QueryMsg::LatestRoundData,
+                &ocr2::msg::QueryMsg::LatestRoundData {},
             )?;
             Ok(to_binary(&with_phase_id(round, phase.id))?)
         }
@@ -245,30 +255,30 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
             )?;
             Ok(to_binary(&round)?)
         }
-        QueryMsg::ProposedLatestRoundData => {
+        QueryMsg::ProposedLatestRoundData {} => {
             let contract_address = PROPOSED_CONTRACT.load(deps.storage)?;
             let round: ocr2::state::Round = deps
                 .querier
-                .query_wasm_smart(contract_address, &ocr2::msg::QueryMsg::LatestRoundData)?;
+                .query_wasm_smart(contract_address, &ocr2::msg::QueryMsg::LatestRoundData {})?;
             Ok(to_binary(&round)?)
         }
-        QueryMsg::Aggregator => {
-            let contract_address = CURRENT_PHASE.load(deps.storage)?.contract_address;
+        QueryMsg::Aggregator {} => {
+            let contract_address: Addr = CURRENT_PHASE.load(deps.storage)?.contract_address;
             Ok(to_binary(&contract_address)?)
         }
-        QueryMsg::PhaseId => {
-            let phase_id = CURRENT_PHASE.load(deps.storage)?.id;
+        QueryMsg::PhaseId {} => {
+            let phase_id: u16 = CURRENT_PHASE.load(deps.storage)?.id;
             Ok(to_binary(&phase_id)?)
         }
         QueryMsg::PhaseAggregators { phase_id } => {
             let contract_address = PHASES.load(deps.storage, phase_id)?;
             Ok(to_binary(&contract_address)?)
         }
-        QueryMsg::ProposedAggregator => {
+        QueryMsg::ProposedAggregator {} => {
             let contract_address = PROPOSED_CONTRACT.load(deps.storage)?;
             Ok(to_binary(&contract_address)?)
         }
-        QueryMsg::Owner => Ok(to_binary(&OWNER.query_owner(deps)?)?),
+        QueryMsg::Owner {} => Ok(to_binary(&OWNER.query_owner(deps)?)?),
     }
 }
 

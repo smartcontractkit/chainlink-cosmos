@@ -3,12 +3,6 @@
   "title": "QueryMsg",
   "oneOf": [
     {
-      "type": "string",
-      "enum": [
-        "owner"
-      ]
-    },
-    {
       "type": "object",
       "required": [
         "has_access"
@@ -24,6 +18,18 @@
               "type": "string"
             }
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "owner"
+      ],
+      "properties": {
+        "owner": {
+          "type": "object"
         }
       },
       "additionalProperties": false

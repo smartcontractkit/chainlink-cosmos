@@ -427,7 +427,7 @@ fn transmit_happy_path() {
     let config: LatestConfigDetailsResponse = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestConfigDetails)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestConfigDetails {})
         .unwrap();
 
     assert_eq!(config.config_count, 1);
@@ -437,14 +437,14 @@ fn transmit_happy_path() {
     let description: String = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::Description)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::Description {})
         .unwrap();
     assert_eq!(description, "ETH/USD");
 
     let decimals: u8 = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::Decimals)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::Decimals {})
         .unwrap();
     assert_eq!(decimals, 18);
 
@@ -465,7 +465,7 @@ fn transmit_happy_path() {
     let data: Round = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestRoundData)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestRoundData {})
         .unwrap();
     assert_eq!(data.observations_timestamp, 1633364819);
     assert_eq!(data.transmission_timestamp, 1571797419);
@@ -474,7 +474,7 @@ fn transmit_happy_path() {
     let response: LatestTransmissionDetailsResponse = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestTransmissionDetails)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestTransmissionDetails {})
         .unwrap();
     assert_eq!(response.round, 1);
     assert_eq!(response.latest_timestamp, data.transmission_timestamp);
@@ -506,7 +506,7 @@ fn transmit_happy_path() {
     let available: LinkAvailableForPaymentResponse = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkAvailableForPayment)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkAvailableForPayment {})
         .unwrap();
 
     assert_eq!(
@@ -557,7 +557,7 @@ fn transmit_happy_path() {
     let available: LinkAvailableForPaymentResponse = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkAvailableForPayment)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkAvailableForPayment {})
         .unwrap();
 
     assert_eq!(
@@ -693,7 +693,7 @@ fn transmit_happy_path() {
     let available: LinkAvailableForPaymentResponse = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkAvailableForPayment)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkAvailableForPayment {})
         .unwrap();
 
     assert_eq!(
@@ -739,7 +739,7 @@ fn set_link_token() {
     let config: LatestConfigDetailsResponse = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestConfigDetails)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestConfigDetails {})
         .unwrap();
 
     assert_eq!(config.config_count, 1);
@@ -749,14 +749,14 @@ fn set_link_token() {
     let description: String = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::Description)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::Description {})
         .unwrap();
     assert_eq!(description, "ETH/USD");
 
     let decimals: u8 = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::Decimals)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::Decimals {})
         .unwrap();
     assert_eq!(decimals, 18);
 
@@ -768,7 +768,7 @@ fn set_link_token() {
     let data: Round = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestRoundData)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestRoundData {})
         .unwrap();
     assert_eq!(data.observations_timestamp, 1633364819);
     assert_eq!(data.transmission_timestamp, 1571797419);
@@ -777,7 +777,7 @@ fn set_link_token() {
     let response: LatestTransmissionDetailsResponse = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestTransmissionDetails)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestTransmissionDetails {})
         .unwrap();
     assert_eq!(response.round, 1);
     assert_eq!(response.latest_timestamp, data.transmission_timestamp);
@@ -889,7 +889,7 @@ fn set_link_token() {
     let token_addr: Addr = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkToken)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkToken {})
         .unwrap();
     assert_eq!(token_addr, new_link_token);
 }
@@ -918,7 +918,7 @@ fn revert_payouts_correctly() {
     let available: LinkAvailableForPaymentResponse = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkAvailableForPayment)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkAvailableForPayment {})
         .unwrap();
     let msg = ExecuteMsg::WithdrawFunds {
         recipient: env.owner.to_string(),
@@ -930,7 +930,7 @@ fn revert_payouts_correctly() {
     let available: LinkAvailableForPaymentResponse = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkAvailableForPayment)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LinkAvailableForPayment {})
         .unwrap();
     assert_eq!(0, available.amount);
 
@@ -1137,7 +1137,7 @@ fn transmit_failing_validation() {
     let round: Round = env
         .router
         .wrap()
-        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestRoundData)
+        .query_wasm_smart(&env.ocr2_addr, &QueryMsg::LatestRoundData {})
         .unwrap();
     assert_eq!(round.round_id, 2);
     assert_eq!(round.answer, 1000);

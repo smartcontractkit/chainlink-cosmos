@@ -48,7 +48,7 @@ pub fn execute(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::HasAccess { address } => to_binary(&query_has_access(deps, address)?),
-        QueryMsg::Owner => Ok(to_binary(&OWNER.query_owner(deps)?)?),
+        QueryMsg::Owner {} => Ok(to_binary(&OWNER.query_owner(deps)?)?),
     }
 }
 

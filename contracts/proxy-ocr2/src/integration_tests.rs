@@ -73,14 +73,14 @@ mod mock {
                     let round = ROUNDS.load(deps.storage, round_id)?;
                     to_binary(&round)
                 }
-                QueryMsg::LatestRoundData => {
+                QueryMsg::LatestRoundData {} => {
                     let latest_round = LATEST_ROUND.load(deps.storage)?;
                     let round = ROUNDS.load(deps.storage, latest_round)?;
                     to_binary(&round)
                 }
-                QueryMsg::Decimals => to_binary(&DECIMALS),
-                QueryMsg::Version => to_binary(&VERSION),
-                QueryMsg::Description => to_binary(&NAME.to_string()),
+                QueryMsg::Decimals {} => to_binary(&DECIMALS),
+                QueryMsg::Version {} => to_binary(&VERSION),
+                QueryMsg::Description {} => to_binary(&NAME.to_string()),
                 _ => unimplemented!(),
             }
         }
@@ -180,7 +180,7 @@ fn it_works() {
     let latest_round: Round = env
         .router
         .wrap()
-        .query_wasm_smart(&env.proxy_addr, &QueryMsg::LatestRoundData)
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::LatestRoundData {})
         .unwrap();
 
     assert_eq!(parse_round_id(latest_round.round_id), (1, 2));
@@ -189,7 +189,7 @@ fn it_works() {
     let decimal: u8 = env
         .router
         .wrap()
-        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Decimals)
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Decimals {})
         .unwrap();
     assert_eq!(decimal, mock::DECIMALS);
 
@@ -197,7 +197,7 @@ fn it_works() {
     let version: String = env
         .router
         .wrap()
-        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Version)
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Version {})
         .unwrap();
     assert_eq!(version, mock::VERSION.to_string());
 
@@ -205,7 +205,7 @@ fn it_works() {
     let desc: String = env
         .router
         .wrap()
-        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Description)
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Description {})
         .unwrap();
     assert_eq!(desc, mock::NAME.to_string());
 
@@ -270,7 +270,7 @@ fn it_works() {
     let latest_round: Round = env
         .router
         .wrap()
-        .query_wasm_smart(&env.proxy_addr, &QueryMsg::LatestRoundData)
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::LatestRoundData {})
         .unwrap();
     assert_eq!(parse_round_id(latest_round.round_id), (1, 2));
 
@@ -278,7 +278,7 @@ fn it_works() {
     let proposed_latest_round: Round = env
         .router
         .wrap()
-        .query_wasm_smart(&env.proxy_addr, &QueryMsg::ProposedLatestRoundData)
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::ProposedLatestRoundData {})
         .unwrap();
 
     assert_eq!(proposed_latest_round.round_id, 3);
@@ -300,7 +300,7 @@ fn it_works() {
     let old_aggregator: String = env
         .router
         .wrap()
-        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Aggregator)
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Aggregator {})
         .unwrap();
     assert_eq!(env.ocr2_addr.to_string(), old_aggregator);
 
@@ -308,7 +308,7 @@ fn it_works() {
     let proposed_aggregator: String = env
         .router
         .wrap()
-        .query_wasm_smart(&env.proxy_addr, &QueryMsg::ProposedAggregator)
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::ProposedAggregator {})
         .unwrap();
     assert_eq!(ocr2_addr2.to_string(), proposed_aggregator);
 
@@ -316,7 +316,7 @@ fn it_works() {
     let old_phase: u16 = env
         .router
         .wrap()
-        .query_wasm_smart(&env.proxy_addr, &QueryMsg::PhaseId)
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::PhaseId {})
         .unwrap();
 
     // confirm aggregator swap
@@ -335,7 +335,7 @@ fn it_works() {
     let new_aggregator: String = env
         .router
         .wrap()
-        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Aggregator)
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Aggregator {})
         .unwrap();
     assert_ne!(old_aggregator, new_aggregator);
     assert_eq!(ocr2_addr2.to_string(), new_aggregator);
@@ -345,7 +345,7 @@ fn it_works() {
     let new_phase: u16 = env
         .router
         .wrap()
-        .query_wasm_smart(&env.proxy_addr, &QueryMsg::PhaseId)
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::PhaseId {})
         .unwrap();
     assert_ne!(old_phase, new_phase);
     let old_phase_agg: String = env
@@ -374,7 +374,7 @@ fn it_works() {
     let latest_round: Round = env
         .router
         .wrap()
-        .query_wasm_smart(&env.proxy_addr, &QueryMsg::LatestRoundData)
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::LatestRoundData {})
         .unwrap();
     assert_eq!(parse_round_id(latest_round.round_id), (2, 3));
 
@@ -396,7 +396,7 @@ fn it_works() {
     let old_owner: String = env
         .router
         .wrap()
-        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Owner)
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Owner {})
         .unwrap();
     let owner2 = Addr::unchecked("new_owner");
     // cannot transfer if not owner
@@ -458,7 +458,7 @@ fn it_works() {
     let new_owner: String = env
         .router
         .wrap()
-        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Owner)
+        .query_wasm_smart(&env.proxy_addr, &QueryMsg::Owner {})
         .unwrap();
     assert_ne!(old_owner, new_owner);
     assert_eq!(owner2.to_string(), new_owner);
