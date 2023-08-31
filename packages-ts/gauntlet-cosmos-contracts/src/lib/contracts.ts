@@ -95,17 +95,11 @@ export abstract class Contract {
     const abi = possibleContractPaths
       .filter((path) => existsSync(`${path}/${this.dirName}/schema`))
       .map((contractPath) => {
-        const toPath = (type) => {
-          if (this.id == CONTRACT_LIST.CW20_BASE && type == 'execute_msg') {
-            return path.join(contractPath, `./${this.dirName}/schema/cw20_${type}`)
-          } else {
-            return path.join(contractPath, `./${this.dirName}/schema/${type}`)
-          }
-        }
+        const toPath = (type) => path.join(contractPath, `./${this.dirName}/schema/raw/${type}`)
         return {
-          execute: io.readJSON(toPath('execute_msg')),
-          query: io.readJSON(toPath('query_msg')),
-          instantiate: io.readJSON(toPath('instantiate_msg')),
+          execute: io.readJSON(toPath('execute')),
+          query: io.readJSON(toPath('query')),
+          instantiate: io.readJSON(toPath('instantiate')),
         }
       })
     if (abi.length === 0) {
