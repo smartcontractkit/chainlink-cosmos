@@ -18,6 +18,7 @@ import (
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/testutil"
 	relaylogger "github.com/smartcontractkit/chainlink-relay/pkg/logger"
+
 	// "github.com/smartcontractkit/chainlink/integration-tests/actions"
 	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting2/types"
 
@@ -216,7 +217,7 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 	var positive bool
 	resp, err := cosmosClient.ContractState(
 		ocrAddress,
-		[]byte(`"link_available_for_payment"`),
+		[]byte(`{"link_available_for_payment":{}}`),
 	)
 	if err != nil {
 		return err
@@ -329,7 +330,7 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 
 	// Test proxy reading
 	// TODO: would be good to test proxy switching underlying feeds
-	resp, err = cosmosClient.ContractState(ocrProxyAddress, []byte(`"latest_round_data"`))
+	resp, err = cosmosClient.ContractState(ocrProxyAddress, []byte(`{"latest_round_data":{}}`))
 	if !isSoak {
 		require.NoError(t, err, "Reading round data from proxy should not fail")
 		//assert.Equal(t, len(roundDataRaw), 5, "Round data from proxy should match expected size")

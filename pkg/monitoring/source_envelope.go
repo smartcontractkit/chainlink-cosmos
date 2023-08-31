@@ -249,7 +249,7 @@ func (e *envelopeSource) fetchLatestConfigBlock(ctx context.Context) (uint64, er
 	resp, err := e.rpcClient.ContractState(
 		ctx,
 		e.cosmosFeedConfig.ContractAddress,
-		[]byte(`"latest_config_details"`),
+		[]byte(`{"latest_config_details":{}}`),
 	)
 	var details cosmwasm.ConfigDetails
 	if err != nil {
@@ -352,7 +352,7 @@ func (e *envelopeSource) fetchLinkAvailableForPayment(ctx context.Context) (*big
 	res, err := e.rpcClient.ContractState(
 		ctx,
 		e.cosmosFeedConfig.ContractAddress,
-		[]byte(`"link_available_for_payment"`),
+		[]byte(`{"link_available_for_payment":{}}`),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read link_available_for_payment from the contract: %w", err)

@@ -76,7 +76,7 @@ func (p *proxySource) fetchLatestRoundFromProxy(ctx context.Context) (*big.Int, 
 	res, err := p.client.ContractState(
 		ctx,
 		p.cosmosFeedConfig.ProxyAddress,
-		[]byte(`"latest_round_data"`),
+		[]byte(`{"latest_round_data":{}}`),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read latest_round_data from the proxy contract: %w", err)
