@@ -2,7 +2,7 @@ import AddAccess from '../../src/commands/contracts/access_controller/addAccess'
 import RemoveAccess from '../../src/commands/contracts/access_controller/removeAccess'
 import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import { AccessControllerQueryClient } from '../../codegen/AccessController.client'
-import { endWasmd, CMD_FLAGS, maybeInitWasmd, toAddr, NODE_URL, TIMEOUT, deployAC } from '../utils'
+import { endWasmd, CMD_FLAGS, initWasmd, toAddr, NODE_URL, TIMEOUT, deployAC } from '../utils'
 
 describe('Access Controller', () => {
   let AccessController: AccessControllerQueryClient
@@ -16,7 +16,7 @@ describe('Access Controller', () => {
 
   beforeAll(async () => {
     // Ideally, we'd start wasmd beforEach() but it takes too long
-    const [deployer, alice] = await maybeInitWasmd()
+    const [deployer, alice] = await initWasmd()
     deployerAddr = await toAddr(deployer)
     aliceAddr = await toAddr(alice)
     ACAddr = await deployAC()

@@ -8,7 +8,7 @@ import {
   deployAC,
   deployLink,
   deployOCR2,
-  maybeInitWasmd,
+  initWasmd,
 } from '../utils'
 import { GasPrice } from '@cosmjs/stargate'
 import Operators from '../../src/commands/contracts/ocr2/inspection/operators'
@@ -22,7 +22,7 @@ describe('OCR Inspection', () => {
 
   beforeAll(async () => {
     // Ideally, we'd start wasmd beforeEach() but it takes too long
-    const [deployer, alice] = await maybeInitWasmd()
+    await initWasmd()
 
     // deploy access controller and link tokens
     linkAddr = await deployLink()

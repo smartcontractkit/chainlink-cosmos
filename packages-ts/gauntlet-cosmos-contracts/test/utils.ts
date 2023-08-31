@@ -117,7 +117,7 @@ const WASMD_ACCOUNTS = path.join(__dirname, './devAccounts.json')
  *
  * @returns {string[]} Initialized account addresses
  */
-export const maybeInitWasmd = async () => {
+export const initWasmd = async () => {
   if (process.env.SKIP_WASMD_SETUP) {
     const rawData = readFileSync(WASMD_ACCOUNTS, 'utf8')
     let { accounts }: { accounts: { address: string; mnemonic: string }[] } = JSON.parse(rawData)

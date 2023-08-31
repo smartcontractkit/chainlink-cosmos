@@ -5,7 +5,7 @@ import { CW20BaseQueryClient, CW20BaseClient } from '../../codegen/CW20Base.clie
 import {
   endWasmd,
   CMD_FLAGS,
-  maybeInitWasmd,
+  initWasmd,
   NODE_URL,
   TIMEOUT,
   deployAC,
@@ -144,7 +144,7 @@ describe('OCR2 Execution', () => {
 
   beforeAll(async () => {
     // Ideally, we'd start wasmd beforeEach() but it takes too long
-    const [deployer, alice] = await maybeInitWasmd()
+    const [deployer, alice] = await initWasmd()
     deployerWallet = deployer
     aliceAddr = await toAddr(alice)
 

@@ -1,6 +1,6 @@
 import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import { ProxyOCR2QueryClient } from '../../codegen/ProxyOCR2.client'
-import { CMD_FLAGS, NODE_URL, deployAC, deployLink, deployOCR2, maybeInitWasmd, toAddr } from '../utils'
+import { CMD_FLAGS, NODE_URL, deployAC, deployLink, deployOCR2, initWasmd, toAddr } from '../utils'
 import { TIMEOUT } from '../utils'
 import DeployProxyCmd from '../../src/commands/contracts/proxy_ocr2/deploy'
 import ProposeCmd from '../../src/commands/contracts/proxy_ocr2/proposeContract'
@@ -25,7 +25,7 @@ describe('Proxy', () => {
   let deployerAddr: string
 
   beforeAll(async () => {
-    const [deployer, mockOCRA, mockOCRB] = await maybeInitWasmd()
+    const [deployer, mockOCRA, mockOCRB] = await initWasmd()
     deployerAddr = await toAddr(deployer)
     ocr2AddrA = await toAddr(mockOCRA)
     ocr2AddrB = await toAddr(mockOCRB)

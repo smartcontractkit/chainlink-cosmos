@@ -2,7 +2,7 @@ import MintLinkCmd from '../../src/commands/contracts/link/mint'
 import TransferLinkCmd from '../../src/commands/contracts/link/transfer'
 import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import { CW20BaseQueryClient } from '../../codegen/CW20Base.client'
-import { endWasmd, CMD_FLAGS, maybeInitWasmd, NODE_URL, TIMEOUT, ONE_TOKEN, toAddr, deployLink } from '../utils'
+import { endWasmd, CMD_FLAGS, initWasmd, NODE_URL, TIMEOUT, ONE_TOKEN, toAddr, deployLink } from '../utils'
 
 describe('Link', () => {
   let Link: CW20BaseQueryClient
@@ -17,7 +17,7 @@ describe('Link', () => {
 
   beforeAll(async () => {
     // Ideally, we'd start wasmd beforEach() but it takes too long
-    const [deployer, alice, bob] = await maybeInitWasmd()
+    const [deployer, alice, bob] = await initWasmd()
     deployerAddr = await toAddr(deployer)
     aliceAddr = await toAddr(alice)
     bobAddr = await toAddr(bob)

@@ -1,6 +1,6 @@
 import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import { DeviationFlaggingValidatorQueryClient } from '../../codegen/DeviationFlaggingValidator.client'
-import { endWasmd, maybeInitWasmd, NODE_URL, TIMEOUT, toAddr, deployFlags, deployValidator } from '../utils'
+import { endWasmd, initWasmd, NODE_URL, TIMEOUT, toAddr, deployFlags, deployValidator } from '../utils'
 
 describe('Deviation Flagging Validator', () => {
   let Validator: DeviationFlaggingValidatorQueryClient
@@ -14,7 +14,7 @@ describe('Deviation Flagging Validator', () => {
 
   beforeAll(async () => {
     // Ideally, we'd start wasmd beforEach() but it takes too long
-    const [deployer, mockRaiseAC, mockLowerAC] = await maybeInitWasmd()
+    const [deployer, mockRaiseAC, mockLowerAC] = await initWasmd()
     deployerAddr = await toAddr(deployer)
     let mockRaiseACAddr = await toAddr(mockRaiseAC)
     let mockLowerACAddr = await toAddr(mockLowerAC)

@@ -1,6 +1,6 @@
 import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import { FlagsQueryClient } from '../../codegen/Flags.client'
-import { endWasmd, maybeInitWasmd, NODE_URL, TIMEOUT, toAddr, deployFlags } from '../utils'
+import { endWasmd, initWasmd, NODE_URL, TIMEOUT, toAddr, deployFlags } from '../utils'
 
 describe('Flags', () => {
   let Flags: FlagsQueryClient
@@ -16,7 +16,7 @@ describe('Flags', () => {
 
   beforeAll(async () => {
     // Ideally, we'd start wasmd beforEach() but it takes too long
-    const [deployer, mockRaiseAC, mockLowerAC, alice] = await maybeInitWasmd()
+    const [deployer, mockRaiseAC, mockLowerAC, alice] = await initWasmd()
     deployerAddr = await toAddr(deployer)
     mockRaiseACAddr = await toAddr(mockRaiseAC)
     mockLowerACAddr = await toAddr(mockLowerAC)
