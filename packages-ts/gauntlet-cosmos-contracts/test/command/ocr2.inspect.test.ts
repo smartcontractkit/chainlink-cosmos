@@ -1,15 +1,6 @@
 import { CosmWasmClient, SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import Inspect from '../../src/commands/contracts/ocr2/inspection/inspect'
-import {
-  CMD_FLAGS,
-  DEFAULT_GAS_PRICE,
-  NODE_URL,
-  TIMEOUT,
-  deployAC,
-  deployLink,
-  deployOCR2,
-  initWasmd,
-} from '../utils'
+import { CMD_FLAGS, DEFAULT_GAS_PRICE, NODE_URL, TIMEOUT, deployAC, deployLink, deployOCR2, initWasmd } from '../utils'
 import { GasPrice } from '@cosmjs/stargate'
 import Operators from '../../src/commands/contracts/ocr2/inspection/operators'
 import Responses from '../../src/commands/contracts/ocr2/inspection/responses'
