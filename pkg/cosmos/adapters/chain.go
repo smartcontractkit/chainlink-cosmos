@@ -7,8 +7,6 @@ import (
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/config"
 )
 
-type ChainSet = types.ChainSet[string, Chain]
-
 type Chain interface {
 	types.ChainService
 
