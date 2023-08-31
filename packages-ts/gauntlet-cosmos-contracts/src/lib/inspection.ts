@@ -13,7 +13,7 @@ export type RoundData = {
 // TODO: find the right place for this function
 export const getLatestOCRConfigEvent = async (provider: Client, contract: AccAddress) => {
   // The contract only stores the block where the config was accepted. The tx log contains the config
-  const latestConfigDetails: any = await provider.queryContractSmart(contract, 'latest_config_details' as any)
+  const latestConfigDetails: any = await provider.queryContractSmart(contract, { latest_config_details: {} } as any)
   const setConfigTx = providerUtils.filterTxsByEvent(
     // TODO: there has to be a way to filter by tag for event then scan single block
     await provider.searchTx(`tx.height=${latestConfigDetails.block_number}`),
