@@ -1,6 +1,6 @@
 import { BN, prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress } from '@chainlink/gauntlet-cosmos'
-import { CATEGORIES, UATOM_DECIMALS } from '../../lib/constants'
+import { CATEGORIES, UCOSM_DECIMALS } from '../../lib/constants'
 import { CosmosCommand, TransactionResponse, logger } from '@chainlink/gauntlet-cosmos'
 import { Result } from '@chainlink/gauntlet-core'
 import { withAddressBook } from '../../lib/middlewares'
@@ -40,7 +40,7 @@ export default class TransferAtom extends CosmosCommand {
   makeInput = (flags, _) => {
     return {
       destination: flags.to,
-      amount: new BN(flags.amount).mul(new BN(10).pow(new BN(UATOM_DECIMALS))).toString(),
+      amount: new BN(flags.amount).mul(new BN(10).pow(new BN(UCOSM_DECIMALS))).toString(),
     } as CommandInput
   }
 

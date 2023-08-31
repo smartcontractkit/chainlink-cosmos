@@ -61,14 +61,14 @@ const validateOffchainConfig: ValidateFn<CommandInput> = async (input, context) 
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const { rdd: rddPath, secret } = flags
+  const { rdd: rddPath, secret, randomSecret } = flags
 
   if (!secret) {
     throw new Error('--secret flag is required.')
   }
 
-  if (!process.env.SECRET) {
-    throw new Error('SECRET is not set in env!')
+  if (!randomSecret) {
+    throw new Error('--randomSecret flag is required')
   }
 
   let offchainConfig = flags.offchainConfig
@@ -84,8 +84,8 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     proposalId: flags.proposalId || flags.configProposal || flags.id, // --configProposal alias requested by eng ops
     digest: flags.digest,
     offchainConfig,
-    secret: process.env.SECRET,
-    randomSecret: secret,
+    secret,
+    randomSecret,
   }
 }
 

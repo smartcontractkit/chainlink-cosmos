@@ -12,14 +12,14 @@ const makeInput = async (flags): Promise<AcceptProposalInput> => {
   }
   if (flags.input) return { ...flags.input, ...defaultInput }
 
-  if (!process.env.SECRET) {
-    throw new Error('SECRET is not set in env!')
+  if (!flags.secret) {
+    throw new Error('--secret flag is required')
   }
 
   return {
     proposalId: flags.proposalId || flags.configProposal,
     digest: flags.digest,
-    secret: process.env.SECRET,
+    secret: flags.secret,
     ...defaultInput,
   }
 }

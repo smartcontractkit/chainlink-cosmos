@@ -40,7 +40,7 @@ export const CW3_FLEX_MULTISIG_CODE_IDs = {
 export const TOKEN_DECIMALS = 18
 export const TOKEN_UNIT = new BN(10).pow(new BN(TOKEN_DECIMALS))
 
-export const UATOM_DECIMALS = 6
+export const UCOSM_DECIMALS = 6
 
 export const EMPTY_TRANSMITTERS = [
   'wasm1hft9sxhx7d7furw9y0rjxu4hfsm76ehkman78g',
