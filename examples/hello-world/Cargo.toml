@@ -26,5 +26,5 @@ thiserror = { version = "1.0.24" }
 chainlink-cosmos = { version = "1.0", package = "proxy-ocr2", path = "../../contracts/proxy-ocr2", default-features = false, features = ["library"] }
 
 [dev-dependencies]
-cosmwasm-schema = { version = "1.1.5" }
+cosmwasm-schema = { version = "1.3.1" }
 cw-multi-test = "0.16.0"
