@@ -11,6 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"gopkg.in/guregu/null.v4"
 
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/smartcontractkit/chainlink-env/environment"
 	"github.com/smartcontractkit/chainlink/integration-tests/client"
 	"github.com/smartcontractkit/chainlink/v2/core/services/job"
@@ -18,6 +19,7 @@ import (
 )
 
 type ChainlinkClient struct {
+	bech32Prefix   string
 	ChainlinkNodes []*client.ChainlinkClient
 	NodeKeys       []client.NodeKeysBundle
 	bTypeAttr      *client.BridgeTypeAttributes
@@ -26,7 +28,7 @@ type ChainlinkClient struct {
 
 // TODO: Remove env. See https://github.com/smartcontractkit/chainlink-cosmos/pull/350#discussion_r1298071289
 // CreateKeys Creates node keys and defines chain and nodes for each node
-func NewChainlinkClient(env *environment.Environment, nodeName string, chainId string, tendermintURL string) (*ChainlinkClient, error) {
+func NewChainlinkClient(env *environment.Environment, nodeName string, chainId string, tendermintURL string, bech32Prefix string) (*ChainlinkClient, error) {
 	nodes, err := connectChainlinkNodes(env)
 	if err != nil {
 		return nil, err
@@ -45,6 +47,7 @@ func NewChainlinkClient(env *environment.Environment, nodeName string, chainId s
 	}
 
 	return &ChainlinkClient{
+		bech32Prefix:   bech32Prefix,
 		ChainlinkNodes: nodes,
 		NodeKeys:       nodeKeys,
 	}, nil
@@ -53,30 +56,36 @@ func NewChainlinkClient(env *environment.Environment, nodeName string, chainId s
 func (cc *ChainlinkClient) GetNodeAddresses() []string {
 	var addresses []string
 	for _, nodeKey := range cc.NodeKeys {
-		addresses = append(addresses, nodeKey.TXKey.Data.Attributes.PublicKey)
+		addresses = append(addresses, mustCreateBech32Address(nodeKey.TXKey.Data.Attributes.PublicKey, cc.bech32Prefix))
 	}
 	return addresses
+}
+
+func mustCreateBech32Address(pubKey, accountPrefix string) string {
+	bech32Addr, err := params.CreateBech32Address(pubKey, accountPrefix)
+	if err != nil {
+		panic(err)
+	}
+	return bech32Addr
 }
 
 func (cc *ChainlinkClient) LoadOCR2Config(proposalId string) (*OCR2Config, error) {
 	var offChainKeys []string
 	var onChainKeys []string
 	var peerIds []string
-	var txKeys []string
 	var cfgKeys []string
 	for _, key := range cc.NodeKeys {
 		offChainKeys = append(offChainKeys, key.OCR2Key.Data.Attributes.OffChainPublicKey)
 		peerIds = append(peerIds, key.PeerID)
-		txKeys = append(txKeys, key.TXKey.Data.ID)
-		// txKeys = append(txKeys, key.TXKey.Data.ID)
 		onChainKeys = append(onChainKeys, key.OCR2Key.Data.Attributes.OnChainPublicKey)
 		cfgKeys = append(cfgKeys, key.OCR2Key.Data.Attributes.ConfigPublicKey)
 	}
 	var payload = TestOCR2Config
 	payload.ProposalId = proposalId
 	payload.Signers = onChainKeys
-	payload.Transmitters = txKeys
-	payload.Payees = txKeys // Set payees to same addresses as transmitters
+	addresses := cc.GetNodeAddresses()
+	payload.Transmitters = addresses
+	payload.Payees = addresses // Set payees to same addresses as transmitters
 	payload.OffchainConfig.OffchainPublicKeys = offChainKeys
 	payload.OffchainConfig.PeerIds = peerIds
 	payload.OffchainConfig.ConfigPublicKeys = cfgKeys
@@ -150,7 +159,7 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, nodeName, p2pPort, moc
 			RelayConfig:                 relayConfig,
 			PluginType:                  "median",
 			OCRKeyBundleID:              null.StringFrom(cc.NodeKeys[nIdx].OCR2Key.Data.ID),
-			TransmitterID:               null.StringFrom(cc.NodeKeys[nIdx].TXKey.Data.ID),
+			TransmitterID:               null.StringFrom(cc.NodeKeys[nIdx].TXKey.Data.Attributes.PublicKey),
 			P2PV2Bootstrappers:          pq.StringArray{strings.Join(p2pBootstrappers, ",")},
 			ContractConfigConfirmations: 1, // don't wait for confirmation on devnet
 			PluginConfig: job.JSONConfig{

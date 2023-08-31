@@ -36,8 +36,9 @@ func TestOCRBasic(t *testing.T) {
 	commonConfig := common.NewCommon(t)
 	commonConfig.SetLocalEnvironment(t)
 
+	bech32Prefix := "wasm"
 	params.InitCosmosSdk(
-		/* bech32Prefix= */ "wasm",
+		bech32Prefix,
 		/* token= */ "cosm",
 	)
 	clientLogger, err := relaylogger.New()
@@ -50,7 +51,7 @@ func TestOCRBasic(t *testing.T) {
 	require.NoError(t, err, "Could not create cosmos client")
 
 	nodeName := "primary"
-	chainlinkClient, err := common.NewChainlinkClient(commonConfig.Env, commonConfig.ChainId, nodeName, commonConfig.NodeUrl)
+	chainlinkClient, err := common.NewChainlinkClient(commonConfig.Env, commonConfig.ChainId, nodeName, commonConfig.NodeUrl, bech32Prefix)
 	require.NoError(t, err, "Could not create chainlink client")
 
 	logger.Info().Str("node addresses", strings.Join(chainlinkClient.GetNodeAddresses(), " ")).Msg("Created chainlink client")
