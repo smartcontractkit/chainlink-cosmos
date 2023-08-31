@@ -55,7 +55,7 @@ func TestEnvelopeSource(t *testing.T) {
 	rpcClient.On("ContractState",
 		mock.Anything, // context
 		feedConfig.ContractAddress,
-		[]byte(`"latest_config_details"`),
+		[]byte(`{"latest_config_details":{}}`),
 	).Return(latestConfigDetailsRes, nil).Once()
 	fcdClient.On("GetBlockAtHeight",
 		mock.Anything,   // context
@@ -71,7 +71,7 @@ func TestEnvelopeSource(t *testing.T) {
 	rpcClient.On("ContractState",
 		mock.Anything, // context
 		feedConfig.ContractAddress,
-		[]byte(`"link_available_for_payment"`),
+		[]byte(`{"link_available_for_payment":{}}`),
 	).Return(linkAvailableForPaymentRes, nil).Once()
 
 	// Execute Fetch()
@@ -170,7 +170,7 @@ func TestEnvelopeSource(t *testing.T) {
 	rpcClient.On("ContractState",
 		mock.Anything, // context
 		feedConfig.ContractAddress,
-		[]byte(`"link_available_for_payment"`),
+		[]byte(`{"link_available_for_payment":{}}`),
 	).Return(linkAvailableForPaymentRes, nil).Once()
 
 	// Execute second Fetch()

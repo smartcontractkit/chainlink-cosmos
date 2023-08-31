@@ -45,7 +45,7 @@ func TestProxyMonitoring(t *testing.T) {
 		chainReader.On("ContractState",
 			mock.Anything, // context
 			feedConfig.ProxyAddress,
-			[]byte(`"latest_round_data"`),
+			[]byte(`{"latest_round_data":{}}`),
 		).Return(
 			[]byte(`{"round_id":5709,"answer":"2632212500","observations_timestamp":1645456354,"transmission_timestamp":1645456380}`),
 			nil,
