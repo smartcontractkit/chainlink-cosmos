@@ -30,7 +30,8 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
 
 const makeContractInput = async (input: CommandInput, context: ExecutionContext): Promise<ContractInput> => {
   const queryAvailableLink = async () =>
-    ((await context.provider.queryContractSmart(context.contract, 'link_available_for_payment' as any)) as any).amount
+    ((await context.provider.queryContractSmart(context.contract, { link_available_for_payment: {} } as any)) as any)
+      .amount
   const amount = input.all ? await queryAvailableLink() : input.amount
   const recipient = input.recipient || context.signer.address
   return {
