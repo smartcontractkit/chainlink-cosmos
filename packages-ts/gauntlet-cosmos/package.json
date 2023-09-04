@@ -37,6 +37,7 @@
     "@cosmjs/ledger-amino": "^0.31.0",
     "@cosmjs/proto-signing": "^0.31.0",
     "@cosmjs/stargate": "^0.31.0",
+    "@injectivelabs/sdk-ts": "^1.12.1",
     "@ledgerhq/hw-transport-node-hid": "^6.20.0"
   }
 }

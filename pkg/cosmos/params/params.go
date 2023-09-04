@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 
+	injcodec "github.com/InjectiveLabs/sdk-go/chain/crypto/codec"
+	injtypes "github.com/InjectiveLabs/sdk-go/chain/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
@@ -73,6 +75,10 @@ func initCosmosSdk(bech32Prefix, token string) {
 	std.RegisterInterfaces(config.InterfaceRegistry)
 	// needed for Client.Account() to deserialize authtypes.AccountI
 	authtypes.RegisterInterfaces(config.InterfaceRegistry)
+
+	// register injective interfaces
+	injtypes.RegisterInterfaces(config.InterfaceRegistry)
+	injcodec.RegisterInterfaces(config.InterfaceRegistry)
 
 	sdkConfig := sdk.GetConfig()
 	sdkConfig.SetBech32PrefixForAccount(bech32PrefixAccAddr, bech32PrefixAccPub)

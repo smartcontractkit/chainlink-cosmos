@@ -24,4 +24,4 @@ export namespace AccAddress {
   }
 }
 
-export { CosmWasmClient as Client } from '@cosmjs/cosmwasm-stargate'
+export { SigningClient as Client } from './commands/client'

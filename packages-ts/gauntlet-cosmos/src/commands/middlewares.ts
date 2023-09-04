@@ -5,10 +5,13 @@ import CosmosCommand from './internal/cosmos'
 import path from 'path'
 import { existsSync } from 'fs'
 import { DirectSecp256k1HdWallet, OfflineSigner } from '@cosmjs/proto-signing'
+import { InjectiveDirectEthSecp256k1Wallet, PrivateKey } from '@injectivelabs/sdk-ts'
 import { LedgerSigner } from '@cosmjs/ledger-amino'
 import TransportNodeHid from '@ledgerhq/hw-transport-node-hid'
 import { makeCosmoshubPath } from '@cosmjs/proto-signing'
 import { GasPrice } from '@cosmjs/stargate'
+import { InjectiveSigningStargateClient } from '@injectivelabs/sdk-ts/dist/cjs/core/stargate'
+import { InjectiveClient } from './injective'
 
 const isValidURL = (a) => true
 
@@ -35,7 +38,13 @@ export const withProvider: Middleware = async (c: CosmosCommand, next: Next) => 
   } else {
     const mnemonic = process.env.MNEMONIC
     assertions.assert(!!mnemonic, `Missing MNEMONIC, please add one`)
-    wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, { prefix: 'wasm' }) // TODO customizable, in sync with Addr
+
+    // wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, { prefix: 'wasm' }) // TODO customizable, in sync with Addr
+
+    const privateKey = PrivateKey.fromMnemonic(mnemonic)
+    wallet = (await InjectiveDirectEthSecp256k1Wallet.fromKey(
+      Buffer.from(privateKey.toPrivateKeyHex().slice(2), 'hex'),
+    )) as OfflineSigner
     // TODO: set hdPaths too, if using different path
   }
   let [signer] = await wallet.getAccounts()
@@ -45,9 +54,10 @@ export const withProvider: Middleware = async (c: CosmosCommand, next: Next) => 
 
   logger.info(`Operator address is ${c.signer.address}`)
 
-  c.provider = await SigningCosmWasmClient.connectWithSigner(nodeURL, wallet, {
-    gasPrice: GasPrice.fromString(process.env.DEFAULT_GAS_PRICE),
-  })
+  // c.provider = await SigningCosmWasmClient.connectWithSigner(nodeURL, wallet, {
+  //   gasPrice: GasPrice.fromString(process.env.DEFAULT_GAS_PRICE),
+  // })
+  c.provider = await InjectiveClient.connectWithSigner(nodeURL, wallet)
   return next()
 }
 

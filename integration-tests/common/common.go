@@ -24,7 +24,7 @@ import (
 
 const (
 	chainName              = "cosmos"
-	chainID                = "testing"
+	chainID                = "injective-1"
 	ChainBlockTime         = "200ms"
 	ChainBlockTimeSoak     = "2s"
 	defaultNodeUrl         = "http://127.0.0.1:26657"
@@ -127,6 +127,8 @@ func NewCommon(t *testing.T) *Common {
 	chainlinkConfig := fmt.Sprintf(`[[Cosmos]]
 Enabled = true
 ChainID = '%s'
+Bech32Prefix = 'inj'
+FeeToken = 'inj'
 [[Cosmos.Nodes]]
 Name = 'primary'
 TendermintURL = '%s'
@@ -177,11 +179,11 @@ HTTPSPort = 0
 
 func (c *Common) SetLocalEnvironment(t *testing.T) {
 	// Run scripts to set up local test environment
-	log.Info().Msg("Starting wasmd container...")
-	err := exec.Command("../scripts/wasmd.sh").Run()
-	require.NoError(t, err, "Could not start wasmd container")
+	// log.Info().Msg("Starting wasmd container...")
+	// err := exec.Command("../scripts/wasmd.sh").Run()
+	// require.NoError(t, err, "Could not start wasmd container")
 	log.Info().Msg("Starting postgres container...")
-	err = exec.Command("../scripts/postgres.sh").Run()
+	err := exec.Command("../scripts/postgres.sh").Run()
 	require.NoError(t, err, "Could not start postgres container")
 	log.Info().Msg("Starting mock adapter...")
 	err = exec.Command("../scripts/mock-adapter.sh").Run()

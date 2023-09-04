@@ -3,8 +3,7 @@ package testutil
 import (
 	"errors"
 
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	injhd "github.com/InjectiveLabs/sdk-go/chain/crypto/hd"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bip39 "github.com/cosmos/go-bip39"
@@ -26,12 +25,14 @@ func CreateMnemonic() (string, error) {
 var (
 	// ATOM coin type
 	// ref: https://github.com/satoshilabs/slips/blob/master/slip-0044.md
-	coinType uint32 = 118
+	// coinType              uint32 = 118
+	defaultDerivationPath string = "m/44'/60'/0'/0/0"
 )
 
 // CreateHDPath returns BIP 44 object from account and index parameters.
 func CreateHDPath(account uint32, index uint32) string {
-	return hd.CreateHDPath(coinType, account, index).String()
+	return defaultDerivationPath
+	// return hd.CreateHDPath(coinType, account, index).String()
 }
 
 func CreateKeyFromMnemonic(mnemonic string) (cryptotypes.PrivKey, sdk.AccAddress, error) {
@@ -39,10 +40,11 @@ func CreateKeyFromMnemonic(mnemonic string) (cryptotypes.PrivKey, sdk.AccAddress
 		return nil, nil, errors.New("invalid mnemonic")
 	}
 
-	algo, err := keyring.NewSigningAlgoFromString(string(hd.Secp256k1Type), keyring.SigningAlgoList{hd.Secp256k1})
-	if err != nil {
-		return nil, nil, err
-	}
+	// algo, err := keyring.NewSigningAlgoFromString(string(hd.Secp256k1Type), keyring.SigningAlgoList{hd.Secp256k1})
+	// if err != nil {
+	// 	return nil, nil, err
+	// }
+	algo := injhd.EthSecp256k1
 
 	// create master key and derive first key for keyring
 	hdPath := CreateHDPath(0, 0)

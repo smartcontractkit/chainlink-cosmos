@@ -130,7 +130,7 @@ export const wrapCommand = (command) => {
       const msExpiration: number = Date.now() + votingPeriod * 1000 // milliseconds since 1970
       logger.info(`Generating data for creating new multisig proposal (expires at ${new Date(msExpiration)})`)
       // Expiration.at_time is a string representation of nanoseconds since 1970
-      const expiration: Expiration = { at_time: (msExpiration * time.Millisecond).toString() }
+      const expiration: Expiration = { at_time: (msExpiration * time.Millisecond.toNumber()).toString() }
 
       const proposeInput = {
         propose: {

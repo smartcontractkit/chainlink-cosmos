@@ -36,8 +36,8 @@ func TestOCRBasic(t *testing.T) {
 	commonConfig.SetLocalEnvironment(t)
 
 	params.InitCosmosSdk(
-		/* bech32Prefix= */ "wasm",
-		/* token= */ "cosm",
+		/* bech32Prefix= */ "inj",
+		/* token= */ "inj",
 	)
 	clientLogger, err := relaylogger.New()
 	require.NoError(t, err, "Could not create relay logger")
@@ -56,9 +56,21 @@ func TestOCRBasic(t *testing.T) {
 	privateKey, testAccount, err := testutil.CreateKeyFromMnemonic(commonConfig.Mnemonic)
 	require.NoError(t, err, "Could not create private key from mnemonic")
 	logger.Info().Str("from", testAccount.String()).Msg("Funding nodes")
+	// - address: inj144ysmwalylpju9yuplfh2a900pugv5lyz6cfj0
+	// 	name: wasm
+	// 	pubkey: '{"@type":"/injective.crypto.v1beta1.ethsecp256k1.PubKey","key":"A8MWXTbEfp3kX2JJKgcYJKmOhDxl/PRGxWIYgOjCRdOu"}'
+	// 	type: local
 
-	gasPrice := types.NewDecCoinFromDec("ucosm", types.MustNewDecFromStr("1"))
-	amount := []types.Coin{types.NewCoin("ucosm", types.NewInt(int64(10000000)))}
+	// with injhd: 			inj1qh3dmtfudjf7fadw9v0elexglgfn6gj6qecej7
+	// with custom hd algo: inj1lsagfzrm4gz28he4wunt63sts5xzmczwdgpayf
+	// with default derivation path injhd: inj144ysmwalylpju9yuplfh2a900pugv5lyz6cfj0
+
+	// accBalance, err := cosmosClient.Balance(testAccount, "inj")
+	// require.NoError(t, err, "Could not fetch inj balance")
+	// require.Equal(t, accBalance.String(), "1000000000000000000000inj")
+
+	gasPrice := types.NewDecCoinFromDec("inj", types.MustNewDecFromStr("1000000000"))
+	amount := []types.Coin{types.NewCoin("inj", types.NewInt(int64(1000000000000)))}
 	accountNumber, sequenceNumber, err := cosmosClient.Account(testAccount)
 	require.NoError(t, err, "Could not get account")
 
@@ -69,16 +81,16 @@ func TestOCRBasic(t *testing.T) {
 		require.NoError(t, err, "Could not send tokens")
 		logger.Info().Str("from", testAccount.String()).
 			Str("to", nodeAddr).
-			Str("amount", "10000000").
-			Str("token", "ucosm").
+			Str("amount", "1000000000000").
+			Str("token", "inj").
 			Str("txHash", resp.TxResponse.TxHash).
 			Msg("Sending native tokens")
 		tx, success := client.AwaitTxCommitted(t, cosmosClient, resp.TxResponse.TxHash)
 		require.True(t, success)
 		require.Equal(t, cometbfttypes.CodeTypeOK, tx.TxResponse.Code)
-		balance, err := cosmosClient.Balance(to, "ucosm")
-		require.NoError(t, err, "Could not fetch ucosm balance")
-		require.Equal(t, balance.String(), "10000000ucosm")
+		balance, err := cosmosClient.Balance(to, "inj")
+		require.NoError(t, err, "Could not fetch inj balance")
+		require.Equal(t, balance.String(), "1000000000000inj")
 	}
 
 	gauntletWorkingDir := fmt.Sprintf("%s/", utils.ProjectRoot)

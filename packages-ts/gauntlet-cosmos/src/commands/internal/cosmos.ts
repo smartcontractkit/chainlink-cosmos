@@ -6,19 +6,19 @@ import {
   ExecuteResult,
   InstantiateResult,
   MsgExecuteContractEncodeObject,
-  SigningCosmWasmClient,
   UploadResult,
 } from '@cosmjs/cosmwasm-stargate'
-import { MsgExecuteContract, Msg } from 'cosmjs-types/cosmwasm/wasm/v1/tx'
+import { MsgExecuteContract } from 'cosmjs-types/cosmwasm/wasm/v1/tx'
 import { TransactionResponse } from '../types'
 import { AccountData, EncodeObject, OfflineSigner } from '@cosmjs/proto-signing'
 import { AccAddress } from '../..'
 import { assertIsDeliverTxSuccess } from '@cosmjs/stargate'
+import { SigningClient } from '../client'
 
 type CodeIds = Record<string, number>
 
 export default abstract class CosmosCommand extends WriteCommand<TransactionResponse> {
-  provider: SigningCosmWasmClient
+  provider: SigningClient
   wallet: OfflineSigner
   signer: AccountData
   addressBook: AddressBook
