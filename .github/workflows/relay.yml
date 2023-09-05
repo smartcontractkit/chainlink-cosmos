@@ -42,10 +42,10 @@ jobs:
         run: nix develop -c go build -v ./pkg/cosmos/...
 
       - name: Run unit tests
-        run: nix develop -c go test -v -covermode=atomic ./pkg/cosmos/... -coverpkg=./... -coverprofile=coverage.txt
+        run: nix develop -c make test_relay_unit
 
       - name: Run tests with the race detector enabled
-        run: nix develop -c go test -v ./pkg/cosmos/... -race -count=10 -coverpkg=./... -coverprofile=race_coverage.txt
+        run: nix develop -c make test_relay_unit_race
       
       - name: Upload Go test results
         if: always()
