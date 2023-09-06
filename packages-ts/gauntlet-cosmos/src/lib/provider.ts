@@ -1,6 +1,7 @@
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress, Client } from '../index'
-import { Event, IndexedTx } from '@cosmjs/cosmwasm-stargate'
+import { Event } from '@cosmjs/cosmwasm-stargate'
+import { IndexedTx } from '@cosmjs/stargate'
 
 export const filterTxsByEvent = (txs: readonly IndexedTx[], type: string): IndexedTx | undefined => {
   const filteredTxs = txs.filter((tx) => tx.events.some((event) => event.type === type))
@@ -26,12 +27,14 @@ export const getLatestContractEvents = async (
   event: string,
   contract: AccAddress,
 ): Promise<Events> => {
-  let txs = await provider.searchTx([
-    {
-      key: `${event}.contract_address`,
-      value: contract,
-    },
-  ]) // TODO: ORDER_BY_DESC
+  let txs = await provider.searchTx({
+    tags: [
+      {
+        key: `${event}.contract_address`,
+        value: contract,
+      },
+    ],
+  }) // TODO: ORDER_BY_DESC
 
   if (txs.length === 0) return []
   const events = txs.map(({ events }) =>

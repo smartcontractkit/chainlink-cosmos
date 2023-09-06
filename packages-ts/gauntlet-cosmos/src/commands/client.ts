@@ -1,4 +1,5 @@
 import {
+  Contract,
   ExecuteResult,
   InstantiateOptions,
   InstantiateResult,
@@ -7,7 +8,7 @@ import {
 } from '@cosmjs/cosmwasm-stargate'
 import { AccessConfig } from 'cosmjs-types/cosmwasm/wasm/v1/types'
 import { Coin, EncodeObject } from '@cosmjs/proto-signing'
-import { DeliverTxResponse, StdFee } from '@cosmjs/stargate'
+import { DeliverTxResponse, IndexedTx, SearchTxQuery, StdFee } from '@cosmjs/stargate'
 
 export interface SigningClient {
   signAndBroadcast(
@@ -40,4 +41,9 @@ export interface SigningClient {
     instantiatePermission?: AccessConfig,
   ): Promise<UploadResult>
   simulate(signerAddress: string, messages: readonly EncodeObject[], memo: string | undefined): Promise<number>
+  searchTx(query: SearchTxQuery): Promise<readonly IndexedTx[]>
+  getBalance(address: string, searchDenom: string): Promise<Coin>
+  getChainId(): Promise<string>
+  getContract(address: string): Promise<Contract>
+  queryContractSmart(address: string, queryMsg: JsonObject): Promise<JsonObject>
 }

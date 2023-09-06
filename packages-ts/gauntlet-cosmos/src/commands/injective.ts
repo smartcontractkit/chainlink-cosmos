@@ -1,12 +1,14 @@
 import pako from 'pako'
 import { InjectiveSigningStargateClient } from '@injectivelabs/sdk-ts/dist/cjs/core/stargate'
-import { logs, Coin, DeliverTxResponse } from '@cosmjs/stargate'
+import { logs, Coin, createProtobufRpcClient, SearchTxQuery, IndexedTx, QueryClient } from '@cosmjs/stargate'
 import { sha256 } from '@cosmjs/crypto'
-import { toHex, toUtf8 } from '@cosmjs/encoding'
+import { fromUtf8, toHex, toUtf8 } from '@cosmjs/encoding'
 import { StdFee } from '@cosmjs/amino'
 import { Uint53 } from '@cosmjs/math'
+import { assert } from '@cosmjs/utils'
 import { AccessConfig } from 'cosmjs-types/cosmwasm/wasm/v1/types'
 import { MsgStoreCode, MsgInstantiateContract, MsgExecuteContract } from 'cosmjs-types/cosmwasm/wasm/v1/tx'
+import { QueryClientImpl } from 'cosmjs-types/cosmwasm/wasm/v1/query'
 import {
   ExecuteInstruction,
   ExecuteResult,
@@ -18,6 +20,7 @@ import {
   MsgStoreCodeEncodeObject,
   UploadResult,
   SigningCosmWasmClientOptions,
+  Contract,
 } from '@cosmjs/cosmwasm-stargate'
 import { SigningClient } from './client'
 import Long from 'long'
@@ -26,14 +29,45 @@ import { SigningStargateClientOptions } from '@injectivelabs/sdk-ts/dist/cjs/cor
 import { HttpEndpoint, Tendermint37Client, TendermintClient } from '@cosmjs/tendermint-rpc'
 
 // InjectiveClient extends InjectiveSigningStargateClient to match the interface of SigningClient
-// Upload, execute, instantiate methods adapted from https://github.com/cosmos/cosmjs/blob/a242608408b6362c16860e44c130a35d2ec09c5e/packages/cosmwasm-stargate/src/signingcosmwasmclient.ts
+// Upload, execute, instantiate methods adapted from https://github.com/cosmos/cosmjs/blob/v0.30.1/packages/cosmwasm-stargate/src/signingcosmwasmclient.ts
 export class InjectiveClient extends InjectiveSigningStargateClient implements SigningClient {
+  protected readonly queryService: QueryClientImpl
+
+  constructor(tmClient: TendermintClient, signer: OfflineSigner, options?: SigningStargateClientOptions) {
+    super(tmClient, signer, options)
+    const queryClient = QueryClient.withExtensions(tmClient)
+    const rpc = createProtobufRpcClient(queryClient)
+    this.queryService = new QueryClientImpl(rpc)
+    // register type urls
+    this.registry.register('/cosmwasm.wasm.v1.MsgStoreCode', MsgStoreCode)
+    this.registry.register('/cosmwasm.wasm.v1.MsgInstantiateContract', MsgInstantiateContract)
+    this.registry.register('/cosmwasm.wasm.v1.MsgExecuteContract', MsgExecuteContract)
+  }
+
+  /**
+   * Creates an instance by connecting to the given Tendermint RPC endpoint.
+   *
+   * For now this uses the Tendermint 0.34 client. If you need Tendermint 0.37
+   * support, see `createWithSigner`.
+   */
   public static async connectWithSigner(
     endpoint: string | HttpEndpoint,
     signer: OfflineSigner,
-    options?: SigningStargateClientOptions,
+    options: SigningStargateClientOptions = {},
   ): Promise<InjectiveClient> {
-    const tmClient: TendermintClient = await Tendermint37Client.connect(endpoint)
+    const tmClient = await Tendermint37Client.connect(endpoint)
+    return InjectiveClient.createWithSigner(tmClient, signer, options)
+  }
+
+  /**
+   * Creates an instance from a manually created Tendermint client.
+   * Use this to use `Tendermint37Client` instead of `Tendermint34Client`.
+   */
+  public static async createWithSigner(
+    tmClient: TendermintClient,
+    signer: OfflineSigner,
+    options: SigningStargateClientOptions = {},
+  ): Promise<InjectiveClient> {
     return new InjectiveClient(tmClient, signer, options)
   }
 
@@ -42,7 +76,6 @@ export class InjectiveClient extends InjectiveSigningStargateClient implements S
     wasmCode: Uint8Array,
     fee: StdFee | 'auto' | number,
     memo = '',
-    instantiatePermission?: AccessConfig,
   ): Promise<UploadResult> {
     const compressed = pako.gzip(wasmCode, { level: 9 })
     const storeCodeMsg: MsgStoreCodeEncodeObject = {
@@ -50,27 +83,23 @@ export class InjectiveClient extends InjectiveSigningStargateClient implements S
       value: MsgStoreCode.fromPartial({
         sender: senderAddress,
         wasmByteCode: compressed,
-        instantiatePermission,
       }),
     }
 
-    // When uploading a contract, the simulation is only 1-2% away from the actual gas usage.
-    // So we have a smaller default gas multiplier than signAndBroadcast.
-    const usedFee = fee == 'auto' ? 1.1 : fee
-
-    const result = await this.signAndBroadcast(senderAddress, [storeCodeMsg], usedFee, memo)
+    const result = await this.signAndBroadcast(senderAddress, [storeCodeMsg], fee, memo)
     if (!!result.code) {
       throw new Error(
         `Error when broadcasting tx ${result.transactionHash} at height ${result.height}. Code: ${result.code}; Raw log: ${result.rawLog}`,
       )
     }
     const parsedLogs = logs.parseRawLog(result.rawLog)
-    const codeIdAttr = logs.findAttribute(parsedLogs, 'store_code', 'code_id')
+    const codeIdAttr = logs.findAttribute(parsedLogs, 'cosmwasm.wasm.v1.EventCodeStored', 'code_id')
     return {
-      checksum: toHex(sha256(wasmCode)),
       originalSize: wasmCode.length,
+      originalChecksum: toHex(sha256(wasmCode)),
       compressedSize: compressed.length,
-      codeId: Number.parseInt(codeIdAttr.value, 10),
+      compressedChecksum: toHex(sha256(compressed)),
+      codeId: Number.parseInt(JSON.parse(codeIdAttr.value), 10),
       logs: parsedLogs,
       height: result.height,
       transactionHash: result.transactionHash,
@@ -106,7 +135,11 @@ export class InjectiveClient extends InjectiveSigningStargateClient implements S
       )
     }
     const parsedLogs = logs.parseRawLog(result.rawLog)
-    const contractAddressAttr = logs.findAttribute(parsedLogs, 'instantiate', '_contract_address')
+    const contractAddressAttr = logs.findAttribute(
+      parsedLogs,
+      'cosmwasm.wasm.v1.EventContractInstantiated',
+      'contract_address',
+    )
     return {
       contractAddress: contractAddressAttr.value,
       logs: parsedLogs,
@@ -168,16 +201,54 @@ export class InjectiveClient extends InjectiveSigningStargateClient implements S
     }
   }
 
-  public async signAndBroadcast(
-    signerAddress: string,
-    messages: readonly EncodeObject[],
-    fee: StdFee | 'auto' | number,
-    memo?: string,
-  ): Promise<DeliverTxResponse> {
-    const result = await super.signAndBroadcast(signerAddress, messages, fee, memo)
+  /**
+   * Throws an error if no contract was found at the address
+   */
+  public async getContract(address: string): Promise<Contract> {
+    const { address: retrievedAddress, contractInfo } = await this.queryService.ContractInfo({ address })
+    if (!contractInfo) throw new Error(`No contract found at address "${address}"`)
+    assert(retrievedAddress, 'address missing')
+    assert(contractInfo.codeId && contractInfo.creator && contractInfo.label, 'contractInfo incomplete')
     return {
-      ...result,
-      msgResponses: [], // unused, but required in cosmjs type and missing in injective type
+      address: retrievedAddress,
+      codeId: contractInfo.codeId.toNumber(),
+      creator: contractInfo.creator,
+      admin: contractInfo.admin || undefined,
+      label: contractInfo.label,
+      ibcPortId: contractInfo.ibcPortId || undefined,
+    }
+  }
+
+  /**
+   * Makes a smart query on the contract, returns the parsed JSON document.
+   *
+   * Promise is rejected when contract does not exist.
+   * Promise is rejected for invalid query format.
+   * Promise is rejected for invalid response format.
+   */
+  public async queryContractSmart(address: string, queryMsg: JsonObject): Promise<JsonObject> {
+    let data: Uint8Array
+    try {
+      const request = { address: address, queryData: toUtf8(JSON.stringify(queryMsg)) }
+      ;({ data } = await this.queryService.SmartContractState(request))
+    } catch (error) {
+      if (error.message.startsWith('not found: contract')) {
+        throw new Error(`No contract found at address "${address}"`)
+      } else {
+        throw error
+      }
+    }
+    // By convention, smart queries must return a valid JSON document (see https://github.com/CosmWasm/cosmwasm/issues/144)
+    let responseText: string
+    try {
+      responseText = fromUtf8(data)
+    } catch (error) {
+      throw new Error(`Could not UTF-8 decode smart query response from contract: ${error}`)
+    }
+    try {
+      return JSON.parse(responseText)
+    } catch (error) {
+      throw new Error(`Could not JSON parse smart query response from contract: ${error}`)
     }
   }
 }

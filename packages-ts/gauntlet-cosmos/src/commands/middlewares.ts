@@ -57,7 +57,9 @@ export const withProvider: Middleware = async (c: CosmosCommand, next: Next) => 
   // c.provider = await SigningCosmWasmClient.connectWithSigner(nodeURL, wallet, {
   //   gasPrice: GasPrice.fromString(process.env.DEFAULT_GAS_PRICE),
   // })
-  c.provider = await InjectiveClient.connectWithSigner(nodeURL, wallet)
+  c.provider = await InjectiveClient.connectWithSigner(nodeURL, wallet, {
+    gasPrice: GasPrice.fromString(process.env.DEFAULT_GAS_PRICE),
+  })
   return next()
 }
 

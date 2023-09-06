@@ -4,13 +4,13 @@ import { CosmosCommand, TransactionResponse, logger } from '@chainlink/gauntlet-
 import { prompt } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress } from '@chainlink/gauntlet-cosmos'
 import { AccountData, OfflineSigner } from '@cosmjs/proto-signing'
-import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate'
+import { SigningClient } from '@chainlink/gauntlet-cosmos/dist/commands/client'
 
 export type ExecutionContext = {
   id: string
   contract: string
   wallet: OfflineSigner
-  provider: CosmWasmClient
+  provider: SigningClient
   signer: AccountData
   flags: any
 }
