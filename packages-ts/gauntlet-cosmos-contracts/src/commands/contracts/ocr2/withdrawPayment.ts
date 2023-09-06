@@ -5,7 +5,6 @@ import { TransactionResponse } from '@chainlink/gauntlet-cosmos'
 import { AccAddress } from '@chainlink/gauntlet-cosmos'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'
-import { parseOraclePaidEvent } from '../../../lib/events'
 
 type CommandInput = {
   transmitter: string
@@ -48,14 +47,13 @@ const afterExecute = () => async (response: Result<TransactionResponse>) => {
     logger.error('Could not retrieve events from tx')
     return
   }
+  const paidEvent = events.find((e) => (e['type'] as any) === 'wasm-oracle_paid')
 
-  const paidOracleEvent = parseOraclePaidEvent(events[0].wasm)
-  if (!paidOracleEvent) {
-    logger.error('Unable to parse/validate response data')
-    return
+  if (!paidEvent) {
+    logger.info('0 LINK was owed/paid to payee')
   }
 
-  logger.info(`Paying ${paidOracleEvent.payee} ${paidOracleEvent.amount} LINK`)
+  console.log('Payment Information', paidEvent)
   return
 }
 

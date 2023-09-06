@@ -18,6 +18,7 @@ export type CommandInput = {
   proposalId: string
   digest: string
   offchainConfig: encoding.OffchainConfig
+  secret: string
   randomSecret: string
 }
 
@@ -42,11 +43,7 @@ const validateRandomSecret: ValidateFn<CommandInput> = async (input) => {
 }
 
 const validateOffchainConfig: ValidateFn<CommandInput> = async (input, context) => {
-  const { offchainConfig } = await serializeOffchainConfig(
-    input.offchainConfig,
-    process.env.SECRET!,
-    input.randomSecret,
-  )
+  const { offchainConfig } = await serializeOffchainConfig(input.offchainConfig, input.secret, input.randomSecret)
   const proposal: any = await context.provider.queryContractSmart(context.contract, {
     proposal: {
       id: input.proposalId,
@@ -64,14 +61,14 @@ const validateOffchainConfig: ValidateFn<CommandInput> = async (input, context) 
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
   if (flags.input) return flags.input as CommandInput
-  const { rdd: rddPath, secret } = flags
+  const { rdd: rddPath, secret, randomSecret } = flags
 
   if (!secret) {
     throw new Error('--secret flag is required.')
   }
 
-  if (!process.env.SECRET) {
-    throw new Error('SECRET is not set in env!')
+  if (!randomSecret) {
+    throw new Error('--randomSecret flag is required')
   }
 
   let offchainConfig = flags.offchainConfig
@@ -87,7 +84,8 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
     proposalId: flags.proposalId || flags.configProposal || flags.id, // --configProposal alias requested by eng ops
     digest: flags.digest,
     offchainConfig,
-    randomSecret: secret,
+    secret,
+    randomSecret,
   }
 }
 

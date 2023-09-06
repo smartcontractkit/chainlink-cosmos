@@ -61,5 +61,18 @@ jobs:
         with:
           name: chainlink-cosmos
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+      - name: Cache Wasmd Artifacts
+        uses: actions/cache@v3
+        id: cache-wasmd-artifacts
+        env:
+          cache-name: cache-wasmd-artifacts
+        with:
+          path: artifacts
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('contracts') }}
+
+      - name: Build Wasmd Artifacts
+        if: steps.cache-wasmd-artifacts.outputs.cache-hit != 'true'
+        run: make contracts_compile
+          
       - run: nix develop -c yarn install --frozen-lockfile
       - run: nix develop -c yarn test:ci

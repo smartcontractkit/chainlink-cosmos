@@ -12,9 +12,14 @@ const makeInput = async (flags): Promise<AcceptProposalInput> => {
   }
   if (flags.input) return { ...flags.input, ...defaultInput }
 
+  if (!flags.secret) {
+    throw new Error('--secret flag is required')
+  }
+
   return {
     proposalId: flags.proposalId || flags.configProposal,
     digest: flags.digest,
+    secret: flags.secret,
     ...defaultInput,
   }
 }

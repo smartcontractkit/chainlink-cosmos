@@ -49,7 +49,7 @@ impl<'a> Auth<'a> {
     /// we hit an error with Api or Storage usage
     pub fn is_owner(&self, deps: Deps, caller: &Addr) -> StdResult<bool> {
         let state = self.0.load(deps.storage)?;
-        Ok(caller == &state.owner)
+        Ok(*caller == state.owner)
     }
 
     /// Like is_owner but returns Error::Unauthorized if not owner.

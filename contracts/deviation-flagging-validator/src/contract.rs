@@ -185,7 +185,7 @@ pub fn is_valid(flagging_threshold: u32, previous_answer: i128, answer: i128) ->
         return Ok(true);
     }
 
-    // https://github.com/rust-lang/rust/issues/89492
+    // TODO: incorporate fix from https://github.com/rust-lang/rust/issues/89492
     fn abs_diff(slf: i128, other: i128) -> u128 {
         if slf < other {
             (other as u128).wrapping_sub(slf as u128)

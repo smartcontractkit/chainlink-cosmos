@@ -40,11 +40,11 @@ export const CW3_FLEX_MULTISIG_CODE_IDs = {
 export const TOKEN_DECIMALS = 18
 export const TOKEN_UNIT = new BN(10).pow(new BN(TOKEN_DECIMALS))
 
-export const UATOM_DECIMALS = 6
+export const UCOSM_DECIMALS = 6
 
 export const EMPTY_TRANSMITTERS = [
-  'cosmos1deadg6umpcwdr5ayj737vt49agnpxc6e5ct65t',
-  'cosmos1deadmlvdvtnnclqvdt526fz465w7v3vkd5r3h7',
-  'cosmos1deadz8q0v8yf4vw6jtnwfush2yka230jggws9p',
-  'cosmos1deadxqgqq63t9hxragwcqd2h020m2hvt3l49va',
+  'wasm1hft9sxhx7d7furw9y0rjxu4hfsm76ehkman78g',
+  'wasm10f0wy3fs6ex395ylturr0hv03m3cjcjpy4ux6x',
+  'wasm1jv45uny4kuyeecgzw5xftkr7nssdj5e56ajchs',
+  'wasm1n947av78pavcs9tpp79me30gk6rfqhnam9gsls',
 ]
