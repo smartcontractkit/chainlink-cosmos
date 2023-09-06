@@ -45,7 +45,6 @@ jobs:
         with:
           workflow: golangci-lint.yml
           workflow_conclusion: ""
-          name_is_regexp: true
           name: golangci-lint-report
           if_no_artifact_found: warn
 
@@ -54,7 +53,6 @@ jobs:
         with:
           workflow: relay.yml
           workflow_conclusion: ""
-          name_is_regexp: true
           name: go-test-results
           if_no_artifact_found: warn
       
