@@ -16,7 +16,7 @@
     "preinstall": "node scripts/require-yarn.js",
     "gauntlet": "yarn build && node ./packages-ts/gauntlet-cosmos-contracts/dist/index.js",
     "lint": "tsc -b ./tsconfig.json",
-    "test": "yarn build && SKIP_PROMPTS=true jest --runInBand",
+    "test": "yarn build && yarn workspaces run test",
     "test:coverage": "yarn build && yarn test --collectCoverage",
     "test:ci": "yarn build && yarn test --ci",
     "lint:format": "yarn prettier --check .",

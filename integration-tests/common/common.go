@@ -129,6 +129,7 @@ Enabled = true
 ChainID = '%s'
 Bech32Prefix = 'wasm'
 FeeToken = 'ucosm'
+
 [[Cosmos.Nodes]]
 Name = 'primary'
 TendermintURL = '%s'

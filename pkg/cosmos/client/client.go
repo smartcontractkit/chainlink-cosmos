@@ -57,6 +57,7 @@ type Reader interface {
 // Assumes all msgs are for the same from address.
 // We may want to support multiple from addresses + signers if a use case arises.
 type Writer interface {
+	// TODO: SignAndBroadcast is only used for testing, remove it
 	SignAndBroadcast(msgs []sdk.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Simulate(txBytes []byte) (*txtypes.SimulateResponse, error)

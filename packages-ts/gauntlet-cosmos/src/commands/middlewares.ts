@@ -6,14 +6,13 @@ import path from 'path'
 import { existsSync } from 'fs'
 import { DirectSecp256k1HdWallet, OfflineSigner } from '@cosmjs/proto-signing'
 import { LedgerSigner } from '@cosmjs/ledger-amino'
-import TransportNodeHid from '@ledgerhq/hw-transport-node-hid'
 import { makeCosmoshubPath } from '@cosmjs/proto-signing'
 import { GasPrice } from '@cosmjs/stargate'
 
 const isValidURL = (a) => true
 
 export const withProvider: Middleware = async (c: CosmosCommand, next: Next) => {
-  const nodeURL = process.env.NODE_URL
+  const nodeURL = c.flags.nodeURL || process.env.NODE_URL
   assertions.assert(
     nodeURL && isValidURL(nodeURL),
     `Invalid NODE_URL (${nodeURL}), please add an http:// or https:// prefix`,
@@ -21,6 +20,12 @@ export const withProvider: Middleware = async (c: CosmosCommand, next: Next) => 
 
   let wallet: OfflineSigner
   if (c.flags.withLedger || !!process.env.WITH_LEDGER) {
+    // tests crash when importing ledger module multiple times when running gauntlet tests
+    if (!!c.flags.gauntletTest) {
+      throw new Error('No support for Ledger with Gauntlet Tests. Please disable Ledger')
+    }
+    const TransportNodeHid = require('@ledgerhq/hw-transport-node-hid')
+
     // TODO: allow specifying custom path, using stringToPath. BIP44_ATOM_PATH was different for example
     // const rawPath = c.flags.ledgerPath || BIP44_ATOM_PATH
     const transport = await TransportNodeHid.create()
@@ -33,7 +38,7 @@ export const withProvider: Middleware = async (c: CosmosCommand, next: Next) => 
       hdPaths: paths,
     })
   } else {
-    const mnemonic = process.env.MNEMONIC
+    const mnemonic = c.flags.mnemonic || process.env.MNEMONIC
     assertions.assert(!!mnemonic, `Missing MNEMONIC, please add one`)
     wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, { prefix: 'wasm' }) // TODO customizable, in sync with Addr
     // TODO: set hdPaths too, if using different path
@@ -46,7 +51,7 @@ export const withProvider: Middleware = async (c: CosmosCommand, next: Next) => 
   logger.info(`Operator address is ${c.signer.address}`)
 
   c.provider = await SigningCosmWasmClient.connectWithSigner(nodeURL, wallet, {
-    gasPrice: GasPrice.fromString(process.env.DEFAULT_GAS_PRICE),
+    gasPrice: GasPrice.fromString(c.flags.defaultGasPrice || process.env.DEFAULT_GAS_PRICE),
   })
   return next()
 }

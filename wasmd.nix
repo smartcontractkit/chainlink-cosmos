@@ -4,7 +4,7 @@
 
 stdenv.mkDerivation rec {
   name = "wasmd-${version}";
-  version = "0.3.0";
+  version = "0.40.1";
 
   src = fetchFromGitHub {
     owner = "CosmWasm";
@@ -13,7 +13,7 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-KBchSnIETM+HPngqHeajiqLYrhHhXY531C+Q/aSDzl4=";
   };
 
-  buildInputs = with pkgs; [ gnumake git go_1_20 which openssl cacert ];
+  buildInputs = with pkgs; [ gnumake git go_1_20 which openssl cacert gcc ];
 
   buildPhase = ''
     export HOME=$out

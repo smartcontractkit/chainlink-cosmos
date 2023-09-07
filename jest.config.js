@@ -23,5 +23,16 @@ module.exports = {
         },
       },
     },
+    {
+      displayName: 'gauntlet-cosmos-cw-plus',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      testMatch: ['<rootDir>/packages-ts/gauntlet-cosmos-cw-plus/**/*.test.ts'],
+      globals: {
+        'ts-jest': {
+          tsconfig: '<rootDir>/packages-ts/gauntlet-cosmos-cw-plus/tsconfig.json',
+        },
+      },
+    },
   ],
 }

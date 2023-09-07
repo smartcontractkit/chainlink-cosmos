@@ -26,4 +26,6 @@ integration-tests/soak/logs
 tmp-manifest-*
 /artifacts
 .local-mock-server
+codegen
+devAccounts.json
 
