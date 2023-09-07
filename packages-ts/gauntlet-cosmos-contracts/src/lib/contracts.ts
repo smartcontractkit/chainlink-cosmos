@@ -96,7 +96,7 @@ export abstract class Contract {
       .filter((path) => existsSync(`${path}/${this.dirName}/schema`))
       .map((contractPath) => {
         let schemaPath = path.join(contractPath, `./${this.dirName}/schema/`)
-        let fileName = this.dirName.replace('_', '-')
+        let fileName = this.dirName.replace(new RegExp('_', 'g'), '-')
         let abi: any
 
         // abi can be found in either {dirName}/schema or {dirName}/schema/main
