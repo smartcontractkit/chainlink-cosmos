@@ -13,6 +13,7 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 )
 
 var _ relaytypes.ConfigProvider = &configProvider{}
@@ -103,7 +104,11 @@ func NewMedianProvider(ctx context.Context, lggr logger.Logger, chain adapters.C
 	if err != nil {
 		return nil, err
 	}
-	senderAddr, err := cosmosSDK.AccAddressFromBech32(pargs.TransmitterID)
+	bech32Addr, err := params.CreateBech32Address(pargs.TransmitterID, configProvider.chain.Config().Bech32Prefix())
+	if err != nil {
+		return nil, err
+	}
+	senderAddr, err := cosmosSDK.AccAddressFromBech32(bech32Addr)
 	if err != nil {
 		return nil, err
 	}
