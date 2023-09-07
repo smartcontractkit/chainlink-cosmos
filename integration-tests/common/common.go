@@ -127,6 +127,8 @@ func NewCommon(t *testing.T) *Common {
 	chainlinkConfig := fmt.Sprintf(`[[Cosmos]]
 Enabled = true
 ChainID = '%s'
+Bech32Prefix = 'wasm'
+FeeToken = 'ucosm'
 [[Cosmos.Nodes]]
 Name = 'primary'
 TendermintURL = '%s'
