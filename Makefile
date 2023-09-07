@@ -76,7 +76,7 @@ contracts_install: artifacts_curl_deps artifacts_cp_gauntlet artifacts_cp_wasmd
 artifacts_curl_deps: artifacts_curl_cw20
 
 artifacts_curl_cw20:
-	curl -Lo artifacts/cw20_base.wasm https://github.com/CosmWasm/cw-plus/releases/download/v0.8.0/cw20_base.wasm
+	curl -Lo artifacts/cw20_base.wasm https://github.com/CosmWasm/cw-plus/releases/download/v1.1.0/cw20_base.wasm
 
 artifacts_cp_gauntlet:
 	cp -r artifacts/. packages-ts/gauntlet-cosmos-contracts/artifacts/bin
