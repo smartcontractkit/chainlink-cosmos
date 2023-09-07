@@ -95,20 +95,21 @@ export abstract class Contract {
     const abi = possibleContractPaths
       .filter((path) => existsSync(`${path}/${this.dirName}/schema`))
       .map((contractPath) => {
-        if (existsSync(path.join(contractPath, `./${this.dirName}/schema/${this.dirName.replace('_', '-')}`))) {
-          const abi = io.readJSON(path.join(contractPath, `./${this.dirName}/schema/${this.dirName.replace('_', '-')}`))
-          return {
-            execute: abi.execute,
-            query: abi.query,
-            instantiate: abi.instantiate,
-          }
+        let schemaPath = path.join(contractPath, `./${this.dirName}/schema/`)
+        let fileName = this.dirName.replace('_', '-')
+        let abi: any
+
+        // abi can be found in either {dirName}/schema or {dirName}/schema/main
+        if (existsSync(schemaPath + fileName + '.json')) {
+          abi = io.readJSON(schemaPath + fileName)
+        } else {
+          abi = io.readJSON(schemaPath + 'main/' + fileName)
         }
 
-        const toPath = (type) => path.join(contractPath, `./${this.dirName}/schema/raw/${type}`)
         return {
-          execute: io.readJSON(toPath('execute')),
-          query: io.readJSON(toPath('query')),
-          instantiate: io.readJSON(toPath('instantiate')),
+          execute: abi.execute,
+          query: abi.query,
+          instantiate: abi.instantiate,
         }
       })
     if (abi.length === 0) {
