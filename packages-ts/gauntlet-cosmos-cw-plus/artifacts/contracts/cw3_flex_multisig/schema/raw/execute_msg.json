@@ -19,6 +19,16 @@
             "description": {
               "type": "string"
             },
+            "earliest": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Expiration"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "latest": {
               "anyOf": [
                 {
@@ -38,7 +48,8 @@
             "title": {
               "type": "string"
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -64,7 +75,8 @@
             "vote": {
               "$ref": "#/definitions/Vote"
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -86,7 +98,8 @@
               "format": "uint64",
               "minimum": 0.0
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -108,20 +121,8 @@
               "format": "uint64",
               "minimum": 0.0
             }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Handles update hook messages from the group contract",
-      "type": "object",
-      "required": [
-        "member_changed_hook"
-      ],
-      "properties": {
-        "member_changed_hook": {
-          "$ref": "#/definitions/MemberChangedHookMsg"
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -186,7 +187,7 @@
       ]
     },
     "Binary": {
-      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>",
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
       "type": "string"
     },
     "Coin": {
@@ -233,84 +234,11 @@
         {
           "type": "object",
           "required": [
-            "staking"
-          ],
-          "properties": {
-            "staking": {
-              "$ref": "#/definitions/StakingMsg"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "distribution"
-          ],
-          "properties": {
-            "distribution": {
-              "$ref": "#/definitions/DistributionMsg"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
             "wasm"
           ],
           "properties": {
             "wasm": {
               "$ref": "#/definitions/WasmMsg"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "DistributionMsg": {
-      "description": "The message types of the distribution module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto",
-      "oneOf": [
-        {
-          "description": "This is translated to a [MsgSetWithdrawAddress](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L29-L37). `delegator_address` is automatically filled with the current contract's address.",
-          "type": "object",
-          "required": [
-            "set_withdraw_address"
-          ],
-          "properties": {
-            "set_withdraw_address": {
-              "type": "object",
-              "required": [
-                "address"
-              ],
-              "properties": {
-                "address": {
-                  "description": "The `withdraw_address`",
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "This is translated to a [[MsgWithdrawDelegatorReward](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L42-L50). `delegator_address` is automatically filled with the current contract's address.",
-          "type": "object",
-          "required": [
-            "withdraw_delegator_reward"
-          ],
-          "properties": {
-            "withdraw_delegator_reward": {
-              "type": "object",
-              "required": [
-                "validator"
-              ],
-              "properties": {
-                "validator": {
-                  "description": "The `validator_address`",
-                  "type": "string"
-                }
-              }
             }
           },
           "additionalProperties": false
@@ -360,134 +288,8 @@
           ],
           "properties": {
             "never": {
-              "type": "object"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "MemberChangedHookMsg": {
-      "description": "MemberChangedHookMsg should be de/serialized under `MemberChangedHook()` variant in a ExecuteMsg. This contains a list of all diffs on the given transaction.",
-      "type": "object",
-      "required": [
-        "diffs"
-      ],
-      "properties": {
-        "diffs": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/MemberDiff"
-          }
-        }
-      }
-    },
-    "MemberDiff": {
-      "description": "MemberDiff shows the old and new states for a given cw4 member They cannot both be None. old = None, new = Some -> Insert old = Some, new = Some -> Update old = Some, new = None -> Delete",
-      "type": "object",
-      "required": [
-        "key"
-      ],
-      "properties": {
-        "key": {
-          "type": "string"
-        },
-        "new": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint64",
-          "minimum": 0.0
-        },
-        "old": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint64",
-          "minimum": 0.0
-        }
-      }
-    },
-    "StakingMsg": {
-      "description": "The message types of the staking module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto",
-      "oneOf": [
-        {
-          "description": "This is translated to a [MsgDelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L81-L90). `delegator_address` is automatically filled with the current contract's address.",
-          "type": "object",
-          "required": [
-            "delegate"
-          ],
-          "properties": {
-            "delegate": {
               "type": "object",
-              "required": [
-                "amount",
-                "validator"
-              ],
-              "properties": {
-                "amount": {
-                  "$ref": "#/definitions/Coin"
-                },
-                "validator": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "This is translated to a [MsgUndelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L112-L121). `delegator_address` is automatically filled with the current contract's address.",
-          "type": "object",
-          "required": [
-            "undelegate"
-          ],
-          "properties": {
-            "undelegate": {
-              "type": "object",
-              "required": [
-                "amount",
-                "validator"
-              ],
-              "properties": {
-                "amount": {
-                  "$ref": "#/definitions/Coin"
-                },
-                "validator": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "This is translated to a [MsgBeginRedelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L95-L105). `delegator_address` is automatically filled with the current contract's address.",
-          "type": "object",
-          "required": [
-            "redelegate"
-          ],
-          "properties": {
-            "redelegate": {
-              "type": "object",
-              "required": [
-                "amount",
-                "dst_validator",
-                "src_validator"
-              ],
-              "properties": {
-                "amount": {
-                  "$ref": "#/definitions/Coin"
-                },
-                "dst_validator": {
-                  "type": "string"
-                },
-                "src_validator": {
-                  "type": "string"
-                }
-              }
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -511,12 +313,35 @@
       "type": "string"
     },
     "Vote": {
-      "type": "string",
-      "enum": [
-        "yes",
-        "no",
-        "abstain",
-        "veto"
+      "oneOf": [
+        {
+          "description": "Marks support for the proposal.",
+          "type": "string",
+          "enum": [
+            "yes"
+          ]
+        },
+        {
+          "description": "Marks opposition to the proposal.",
+          "type": "string",
+          "enum": [
+            "no"
+          ]
+        },
+        {
+          "description": "Marks participation but does not count towards the ratio of support / opposed",
+          "type": "string",
+          "enum": [
+            "abstain"
+          ]
+        },
+        {
+          "description": "Veto is generally to be treated as a No vote. Some implementations may allow certain voters to be able to Veto, or them to be counted stronger than No in some way.",
+          "type": "string",
+          "enum": [
+            "veto"
+          ]
+        }
       ]
     },
     "WasmMsg": {
@@ -560,7 +385,7 @@
           "additionalProperties": false
         },
         {
-          "description": "Instantiates a new contracts from previously uploaded Wasm code.\n\nThis is translated to a [MsgInstantiateContract](https://github.com/CosmWasm/wasmd/blob/v0.16.0-alpha1/x/wasm/internal/types/tx.proto#L47-L61). `sender` is automatically filled with the current contract's address.",
+          "description": "Instantiates a new contracts from previously uploaded Wasm code.\n\nThe contract address is non-predictable. But it is guaranteed that when emitting the same Instantiate message multiple times, multiple instances on different addresses will be generated. See also Instantiate2.\n\nThis is translated to a [MsgInstantiateContract](https://github.com/CosmWasm/wasmd/blob/v0.29.2/proto/cosmwasm/wasm/v1/tx.proto#L53-L71). `sender` is automatically filled with the current contract's address.",
           "type": "object",
           "required": [
             "instantiate"

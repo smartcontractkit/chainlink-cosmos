@@ -1,27 +1,24 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "TokenInfoResponse",
+  "title": "MinterResponse",
   "type": "object",
   "required": [
-    "decimals",
-    "name",
-    "symbol",
-    "total_supply"
+    "minter"
   ],
   "properties": {
-    "decimals": {
-      "type": "integer",
-      "format": "uint8",
-      "minimum": 0.0
+    "cap": {
+      "description": "cap is a hard cap on total supply that can be achieved by minting. Note that this refers to total_supply. If None, there is unlimited cap.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Uint128"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
-    "name": {
+    "minter": {
       "type": "string"
-    },
-    "symbol": {
-      "type": "string"
-    },
-    "total_supply": {
-      "$ref": "#/definitions/Uint128"
     }
   },
   "additionalProperties": false,

@@ -3,20 +3,21 @@
   "title": "QueryMsg",
   "oneOf": [
     {
-      "description": "Return ThresholdResponse",
+      "description": "Returns the threshold rules that would be used for a new proposal that was opened right now. The threshold rules do not change often, but the `total_weight` in the response may easily differ from that used in previously opened proposals. Returns ThresholdResponse.",
       "type": "object",
       "required": [
         "threshold"
       ],
       "properties": {
         "threshold": {
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
     },
     {
-      "description": "Returns ProposalResponse",
+      "description": "Returns details of the proposal state. Returns ProposalResponse.",
       "type": "object",
       "required": [
         "proposal"
@@ -33,13 +34,14 @@
               "format": "uint64",
               "minimum": 0.0
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
     },
     {
-      "description": "Returns ProposalListResponse",
+      "description": "Iterate over details of all proposals from oldest to newest. Returns ProposalListResponse",
       "type": "object",
       "required": [
         "list_proposals"
@@ -64,13 +66,14 @@
               "format": "uint64",
               "minimum": 0.0
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
     },
     {
-      "description": "Returns ProposalListResponse",
+      "description": "Iterate reverse over details of all proposals, this is useful to easily query only the most recent proposals (to get updates). Returns ProposalListResponse",
       "type": "object",
       "required": [
         "reverse_proposals"
@@ -95,13 +98,14 @@
               "format": "uint64",
               "minimum": 0.0
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
     },
     {
-      "description": "Returns VoteResponse",
+      "description": "Query the vote made by the given voter on `proposal_id`. This should return an error if there is no such proposal. It will return a None value if the proposal exists but the voter did not vote. Returns VoteResponse",
       "type": "object",
       "required": [
         "vote"
@@ -122,13 +126,14 @@
             "voter": {
               "type": "string"
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
     },
     {
-      "description": "Returns VoteListResponse",
+      "description": "Iterate (with pagination) over all votes for this proposal. The ordering is arbitrary, unlikely to be sorted by address. But ordering is consistent and pagination from the end of each page will cover all votes for the proposal. Returns VoteListResponse",
       "type": "object",
       "required": [
         "list_votes"
@@ -159,13 +164,14 @@
                 "null"
               ]
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
     },
     {
-      "description": "Returns VoterInfo",
+      "description": "Voter extension: Returns VoterResponse",
       "type": "object",
       "required": [
         "voter"
@@ -180,13 +186,14 @@
             "address": {
               "type": "string"
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
     },
     {
-      "description": "Returns VoterListResponse",
+      "description": "ListVoters extension: Returns VoterListResponse",
       "type": "object",
       "required": [
         "list_voters"
@@ -209,7 +216,8 @@
                 "null"
               ]
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

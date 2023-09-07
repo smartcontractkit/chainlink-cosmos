@@ -95,6 +95,15 @@ export abstract class Contract {
     const abi = possibleContractPaths
       .filter((path) => existsSync(`${path}/${this.dirName}/schema`))
       .map((contractPath) => {
+        if (existsSync(path.join(contractPath, `./${this.dirName}/schema/${this.dirName.replace('_', '-')}`))) {
+          const abi = io.readJSON(path.join(contractPath, `./${this.dirName}/schema/${this.dirName.replace('_', '-')}`))
+          return {
+            execute: abi.execute,
+            query: abi.query,
+            instantiate: abi.instantiate,
+          }
+        }
+
         const toPath = (type) => path.join(contractPath, `./${this.dirName}/schema/raw/${type}`)
         return {
           execute: io.readJSON(toPath('execute')),
