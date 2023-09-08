@@ -103,14 +103,7 @@ export abstract class Contract {
       .map((contractPath) => {
         let schemaPath = path.join(contractPath, `./${this.dirName}/schema/`)
         let fileName = this.dirName.replace(new RegExp('_', 'g'), '-')
-        let abi: any
-
-        // abi can be found in either {dirName}/schema or {dirName}/schema/main
-        if (existsSync(schemaPath + fileName + '.json')) {
-          abi = io.readJSON(schemaPath + fileName)
-        } else {
-          abi = io.readJSON(schemaPath + 'main/' + fileName)
-        }
+        let abi = io.readJSON(schemaPath + fileName)
 
         return {
           execute: abi.execute,
