@@ -11,7 +11,7 @@ codegen({
     },
     {
       name: 'DeviationFlaggingValidator',
-      dir: `${CHAINLINK_PATH}/deviation-flagging-validator/schema/main`,
+      dir: `${CHAINLINK_PATH}/deviation-flagging-validator/schema`,
     },
     {
       name: 'Flags',
@@ -19,7 +19,7 @@ codegen({
     },
     {
       name: 'OCR2',
-      dir: `${CHAINLINK_PATH}/ocr2/schema/main`,
+      dir: `${CHAINLINK_PATH}/ocr2/schema`,
     },
     {
       name: 'ProxyOCR2',
