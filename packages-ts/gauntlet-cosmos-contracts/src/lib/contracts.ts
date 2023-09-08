@@ -84,39 +84,56 @@ export abstract class Contract {
     }
   }
 
-  loadContractABI = async (): Promise<void> => {
-    // Possible paths depending on how/where gauntlet is being executed
-    const cwd = process.cwd()
-    const possibleContractPaths = [
-      path.join(__dirname, '../../../../contracts'),
-      path.join(__dirname, '../../../gauntlet-cosmos-cw-plus/artifacts/contracts'),
-      path.join(__dirname, '../../../gauntlet-cosmos-contracts/artifacts/contracts'),
+  loadContractABI = async (version = this.defaultVersion): Promise<void> => {
+    assertions.assert(
+      !this.version || version == this.version,
+      `Loading multiple versions (${this.version} and ${version}) of the same contract is unsupported.`,
+    )
+    this.version = version
 
-      path.join(cwd, './contracts'),
-      path.join(cwd, '../../contracts'),
-      path.join(cwd, './packages-ts/gauntlet-cosmos-contracts/artifacts/contracts'),
-      path.join(cwd, './packages-ts/gauntlet-cosmos-cw-plus/artifacts/contracts'),
-    ]
+    let fileName = this.dirName.replace(new RegExp('_', 'g'), '-')
 
-    const abi = possibleContractPaths
-      .filter((path) => existsSync(`${path}/${this.dirName}/schema`))
-      .map((contractPath) => {
-        let schemaPath = path.join(contractPath, `./${this.dirName}/schema/`)
-        let fileName = this.dirName.replace(new RegExp('_', 'g'), '-')
-        let abi = io.readJSON(schemaPath + fileName)
+    if (version === 'local') {
+      // Possible paths depending on how/where gauntlet is being executed
+      const cwd = process.cwd()
+      const possibleContractPaths = [
+        path.join(__dirname, '../../../../contracts'),
+        path.join(__dirname, '../../../gauntlet-cosmos-cw-plus/artifacts/contracts'),
+        path.join(__dirname, '../../../gauntlet-cosmos-contracts/artifacts/contracts'),
 
-        return {
-          execute: abi.execute,
-          query: abi.query,
-          instantiate: abi.instantiate,
-        }
-      })
+        path.join(cwd, './contracts'),
+        path.join(cwd, '../../contracts'),
+        path.join(cwd, './packages-ts/gauntlet-cosmos-contracts/artifacts/contracts'),
+        path.join(cwd, './packages-ts/gauntlet-cosmos-cw-plus/artifacts/contracts'),
+      ]
 
-    if (abi.length === 0) {
-      logger.error(`ABI not found for contract ${this.id}`)
+      const abi = possibleContractPaths
+        .filter((path) => existsSync(`${path}/${this.dirName}/schema`))
+        .map((contractPath) => {
+          let schemaPath = path.join(contractPath, `./${this.dirName}/schema/`)
+          let abi = io.readJSON(schemaPath + fileName)
+
+          return {
+            execute: abi.execute,
+            query: abi.query,
+            instantiate: abi.instantiate,
+          }
+        })
+
+      if (abi.length === 0) {
+        logger.error(`ABI not found for contract ${this.id}`)
+      }
+      this.abi = abi[0]
+    } else {
+      const url = `${this.downloadUrl}${version}/${fileName}.json`
+      logger.loading(`Fetching ${url}...`)
+      const response = await fetch(url)
+      const body = await response.json()
+      if (body.length == 0) {
+        throw new Error(`Download ${fileName}.json failed`)
+      }
+      this.abi = body
     }
-
-    this.abi = abi[0]
   }
 }
 
@@ -151,7 +168,7 @@ class Contracts {
       throw new Error(`Contract ${id} not found!`)
     }
     await Promise.all([
-      contract.abi ? Promise.resolve() : contract.loadContractABI(),
+      contract.abi ? Promise.resolve() : contract.loadContractABI(version),
       contract.bytecode ? Promise.resolve() : contract.loadContractCode(version),
     ])
     return contract
