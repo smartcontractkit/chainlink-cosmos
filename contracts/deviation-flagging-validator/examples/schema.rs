@@ -18,22 +18,4 @@ fn main() {
         execute: ExecuteMsg,
         query: QueryMsg,
     }
-
-    // put main schema under main folder for codegen.js (else it will error)
-    let mut main_dir = out_dir.clone();
-    main_dir.push("main");
-    create_dir_all(&main_dir).unwrap();
-
-    let mut main_file = out_dir.clone();
-    main_file.push("deviation-flagging-validator.json");
-
-    let mut new_location = main_dir.clone();
-    new_location.push("deviation-flagging-validator.json");
-    rename(&main_file, &new_location).unwrap();
-
-    // put other hand-exported schemas in seperate folder
-    let mut other_dir = out_dir.clone();
-    other_dir.push("other");
-    create_dir_all(&other_dir).unwrap();
-    export_schema(&schema_for!(State), &other_dir);
 }
