@@ -95,7 +95,7 @@ type Client struct {
 
 // NewClient creates a new cosmos client
 func NewClient(chainID string,
-	clientURL string,
+	tendermintURL string,
 	requestTimeout time.Duration,
 	lggr logger.Logger,
 ) (*Client, error) {
@@ -103,12 +103,12 @@ func NewClient(chainID string,
 		requestTimeout = DefaultTimeout
 	}
 
-	httpClient, err := libclient.DefaultHTTPClient(clientURL)
+	httpClient, err := libclient.DefaultHTTPClient(tendermintURL)
 	if err != nil {
 		return nil, err
 	}
 	httpClient.Timeout = requestTimeout
-	rpcClient, err := rpchttp.NewWithClient(clientURL, "/websocket", httpClient)
+	tmClient, err := rpchttp.NewWithClient(tendermintURL, "/websocket", httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func NewClient(chainID string,
 	// If so then we would start putting timeouts on the ctx we pass in to the generate grpc client calls.
 	clientCtx := params.NewClientContext().
 		WithAccountRetriever(authtypes.AccountRetriever{}).
-		WithClient(rpcClient).
+		WithClient(tmClient).
 		WithChainID(chainID)
 
 	cosmosServiceClient := txtypes.NewServiceClient(clientCtx)
