@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"net/http"
 	"regexp"
 	"strconv"
 	"time"
@@ -93,7 +94,7 @@ type Client struct {
 	log                     logger.Logger
 }
 
-// NewClient creates a new cosmos client
+// NewClientWithHttpClient creates a new cosmos client using a preconfigured HTTP client.
 func NewClient(chainID string,
 	tendermintURL string,
 	requestTimeout time.Duration,
@@ -108,11 +109,20 @@ func NewClient(chainID string,
 		return nil, err
 	}
 	httpClient.Timeout = requestTimeout
+
+	return NewClientWithHttpClient(chainID, tendermintURL, httpClient, lggr)
+}
+
+// NewClientWithHttpClient creates a new cosmos client.
+func NewClientWithHttpClient(chainID string,
+	tendermintURL string,
+	httpClient *http.Client,
+	lggr logger.Logger,
+) (*Client, error) {
 	tmClient, err := rpchttp.NewWithClient(tendermintURL, "/websocket", httpClient)
 	if err != nil {
 		return nil, err
 	}
-
 	// Note should cosmos nodes start exposing grpc, its preferable
 	// to connect directly with grpc.Dial to avoid using clientCtx (according to tendermint team).
 	// If so then we would start putting timeouts on the ctx we pass in to the generate grpc client calls.
