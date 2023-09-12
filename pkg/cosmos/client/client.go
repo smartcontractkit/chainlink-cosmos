@@ -1,13 +1,9 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"math"
-	"net/http"
 	"regexp"
 	"strconv"
 	"time"
@@ -19,6 +15,7 @@ import (
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	libclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -31,8 +28,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
-
-const httpResponseLimit = 10_000_000 // 10MB
 
 //go:generate mockery --name ReaderWriter --output ./mocks/
 type ReaderWriter interface {
@@ -98,28 +93,6 @@ type Client struct {
 	log                     logger.Logger
 }
 
-// responseRoundTripper is a http.RoundTripper which calls respFn with each response body.
-type responseRoundTripper struct {
-	original http.RoundTripper
-	respFn   func([]byte)
-}
-
-func (rt *responseRoundTripper) RoundTrip(r *http.Request) (resp *http.Response, err error) {
-	resp, err = rt.original.RoundTrip(r)
-	if err != nil {
-		return
-	}
-	source := http.MaxBytesReader(nil, resp.Body, httpResponseLimit)
-	b, err := io.ReadAll(resp.Body)
-	source.Close()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-	go rt.respFn(b)
-	resp.Body = io.NopCloser(bytes.NewReader(b))
-	return
-}
-
 // NewClient creates a new cosmos client
 func NewClient(chainID string,
 	tendermintURL string,
@@ -129,28 +102,13 @@ func NewClient(chainID string,
 	if requestTimeout <= 0 {
 		requestTimeout = DefaultTimeout
 	}
-	// Note rpchttp.New or rpchttp.NewWithTimeout use a (buggy) custom transport
-	// which results in new connections being created per request.
-	// Pass our own client here which uses a default transport and caches connections properly.
-	tmClient, err := rpchttp.NewWithClient(tendermintURL, "/websocket", &http.Client{
-		Timeout: requestTimeout,
-		Transport: &responseRoundTripper{original: http.DefaultTransport,
-			// Log any response that is missing the JSONRPC 'id' field, because the tendermint/rpc/jsonrpc/client rejects them.
-			respFn: func(b []byte) {
-				jsonRPC := struct {
-					ID json.RawMessage `json:"id"`
-				}{}
-				if err := json.Unmarshal(b, &jsonRPC); err != nil {
-					lggr.Warnf("Response is not a JSON object: %s: %v", string(b), err)
-					return
-				}
-				if len(jsonRPC.ID) == 0 || string(jsonRPC.ID) == "null" {
-					lggr.Warnf("Response is missing JSONRPC ID: %s", string(b))
-					return
-				}
-			},
-		},
-	})
+
+	httpClient, err := libclient.DefaultHTTPClient(tendermintURL)
+	if err != nil {
+		return nil, err
+	}
+	httpClient.Timeout = requestTimeout
+	tmClient, err := rpchttp.NewWithClient(tendermintURL, "/websocket", httpClient)
 	if err != nil {
 		return nil, err
 	}
