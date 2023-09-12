@@ -53,5 +53,5 @@ jobs:
         with:
           name: go-test-results
           path: |
-            ./pkg/unit_coverage.txt
-            ./pkg/race_coverage.txt
+            ./unit_coverage.txt
+            ./race_coverage.txt
