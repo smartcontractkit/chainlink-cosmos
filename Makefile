@@ -98,7 +98,7 @@ build_relay:
 
 # Unit test without race detection
 test_relay_unit: build_relay
-	go test -v -covermode=atomic ./pkg/cosmos/... -coverpkg=./... -coverprofile=coverage.txt
+	go test -v -covermode=atomic ./pkg/cosmos/... -coverpkg=./... -coverprofile=unit_coverage.txt
 
 # Unit test with race detection
 test_relay_unit_race: build_relay
