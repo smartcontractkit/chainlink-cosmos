@@ -128,7 +128,7 @@ func NewCommon(t *testing.T) *Common {
 Enabled = true
 ChainID = '%s'
 Bech32Prefix = 'wasm'
-FeeToken = 'ucosm'
+GasToken = 'ucosm'
 
 [[Cosmos.Nodes]]
 Name = 'primary'

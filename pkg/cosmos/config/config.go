@@ -44,7 +44,7 @@ var defaultConfigSet = configSet{
 	OCR2CacheTTL:        time.Minute,
 	TxMsgTimeout:        10 * time.Minute,
 	Bech32Prefix:        "wasm",  // note: this shouldn't be used outside of tests
-	FeeToken:            "ucosm", // note: this shouldn't be used outside of tests
+	GasToken:            "ucosm", // note: this shouldn't be used outside of tests
 }
 
 type Config interface {
@@ -53,7 +53,7 @@ type Config interface {
 	BlocksUntilTxTimeout() int64
 	ConfirmPollPeriod() time.Duration
 	FallbackGasPrice() sdk.Dec
-	FeeToken() string
+	GasToken() string
 	GasLimitMultiplier() float64
 	MaxMsgsPerBatch() int64
 	OCR2CachePollPeriod() time.Duration
@@ -68,7 +68,7 @@ type configSet struct {
 	BlocksUntilTxTimeout int64
 	ConfirmPollPeriod    time.Duration
 	FallbackGasPrice     sdk.Dec
-	FeeToken             string
+	GasToken             string
 	GasLimitMultiplier   float64
 	MaxMsgsPerBatch      int64
 	OCR2CachePollPeriod  time.Duration
@@ -82,7 +82,7 @@ type Chain struct {
 	BlocksUntilTxTimeout *int64
 	ConfirmPollPeriod    *utils.Duration
 	FallbackGasPrice     *decimal.Decimal
-	FeeToken             *string
+	GasToken             *string
 	GasLimitMultiplier   *decimal.Decimal
 	MaxMsgsPerBatch      *int64
 	OCR2CachePollPeriod  *utils.Duration
@@ -107,8 +107,8 @@ func (c *Chain) SetDefaults() {
 		d := decimal.NewFromBigInt(defaultConfigSet.FallbackGasPrice.BigInt(), -sdk.Precision)
 		c.FallbackGasPrice = &d
 	}
-	if c.FeeToken == nil {
-		c.FeeToken = &defaultConfigSet.FeeToken
+	if c.GasToken == nil {
+		c.GasToken = &defaultConfigSet.GasToken
 	}
 	if c.GasLimitMultiplier == nil {
 		d := decimal.NewFromFloat(defaultConfigSet.GasLimitMultiplier)
