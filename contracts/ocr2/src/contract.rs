@@ -911,7 +911,8 @@ fn decode_report(raw_report: &[u8]) -> Result<Report, ContractError> {
 
     // assert the remainder of the report is long enough for N observations + juels_per_fee_coin + gas_price
     require!(
-        raw_report.len() == OBSERVATION_SIZE * len + mem::size_of::<u128>() + mem::size_of::<u128>(),
+        raw_report.len()
+            == OBSERVATION_SIZE * len + mem::size_of::<u128>() + mem::size_of::<u128>(),
         InvalidInput
     );
 
@@ -1722,8 +1723,10 @@ pub(crate) mod tests {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 73, 150, 2, 210, // observation 2
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 73, 150, 2, 210, // observation 3
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 73, 150, 2, 210, // observation 4
-        0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0, // juels per atom (1 with 18 decimal places)
-        0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0, // gas price (1 with 18 decimal places)
+        0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0,
+        0, // juels per atom (1 with 18 decimal places)
+        0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0,
+        0, // gas price (1 with 18 decimal places)
     ];
 
     #[test]
