@@ -20,7 +20,8 @@ func TestTxResultsSource(t *testing.T) {
 		feedConfig := generateFeedConfig()
 
 		// Setup mocks
-		latestRoundDataRes := []byte(`{"round_id": 42, "answer": "0.54321"}`)
+		latestRoundDataRes1 := []byte(`{"round_id": 42, "answer": "0.54321"}`)
+		latestRoundDataRes2 := []byte(`{"round_id": 47, "answer": "0.54321"}`)
 
 		// Setup mocks.
 		rpcClient := new(mocks.ChainReader)
@@ -28,7 +29,11 @@ func TestTxResultsSource(t *testing.T) {
 		rpcClient.On("ContractState",
 			feedConfig.ContractAddress,
 			[]byte(`{"latest_round_data":{}}`),
-		).Return(latestRoundDataRes, nil).Once()
+		).Return(latestRoundDataRes1, nil).Once()
+		rpcClient.On("ContractState",
+			feedConfig.ContractAddress,
+			[]byte(`{"latest_round_data":{}}`),
+		).Return(latestRoundDataRes2, nil).Once()
 
 		// Execute Fetch()
 		factory := NewTxResultsSourceFactory(rpcClient)
@@ -36,11 +41,12 @@ func TestTxResultsSource(t *testing.T) {
 		require.NoError(t, err)
 		data, err := source.Fetch(ctx)
 		require.NoError(t, err)
+		data, err = source.Fetch(ctx)
+		require.NoError(t, err)
 
 		// Assertions
 		txResults, ok := data.(relayMonitoring.TxResults)
 		require.True(t, ok)
-		require.Equal(t, uint64(94), txResults.NumSucceeded)
-		require.Equal(t, uint64(6), txResults.NumFailed)
+		require.Equal(t, uint64(5), txResults.NumSucceeded)
 	})
 }
