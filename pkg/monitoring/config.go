@@ -15,8 +15,6 @@ import (
 type CosmosConfig struct {
 	TendermintURL        string
 	TendermintReqsPerSec int
-	FCDURL               string
-	FCDReqsPerSec        int
 	NetworkName          string
 	NetworkID            string
 	ChainID              string
@@ -79,16 +77,6 @@ func parseEnvVars(cfg *CosmosConfig) error {
 		}
 		cfg.TendermintReqsPerSec = rps
 	}
-	if value, isPresent := os.LookupEnv("COSMOS_FCD_URL"); isPresent {
-		cfg.FCDURL = value
-	}
-	if value, isPresent := os.LookupEnv("COSMOS_FCD_REQS_PER_SEC"); isPresent {
-		rps, err := strconv.Atoi(value)
-		if err != nil {
-			return fmt.Errorf("failed to parse env var COSMOS_FCD_REQS_PER_SEC '%s' as int: %w", value, err)
-		}
-		cfg.FCDReqsPerSec = rps
-	}
 	if value, isPresent := os.LookupEnv("COSMOS_NETWORK_NAME"); isPresent {
 		cfg.NetworkName = value
 	}
@@ -126,7 +114,6 @@ func validateConfig(cfg CosmosConfig) error {
 	// Required config
 	for envVarName, currentValue := range map[string]string{
 		"COSMOS_TENDERMINT_URL": cfg.TendermintURL,
-		"COSMOS_FCD_URL":        cfg.FCDURL,
 		"COSMOS_NETWORK_NAME":   cfg.NetworkName,
 		"COSMOS_NETWORK_ID":     cfg.NetworkID,
 		"COSMOS_CHAIN_ID":       cfg.ChainID,
@@ -138,7 +125,6 @@ func validateConfig(cfg CosmosConfig) error {
 	// Validate URLs.
 	for envVarName, currentValue := range map[string]string{
 		"COSMOS_TENDERMINT_URL": cfg.TendermintURL,
-		"COSMOS_FCD_URL":        cfg.FCDURL,
 	} {
 		if _, err := url.ParseRequestURI(currentValue); currentValue != "" && err != nil {
 			return fmt.Errorf("%s='%s' is not a valid URL: %w", envVarName, currentValue, err)
@@ -149,13 +135,7 @@ func validateConfig(cfg CosmosConfig) error {
 
 func applyDefaults(cfg *CosmosConfig) {
 	if cfg.TendermintReqsPerSec == 0 {
-		cfg.TendermintReqsPerSec = 1
-	}
-	if cfg.FCDURL == "" {
-		cfg.FCDURL = "https://fcd.terra.dev/"
-	}
-	if cfg.FCDReqsPerSec == 0 {
-		cfg.FCDReqsPerSec = 1
+		cfg.TendermintReqsPerSec = 2
 	}
 	if cfg.ReadTimeout == 0 {
 		cfg.ReadTimeout = 2 * time.Second
