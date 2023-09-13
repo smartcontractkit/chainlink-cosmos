@@ -19,7 +19,6 @@ func generateChainConfig() CosmosConfig {
 	address, _ := sdk.AccAddressFromBech32("wasm106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
 	return CosmosConfig{
 		TendermintURL:    "https://some-tendermint-url.com",
-		FCDURL:           "https://fcd.terra.dev",
 		NetworkName:      "cosmwasm",
 		NetworkID:        "cosmwasm",
 		ChainID:          "1",
