@@ -8,7 +8,6 @@ import (
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring"
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
 )
 
 func main() {
@@ -30,16 +29,18 @@ func main() {
 		return
 	}
 
-	chainReader := monitoring.NewChainReader(cosmosConfig, l)
-	fcdClient := fcdclient.New(cosmosConfig.FCDURL, cosmosConfig.FCDReqsPerSec)
+	chainReader, err := monitoring.NewThrottledChainReader(cosmosConfig, l)
+	if err != nil {
+		l.Fatalw("Failed to create throttled chain reader", "error", err)
+		return
+	}
 
 	envelopeSourceFactory := monitoring.NewEnvelopeSourceFactory(
 		chainReader,
-		fcdClient,
 		logger.With(l, "component", "source-envelope"),
 	)
 	txResultsFactory := monitoring.NewTxResultsSourceFactory(
-		fcdClient,
+		chainReader,
 	)
 
 	monitor, err := relayMonitoring.NewMonitor(
