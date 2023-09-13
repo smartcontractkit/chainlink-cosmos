@@ -6,33 +6,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
-	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+	cosmostypes "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
+	"github.com/cosmos/cosmos-sdk/types/tx"
 	"go.uber.org/multierr"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/cosmwasm"
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
+	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
+	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
 // NewEnvelopeSourceFactory build a new object that reads observations and
 // configurations from the Cosmos chain.
 func NewEnvelopeSourceFactory(
 	rpcClient ChainReader,
-	fcdClient fcdclient.Client,
 	log relayMonitoring.Logger,
 ) relayMonitoring.SourceFactory {
-	return &envelopeSourceFactory{rpcClient, fcdClient, log}
+	return &envelopeSourceFactory{rpcClient, log}
 }
 
 type envelopeSourceFactory struct {
 	rpcClient ChainReader
-	fcdClient fcdclient.Client
 	log       relayMonitoring.Logger
 }
 
@@ -50,7 +48,6 @@ func (e *envelopeSourceFactory) NewSource(
 	}
 	return &envelopeSource{
 		e.rpcClient,
-		e.fcdClient,
 		e.log,
 		cosmosConfig,
 		cosmosFeedConfig,
@@ -67,7 +64,6 @@ func (e *envelopeSourceFactory) GetType() string {
 
 type envelopeSource struct {
 	rpcClient        ChainReader
-	fcdClient        fcdclient.Client
 	log              relayMonitoring.Logger
 	cosmosConfig     CosmosConfig
 	cosmosFeedConfig CosmosFeedConfig
@@ -154,15 +150,18 @@ type transmissionData struct {
 }
 
 func (e *envelopeSource) fetchLatestTransmission(ctx context.Context) (transmissionData, error) {
-	res, err := e.fcdClient.GetTxList(ctx, fcdclient.GetTxListParams{
-		Account: e.cosmosFeedConfig.ContractAddress,
-		Limit:   10, // there should be a new transmission in the last 10 blocks
-	})
+	res, err := e.rpcClient.TxsEvents(
+		[]string{
+			fmt.Sprintf("wasm._contract_address='%s'", e.cosmosFeedConfig.ContractAddressBech32),
+		},
+		&query.PageRequest{
+			Limit: 10, // there should be a new transmission in the last 10 blocks
+		})
 	if err != nil {
 		return transmissionData{}, fmt.Errorf("failed to fetch latest 'new_transmission' event: %w", err)
 	}
 	data := transmissionData{}
-	err = e.extractDataFromTxResponse("wasm-new_transmission", e.cosmosFeedConfig.ContractAddressBech32, res, map[string]func(string) error{
+	blockHeight, err := e.extractDataFromTxResponse("wasm-new_transmission", e.cosmosFeedConfig.ContractAddressBech32, res, map[string]func(string) error{
 		"config_digest": func(value string) error {
 			return cosmwasm.HexToConfigDigest(value, &data.configDigest)
 		},
@@ -210,10 +209,7 @@ func (e *envelopeSource) fetchLatestTransmission(ctx context.Context) (transmiss
 	if err != nil {
 		return data, fmt.Errorf("failed to extract transmission from logs: %w", err)
 	}
-	data.blockNumber, err = strconv.ParseUint(res.Txs[0].Height, 10, 64)
-	if err != nil {
-		return data, fmt.Errorf("failed to parse block height from fcd data '%s': %w", res.Txs[0].Height, err)
-	}
+	data.blockNumber = uint64(blockHeight)
 	return data, nil
 }
 
@@ -233,7 +229,7 @@ func (e *envelopeSource) fetchLatestConfig(ctx context.Context) (types.ContractC
 	if cachedConfigBlock != 0 && latestConfigBlock == cachedConfigBlock {
 		return cachedConfig, nil
 	}
-	latestConfig, err := e.fetchLatestConfigFromLogs(ctx, latestConfigBlock)
+	latestConfig, err := e.fetchLatestConfigFromLogs(ctx, int64(latestConfigBlock))
 	if err != nil {
 		return types.ContractConfig{}, err
 	}
@@ -247,7 +243,6 @@ func (e *envelopeSource) fetchLatestConfig(ctx context.Context) (types.ContractC
 
 func (e *envelopeSource) fetchLatestConfigBlock(ctx context.Context) (uint64, error) {
 	resp, err := e.rpcClient.ContractState(
-		ctx,
 		e.cosmosFeedConfig.ContractAddress,
 		[]byte(`{"latest_config_details":{}}`),
 	)
@@ -261,13 +256,20 @@ func (e *envelopeSource) fetchLatestConfigBlock(ctx context.Context) (uint64, er
 	return details.BlockNumber, nil
 }
 
-func (e *envelopeSource) fetchLatestConfigFromLogs(ctx context.Context, blockHeight uint64) (types.ContractConfig, error) {
-	res, err := e.fcdClient.GetBlockAtHeight(ctx, blockHeight)
+func (e *envelopeSource) fetchLatestConfigFromLogs(ctx context.Context, blockHeight int64) (types.ContractConfig, error) {
+	res, err := e.rpcClient.TxsEvents(
+		[]string{
+			fmt.Sprintf("tx.height=%d", blockHeight),
+			fmt.Sprintf("wasm._contract_address='%s'", e.cosmosFeedConfig.ContractAddressBech32),
+		},
+		&query.PageRequest{
+			Limit: 10,
+		})
 	if err != nil {
-		return types.ContractConfig{}, fmt.Errorf("failed to fetch block at height: %w", err)
+		return types.ContractConfig{}, fmt.Errorf("failed to fetch block at height %d: %w", blockHeight, err)
 	}
 	output := types.ContractConfig{}
-	err = e.extractDataFromTxResponse("wasm-set_config", e.cosmosFeedConfig.ContractAddressBech32, res, map[string]func(string) error{
+	_, err = e.extractDataFromTxResponse("wasm-set_config", e.cosmosFeedConfig.ContractAddressBech32, res, map[string]func(string) error{
 		"latest_config_digest": func(value string) error {
 			// parse byte array encoded as hex string
 			return cosmwasm.HexToConfigDigest(value, &output.ConfigDigest)
@@ -326,7 +328,6 @@ type linkBalanceResponse struct {
 func (e *envelopeSource) fetchLinkBalance(ctx context.Context) (*big.Int, error) {
 	query := fmt.Sprintf(`{"balance":{"address":"%s"}}`, e.cosmosFeedConfig.ContractAddressBech32)
 	res, err := e.rpcClient.ContractState(
-		ctx,
 		e.cosmosConfig.LinkTokenAddress,
 		[]byte(query),
 	)
@@ -350,7 +351,6 @@ type linkAvailableForPaymentRes struct {
 
 func (e *envelopeSource) fetchLinkAvailableForPayment(ctx context.Context) (*big.Int, error) {
 	res, err := e.rpcClient.ContractState(
-		ctx,
 		e.cosmosFeedConfig.ContractAddress,
 		[]byte(`{"link_available_for_payment":{}}`),
 	)
@@ -373,21 +373,15 @@ func (e *envelopeSource) fetchLinkAvailableForPayment(ctx context.Context) (*big
 func (e *envelopeSource) extractDataFromTxResponse(
 	eventType string,
 	contractAddressBech32 string,
-	res fcdclient.Response,
+	res *tx.GetTxsEventResponse,
 	extractors map[string]func(string) error,
-) error {
+) (int64, error) {
 	// Extract matching events
-	events := extractMatchingEvents(res, eventType, contractAddressBech32)
-	if len(events) == 0 {
-		return fmt.Errorf("no event found with type='%s' and contract_address='%s'", eventType, contractAddressBech32)
+	blockHeight, event, err := findMatchingEvent(res, eventType, contractAddressBech32)
+	if err != nil {
+		return blockHeight, err
 	}
-	if len(events) != 1 {
-		e.log.Debugw("multiple matching events found, selecting the most recent one which is the first", "type", eventType, "contract_address", contractAddressBech32)
-	}
-	event := events[0]
-	if err := checkEventAttributes(event, extractors); err != nil {
-		return fmt.Errorf("received incorrect event with type='%s' and contract_address='%s': %w", eventType, contractAddressBech32, err)
-	}
+	hasKnownAttribute := false
 	// Apply extractors.
 	// Note! If multiple attributes with the same key are present, the corresponding
 	// extractor fn will be called for each of them.
@@ -398,59 +392,32 @@ func (e *envelopeSource) extractDataFromTxResponse(
 			continue
 		}
 		if err := extractor(value); err != nil {
-			return fmt.Errorf("failed to extract '%s' from raw value '%s': %w", key, value, err)
+			return blockHeight, fmt.Errorf("failed to extract '%s' from raw value '%s': %w", key, value, err)
 		}
+		hasKnownAttribute = true
 	}
-	return nil
+	if !hasKnownAttribute {
+		return blockHeight, fmt.Errorf("no known attributes found in event with type='%s' and contract_address='%s'", eventType, contractAddressBech32)
+	}
+	return blockHeight, nil
 }
 
-func extractMatchingEvents(res fcdclient.Response, eventType, contractAddressBech32 string) []fcdclient.Event {
-	out := []fcdclient.Event{}
-	// Sort txs such that the most recent tx is first
-	sort.Slice(res.Txs, func(i, j int) bool {
-		return res.Txs[i].ID > res.Txs[j].ID
-	})
-	for _, tx := range res.Txs {
-		if !strings.Contains(tx.RawLog, fmt.Sprintf(`"type":"%s"`, eventType)) {
+func findMatchingEvent(res *tx.GetTxsEventResponse, eventType, contractAddressBech32 string) (int64, cosmostypes.StringEvent, error) {
+	// Events are already returned in reverse chronological order by TxsEvents().
+	for _, txResponse := range res.TxResponses {
+		if len(txResponse.Logs) == 0 {
 			continue
 		}
-		for _, event := range tx.Logs[0].Events {
-			if event.Typ != eventType {
+		for _, event := range txResponse.Logs[0].Events {
+			if event.Type != eventType {
 				continue
 			}
-			isMatchingContractAddress := false
 			for _, attribute := range event.Attributes {
-				if attribute.Key == "contract_address" && attribute.Value == contractAddressBech32 {
-					isMatchingContractAddress = true
-					break
+				if attribute.Key == "_contract_address" && attribute.Value == contractAddressBech32 {
+					return txResponse.Height, event, nil
 				}
 			}
-			if isMatchingContractAddress {
-				out = append(out, event)
-			}
 		}
 	}
-	return out
-}
-
-func checkEventAttributes(
-	event fcdclient.Event,
-	extractors map[string]func(string) error,
-) error {
-	// The event should have at least one attribute with the Key in the extractors map.
-	isPresent := map[string]bool{}
-	for key := range extractors {
-		isPresent[key] = false
-	}
-	for _, attribute := range event.Attributes {
-		if _, found := extractors[attribute.Key]; found {
-			isPresent[attribute.Key] = true
-		}
-	}
-	for key, found := range isPresent {
-		if !found {
-			return fmt.Errorf("failed to extract key '%s' from event", key)
-		}
-	}
-	return nil
+	return 0, cosmostypes.StringEvent{}, fmt.Errorf("no event found with type='%s' and contract_address='%s'", eventType, contractAddressBech32)
 }
