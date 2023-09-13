@@ -3,20 +3,15 @@ package monitoring
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"math/big"
-	"os"
 	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 	ocr2types "github.com/smartcontractkit/libocr/offchainreporting2/types"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
-	fcdclientmocks "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient/mocks"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/mocks"
 )
 
@@ -28,14 +23,6 @@ func TestEnvelopeSource(t *testing.T) {
 	balanceRes := []byte(`{"balance":"1234567890987654321"}`)
 	latestConfigDetailsRes := []byte(`{"block_number": 6805892}`) // See ./fixtures/set_config-block.json
 	linkAvailableForPaymentRes := []byte(`{"amount":"-380431529018756503364"}`)
-	getBlockRaw, err := os.ReadFile("./fixtures/set_config-block.json")
-	require.NoError(t, err)
-	getBlockRes := fcdclient.Response{}
-	require.NoError(t, json.Unmarshal(getBlockRaw, &getBlockRes))
-	getTxsRaw, err := os.ReadFile("./fixtures/new_transmission-txs.json")
-	require.NoError(t, err)
-	getTxsRes := fcdclient.Response{}
-	require.NoError(t, json.Unmarshal(getTxsRaw, &getTxsRes))
 
 	// Configurations.
 	feedConfig := generateFeedConfig()
@@ -45,37 +32,24 @@ func TestEnvelopeSource(t *testing.T) {
 
 	// Setup mocks.
 	rpcClient := new(mocks.ChainReader)
-	fcdClient := new(fcdclientmocks.Client)
-	// Transmission
-	fcdClient.On("GetTxList",
-		mock.Anything, // context
-		fcdclient.GetTxListParams{Account: feedConfig.ContractAddress, Limit: 10},
-	).Return(getTxsRes, nil).Once()
 	// Configuration
 	rpcClient.On("ContractState",
-		mock.Anything, // context
 		feedConfig.ContractAddress,
 		[]byte(`{"latest_config_details":{}}`),
 	).Return(latestConfigDetailsRes, nil).Once()
-	fcdClient.On("GetBlockAtHeight",
-		mock.Anything,   // context
-		uint64(6805892), // See ./fixtures/set_config-block.json
-	).Return(getBlockRes, nil).Once()
 	// LINK Balance
 	rpcClient.On("ContractState",
-		mock.Anything, // context
 		chainConfig.LinkTokenAddress,
 		[]byte(`{"balance":{"address":"wasm10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"}}`),
 	).Return(balanceRes, nil).Once()
 	// LINK available for payment.
 	rpcClient.On("ContractState",
-		mock.Anything, // context
 		feedConfig.ContractAddress,
 		[]byte(`{"link_available_for_payment":{}}`),
 	).Return(linkAvailableForPaymentRes, nil).Once()
 
 	// Execute Fetch()
-	factory := NewEnvelopeSourceFactory(rpcClient, fcdClient, newNullLogger())
+	factory := NewEnvelopeSourceFactory(rpcClient, newNullLogger())
 	source, err := factory.NewSource(chainConfig, feedConfig)
 	require.NoError(t, err)
 	rawEnvelope, err := source.Fetch(ctx)
@@ -151,24 +125,16 @@ func TestEnvelopeSource(t *testing.T) {
 	// Setup required mocks.
 	// Configuration
 	rpcClient.On("ContractState",
-		mock.Anything, // context
 		feedConfig.ContractAddress,
 		[]byte(`"latest_config_details"`),
 	).Return(latestConfigDetailsRes, nil).Once()
-	// Transmission
-	fcdClient.On("GetTxList",
-		mock.Anything, // context
-		fcdclient.GetTxListParams{Account: feedConfig.ContractAddress, Limit: 10},
-	).Return(getTxsRes, nil).Once()
 	// LINK Balance
 	rpcClient.On("ContractState",
-		mock.Anything, // context
 		chainConfig.LinkTokenAddress,
 		[]byte(`{"balance":{"address":"wasm10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"}}`),
 	).Return(balanceRes, nil).Once()
 	// LINK available for payment.
 	rpcClient.On("ContractState",
-		mock.Anything, // context
 		feedConfig.ContractAddress,
 		[]byte(`{"link_available_for_payment":{}}`),
 	).Return(linkAvailableForPaymentRes, nil).Once()
