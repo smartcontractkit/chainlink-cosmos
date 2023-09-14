@@ -3,6 +3,7 @@ package cosmwasm
 import (
 	"context"
 	"encoding/json"
+	"math/big"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
@@ -60,7 +61,10 @@ func (ct *ContractTransmitter) Transmit(
 	for _, r := range reportContext {
 		msgStruct.Transmit.ReportContext = append(msgStruct.Transmit.ReportContext, r[:]...)
 	}
-	msgStruct.Transmit.Report = []byte(report)
+	// TODO: This temporarily appends a dummy gas price to the report.
+	// When core/relayer is updated to support adding gas price to the report, we can remove this
+	dummyGasPrice := new(big.Int).SetUint64(1).Bytes()
+	msgStruct.Transmit.Report = append([]byte(report), dummyGasPrice...)
 	for _, sig := range sigs {
 		msgStruct.Transmit.Signatures = append(msgStruct.Transmit.Signatures, sig.Signature)
 	}
