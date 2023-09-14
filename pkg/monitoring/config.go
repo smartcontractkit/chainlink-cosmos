@@ -21,6 +21,8 @@ type CosmosConfig struct {
 	ReadTimeout          time.Duration
 	PollInterval         time.Duration
 	LinkTokenAddress     sdk.AccAddress
+	Bech32Prefix         string
+	GasToken             string
 }
 
 var _ relayMonitoring.ChainConfig = CosmosConfig{}
@@ -106,6 +108,12 @@ func parseEnvVars(cfg *CosmosConfig) error {
 			return fmt.Errorf("failed to parse the bech32-encoded link token address from '%s': %w", value, err)
 		}
 		cfg.LinkTokenAddress = address
+	}
+	if value, isPresent := os.LookupEnv("COSMOS_BECH32_PREFIX"); isPresent {
+		cfg.Bech32Prefix = value
+	}
+	if value, isPresent := os.LookupEnv("COSMOS_GAS_TOKEN"); isPresent {
+		cfg.GasToken = value
 	}
 	return nil
 }
