@@ -7,6 +7,7 @@ import (
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring"
 )
 
@@ -28,6 +29,11 @@ func main() {
 		l.Fatalw("failed to parse cosmos specific configuration", "error", err)
 		return
 	}
+
+	params.InitCosmosSdk(
+		cosmosConfig.Bech32Prefix,
+		cosmosConfig.GasToken,
+	)
 
 	chainReader, err := monitoring.NewThrottledChainReader(cosmosConfig, l)
 	if err != nil {
