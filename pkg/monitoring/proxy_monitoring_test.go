@@ -8,7 +8,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/mocks"
@@ -43,7 +42,6 @@ func TestProxyMonitoring(t *testing.T) {
 
 		// Setup claims.
 		chainReader.On("ContractState",
-			mock.Anything, // context
 			feedConfig.ProxyAddress,
 			[]byte(`{"latest_round_data":{}}`),
 		).Return(

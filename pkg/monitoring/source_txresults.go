@@ -2,23 +2,24 @@ package monitoring
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 
-	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
+	errors "github.com/pkg/errors"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
+	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 )
 
 // NewTxResultsSourceFactory builds sources of TxResults objects expected by the relay monitoring.
 func NewTxResultsSourceFactory(
-	client fcdclient.Client,
+	client ChainReader,
 ) relayMonitoring.SourceFactory {
 	return &txResultsSourceFactory{client}
 }
 
 type txResultsSourceFactory struct {
-	client fcdclient.Client
+	client ChainReader
 }
 
 func (t *txResultsSourceFactory) NewSource(
@@ -37,8 +38,8 @@ func (t *txResultsSourceFactory) NewSource(
 		cosmosConfig,
 		cosmosFeedConfig,
 		t.client,
-		0,
 		sync.Mutex{},
+		0,
 	}, nil
 }
 
@@ -49,53 +50,40 @@ func (t *txResultsSourceFactory) GetType() string {
 type txResultsSource struct {
 	cosmosConfig     CosmosConfig
 	cosmosFeedConfig CosmosFeedConfig
-	client           fcdclient.Client
+	client           ChainReader
 
-	latestTxID   uint64
-	latestTxIDMu sync.Mutex
+	prevRoundIDMu sync.Mutex
+	prevRoundID   uint32
 }
 
 func (t *txResultsSource) Fetch(ctx context.Context) (interface{}, error) {
-	// Query the FCD endpoint.
-	response, err := t.client.GetTxList(ctx, fcdclient.GetTxListParams{
-		Account: t.cosmosFeedConfig.ContractAddress,
-		Limit:   10,
-	})
+	t.prevRoundIDMu.Lock()
+	defer t.prevRoundIDMu.Unlock()
+
+	resp, err := t.client.ContractState(t.cosmosFeedConfig.ContractAddress, []byte(`{"latest_round_data":{}}`))
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch transactions from cosmos FCD: %w", err)
+		return nil, fmt.Errorf("failed to read latest round data: %w", err)
 	}
-	// Filter recent transactions
-	// TODO (dru) keep latest processed tx in the state.
-	recentTxs := []fcdclient.Tx{}
-	func() {
-		t.latestTxIDMu.Lock()
-		defer t.latestTxIDMu.Unlock()
-		maxTxID := t.latestTxID
-		for _, tx := range response.Txs {
-			if tx.ID > t.latestTxID {
-				recentTxs = append(recentTxs, tx)
-			}
-			if tx.ID > maxTxID {
-				maxTxID = tx.ID
-			}
-		}
-		t.latestTxID = maxTxID
-	}()
-	// Count failed and succeeded recent transactions
-	output := relayMonitoring.TxResults{}
-	for _, tx := range recentTxs {
-		if isFailedTransaction(tx) {
-			output.NumFailed++
-		} else {
-			output.NumSucceeded++
-		}
+
+	latestRoundData := struct {
+		RoundID *uint32 `json:"round_id"`
+	}{}
+	err = json.Unmarshal(resp, &latestRoundData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize round data: %w", err)
 	}
-	return output, nil
-}
 
-// Helpers
+	if latestRoundData.RoundID == nil {
+		return nil, errors.New("round data missing round ID")
+	}
+	newRoundID := *latestRoundData.RoundID
 
-func isFailedTransaction(tx fcdclient.Tx) bool {
-	// See https://docs.cosmos.network/master/building-modules/errors.html
-	return tx.Code != 0
+	var numSucceeded uint32
+	if t.prevRoundID != 0 {
+		numSucceeded = newRoundID - t.prevRoundID
+	}
+	t.prevRoundID = newRoundID
+
+	// Note that failed/rejected transactions count is always set to 0 because there is no way to count them.
+	return relayMonitoring.TxResults{NumSucceeded: uint64(numSucceeded), NumFailed: 0}, nil
 }

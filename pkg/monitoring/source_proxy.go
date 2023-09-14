@@ -74,7 +74,6 @@ type latestRoundDataRes struct {
 
 func (p *proxySource) fetchLatestRoundFromProxy(ctx context.Context) (*big.Int, error) {
 	res, err := p.client.ContractState(
-		ctx,
 		p.cosmosFeedConfig.ProxyAddress,
 		[]byte(`{"latest_round_data":{}}`),
 	)

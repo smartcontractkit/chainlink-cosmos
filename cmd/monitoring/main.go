@@ -4,11 +4,9 @@ import (
 	"context"
 	"log"
 
-	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
-	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring"
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 )
 
 func main() {
@@ -30,43 +28,16 @@ func main() {
 		return
 	}
 
-	chainReader := monitoring.NewChainReader(cosmosConfig, l)
-	fcdClient := fcdclient.New(cosmosConfig.FCDURL, cosmosConfig.FCDReqsPerSec)
-
-	envelopeSourceFactory := monitoring.NewEnvelopeSourceFactory(
-		chainReader,
-		fcdClient,
-		logger.With(l, "component", "source-envelope"),
-	)
-	txResultsFactory := monitoring.NewTxResultsSourceFactory(
-		fcdClient,
+	params.InitCosmosSdk(
+		cosmosConfig.Bech32Prefix,
+		cosmosConfig.GasToken,
 	)
 
-	monitor, err := relayMonitoring.NewMonitor(
-		ctx,
-		l,
-		cosmosConfig,
-		envelopeSourceFactory,
-		txResultsFactory,
-		monitoring.CosmosFeedsParser,
-		monitoring.CosmosNodesParser,
-	)
+	monitor, err := monitoring.NewCosmosMonitor(ctx, cosmosConfig, l)
 	if err != nil {
-		l.Fatalw("failed to build monitor", "error", err)
+		l.Fatalw("failed to create new cosmos monitor", "error", err)
 		return
 	}
-
-	proxySourceFactory := monitoring.NewProxySourceFactory(
-		chainReader,
-		logger.With(l, "component", "source-proxy"),
-	)
-	monitor.SourceFactories = append(monitor.SourceFactories, proxySourceFactory)
-
-	prometheusExporterFactory := monitoring.NewPrometheusExporterFactory(
-		logger.With(l, "component", "cosmos-prometheus-exporter"),
-		monitoring.NewMetrics(logger.With(l, "component", "cosmos-metrics")),
-	)
-	monitor.ExporterFactories = append(monitor.ExporterFactories, prometheusExporterFactory)
 
 	monitor.Run()
 	l.Info("monitor stopped")

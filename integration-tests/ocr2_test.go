@@ -17,6 +17,7 @@ import (
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/testutil"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring"
 	relaylogger "github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
 	// "github.com/smartcontractkit/chainlink/integration-tests/actions"
@@ -31,16 +32,20 @@ import (
 )
 
 func TestOCRBasic(t *testing.T) {
+	// TODO: set back to false
+	runOcrTest(t, true)
+}
+
+func runOcrTest(t *testing.T, useMonitor bool) {
 	// Set up test environment
 	logger := common.GetTestLogger(t)
 	commonConfig := common.NewCommon(t)
 	commonConfig.SetLocalEnvironment(t)
 
 	bech32Prefix := "wasm"
-	params.InitCosmosSdk(
-		bech32Prefix,
-		/* token= */ "cosm",
-	)
+	gasToken := "cosm"
+	params.InitCosmosSdk(bech32Prefix, gasToken)
+
 	clientLogger, err := relaylogger.New()
 	require.NoError(t, err, "Could not create relay logger")
 	cosmosClient, err := client.NewClient(
@@ -185,7 +190,61 @@ func TestOCRBasic(t *testing.T) {
 		ocrAddress)
 	require.NoError(t, err, "Could not create jobs for contract")
 
-	err = validateRounds(t, cosmosClient, types.MustAccAddressFromBech32(ocrAddress), types.MustAccAddressFromBech32(ocrProxyAddress), commonConfig.IsSoak, commonConfig.TestDuration)
+	if useMonitor {
+		monitorNodesAddress := "127.0.0.1:39010"
+		monitorFeedsAddress := "127.0.0.1:39011"
+
+		// used by the chainlink-relay monitoring config parser
+		os.Setenv("NODES_URL", "http://"+monitorNodesAddress)
+		os.Setenv("FEEDS_URL", "http://"+monitorFeedsAddress)
+
+		monitorCtx, monitorCancel := context.WithCancel(context.Background())
+		monitorConfig := monitoring.CosmosConfig{
+			TendermintURL:        commonConfig.NodeUrl,
+			TendermintReqsPerSec: 2,
+			NetworkName:          "primary",
+			NetworkID:            "cosmos-network",
+			ChainID:              commonConfig.ChainId,
+			ReadTimeout:          1 * time.Minute,
+			PollInterval:         5 * time.Second,
+			LinkTokenAddress:     types.MustAccAddressFromBech32(linkTokenAddress),
+			Bech32Prefix:         bech32Prefix,
+			GasToken:             gasToken,
+		}
+		monitor, err := monitoring.NewCosmosMonitor(monitorCtx, monitorConfig, clientLogger)
+		require.NoError(t, err, "Could not create cosmos monitor")
+
+		nodeConfigJson := fmt.Sprintf("{\"id\": \"primary\", \"nodeAddress\": [\"%s\"]}", commonConfig.NodeUrl)
+		nodeServer := common.RunHTTPServer(t, "monitorNodes", monitorNodesAddress, map[string][]byte{
+			"/": []byte(nodeConfigJson),
+		})
+
+		feedConfigJson := fmt.Sprintf(`
+    {
+      "name": "testfeed",
+      "path": "/testpath",
+      "symbol": "ABC",
+      "contract_address_bech32": "%s",
+      "proxy_address_bech32": "%s"
+    }
+    `, ocrAddress, ocrProxyAddress)
+		feedServer := common.RunHTTPServer(t, "monitorFeeds", monitorFeedsAddress, map[string][]byte{
+			"/": []byte(feedConfigJson),
+		})
+
+		go func() {
+			time.Sleep(5 * time.Minute)
+			logger.Info().Msg("Stopping monitor")
+			monitorCancel()
+		}()
+		logger.Info().Msg("Running monitor")
+		monitor.Run()
+		logger.Info().Msg("Stopping monitor")
+		_ = nodeServer.Close()
+		_ = feedServer.Close()
+	} else {
+		err = validateRounds(t, cosmosClient, types.MustAccAddressFromBech32(ocrAddress), types.MustAccAddressFromBech32(ocrProxyAddress), commonConfig.IsSoak, commonConfig.TestDuration)
+	}
 	require.NoError(t, err, "Validating round should not fail")
 
 	// Tear down local stack

@@ -16,10 +16,9 @@ import (
 // Generators
 
 func generateChainConfig() CosmosConfig {
-	address, _ := sdk.AccAddressFromBech32("wasm106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
+	address := sdk.MustAccAddressFromBech32("wasm10h7q8fmpd94d8af3m42tyhterydzuurh5qmrma")
 	return CosmosConfig{
 		TendermintURL:    "https://some-tendermint-url.com",
-		FCDURL:           "https://fcd.terra.dev",
 		NetworkName:      "cosmwasm",
 		NetworkID:        "cosmwasm",
 		ChainID:          "1",
@@ -32,8 +31,8 @@ func generateChainConfig() CosmosConfig {
 func generateFeedConfig() CosmosFeedConfig {
 	coins := []string{"btc", "eth", "matic", "link", "avax", "ftt", "srm", "usdc", "sol", "ray"}
 	coin := coins[rand.Intn(len(coins))]
-	address, _ := sdk.AccAddressFromBech32("wasm106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
-	proxyAddress, _ := sdk.AccAddressFromBech32("wasm106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
+	address := sdk.MustAccAddressFromBech32("wasm1l7z2206lrwhdqxqw5nmzdem529t7553t7vmp47")
+	proxyAddress := sdk.MustAccAddressFromBech32("wasm16cmd64z57wvsq9rprmgnmw8lejmx7v4ta4ke22")
 	return CosmosFeedConfig{
 		Name:           fmt.Sprintf("%s / usd", coin),
 		Path:           fmt.Sprintf("%s-usd", coin),
@@ -101,9 +100,3 @@ func (f *fakeProxySource) Fetch(ctx context.Context) (interface{}, error) {
 func newNullLogger() logger.Logger {
 	return logger.Nop()
 }
-
-var (
-	_ = newNullLogger()
-	_ = generateChainConfig()
-	_ = generateFeedConfig()
-)

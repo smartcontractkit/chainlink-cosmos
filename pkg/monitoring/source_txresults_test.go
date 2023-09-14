@@ -2,17 +2,13 @@ package monitoring
 
 import (
 	"context"
-	"encoding/json"
-	"os"
 	"testing"
 	"time"
 
-	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
-	fcdclientmocks "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient/mocks"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/mocks"
+	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 )
 
 func TestTxResultsSource(t *testing.T) {
@@ -23,29 +19,34 @@ func TestTxResultsSource(t *testing.T) {
 		chainConfig := generateChainConfig()
 		feedConfig := generateFeedConfig()
 
-		fcdClient := new(fcdclientmocks.Client)
-		factory := NewTxResultsSourceFactory(fcdClient)
-		source, err := factory.NewSource(chainConfig, feedConfig)
-		require.NoError(t, err)
-
 		// Setup mocks
-		getTxsRaw, err := os.ReadFile("./fixtures/txs.json")
-		require.NoError(t, err)
-		getTxsRes := fcdclient.Response{}
-		require.NoError(t, json.Unmarshal(getTxsRaw, &getTxsRes))
-		fcdClient.On("GetTxList",
-			mock.Anything, // context
-			fcdclient.GetTxListParams{Account: feedConfig.ContractAddress, Limit: 10},
-		).Return(getTxsRes, nil).Once()
+		latestRoundDataRes1 := []byte(`{"round_id": 42, "answer": "0.54321"}`)
+		latestRoundDataRes2 := []byte(`{"round_id": 47, "answer": "0.54321"}`)
+
+		// Setup mocks.
+		rpcClient := new(mocks.ChainReader)
+		// Configuration
+		rpcClient.On("ContractState",
+			feedConfig.ContractAddress,
+			[]byte(`{"latest_round_data":{}}`),
+		).Return(latestRoundDataRes1, nil).Once()
+		rpcClient.On("ContractState",
+			feedConfig.ContractAddress,
+			[]byte(`{"latest_round_data":{}}`),
+		).Return(latestRoundDataRes2, nil).Once()
 
 		// Execute Fetch()
+		factory := NewTxResultsSourceFactory(rpcClient)
+		source, err := factory.NewSource(chainConfig, feedConfig)
+		require.NoError(t, err)
 		data, err := source.Fetch(ctx)
+		require.NoError(t, err)
+		data, err = source.Fetch(ctx)
 		require.NoError(t, err)
 
 		// Assertions
 		txResults, ok := data.(relayMonitoring.TxResults)
 		require.True(t, ok)
-		require.Equal(t, uint64(94), txResults.NumSucceeded)
-		require.Equal(t, uint64(6), txResults.NumFailed)
+		require.Equal(t, uint64(5), txResults.NumSucceeded)
 	})
 }
