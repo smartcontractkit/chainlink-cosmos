@@ -2,8 +2,8 @@ package cosmwasm
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
-	"math/big"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
@@ -15,6 +15,17 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/chains/evmutil"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
+
+// A Uint128 is an unsigned 128-bit number.
+type Uint128 struct {
+	Lo, Hi uint64
+}
+
+// Big endian order
+func (u Uint128) Bytes(b []byte) {
+	binary.BigEndian.PutUint64(b[:8], u.Hi)
+	binary.BigEndian.PutUint64(b[8:], u.Lo)
+}
 
 var _ types.ContractTransmitter = (*ContractTransmitter)(nil)
 
@@ -63,7 +74,9 @@ func (ct *ContractTransmitter) Transmit(
 	}
 	// TODO: This temporarily appends a dummy gas price to the report.
 	// When core/relayer is updated to support adding gas price to the report, we can remove this
-	dummyGasPrice := new(big.Int).SetUint64(1).Bytes()
+	dummyGasPrice_u128 := Uint128{Lo: 1, Hi: 0}
+	dummyGasPrice := make([]byte, 16)
+	dummyGasPrice_u128.Bytes(dummyGasPrice)
 	msgStruct.Transmit.Report = append([]byte(report), dummyGasPrice...)
 	for _, sig := range sigs {
 		msgStruct.Transmit.Signatures = append(msgStruct.Transmit.Signatures, sig.Signature)
