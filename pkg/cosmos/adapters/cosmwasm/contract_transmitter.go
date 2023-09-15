@@ -74,10 +74,20 @@ func (ct *ContractTransmitter) Transmit(
 	}
 	// TODO: This temporarily appends a dummy gas price to the report.
 	// When core/relayer is updated to support adding gas price to the report, we can remove this
-	dummyGasPrice_u128 := Uint128{Lo: 1, Hi: 0}
-	dummyGasPrice := make([]byte, 16)
-	dummyGasPrice_u128.Bytes(dummyGasPrice)
-	msgStruct.Transmit.Report = append([]byte(report), dummyGasPrice...)
+	// dummyGasPrice_u128 := Uint128{Lo: 1, Hi: 0}
+	// dummyGasPrice := make([]byte, 16)
+	// dummyGasPrice_u128.Bytes(dummyGasPrice)
+	// msgStruct.Transmit.Report = append([]byte(report), dummyGasPrice...)
+
+	dummyReport := []byte{97, 91, 43, 83}                                                                                                        // observationTimestamp
+	dummyReport = append(dummyReport, []byte{0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}...) // observers
+	dummyReport = append(dummyReport, 2)                                                                                                         // observationLen
+	dummyReport = append(dummyReport, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 73, 150, 2, 210}...)                                            // observation1
+	dummyReport = append(dummyReport, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 73, 150, 2, 210}...)                                            // observation2
+	dummyReport = append(dummyReport, []byte{0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0}...)                                      // juelsPerFeeCoin
+	dummyReport = append(dummyReport, []byte{0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0}...)                                      // gasPrice
+	msgStruct.Transmit.Report = dummyReport
+
 	for _, sig := range sigs {
 		msgStruct.Transmit.Signatures = append(msgStruct.Transmit.Signatures, sig.Signature)
 	}
