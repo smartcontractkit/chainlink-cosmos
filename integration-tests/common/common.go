@@ -168,7 +168,7 @@ HTTPSPort = 0
 		TTL:                   getTTL(),
 		TestDuration:          getTestDuration(),
 		NodeUrl:               nodeUrl,
-		MockUrl:               "http://172.17.0.1:6060",
+		MockUrl:               "http://host.docker.internal:6060",
 		Mnemonic:              getEnv("MNEMONIC"),
 		ObservationSource:     observationSource,
 		JuelsPerFeeCoinSource: juelsPerFeeCoinSource,
