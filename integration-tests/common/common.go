@@ -128,7 +128,7 @@ func NewCommon(t *testing.T) *Common {
 Enabled = true
 ChainID = '%s'
 Bech32Prefix = 'wasm'
-FeeToken = 'ucosm'
+GasToken = 'ucosm'
 
 [[Cosmos.Nodes]]
 Name = 'primary'
@@ -168,7 +168,7 @@ HTTPSPort = 0
 		TTL:                   getTTL(),
 		TestDuration:          getTestDuration(),
 		NodeUrl:               nodeUrl,
-		MockUrl:               "http://172.17.0.1:6060",
+		MockUrl:               "http://host.docker.internal:6060",
 		Mnemonic:              getEnv("MNEMONIC"),
 		ObservationSource:     observationSource,
 		JuelsPerFeeCoinSource: juelsPerFeeCoinSource,
