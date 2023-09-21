@@ -32,4 +32,4 @@ devAccounts.json
 *report.json
 *.out
 *coverage*
-
+eslint-report.json
