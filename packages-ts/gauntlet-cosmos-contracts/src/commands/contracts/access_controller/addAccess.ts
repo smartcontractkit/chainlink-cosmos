@@ -22,6 +22,12 @@ const makeContractInput = async (input: CommandInput): Promise<ContractInput> =>
   }
 }
 
+const makeContractInput1 = async (input: CommandInput): Promise<ContractInput> => {
+  return {
+    address: input.address,
+  }
+}
+
 const validateInput = (input: CommandInput): boolean => {
   if (!AccAddress.validate(input.address)) {
     throw new Error(`Invalid address`)
