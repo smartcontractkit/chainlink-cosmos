@@ -11,7 +11,6 @@ type ContractInput = {
 }
 
 const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInput> => {
-  let unused_var = "test"
   return {
     address: flags.address,
   }
