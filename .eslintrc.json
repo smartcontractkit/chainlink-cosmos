@@ -12,7 +12,7 @@
         "ecmaVersion": "latest",
         "sourceType": "module"
     },
-    "ignorePatterns": ["./packages-ts/test/**", "**/node_modules/**"],
+    "ignorePatterns": ["**/node_modules/**"],
     "plugins": [
         "@typescript-eslint"
     ],
