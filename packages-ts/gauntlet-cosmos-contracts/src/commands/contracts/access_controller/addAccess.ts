@@ -16,6 +16,24 @@ const makeCommandInput = async (flags: any, args: string[]): Promise<CommandInpu
   }
 }
 
+const makeCommandInput1 = async (flags: any, args: string[]): Promise<CommandInput> => {
+  return {
+    address: flags.address,
+  }
+}
+
+const makeCommandInput2 = async (flags: any, args: string[]): Promise<CommandInput> => {
+  return {
+    address: flags.address,
+  }
+}
+
+const makeCommandInput3 = async (flags: any, args: string[]): Promise<CommandInput> => {
+  return {
+    address: flags.address,
+  }
+}
+
 const makeContractInput = async (input: CommandInput): Promise<ContractInput> => {
   return {
     address: input.address,
