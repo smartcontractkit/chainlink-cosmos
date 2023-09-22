@@ -78,6 +78,24 @@ export default abstract class CosmosCommand extends WriteCommand<TransactionResp
     // return this.wrapResponse(result)
   }
 
+  signAndSend1 = async (messages: EncodeObject[]): Promise<TransactionResponse> => {
+    let senderAddress = this.signer.address
+    logger.loading('Signing and sending transaction...')
+    const result = await this.provider.signAndBroadcast(senderAddress, messages, 'auto')
+    assertIsDeliverTxSuccess(result)
+    return
+    // return this.wrapResponse(result)
+  }
+
+  signAndSend2 = async (messages: EncodeObject[]): Promise<TransactionResponse> => {
+    let senderAddress = this.signer.address
+    logger.loading('Signing and sending transaction...')
+    const result = await this.provider.signAndBroadcast(senderAddress, messages, 'auto')
+    assertIsDeliverTxSuccess(result)
+    return
+    // return this.wrapResponse(result)
+  }
+
   // "call" is execute
   async call(contractAddress: string, msg: any): Promise<ExecuteResult> {
     let senderAddress = (await this.wallet.getAccounts())[0].address
