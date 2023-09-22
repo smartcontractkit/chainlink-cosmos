@@ -15,7 +15,7 @@ report.json
 .envrc
 bin
 
-# test
+# test & linter reports
 packages-ts/gauntlet-cosmos-contracts/codeIds/test*
 packages-ts/gauntlet-cosmos-contracts/networks/.env.test*
 tests/e2e/logs
@@ -28,4 +28,8 @@ tmp-manifest-*
 .local-mock-server
 codegen
 devAccounts.json
-
+*report.xml
+*report.json
+*.out
+*coverage*
+eslint-report.json

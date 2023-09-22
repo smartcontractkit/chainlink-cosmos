@@ -92,9 +92,17 @@ artifacts_clean_wasmd:
 
 build: build_js build_contracts
 
-test_relay_unit:
+# Common build step
+build_relay:
 	go build -v ./pkg/cosmos/...
-	go test -v ./pkg/cosmos/...
+
+# Unit test without race detection
+test_relay_unit: build_relay
+	go test -v -covermode=atomic ./pkg/cosmos/... -coverpkg=./... -coverprofile=unit_coverage.txt
+
+# Unit test with race detection
+test_relay_unit_race: build_relay
+	go test -v -covermode=atomic ./pkg/cosmos/... -race -count=10 -coverpkg=./... -coverprofile=race_coverage.txt
 
 
 # copied over from starknet, replace as needed
