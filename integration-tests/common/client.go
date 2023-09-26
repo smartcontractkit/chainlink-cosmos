@@ -11,18 +11,19 @@ import (
 	"github.com/rs/zerolog"
 	"gopkg.in/guregu/null.v4"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/smartcontractkit/chainlink-env/environment"
 	"github.com/smartcontractkit/chainlink/integration-tests/client"
 	"github.com/smartcontractkit/chainlink/v2/core/services/job"
 	"github.com/smartcontractkit/chainlink/v2/core/services/relay"
+
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 )
 
 type ChainlinkClient struct {
 	bech32Prefix   string
 	ChainlinkNodes []*client.ChainlinkClient
 	NodeKeys       []client.NodeKeysBundle
-	bTypeAttr      *client.BridgeTypeAttributes
+	// bTypeAttr      *client.BridgeTypeAttributes
 	bootstrapPeers []client.P2PData
 }
 
@@ -33,7 +34,7 @@ func NewChainlinkClient(env *environment.Environment, nodeName string, chainId s
 	if err != nil {
 		return nil, err
 	}
-	if nodes == nil || len(nodes) == 0 {
+	if len(nodes) == 0 {
 		return nil, errors.New("No connected nodes")
 	}
 
@@ -42,7 +43,7 @@ func NewChainlinkClient(env *environment.Environment, nodeName string, chainId s
 		return nil, err
 	}
 
-	if nodeKeys == nil || len(nodeKeys) == 0 {
+	if len(nodeKeys) == 0 {
 		return nil, errors.New("No node keys")
 	}
 

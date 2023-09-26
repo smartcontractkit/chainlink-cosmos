@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -21,8 +22,9 @@ func RunHTTPServer(t *testing.T, serverName, serverAddress string, responses map
 	}
 
 	server := &http.Server{
-		Addr:    serverAddress,
-		Handler: handler,
+		Addr:              serverAddress,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	go func() {

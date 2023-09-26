@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	relaylogger "github.com/smartcontractkit/chainlink-relay/pkg/logger"
+
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/gauntlet"
 	"github.com/smartcontractkit/chainlink-cosmos/ops/utils"
@@ -19,7 +21,6 @@ import (
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/testutil"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring"
-	relaylogger "github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
 	// "github.com/smartcontractkit/chainlink/integration-tests/actions"
 	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting2/types"
@@ -39,6 +40,7 @@ func TestOCRBasic(t *testing.T) {
 }
 
 func runOcrTest(t *testing.T, useMonitor bool) {
+	var err error
 	// Set up test environment
 	logger := common.GetTestLogger(t)
 	commonConfig := common.NewCommon(t)
@@ -74,8 +76,8 @@ func runOcrTest(t *testing.T, useMonitor bool) {
 	for i, nodeAddr := range chainlinkClient.GetNodeAddresses() {
 		to := types.MustAccAddressFromBech32(nodeAddr)
 		msgSend := banktypes.NewMsgSend(testAccount, to, amount)
-		resp, err := cosmosClient.SignAndBroadcast([]types.Msg{msgSend}, accountNumber, sequenceNumber+uint64(i), gasPrice, privateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
-		require.NoError(t, err, "Could not send tokens")
+		resp, signErr := cosmosClient.SignAndBroadcast([]types.Msg{msgSend}, accountNumber, sequenceNumber+uint64(i), gasPrice, privateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+		require.NoError(t, signErr, "Could not send tokens")
 		logger.Info().Str("from", testAccount.String()).
 			Str("to", nodeAddr).
 			Str("amount", "10000000").
@@ -85,8 +87,8 @@ func runOcrTest(t *testing.T, useMonitor bool) {
 		tx, success := client.AwaitTxCommitted(t, cosmosClient, resp.TxResponse.TxHash)
 		require.True(t, success)
 		require.Equal(t, cometbfttypes.CodeTypeOK, tx.TxResponse.Code)
-		balance, err := cosmosClient.Balance(to, "ucosm")
-		require.NoError(t, err, "Could not fetch ucosm balance")
+		balance, balErr := cosmosClient.Balance(to, "ucosm")
+		require.NoError(t, balErr, "Could not fetch ucosm balance")
 		require.Equal(t, balance.String(), "10000000ucosm")
 	}
 
@@ -238,7 +240,7 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 	linkResponse := struct {
 		Amount string `json:"amount"`
 	}{}
-	if err := json.Unmarshal(resp, &linkResponse); err != nil {
+	if err = json.Unmarshal(resp, &linkResponse); err != nil {
 		return err
 	}
 	logger.Info().Str("amount", linkResponse.Amount).Msg("Queried link available for payment")
@@ -264,8 +266,8 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 
 	for start := time.Now(); time.Since(start) < testDuration; {
 		logger.Info().Msg(fmt.Sprintf("Elapsed time: %s, Round wait: %s ", time.Since(start), testDuration))
-		configDigest, epoch, round, latestAnswer, latestTimestamp, err := ocrReader.LatestTransmissionDetails(ctx)
-		require.NoError(t, err, "Failed to get latest transmission details")
+		configDigest, epoch, round, latestAnswer, latestTimestamp, readErr := ocrReader.LatestTransmissionDetails(ctx)
+		require.NoError(t, readErr, "Failed to get latest transmission details")
 		// end condition: enough rounds have occurred
 		if !isSoak && increasing >= rounds && positive {
 			break
