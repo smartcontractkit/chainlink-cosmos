@@ -5,9 +5,10 @@ import (
 	"log"
 	"os"
 
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
+
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring"
-	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 )
 
 func main() {

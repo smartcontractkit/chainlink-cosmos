@@ -7,6 +7,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.47.4
 	github.com/google/uuid v1.3.1
 	github.com/lib/pq v1.10.9
+	github.com/prometheus/common v0.44.0
 	github.com/rs/zerolog v1.30.0
 	github.com/smartcontractkit/chainlink-cosmos v0.4.1-0.20230919072229-8d1773b9822a
 	github.com/smartcontractkit/chainlink-cosmos/ops v0.0.0-20230615043323-5fe39e28b7ee
@@ -288,7 +289,6 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.16.0 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
-	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.11.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/riferrei/srclient v0.5.4 // indirect
