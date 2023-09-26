@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
@@ -28,8 +28,8 @@ type ChainlinkClient struct {
 
 // TODO: Remove env. See https://github.com/smartcontractkit/chainlink-cosmos/pull/350#discussion_r1298071289
 // CreateKeys Creates node keys and defines chain and nodes for each node
-func NewChainlinkClient(env *environment.Environment, nodeName string, chainId string, tendermintURL string, bech32Prefix string) (*ChainlinkClient, error) {
-	nodes, err := connectChainlinkNodes(env)
+func NewChainlinkClient(env *environment.Environment, nodeName string, chainId string, tendermintURL string, bech32Prefix string, logger zerolog.Logger) (*ChainlinkClient, error) {
+	nodes, err := connectChainlinkNodes(env, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, nodeName, p2pPort, moc
 // connectChainlinkNodes creates a chainlink client for each node in the environment
 // This is a non k8s version of the function in chainlink_k8s.go
 // https://github.com/smartcontractkit/chainlink/blob/cosmos-test-keys/integration-tests/client/chainlink_k8s.go#L77
-func connectChainlinkNodes(e *environment.Environment) ([]*client.ChainlinkClient, error) {
+func connectChainlinkNodes(e *environment.Environment, logger zerolog.Logger) ([]*client.ChainlinkClient, error) {
 	var clients []*client.ChainlinkClient
 	for _, nodeDetails := range e.ChainlinkNodeDetails {
 		c, err := client.NewChainlinkClient(&client.ChainlinkConfig{
@@ -193,11 +193,11 @@ func connectChainlinkNodes(e *environment.Environment) ([]*client.ChainlinkClien
 			Email:      "notreal@fakeemail.ch",
 			Password:   "fj293fbBnlQ!f9vNs",
 			InternalIP: parseHostname(nodeDetails.InternalIP),
-		})
+		}, logger)
 		if err != nil {
 			return nil, err
 		}
-		log.Debug().
+		logger.Debug().
 			Str("URL", c.Config.URL).
 			Str("Internal IP", c.Config.InternalIP).
 			Str("Chart Name", nodeDetails.ChartName).

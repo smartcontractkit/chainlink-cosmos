@@ -121,11 +121,12 @@ func CosmosFeedsParser(buf io.ReadCloser) ([]relayMonitoring.FeedConfig, error) 
 			}
 			proxyAddress = address
 		}
+		// NOTE: multiply is not required so if a parse error occurs, we'll use 0.
 		multiply, ok := new(big.Int).SetString(rawFeed.MultiplyRaw, 10)
 		if !ok {
-			return nil, fmt.Errorf("failed to parse multiply '%s' into a big.Int", rawFeed.MultiplyRaw)
+			multiply = new(big.Int).SetInt64(0)
 		}
-		// NOTE: multiply is not required so if a parse error occurs, we'll use 0.
+
 		feeds[i] = relayMonitoring.FeedConfig(CosmosFeedConfig{
 			rawFeed.Name,
 			rawFeed.Path,
