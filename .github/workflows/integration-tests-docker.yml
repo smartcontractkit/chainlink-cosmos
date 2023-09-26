@@ -61,6 +61,11 @@ jobs:
           mkdir -p -m 777 target/debug artifacts
           make build_contracts
 
+      - name: Run Cosmos monitor dependencies
+        run: |
+          cd ops/monitoring
+          docker-compose up -d
+
       - name: Run Test
         env:
           CORE_IMAGE: 'local_chainlink'
