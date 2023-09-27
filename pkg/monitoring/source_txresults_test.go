@@ -7,8 +7,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/mocks"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
+
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/mocks"
 )
 
 func TestTxResultsSource(t *testing.T) {
@@ -39,9 +40,9 @@ func TestTxResultsSource(t *testing.T) {
 		factory := NewTxResultsSourceFactory(rpcClient)
 		source, err := factory.NewSource(chainConfig, feedConfig)
 		require.NoError(t, err)
-		data, err := source.Fetch(ctx)
+		_, err = source.Fetch(ctx)
 		require.NoError(t, err)
-		data, err = source.Fetch(ctx)
+		data, err := source.Fetch(ctx)
 		require.NoError(t, err)
 
 		// Assertions

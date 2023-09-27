@@ -3,11 +3,16 @@ package monitoring
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
+	"io/ioutil"
 	"math/big"
+	"os"
 	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
+	"github.com/cosmos/cosmos-sdk/types/tx"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 	ocr2types "github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"github.com/stretchr/testify/require"
@@ -24,6 +29,24 @@ func TestEnvelopeSource(t *testing.T) {
 	latestConfigDetailsRes := []byte(`{"block_number": 6805892}`) // See ./fixtures/set_config-block.json
 	linkAvailableForPaymentRes := []byte(`{"amount":"-380431529018756503364"}`)
 
+	setConfigBlock, err := os.Open("./fixtures/set_config-block.json")
+	require.NoError(t, err, "error opening set_config-block.json")
+	defer setConfigBlock.Close()
+	setConfigBlockBytes, err := ioutil.ReadAll(setConfigBlock)
+	require.NoError(t, err, "error reading set_config-block.json")
+	setConfigBlockRes := tx.GetTxsEventResponse{}
+	err = json.Unmarshal(setConfigBlockBytes, &setConfigBlockRes)
+	require.NoError(t, err, "error unmarshalling setConfigBlock")
+
+	newTransmissionTxs, err := os.Open("./fixtures/new_transmission-txs.json")
+	require.NoError(t, err, "error opening new_transmission-txs.json")
+	defer newTransmissionTxs.Close()
+	newTransmissionTxsBytes, err := ioutil.ReadAll(newTransmissionTxs)
+	require.NoError(t, err, "error reading new_transmission-txs.json")
+	newTransmissionTxsRes := tx.GetTxsEventResponse{}
+	err = json.Unmarshal(newTransmissionTxsBytes, &newTransmissionTxsRes)
+	require.NoError(t, err, "error unmarshalling newTransmissionTxs")
+
 	// Configurations.
 	feedConfig := generateFeedConfig()
 	feedConfig.ContractAddressBech32 = "wasm10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"
@@ -37,6 +60,20 @@ func TestEnvelopeSource(t *testing.T) {
 		feedConfig.ContractAddress,
 		[]byte(`{"latest_config_details":{}}`),
 	).Return(latestConfigDetailsRes, nil).Once()
+	// TxsEvents - latest config
+	rpcClient.On("TxsEvents",
+		[]string{"tx.height=6805892", "wasm._contract_address='wasm10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf'"},
+		&query.PageRequest{
+			Limit: 10,
+		},
+	).Return(&setConfigBlockRes, nil).Once()
+	// TxsEvents - latest transmission
+	rpcClient.On("TxsEvents",
+		[]string{"wasm._contract_address='wasm10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf'"},
+		&query.PageRequest{
+			Limit: 10,
+		},
+	).Return(&newTransmissionTxsRes, nil).Once()
 	// LINK Balance
 	rpcClient.On("ContractState",
 		chainConfig.LinkTokenAddress,
@@ -126,7 +163,7 @@ func TestEnvelopeSource(t *testing.T) {
 	// Configuration
 	rpcClient.On("ContractState",
 		feedConfig.ContractAddress,
-		[]byte(`"latest_config_details"`),
+		[]byte(`{"latest_config_details":{}}`),
 	).Return(latestConfigDetailsRes, nil).Once()
 	// LINK Balance
 	rpcClient.On("ContractState",
@@ -138,6 +175,13 @@ func TestEnvelopeSource(t *testing.T) {
 		feedConfig.ContractAddress,
 		[]byte(`{"link_available_for_payment":{}}`),
 	).Return(linkAvailableForPaymentRes, nil).Once()
+	// TxsEvents - latest transmission
+	rpcClient.On("TxsEvents",
+		[]string{"wasm._contract_address='wasm10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf'"},
+		&query.PageRequest{
+			Limit: 10,
+		},
+	).Return(&newTransmissionTxsRes, nil).Once()
 
 	// Execute second Fetch()
 	_, err = source.Fetch(ctx)

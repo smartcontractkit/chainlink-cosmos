@@ -43,10 +43,10 @@ func NewRelayer(lggr logger.Logger, chain adapters.Chain) *Relayer {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	bech32Prefix := chain.Config().Bech32Prefix()
-	feeToken := chain.Config().FeeToken()
+	gasToken := chain.Config().GasToken()
 	params.InitCosmosSdk(
 		bech32Prefix,
-		feeToken,
+		gasToken,
 	)
 
 	return &Relayer{

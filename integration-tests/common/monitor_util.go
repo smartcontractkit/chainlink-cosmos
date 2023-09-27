@@ -4,6 +4,9 @@ import (
 	"log"
 	"net/http"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func RunHTTPServer(t *testing.T, serverName, serverAddress string, responses map[string][]byte) *http.Server {
@@ -13,13 +16,15 @@ func RunHTTPServer(t *testing.T, serverName, serverAddress string, responses map
 		handler.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 			log.Printf("%s received request for %s\n", serverName, path)
 			w.Header().Set("Content-Type", "application/octet-stream")
-			w.Write(response)
+			_, err := w.Write(response)
+			require.NoError(t, err, "failed to write response")
 		})
 	}
 
 	server := &http.Server{
-		Addr:    serverAddress,
-		Handler: handler,
+		Addr:              serverAddress,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	go func() {

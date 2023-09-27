@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	relaylogger "github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/gauntlet"
@@ -18,7 +21,6 @@ import (
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/testutil"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring"
-	relaylogger "github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
 	// "github.com/smartcontractkit/chainlink/integration-tests/actions"
 	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting2/types"
@@ -27,6 +29,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/require"
 	// "go.uber.org/zap/zapcore"
 )
@@ -37,6 +40,7 @@ func TestOCRBasic(t *testing.T) {
 }
 
 func runOcrTest(t *testing.T, useMonitor bool) {
+	var err error
 	// Set up test environment
 	logger := common.GetTestLogger(t)
 	commonConfig := common.NewCommon(t)
@@ -56,7 +60,7 @@ func runOcrTest(t *testing.T, useMonitor bool) {
 	require.NoError(t, err, "Could not create cosmos client")
 
 	nodeName := "primary"
-	chainlinkClient, err := common.NewChainlinkClient(commonConfig.Env, commonConfig.ChainId, nodeName, commonConfig.NodeUrl, bech32Prefix)
+	chainlinkClient, err := common.NewChainlinkClient(commonConfig.Env, commonConfig.ChainId, nodeName, commonConfig.NodeUrl, bech32Prefix, logger)
 	require.NoError(t, err, "Could not create chainlink client")
 
 	logger.Info().Str("node addresses", strings.Join(chainlinkClient.GetNodeAddresses(), " ")).Msg("Created chainlink client")
@@ -72,8 +76,8 @@ func runOcrTest(t *testing.T, useMonitor bool) {
 	for i, nodeAddr := range chainlinkClient.GetNodeAddresses() {
 		to := types.MustAccAddressFromBech32(nodeAddr)
 		msgSend := banktypes.NewMsgSend(testAccount, to, amount)
-		resp, err := cosmosClient.SignAndBroadcast([]types.Msg{msgSend}, accountNumber, sequenceNumber+uint64(i), gasPrice, privateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
-		require.NoError(t, err, "Could not send tokens")
+		resp, signErr := cosmosClient.SignAndBroadcast([]types.Msg{msgSend}, accountNumber, sequenceNumber+uint64(i), gasPrice, privateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+		require.NoError(t, signErr, "Could not send tokens")
 		logger.Info().Str("from", testAccount.String()).
 			Str("to", nodeAddr).
 			Str("amount", "10000000").
@@ -83,8 +87,8 @@ func runOcrTest(t *testing.T, useMonitor bool) {
 		tx, success := client.AwaitTxCommitted(t, cosmosClient, resp.TxResponse.TxHash)
 		require.True(t, success)
 		require.Equal(t, cometbfttypes.CodeTypeOK, tx.TxResponse.Code)
-		balance, err := cosmosClient.Balance(to, "ucosm")
-		require.NoError(t, err, "Could not fetch ucosm balance")
+		balance, balErr := cosmosClient.Balance(to, "ucosm")
+		require.NoError(t, balErr, "Could not fetch ucosm balance")
 		require.Equal(t, balance.String(), "10000000ucosm")
 	}
 
@@ -191,61 +195,11 @@ func runOcrTest(t *testing.T, useMonitor bool) {
 	require.NoError(t, err, "Could not create jobs for contract")
 
 	if useMonitor {
-		monitorNodesAddress := "127.0.0.1:39010"
-		monitorFeedsAddress := "127.0.0.1:39011"
-
-		// used by the chainlink-relay monitoring config parser
-		os.Setenv("NODES_URL", "http://"+monitorNodesAddress)
-		os.Setenv("FEEDS_URL", "http://"+monitorFeedsAddress)
-
-		monitorCtx, monitorCancel := context.WithCancel(context.Background())
-		monitorConfig := monitoring.CosmosConfig{
-			TendermintURL:        commonConfig.NodeUrl,
-			TendermintReqsPerSec: 2,
-			NetworkName:          "primary",
-			NetworkID:            "cosmos-network",
-			ChainID:              commonConfig.ChainId,
-			ReadTimeout:          1 * time.Minute,
-			PollInterval:         5 * time.Second,
-			LinkTokenAddress:     types.MustAccAddressFromBech32(linkTokenAddress),
-			Bech32Prefix:         bech32Prefix,
-			GasToken:             gasToken,
-		}
-		monitor, err := monitoring.NewCosmosMonitor(monitorCtx, monitorConfig, clientLogger)
-		require.NoError(t, err, "Could not create cosmos monitor")
-
-		nodeConfigJson := fmt.Sprintf("{\"id\": \"primary\", \"nodeAddress\": [\"%s\"]}", commonConfig.NodeUrl)
-		nodeServer := common.RunHTTPServer(t, "monitorNodes", monitorNodesAddress, map[string][]byte{
-			"/": []byte(nodeConfigJson),
-		})
-
-		feedConfigJson := fmt.Sprintf(`
-    {
-      "name": "testfeed",
-      "path": "/testpath",
-      "symbol": "ABC",
-      "contract_address_bech32": "%s",
-      "proxy_address_bech32": "%s"
-    }
-    `, ocrAddress, ocrProxyAddress)
-		feedServer := common.RunHTTPServer(t, "monitorFeeds", monitorFeedsAddress, map[string][]byte{
-			"/": []byte(feedConfigJson),
-		})
-
-		go func() {
-			time.Sleep(5 * time.Minute)
-			logger.Info().Msg("Stopping monitor")
-			monitorCancel()
-		}()
-		logger.Info().Msg("Running monitor")
-		monitor.Run()
-		logger.Info().Msg("Stopping monitor")
-		_ = nodeServer.Close()
-		_ = feedServer.Close()
+		validateRoundsMonitor(t, *commonConfig, clientLogger, bech32Prefix, gasToken, linkTokenAddress, ocrAddress, ocrProxyAddress)
 	} else {
 		err = validateRounds(t, cosmosClient, types.MustAccAddressFromBech32(ocrAddress), types.MustAccAddressFromBech32(ocrProxyAddress), commonConfig.IsSoak, commonConfig.TestDuration)
+		require.NoError(t, err, "Validating round should not fail")
 	}
-	require.NoError(t, err, "Validating round should not fail")
 
 	// Tear down local stack
 	commonConfig.TearDownLocalEnvironment(t)
@@ -286,7 +240,7 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 	linkResponse := struct {
 		Amount string `json:"amount"`
 	}{}
-	if err := json.Unmarshal(resp, &linkResponse); err != nil {
+	if err = json.Unmarshal(resp, &linkResponse); err != nil {
 		return err
 	}
 	logger.Info().Str("amount", linkResponse.Amount).Msg("Queried link available for payment")
@@ -312,8 +266,8 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 
 	for start := time.Now(); time.Since(start) < testDuration; {
 		logger.Info().Msg(fmt.Sprintf("Elapsed time: %s, Round wait: %s ", time.Since(start), testDuration))
-		configDigest, epoch, round, latestAnswer, latestTimestamp, err := ocrReader.LatestTransmissionDetails(ctx)
-		require.NoError(t, err, "Failed to get latest transmission details")
+		configDigest, epoch, round, latestAnswer, latestTimestamp, readErr := ocrReader.LatestTransmissionDetails(ctx)
+		require.NoError(t, readErr, "Failed to get latest transmission details")
 		// end condition: enough rounds have occurred
 		if !isSoak && increasing >= rounds && positive {
 			break
@@ -407,4 +361,144 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 	require.Equal(t, value, int64(mockAdapterValue), "Reading from proxy should return correct value")
 
 	return nil
+}
+
+// todo: this currently doesnt support soak testing
+func validateRoundsMonitor(t *testing.T, config common.Common, relayLogger relaylogger.Logger, bech32Prefix string, gasToken string, linkTokenAddress string, ocrAddress string, ocrProxyAddress string) {
+	logger := common.GetTestLogger(t)
+
+	// used by the chainlink-relay monitoring config parser
+	monitorNodesAddress := "127.0.0.1:39010"
+	monitorFeedsAddress := "127.0.0.1:39011"
+	os.Setenv("NODES_URL", "http://"+monitorNodesAddress)
+	os.Setenv("FEEDS_URL", "http://"+monitorFeedsAddress)
+	os.Setenv("HTTP_ADDRESS", "localhost:3000")
+	os.Setenv("SCHEMA_REGISTRY_URL", "http://localhost:8989")
+
+	os.Setenv("KAFKA_SECURITY_PROTOCOL", "SASL_PLAINTEXT")
+	os.Setenv("KAFKA_TRANSMISSION_TOPIC", "transmission_topic")
+	os.Setenv("KAFKA_CLIENT_ID", "cosmos")
+	os.Setenv("KAFKA_BROKERS", "localhost:29092")
+	os.Setenv("KAFKA_CONFIG_SET_SIMPLIFIED_TOPIC", "config_set_simplified")
+	os.Setenv("KAFKA_SASL_MECHANISM", "PLAIN")
+	os.Setenv("KAFKA_SASL_USERNAME", "user")
+	os.Setenv("KAFKA_SASL_PASSWORD", "pass")
+
+	monitorCtx, monitorCancel := context.WithCancel(context.Background())
+	monitorConfig := monitoring.CosmosConfig{
+		TendermintURL:        config.NodeUrl,
+		TendermintReqsPerSec: 2,
+		NetworkName:          "primary",
+		NetworkID:            "cosmos-network",
+		ChainID:              config.ChainId,
+		ReadTimeout:          1 * time.Minute,
+		PollInterval:         5 * time.Second,
+		LinkTokenAddress:     types.MustAccAddressFromBech32(linkTokenAddress),
+		Bech32Prefix:         bech32Prefix,
+		GasToken:             gasToken,
+	}
+	monitor, err := monitoring.NewCosmosMonitor(monitorCtx, monitorConfig, relayLogger)
+	require.NoError(t, err, "Could not create cosmos monitor")
+
+	nodeConfigJson := fmt.Sprintf("[{\"id\": \"primary\", \"nodeAddress\": [\"%s\"]}]", config.NodeUrl)
+	nodeServer := common.RunHTTPServer(t, "monitorNodes", monitorNodesAddress, map[string][]byte{
+		"/": []byte(nodeConfigJson),
+	})
+
+	feedConfigJson := fmt.Sprintf(`
+    [{
+      "name": "testfeed",
+      "path": "/testpath",
+      "symbol": "ABC",
+      "contract_address_bech32": "%s",
+      "proxy_address_bech32": "%s"
+    }]
+    `, ocrAddress, ocrProxyAddress)
+	feedServer := common.RunHTTPServer(t, "monitorFeeds", monitorFeedsAddress, map[string][]byte{
+		"/": []byte(feedConfigJson),
+	})
+
+	start := time.Now()
+	go func() {
+		type TransmissionDetails struct {
+			Round        float64
+			LatestAnswer float64
+		}
+		previous := TransmissionDetails{}
+
+		var parser expfmt.TextParser
+
+		// testing variables
+		mockAdapterValue := 5 // TODO(BCI-1746): dynamic mock-adapter values
+		rounds := 10
+		increasing := 0
+		stuck := 0
+
+		req, err := http.NewRequest("GET", "http://localhost:3000/metrics", nil)
+		require.NoError(t, err, "Could not create request")
+
+		time.Sleep(10 * time.Second) // wait a total of 15 seconds before starting
+		// poll prometheus metrics every 5 seconds
+		for {
+			time.Sleep(5 * time.Second)
+
+			// end condition: enough rounds have occurred
+			if increasing >= rounds {
+				logger.Info().Msg("Enough rounds have been observed")
+				monitorCancel()
+				return
+			}
+
+			// end condition: rounds have been stuck
+			if stuck > 30 {
+				require.Fail(t, "rounds have been stuck for too long")
+				monitorCancel()
+				return
+			}
+
+			// end condition: test timeout
+			if time.Since(start) > config.TestDuration {
+				require.Fail(t, "test timeout")
+				monitorCancel()
+				return
+			}
+
+			// fetch prometheus metrics
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err, "Could not get prometheus metrics")
+			mf, err := parser.TextToMetricFamilies(res.Body)
+			require.NoError(t, err, "Could not parse prometheus metrics")
+			res.Body.Close()
+
+			if mf["offchain_aggregator_round_id"] == nil {
+				fmt.Println("no transmissions yet")
+				continue
+			}
+			round := mf["offchain_aggregator_round_id"].GetMetric()[0].GetGauge().GetValue()
+			fmt.Println("round:", round)
+			require.GreaterOrEqual(t, round, previous.Round, "round should be increasing")
+
+			latestAnswer := mf["offchain_aggregator_answers"].GetMetric()[0].GetGauge().GetValue()
+			fmt.Println("latest answer:", latestAnswer)
+			require.Equal(t, int(latestAnswer), mockAdapterValue, "latest answer should match mock adapter value")
+
+			if round > previous.Round {
+				increasing++
+				stuck = 0
+			} else {
+				stuck++
+			}
+
+			previous = TransmissionDetails{
+				Round:        round,
+				LatestAnswer: latestAnswer,
+			}
+		}
+	}()
+
+	logger.Info().Msg("Running monitor...")
+	monitor.Run()
+	logger.Info().Msg("Monitor stopped.")
+	nodeServer.Close()
+	feedServer.Close()
 }

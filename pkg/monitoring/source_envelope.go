@@ -15,9 +15,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"go.uber.org/multierr"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/cosmwasm"
 	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/cosmwasm"
 )
 
 // NewEnvelopeSourceFactory build a new object that reads observations and
