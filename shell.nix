@@ -18,7 +18,7 @@ pkgs.mkShell {
 
     # Golang
     # Keep this golang version in sync with the version in .tool-versions please
-    go_1_20
+    go_1_21
     gopls
     delve
     golangci-lint
@@ -53,7 +53,7 @@ pkgs.mkShell {
     libusb1
   ];
   RUST_BACKTRACE = "1";
-  GOROOT="${pkgs.go_1_20}/share/go";
+  GOROOT="${pkgs.go_1_21}/share/go";
 
   # Avoids issues with delve
   CGO_CPPFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0";

@@ -13,7 +13,7 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-KBchSnIETM+HPngqHeajiqLYrhHhXY531C+Q/aSDzl4=";
   };
 
-  buildInputs = with pkgs; [ gnumake git go_1_20 which openssl cacert gcc ];
+  buildInputs = with pkgs; [ gnumake git go_1_21 which openssl cacert gcc ];
 
   buildPhase = ''
     export HOME=$out

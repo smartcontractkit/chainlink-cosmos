@@ -29,7 +29,7 @@ func (e *ErrMsgUnsupported) Error() string {
 	return fmt.Sprintf("unsupported message type %T: %s", e.Msg, e.Msg)
 }
 
-var _ relaytypes.Relayer = &Relayer{}
+var _ relaytypes.Relayer = &Relayer{} //nolint:staticcheck
 
 type Relayer struct {
 	lggr   logger.Logger
