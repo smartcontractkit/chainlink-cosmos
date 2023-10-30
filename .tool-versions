@@ -2,12 +2,12 @@
 rust 1.67.1
 nodejs 18.6.0
 yarn 1.22.19
-golang 1.20.4
+golang 1.21.3
 python 3.9.13
 
 # Tools
 mockery 2.13.0-beta.1
-golangci-lint 1.51.1
+golangci-lint 1.55.1
 actionlint 1.6.12
 shellcheck 0.8.0
 
