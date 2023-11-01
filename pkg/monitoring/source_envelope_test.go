@@ -10,10 +10,11 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 	ocr2types "github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
 	fcdclientmocks "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient/mocks"
@@ -44,7 +45,7 @@ func TestEnvelopeSource(t *testing.T) {
 	chainConfig := generateChainConfig()
 
 	// Setup mocks.
-	rpcClient := new(mocks.ChainReader)
+	rpcClient := mocks.NewChainReader(t)
 	fcdClient := new(fcdclientmocks.Client)
 	// Transmission
 	fcdClient.On("GetTxList",

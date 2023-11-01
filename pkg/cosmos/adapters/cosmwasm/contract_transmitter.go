@@ -6,6 +6,7 @@ import (
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
@@ -74,7 +75,7 @@ func (ct *ContractTransmitter) Transmit(
 		Msg:      msgBytes,
 		Funds:    cosmosSDK.Coins{},
 	}
-	_, err = ct.msgEnqueuer.Enqueue(ct.contract.String(), m)
+	_, err = ct.msgEnqueuer.Enqueue(ctx, ct.contract.String(), m)
 	return err
 }
 

@@ -1,6 +1,8 @@
 package adapters
 
 import (
+	"context"
+
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
@@ -38,7 +40,7 @@ func (tms Msgs) GetIDs() []int64 {
 type MsgEnqueuer interface {
 	// Enqueue enqueues msg for broadcast and returns its id.
 	// Returns ErrMsgUnsupported for unsupported message types.
-	Enqueue(contractID string, msg cosmosSDK.Msg) (int64, error)
+	Enqueue(ctx context.Context, contractID string, msg cosmosSDK.Msg) (int64, error)
 }
 
 // TxManager manages txs composed of batches of queued messages.
@@ -46,7 +48,7 @@ type TxManager interface {
 	MsgEnqueuer
 
 	// GetMsgs returns any messages matching ids.
-	GetMsgs(ids ...int64) (Msgs, error)
+	GetMsgs(ctx context.Context, ids ...int64) (Msgs, error)
 	// GasPrice returns the gas price in ucosm.
 	GasPrice() (cosmosSDK.DecCoin, error)
 }

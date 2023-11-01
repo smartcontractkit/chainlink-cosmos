@@ -4,8 +4,9 @@ import (
 	"context"
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
-	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+
+	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/median_report"
@@ -71,7 +72,7 @@ func (c *CosmosModuleTransmitter) Transmit(
 		msgTransmit.Signatures = append(msgTransmit.Signatures, sig.Signature)
 	}
 
-	_, err = c.msgEnqueuer.Enqueue(c.feedID, msgTransmit)
+	_, err = c.msgEnqueuer.Enqueue(ctx, c.feedID, msgTransmit)
 	return err
 }
 
