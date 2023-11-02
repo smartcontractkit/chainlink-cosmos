@@ -10,12 +10,12 @@ require (
 	github.com/google/uuid v1.3.1
 	github.com/lib/pq v1.10.9
 	github.com/rs/zerolog v1.30.0
-	github.com/smartcontractkit/chainlink-common v0.1.7-0.20231121180428-d7f28e91ccc3
-	github.com/smartcontractkit/chainlink-cosmos v0.4.1-0.20231117191236-12eab01a4542
+	github.com/smartcontractkit/chainlink-common v0.1.7-0.20231123003013-379db0b9e4c7
+	github.com/smartcontractkit/chainlink-cosmos v0.4.1-0.20231120072345-ec92d212f606
 	github.com/smartcontractkit/chainlink-cosmos/ops v0.0.0-20230615043323-5fe39e28b7ee
-	github.com/smartcontractkit/chainlink-testing-framework v1.19.4
-	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20231115002109-3a38e9052fa4
-	github.com/smartcontractkit/chainlink/v2 v2.5.1-0.20231122111232-f7c254bc9c73
+	github.com/smartcontractkit/chainlink-testing-framework v1.19.5
+	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20231123044049-109e0d90133a
+	github.com/smartcontractkit/chainlink/v2 v2.0.0-20231123044049-109e0d90133a
 	github.com/smartcontractkit/libocr v0.0.0-20231107151413-13e0202ae8d7
 	github.com/stretchr/testify v1.8.4
 	gopkg.in/guregu/null.v4 v4.0.0
@@ -113,6 +113,7 @@ require (
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.9.1 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
+	github.com/go-json-experiment/json v0.0.0-20231102232822-2e55bd4e08b0 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
@@ -137,7 +138,7 @@ require (
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
@@ -195,7 +196,6 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/koron/go-ssdp v0.0.2 // indirect
@@ -354,7 +354,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.starlark.net v0.0.0-20220817180228-f738f5508c12 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/arch v0.4.0 // indirect
