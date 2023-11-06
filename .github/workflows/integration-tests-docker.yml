@@ -38,6 +38,17 @@ jobs:
           ref: ${{ env.CUSTOM_CORE_REF || env.DEFAULT_CORE_REF }}
           path: temp/chainlink
 
+      - name: Read go version from core .tool-versions
+        id: tool_versions
+        run: |
+          go_version=$(grep -E '^golang ' temp/chainlink/.tool-versions | cut -d' ' -f2)
+          echo "GO_VERSION=${go_version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ steps.tool_versions.outputs.GO_VERSION }}
+
       - name: Update chainlink-cosmos sha
         env:
           COMMIT_SHA: ${{ github.event_name == 'push' && github.sha || github.event.pull_request.head.sha }}
