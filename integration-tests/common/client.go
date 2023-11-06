@@ -193,7 +193,7 @@ func connectChainlinkNodes(e *environment.Environment) ([]*client.ChainlinkClien
 			Email:      "notreal@fakeemail.ch",
 			Password:   "fj293fbBnlQ!f9vNs",
 			InternalIP: parseHostname(nodeDetails.InternalIP),
-		})
+		}, log.Logger)
 		if err != nil {
 			return nil, err
 		}
