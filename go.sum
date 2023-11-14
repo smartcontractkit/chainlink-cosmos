@@ -674,8 +674,8 @@ github.com/shopspring/decimal v1.3.1 h1:2Usl1nmF/WZucqkFZhnfFYxxxu8LG21F6nPQBE5g
 github.com/shopspring/decimal v1.3.1/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
-github.com/smartcontractkit/chainlink-relay v0.1.7-0.20231031114820-e9826d481111 h1:CElKhWq0WIa9Rmg5Ssajs5Hp3m3u/nYIQdXtpj2gbcc=
-github.com/smartcontractkit/chainlink-relay v0.1.7-0.20231031114820-e9826d481111/go.mod h1:M9U1JV7IQi8Sfj4JR1qSi1tIh6omgW78W/8SHN/8BUQ=
+github.com/smartcontractkit/chainlink-relay v0.1.7-0.20231114165715-7689cd229357 h1:r1waaZ6ldGCkUYULdOKBbt1Z90FV6T2euJOd8Y2+I4U=
+github.com/smartcontractkit/chainlink-relay v0.1.7-0.20231114165715-7689cd229357/go.mod h1:rOayi690YxLlkQy959PD8INhOAIAUi9LoN0G+J/CEf4=
 github.com/smartcontractkit/grpc-proxy v0.0.0-20230731113816-f1be6620749f h1:hgJif132UCdjo8u43i7iPN1/MFnu49hv7lFGFftCHKU=
 github.com/smartcontractkit/grpc-proxy v0.0.0-20230731113816-f1be6620749f/go.mod h1:MvMXoufZAtqExNexqi4cjrNYE9MefKddKylxjS+//n0=
 github.com/smartcontractkit/libocr v0.0.0-20230925165524-ffa38fe11ef8 h1:R9NkVN+1fooUJFsN9zj9gDY1B+zv54zNO785RQZRVfE=
