@@ -6,64 +6,32 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/smartcontractkit/chainlink-relay/pkg/sqlutil"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
 )
 
-type DB interface {
-	BeginTxx(context.Context, *sql.TxOptions) (*sqlx.Tx, error)
-}
-
-type Queryer interface {
-	GetContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
-	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
-	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
-}
-
 // ORM manages the data model for cosmos tx management.
 type ORM struct {
 	chainID string
-	db      Queryer
+	db      sqlutil.Queryer
 }
 
 // NewORM creates an ORM scoped to chainID.
-func NewORM(chainID string, db Queryer) *ORM {
+func NewORM(chainID string, db sqlutil.Queryer) *ORM {
 	return &ORM{
 		chainID: chainID,
 		db:      db,
 	}
 }
 
-// TODO this is a simplified version of https://github.com/smartcontractkit/chainlink/blob/5c0ac3879bef46b828d460960702c1587f730909/core/services/pg/transaction.go#L88
-// we should have a common shared impl instead, maybe in relay/pkg/db
-// TODO make generic
 func (o *ORM) Transaction(ctx context.Context, fn func(*ORM) error) (err error) {
-	db, ok := o.db.(DB)
-	if !ok {
-		return fn(NewORM(o.chainID, o.db))
-	}
-	tx, err := db.BeginTxx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if p := recover(); p != nil {
-			_ = tx.Rollback()
-			panic(p)
-		} else if err != nil {
-			if err2 := tx.Rollback(); err2 != nil {
-				err = errors.Join(err, err2)
-			}
-			return
-		}
-		err = tx.Commit()
-	}()
-	// TODO set timeouts?
-	err = fn(NewORM(o.chainID, tx))
-	return
+	return sqlutil.Transact(ctx, o.new, o.db, nil, fn)
 }
+
+// new returns a NewORM like o, but backed by q.
+func (o *ORM) new(q sqlutil.Queryer) *ORM { return NewORM(o.chainID, q) }
 
 // InsertMsg inserts a cosmos msg, assumed to be a serialized cosmos ExecuteContractMsg.
 func (o *ORM) InsertMsg(ctx context.Context, contractID, typeURL string, msg []byte) (int64, error) {
