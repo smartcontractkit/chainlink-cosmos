@@ -11,11 +11,12 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/rs/zerolog v1.29.1
 	github.com/smartcontractkit/chainlink-common v0.1.7-0.20231117021201-6814387d8d3e
-	github.com/smartcontractkit/chainlink-cosmos v0.4.1-0.20230913032705-f924d753cc47
+	github.com/smartcontractkit/chainlink-cosmos v0.4.1-0.20231109141932-cb1ea9020255
 	github.com/smartcontractkit/chainlink-cosmos/ops v0.0.0-20230615043323-5fe39e28b7ee
 	github.com/smartcontractkit/chainlink-env v0.36.0
-	github.com/smartcontractkit/chainlink-testing-framework v1.15.3
-	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20230818010150-dc7e03125cd0
+	github.com/smartcontractkit/chainlink-relay v0.1.7-0.20231114165715-7689cd229357
+	github.com/smartcontractkit/chainlink-testing-framework v1.18.7-0.20231113135417-b0b95bbebee1
+	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20231115002109-3a38e9052fa4
 	github.com/smartcontractkit/chainlink/v2 v2.6.0
 	github.com/smartcontractkit/libocr v0.0.0-20230925165524-ffa38fe11ef8
 	github.com/stretchr/testify v1.8.4
