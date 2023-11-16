@@ -8,7 +8,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
+	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
 )
 
 // CosmosConfig contains configuration for connecting to a cosmos RPC client.

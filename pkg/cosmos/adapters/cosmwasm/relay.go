@@ -6,9 +6,9 @@ import (
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
-	relaytypes "github.com/smartcontractkit/chainlink-relay/pkg/types"
-	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
+	"github.com/smartcontractkit/chainlink-common/pkg/logger"
+	relaytypes "github.com/smartcontractkit/chainlink-common/pkg/types"
+	"github.com/smartcontractkit/chainlink-common/pkg/utils"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 

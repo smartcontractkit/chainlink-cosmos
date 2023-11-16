@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
+	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 

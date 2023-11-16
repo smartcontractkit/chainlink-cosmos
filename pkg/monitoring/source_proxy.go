@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"math/big"
 
-	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
+	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
 )
 
 // ProxyData is a subset of the data returned by the Cosmos feed proxy contract's "latest_round_data" method.

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	relaylogger "github.com/smartcontractkit/chainlink-common/pkg/logger"
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/gauntlet"
 	"github.com/smartcontractkit/chainlink-cosmos/ops/utils"
@@ -17,7 +18,6 @@ import (
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/testutil"
-	relaylogger "github.com/smartcontractkit/chainlink-relay/pkg/logger"
 
 	// "github.com/smartcontractkit/chainlink/integration-tests/actions"
 	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting2/types"

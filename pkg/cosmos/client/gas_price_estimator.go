@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/smartcontractkit/chainlink-relay/pkg/fee"
-	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
+	"github.com/smartcontractkit/chainlink-common/pkg/fee"
+	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 	"go.uber.org/multierr"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"

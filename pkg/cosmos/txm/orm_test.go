@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/smartcontractkit/chainlink-common/pkg/utils/tests"
 	cosmosdb "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
-	"github.com/smartcontractkit/chainlink-relay/pkg/utils/tests"
 )
 
 func TestORM(t *testing.T) {
