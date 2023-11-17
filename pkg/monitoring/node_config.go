@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	relayMonitoring "github.com/smartcontractkit/chainlink-relay/pkg/monitoring"
+	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 

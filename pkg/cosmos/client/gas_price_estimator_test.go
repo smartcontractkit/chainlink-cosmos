@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
+	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 
 	"go.uber.org/zap"
 

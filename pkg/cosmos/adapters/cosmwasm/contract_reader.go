@@ -12,7 +12,7 @@ import (
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
+	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"

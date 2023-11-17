@@ -8,8 +8,8 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/smartcontractkit/chainlink-common/pkg/config"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
-	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
 )
 
 func Test_sdkDecFromDecimal(t *testing.T) {
@@ -62,7 +62,7 @@ func TestCosmosConfig_GetNode(t *testing.T) {
 				Nodes: []*Node{
 					&Node{
 						Name:          ptr("node"),
-						TendermintURL: &utils.URL{},
+						TendermintURL: &config.URL{},
 					},
 				}},
 			want: db.Node{

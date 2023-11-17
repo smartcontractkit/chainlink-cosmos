@@ -11,8 +11,7 @@ import (
 	"github.com/shopspring/decimal"
 	"go.uber.org/multierr"
 
-	"github.com/smartcontractkit/chainlink-relay/pkg/config"
-	"github.com/smartcontractkit/chainlink-relay/pkg/utils"
+	"github.com/smartcontractkit/chainlink-common/pkg/config"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
@@ -82,16 +81,16 @@ type configSet struct {
 
 type Chain struct {
 	Bech32Prefix         *string
-	BlockRate            *utils.Duration
+	BlockRate            *config.Duration
 	BlocksUntilTxTimeout *int64
-	ConfirmPollPeriod    *utils.Duration
+	ConfirmPollPeriod    *config.Duration
 	FallbackGasPrice     *decimal.Decimal
 	GasToken             *string
 	GasLimitMultiplier   *decimal.Decimal
 	MaxMsgsPerBatch      *int64
-	OCR2CachePollPeriod  *utils.Duration
-	OCR2CacheTTL         *utils.Duration
-	TxMsgTimeout         *utils.Duration
+	OCR2CachePollPeriod  *config.Duration
+	OCR2CacheTTL         *config.Duration
+	TxMsgTimeout         *config.Duration
 }
 
 func (c *Chain) SetDefaults() {
@@ -99,13 +98,13 @@ func (c *Chain) SetDefaults() {
 		c.Bech32Prefix = &defaultConfigSet.Bech32Prefix
 	}
 	if c.BlockRate == nil {
-		c.BlockRate = utils.MustNewDuration(defaultConfigSet.BlockRate)
+		c.BlockRate = config.MustNewDuration(defaultConfigSet.BlockRate)
 	}
 	if c.BlocksUntilTxTimeout == nil {
 		c.BlocksUntilTxTimeout = &defaultConfigSet.BlocksUntilTxTimeout
 	}
 	if c.ConfirmPollPeriod == nil {
-		c.ConfirmPollPeriod = utils.MustNewDuration(defaultConfigSet.ConfirmPollPeriod)
+		c.ConfirmPollPeriod = config.MustNewDuration(defaultConfigSet.ConfirmPollPeriod)
 	}
 	if c.FallbackGasPrice == nil {
 		d := decimal.NewFromBigInt(defaultConfigSet.FallbackGasPrice.BigInt(), -sdk.Precision)
@@ -122,19 +121,19 @@ func (c *Chain) SetDefaults() {
 		c.MaxMsgsPerBatch = &defaultConfigSet.MaxMsgsPerBatch
 	}
 	if c.OCR2CachePollPeriod == nil {
-		c.OCR2CachePollPeriod = utils.MustNewDuration(defaultConfigSet.OCR2CachePollPeriod)
+		c.OCR2CachePollPeriod = config.MustNewDuration(defaultConfigSet.OCR2CachePollPeriod)
 	}
 	if c.OCR2CacheTTL == nil {
-		c.OCR2CacheTTL = utils.MustNewDuration(defaultConfigSet.OCR2CacheTTL)
+		c.OCR2CacheTTL = config.MustNewDuration(defaultConfigSet.OCR2CacheTTL)
 	}
 	if c.TxMsgTimeout == nil {
-		c.TxMsgTimeout = utils.MustNewDuration(defaultConfigSet.TxMsgTimeout)
+		c.TxMsgTimeout = config.MustNewDuration(defaultConfigSet.TxMsgTimeout)
 	}
 }
 
 type Node struct {
 	Name          *string
-	TendermintURL *utils.URL
+	TendermintURL *config.URL
 }
 
 func (n *Node) ValidateConfig() (err error) {

@@ -17,7 +17,7 @@ import (
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 
-	"github.com/smartcontractkit/chainlink-relay/pkg/logger"
+	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 )
 
 func TestMain(m *testing.M) {
