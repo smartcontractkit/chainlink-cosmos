@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/rs/zerolog v1.28.0
-	github.com/smartcontractkit/chainlink-env v0.2.50
+	github.com/smartcontractkit/chainlink-testing-framework v1.19.4
 )
 
 require (
