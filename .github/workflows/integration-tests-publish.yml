@@ -18,6 +18,8 @@ jobs:
       contents: read
     name: Publish Integration Test Image
     runs-on: ubuntu-latest
+    # TODO: fix building test image and reenable
+    if: false
     steps:
       - name: Collect Metrics
         id: collect-gha-metrics
