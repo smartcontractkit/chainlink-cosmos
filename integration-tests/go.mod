@@ -16,7 +16,7 @@ require (
 	github.com/smartcontractkit/chainlink-relay v0.1.7-0.20231114165715-7689cd229357
 	github.com/smartcontractkit/chainlink-testing-framework v1.19.4
 	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20231115002109-3a38e9052fa4
-	github.com/smartcontractkit/chainlink/v2 v2.6.0
+	github.com/smartcontractkit/chainlink/v2 f7c254bc9c7320506536b1c23bd5005476e17ee7
 	github.com/smartcontractkit/libocr v0.0.0-20230925165524-ffa38fe11ef8
 	github.com/stretchr/testify v1.8.4
 	gopkg.in/guregu/null.v4 v4.0.0
