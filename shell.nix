@@ -58,7 +58,7 @@ pkgs.mkShell {
   # Avoids issues with delve
   CGO_CPPFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0";
 
-  HELM_REPOSITORY_CONFIG=./.helm-repositories.yaml;
+  HELM_REPOSITORY_CONFIG=./helm-repositories.yaml;
   postShellHook = ''
     go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
     helm repo update
