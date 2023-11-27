@@ -678,8 +678,8 @@ github.com/shopspring/decimal v1.3.1 h1:2Usl1nmF/WZucqkFZhnfFYxxxu8LG21F6nPQBE5g
 github.com/shopspring/decimal v1.3.1/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
-github.com/smartcontractkit/chainlink-common v0.1.7-0.20231123003013-379db0b9e4c7 h1:QLhOOIeFldRBc+ESAVZfEPrIpfeiduwnmHlvDt1iFmM=
-github.com/smartcontractkit/chainlink-common v0.1.7-0.20231123003013-379db0b9e4c7/go.mod h1:ipa32mlAXbF3uUQqfVDNxQbBiyu2KKA3AwhK3ewhSSU=
+github.com/smartcontractkit/chainlink-common v0.1.7-0.20231128165554-4ca240b67cd7 h1:Q7Lif7+Hr3A1gsFooCp/StP93qVPuixn32XEllZnSdY=
+github.com/smartcontractkit/chainlink-common v0.1.7-0.20231128165554-4ca240b67cd7/go.mod h1:ipa32mlAXbF3uUQqfVDNxQbBiyu2KKA3AwhK3ewhSSU=
 github.com/smartcontractkit/grpc-proxy v0.0.0-20230731113816-f1be6620749f h1:hgJif132UCdjo8u43i7iPN1/MFnu49hv7lFGFftCHKU=
 github.com/smartcontractkit/grpc-proxy v0.0.0-20230731113816-f1be6620749f/go.mod h1:MvMXoufZAtqExNexqi4cjrNYE9MefKddKylxjS+//n0=
 github.com/smartcontractkit/libocr v0.0.0-20230925165524-ffa38fe11ef8 h1:R9NkVN+1fooUJFsN9zj9gDY1B+zv54zNO785RQZRVfE=
