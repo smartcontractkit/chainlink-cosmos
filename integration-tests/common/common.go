@@ -138,8 +138,6 @@ TendermintURL = '%s'
 Enabled = true
 
 [P2P]
-[P2P.V1]
-Enabled = false
 [P2P.V2]
 Enabled = true
 DeltaDial = '5s'
