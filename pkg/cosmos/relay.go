@@ -106,3 +106,7 @@ func (r *Relayer) NewMedianProvider(rargs types.RelayArgs, pargs types.PluginArg
 	}
 	return configProvider, err
 }
+
+func (r *Relayer) NewAutomationProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.AutomationProvider, error) {
+	return nil, errors.New("automation is not supported for cosmos")
+}
