@@ -1165,12 +1165,12 @@ github.com/smartcontractkit/chainlink-solana v1.0.3-0.20231213225927-710a3c1b651
 github.com/smartcontractkit/chainlink-solana v1.0.3-0.20231213225927-710a3c1b6511/go.mod h1:/gcTv55WINdBaT4T3bYO+QUzgkQ8cNJE5qz11XxYvyM=
 github.com/smartcontractkit/chainlink-starknet/relayer v0.0.1-beta-test.0.20231213230124-fc5e7c81ccf5 h1:XSEYz8A6+A3tpmAlCCVG8xHcM8DXevpc2ag6CXlRYd0=
 github.com/smartcontractkit/chainlink-starknet/relayer v0.0.1-beta-test.0.20231213230124-fc5e7c81ccf5/go.mod h1:bc6Rge7BViIWU+WD+91PEO4+6HgXjbh9w/35PJbEEDM=
-github.com/smartcontractkit/chainlink-testing-framework v1.21.0 h1:MrtpGMgPpcRX06FtDEj14Vokoo6Sx8e0/D6AA9LxCgM=
-github.com/smartcontractkit/chainlink-testing-framework v1.21.0/go.mod h1:9SCqZ+lcWZNEofpPgasQ+wUF6A6fFgZvWmhqQJwFYV0=
+github.com/smartcontractkit/chainlink-testing-framework v1.22.0 h1:Lur628wkrceWgcLmxGZe7Mauwxht4YO71hX9Jj5YslE=
+github.com/smartcontractkit/chainlink-testing-framework v1.22.0/go.mod h1:yu6qqrppNJfutQV37fiSs4eS0uQP5QT0ebi3tlIgWN0=
 github.com/smartcontractkit/chainlink-vrf v0.0.0-20231120191722-fef03814f868 h1:FFdvEzlYwcuVHkdZ8YnZR/XomeMGbz5E2F2HZI3I3w8=
 github.com/smartcontractkit/chainlink-vrf v0.0.0-20231120191722-fef03814f868/go.mod h1:Kn1Hape05UzFZ7bOUnm3GVsHzP0TNrVmpfXYNHdqGGs=
-github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20231212105216-0c63446ae535 h1:NnkmF2fr+3db8E4TzD9u0yhqv8dOz/AG7dG6fFmut7U=
-github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20231212105216-0c63446ae535/go.mod h1:YOO4t5xan+oU616LoRalZ2UF0aAYGwX3UCDXz3paLyg=
+github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20231213230158-5f572bfb4002 h1:5wDc7fhthqS4C3xS1nVsby6q1RarHZFyudb6cJUOlKM=
+github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20231213230158-5f572bfb4002/go.mod h1:6NXGi5ssVO29VQVqmUXKgaOKsC3pIHUfN/a3yiVrZPw=
 github.com/smartcontractkit/chainlink/v2 v2.8.0-beta0.0.20231213230158-5f572bfb4002 h1:R1CdSyquIs4ON4bZSdZS/O459TvHgOr6+sOFxDxAlpE=
 github.com/smartcontractkit/chainlink/v2 v2.8.0-beta0.0.20231213230158-5f572bfb4002/go.mod h1:fvLnMU69OISYQdk8518YBuy03MVfANE4lUsG5QJcvC4=
 github.com/smartcontractkit/go-plugin v0.0.0-20231003134350-e49dad63b306 h1:ko88+ZznniNJZbZPWAvHQU8SwKAdHngdDZ+pvVgB5ss=

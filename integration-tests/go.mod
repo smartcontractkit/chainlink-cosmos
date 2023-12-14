@@ -11,8 +11,8 @@ require (
 	github.com/smartcontractkit/chainlink-common v0.1.7-0.20231213225410-aaac74f273a5
 	github.com/smartcontractkit/chainlink-cosmos v0.4.1-0.20231213225630-0380a99d6fba
 	github.com/smartcontractkit/chainlink-cosmos/ops v0.0.0-20231206164210-03f8b219402e
-	github.com/smartcontractkit/chainlink-testing-framework v1.21.0
-	github.com/smartcontractkit/chainlink/integration-tests 5f572bfb40
+	github.com/smartcontractkit/chainlink-testing-framework v1.22.0
+	github.com/smartcontractkit/chainlink/integration-tests v0.0.0-20231213230158-5f572bfb4002
 	github.com/smartcontractkit/chainlink/v2 v2.8.0-beta0.0.20231213230158-5f572bfb4002
 	github.com/smartcontractkit/libocr v0.0.0-20231130143053-c5102a9c0fb7
 	github.com/stretchr/testify v1.8.4
