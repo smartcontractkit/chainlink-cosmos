@@ -11,6 +11,7 @@ import (
 	"time"
 
 	relaylogger "github.com/smartcontractkit/chainlink-common/pkg/logger"
+
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/gauntlet"
 	"github.com/smartcontractkit/chainlink-cosmos/ops/utils"
@@ -67,8 +68,8 @@ func TestOCRBasic(t *testing.T) {
 	for i, nodeAddr := range chainlinkClient.GetNodeAddresses() {
 		to := types.MustAccAddressFromBech32(nodeAddr)
 		msgSend := banktypes.NewMsgSend(testAccount, to, amount)
-		resp, err := cosmosClient.SignAndBroadcast([]types.Msg{msgSend}, accountNumber, sequenceNumber+uint64(i), gasPrice, privateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
-		require.NoError(t, err, "Could not send tokens")
+		resp, err2 := cosmosClient.SignAndBroadcast([]types.Msg{msgSend}, accountNumber, sequenceNumber+uint64(i), gasPrice, privateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+		require.NoError(t, err2, "Could not send tokens")
 		logger.Info().Str("from", testAccount.String()).
 			Str("to", nodeAddr).
 			Str("amount", "10000000").
@@ -78,8 +79,8 @@ func TestOCRBasic(t *testing.T) {
 		tx, success := client.AwaitTxCommitted(t, cosmosClient, resp.TxResponse.TxHash)
 		require.True(t, success)
 		require.Equal(t, cometbfttypes.CodeTypeOK, tx.TxResponse.Code)
-		balance, err := cosmosClient.Balance(to, "ucosm")
-		require.NoError(t, err, "Could not fetch ucosm balance")
+		balance, err2 := cosmosClient.Balance(to, "ucosm")
+		require.NoError(t, err2, "Could not fetch ucosm balance")
 		require.Equal(t, balance.String(), "10000000ucosm")
 	}
 
@@ -227,7 +228,7 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 	linkResponse := struct {
 		Amount string `json:"amount"`
 	}{}
-	if err := json.Unmarshal(resp, &linkResponse); err != nil {
+	if err = json.Unmarshal(resp, &linkResponse); err != nil {
 		return err
 	}
 	logger.Info().Str("amount", linkResponse.Amount).Msg("Queried link available for payment")
@@ -253,8 +254,8 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 
 	for start := time.Now(); time.Since(start) < testDuration; {
 		logger.Info().Msg(fmt.Sprintf("Elapsed time: %s, Round wait: %s ", time.Since(start), testDuration))
-		configDigest, epoch, round, latestAnswer, latestTimestamp, err := ocrReader.LatestTransmissionDetails(ctx)
-		require.NoError(t, err, "Failed to get latest transmission details")
+		configDigest, epoch, round, latestAnswer, latestTimestamp, err2 := ocrReader.LatestTransmissionDetails(ctx)
+		require.NoError(t, err2, "Failed to get latest transmission details")
 		// end condition: enough rounds have occurred
 		if !isSoak && increasing >= rounds && positive {
 			break
@@ -269,8 +270,8 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 		// try to fetch rounds
 		time.Sleep(5 * time.Second)
 
-		if err != nil {
-			logger.Error().Msg(fmt.Sprintf("Transmission Error: %+v", err))
+		if err2 != nil {
+			logger.Error().Msg(fmt.Sprintf("Transmission Error: %+v", err2))
 			continue
 		}
 		logger.Info().Msg(fmt.Sprintf("Transmission Details: configDigest: %+v, epoch: %+v, round: %+v, latestAnswer: %+v, latestTimestamp: %+v", configDigest, epoch, round, latestAnswer, latestTimestamp))

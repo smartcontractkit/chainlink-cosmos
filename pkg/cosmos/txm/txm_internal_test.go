@@ -18,8 +18,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	commoncfg "github.com/smartcontractkit/chainlink-common/pkg/config"
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
-	"github.com/smartcontractkit/chainlink-common/pkg/utils"
 	"github.com/smartcontractkit/chainlink-common/pkg/utils/tests"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
@@ -311,7 +311,7 @@ func TestTxm(t *testing.T) {
 	t.Run("expired msgs", func(t *testing.T) {
 		ctx := tests.Context(t)
 		tc := new(mocks.ReaderWriter)
-		timeout, err := utils.NewDuration(1 * time.Millisecond)
+		timeout, err := commoncfg.NewDuration(1 * time.Millisecond)
 		require.NoError(t, err)
 		tcFn := func() (client.ReaderWriter, error) { return tc, nil }
 		two := int64(2)
