@@ -108,8 +108,8 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, nodeName, p2pPort, moc
 
 	// Defining relay config
 	bootstrapRelayConfig := job.JSONConfig{
-		"nodeName": fmt.Sprintf("\"%s\"", nodeName),
-		"chainID":  fmt.Sprintf("\"%s\"", chainId),
+		"nodeName": nodeName,
+		"chainID":  chainId,
 	}
 
 	oracleSpec := job.OCR2OracleSpec{
