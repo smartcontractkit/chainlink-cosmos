@@ -11,11 +11,12 @@ import (
 	"github.com/rs/zerolog/log"
 	"gopkg.in/guregu/null.v4"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/smartcontractkit/chainlink-testing-framework/k8s/environment"
 	"github.com/smartcontractkit/chainlink/integration-tests/client"
 	"github.com/smartcontractkit/chainlink/v2/core/services/job"
 	"github.com/smartcontractkit/chainlink/v2/core/services/relay"
+
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 )
 
 type ChainlinkClient struct {
@@ -26,6 +27,8 @@ type ChainlinkClient struct {
 	bootstrapPeers []client.P2PData
 }
 
+var _ ChainlinkClient = ChainlinkClient{bTypeAttr: nil} // fix "field `bTypeAttr` is unused" lint
+
 // TODO: Remove env. See https://github.com/smartcontractkit/chainlink-cosmos/pull/350#discussion_r1298071289
 // CreateKeys Creates node keys and defines chain and nodes for each node
 func NewChainlinkClient(env *environment.Environment, nodeName string, chainId string, tendermintURL string, bech32Prefix string) (*ChainlinkClient, error) {
@@ -33,7 +36,7 @@ func NewChainlinkClient(env *environment.Environment, nodeName string, chainId s
 	if err != nil {
 		return nil, err
 	}
-	if nodes == nil || len(nodes) == 0 {
+	if len(nodes) == 0 {
 		return nil, errors.New("No connected nodes")
 	}
 
@@ -42,7 +45,7 @@ func NewChainlinkClient(env *environment.Environment, nodeName string, chainId s
 		return nil, err
 	}
 
-	if nodeKeys == nil || len(nodeKeys) == 0 {
+	if len(nodeKeys) == 0 {
 		return nil, errors.New("No node keys")
 	}
 
