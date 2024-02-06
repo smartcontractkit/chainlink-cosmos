@@ -79,6 +79,10 @@ func (r *Relayer) NewMercuryProvider(rargs types.RelayArgs, pargs types.PluginAr
 	return nil, errors.New("mercury is not supported for cosmos")
 }
 
+func (r *Relayer) NewLLOProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.LLOProvider, error) {
+	return nil, errors.New("data streams is not supported for cosmos")
+}
+
 func (r *Relayer) NewFunctionsProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.FunctionsProvider, error) {
 	return nil, errors.New("functions are not supported for cosmos")
 }
