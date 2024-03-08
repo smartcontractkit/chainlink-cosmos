@@ -875,6 +875,7 @@ struct Report {
     pub observers: [u8; MAX_ORACLES], // observer index
     pub observations_timestamp: u32,
     pub juels_per_fee_coin: u128,
+    pub gas_price: u128,
 }
 
 // NOTE: unwraps in this method can be factored out once split_array is stable
@@ -908,9 +909,10 @@ fn decode_report(raw_report: &[u8]) -> Result<Report, ContractError> {
 
     const OBSERVATION_SIZE: usize = mem::size_of::<i128>();
 
-    // assert the remainder of the report is long enough for N observations + juels_per_fee_coin
+    // assert the remainder of the report is long enough for N observations + juels_per_fee_coin + gas_price
     require!(
-        raw_report.len() == OBSERVATION_SIZE * len + mem::size_of::<u128>(),
+        raw_report.len()
+            == OBSERVATION_SIZE * len + mem::size_of::<u128>() + mem::size_of::<u128>(),
         InvalidInput
     );
 
@@ -921,7 +923,15 @@ fn decode_report(raw_report: &[u8]) -> Result<Report, ContractError> {
         .collect::<Vec<_>>();
 
     // juels per atom = u128
+    let (raw_juels_per_fee_coin, raw_report) = raw_report.split_at(16);
     let juels_per_fee_coin = u128::from_be_bytes(
+        raw_juels_per_fee_coin
+            .try_into()
+            .map_err(|_| ContractError::InvalidInput)?,
+    );
+
+    // gas_price = u128
+    let gas_price = u128::from_be_bytes(
         raw_report
             .try_into()
             .map_err(|_| ContractError::InvalidInput)?,
@@ -932,6 +942,7 @@ fn decode_report(raw_report: &[u8]) -> Result<Report, ContractError> {
         observers,
         observations_timestamp,
         juels_per_fee_coin,
+        gas_price,
     })
 }
 
@@ -992,6 +1003,7 @@ fn report(
                 ),
                 attr("observers", hex::encode(report.observers)),
                 attr("juels_per_fee_coin", report.juels_per_fee_coin.to_string()),
+                attr("gas_price", report.gas_price.to_string()),
                 attr("config_digest", hex::encode(config_digest)),
                 attr("epoch", config.epoch.to_string()),
                 attr("round", config.round.to_string()),
@@ -1713,6 +1725,8 @@ pub(crate) mod tests {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 73, 150, 2, 210, // observation 4
         0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0,
         0, // juels per atom (1 with 18 decimal places)
+        0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0,
+        0, // gas price (1 with 18 decimal places)
     ];
 
     #[test]
