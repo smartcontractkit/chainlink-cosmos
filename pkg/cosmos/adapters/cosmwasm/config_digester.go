@@ -2,6 +2,7 @@ package cosmwasm
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -29,7 +30,7 @@ func NewOffchainConfigDigester(chainID string, contract cosmosSDK.AccAddress) Of
 	}
 }
 
-func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.ConfigDigest, error) {
+func (cd OffchainConfigDigester) ConfigDigest(ctx context.Context, cfg types.ContractConfig) (types.ConfigDigest, error) {
 	digest := types.ConfigDigest{}
 	buf := bytes.NewBuffer([]byte{})
 
@@ -103,7 +104,7 @@ func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.C
 		return digest, fmt.Errorf("incorrect hash size %d, expected %d", n, len(digest))
 	}
 
-	pre, err := cd.ConfigDigestPrefix()
+	pre, err := cd.ConfigDigestPrefix(ctx)
 	if err != nil {
 		return digest, err
 	}
@@ -115,6 +116,6 @@ func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.C
 }
 
 // This should return the same constant value on every invocation
-func (OffchainConfigDigester) ConfigDigestPrefix() (types.ConfigDigestPrefix, error) {
+func (OffchainConfigDigester) ConfigDigestPrefix(ctx context.Context) (types.ConfigDigestPrefix, error) {
 	return ConfigDigestPrefixCosmos, nil
 }
