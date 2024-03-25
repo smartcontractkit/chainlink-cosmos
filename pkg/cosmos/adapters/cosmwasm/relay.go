@@ -32,7 +32,7 @@ type configProvider struct {
 	contractAddr  cosmosSDK.AccAddress
 }
 
-func NewConfigProvider(lggr logger.Logger, chain adapters.Chain, args relaytypes.RelayArgs) (*configProvider, error) {
+func NewConfigProvider(ctx context.Context, lggr logger.Logger, chain adapters.Chain, args relaytypes.RelayArgs) (*configProvider, error) {
 	var relayConfig adapters.RelayConfig
 	err := json.Unmarshal(args.RelayConfig, &relayConfig)
 	if err != nil {
@@ -100,8 +100,8 @@ type medianProvider struct {
 	transmitter types.ContractTransmitter
 }
 
-func NewMedianProvider(lggr logger.Logger, chain adapters.Chain, rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MedianProvider, error) {
-	configProvider, err := NewConfigProvider(lggr, chain, rargs)
+func NewMedianProvider(ctx context.Context, lggr logger.Logger, chain adapters.Chain, rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MedianProvider, error) {
+	configProvider, err := NewConfigProvider(ctx, lggr, chain, rargs)
 	if err != nil {
 		return nil, err
 	}

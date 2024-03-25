@@ -1,6 +1,7 @@
 package medianreport
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -19,7 +20,7 @@ var _ median.ReportCodec = ReportCodec{}
 
 type ReportCodec struct{}
 
-func (ReportCodec) BuildReport(observations []median.ParsedAttributedObservation) (types.Report, error) {
+func (ReportCodec) BuildReport(ctx context.Context, observations []median.ParsedAttributedObservation) (types.Report, error) {
 	if len(observations) == 0 {
 		err := errors.New("cannot build report from empty attributed observations")
 		return nil, err
@@ -60,13 +61,13 @@ func (ReportCodec) BuildReport(observations []median.ParsedAttributedObservation
 	return types.Report(reportBytes), err
 }
 
-func (ReportCodec) MaxReportLength(n int) (int, error) {
+func (ReportCodec) MaxReportLength(ctx context.Context, n int) (int, error) {
 	// TODO:
 	return 0, nil
 	// return prefixSizeBytes + (n * observationSizeBytes) + juelsPerFeeCoinSizeBytes
 }
 
-func (ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
+func (ReportCodec) MedianFromReport(ctx context.Context, report types.Report) (*big.Int, error) {
 	reportRaw, err := ParseReport([]byte(report))
 	if err != nil {
 		return nil, err
