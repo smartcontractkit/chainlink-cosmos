@@ -6,11 +6,12 @@ import (
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
+	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 	relaytypes "github.com/smartcontractkit/chainlink-common/pkg/types"
 	"github.com/smartcontractkit/chainlink-common/pkg/utils"
-	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
-	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
@@ -31,7 +32,7 @@ type configProvider struct {
 	contractAddr  cosmosSDK.AccAddress
 }
 
-func NewConfigProvider(ctx context.Context, lggr logger.Logger, chain adapters.Chain, args relaytypes.RelayArgs) (*configProvider, error) {
+func NewConfigProvider(lggr logger.Logger, chain adapters.Chain, args relaytypes.RelayArgs) (*configProvider, error) {
 	var relayConfig adapters.RelayConfig
 	err := json.Unmarshal(args.RelayConfig, &relayConfig)
 	if err != nil {
@@ -99,8 +100,8 @@ type medianProvider struct {
 	transmitter types.ContractTransmitter
 }
 
-func NewMedianProvider(ctx context.Context, lggr logger.Logger, chain adapters.Chain, rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MedianProvider, error) {
-	configProvider, err := NewConfigProvider(ctx, lggr, chain, rargs)
+func NewMedianProvider(lggr logger.Logger, chain adapters.Chain, rargs relaytypes.RelayArgs, pargs relaytypes.PluginArgs) (relaytypes.MedianProvider, error) {
+	configProvider, err := NewConfigProvider(lggr, chain, rargs)
 	if err != nil {
 		return nil, err
 	}
