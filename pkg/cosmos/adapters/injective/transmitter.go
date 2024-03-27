@@ -39,7 +39,7 @@ func NewCosmosModuleTransmitter(
 	}
 }
 
-func (c *CosmosModuleTransmitter) FromAccount(ctx context.Context) (types.Account, error) {
+func (c *CosmosModuleTransmitter) FromAccount() (types.Account, error) {
 	return types.Account(c.sender.String()), nil
 }
 

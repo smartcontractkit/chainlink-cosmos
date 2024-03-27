@@ -8,8 +8,6 @@ import (
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/smartcontractkit/chainlink-common/pkg/utils/tests"
 )
 
 var testConfig = types.ContractConfig{
@@ -38,7 +36,7 @@ func TestConfigDigester(t *testing.T) {
 		sdk.MustAccAddressFromBech32("wasm1cd65xyq076dm9cw3xxqtdh4d6ypzug0edd9958"),
 	)
 
-	digest, err := d.ConfigDigest(tests.Context(t), testConfig)
+	digest, err := d.ConfigDigest(testConfig)
 	assert.NoError(t, err)
 	assert.Equal(t, "000289b55121341b1ff99cc8e15659fb8de14fca52a695b2b269a7fb94059b9f", digest.Hex())
 }
@@ -49,6 +47,6 @@ func TestConfigDigester_InvalidChainID(t *testing.T) {
 		sdk.MustAccAddressFromBech32("wasm1cd65xyq076dm9cw3xxqtdh4d6ypzug0edd9958"),
 	)
 
-	_, err := d.ConfigDigest(tests.Context(t), testConfig)
+	_, err := d.ConfigDigest(testConfig)
 	assert.Error(t, err)
 }

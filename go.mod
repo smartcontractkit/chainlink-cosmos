@@ -18,8 +18,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.17.0
 	github.com/shopspring/decimal v1.3.1
-	github.com/smartcontractkit/chainlink-common v0.1.7-0.20240324182820-92b84cfb6373
-	github.com/smartcontractkit/libocr v0.0.0-20240322223357-61738d25af14
+	github.com/smartcontractkit/chainlink-common v0.1.7-0.20240327133125-eed636b9a6df
+	github.com/smartcontractkit/libocr v0.0.0-20240326191951-2bbe9382d052
 	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/gjson v1.16.0
 	go.uber.org/multierr v1.11.0

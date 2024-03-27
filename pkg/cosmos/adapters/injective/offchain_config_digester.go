@@ -1,8 +1,6 @@
 package injective
 
 import (
-	"context"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
@@ -25,7 +23,7 @@ func NewCosmosOffchainConfigDigester(chainID string, feedID string) *CosmosOffch
 	}
 }
 
-func (d CosmosOffchainConfigDigester) ConfigDigest(ctx context.Context, cc types.ContractConfig) (types.ConfigDigest, error) {
+func (d CosmosOffchainConfigDigester) ConfigDigest(cc types.ContractConfig) (types.ConfigDigest, error) {
 	signers := make([]string, 0, len(cc.Signers))
 	for _, acc := range cc.Signers {
 		signers = append(signers, sdk.AccAddress(acc).String())
@@ -56,7 +54,7 @@ func (d CosmosOffchainConfigDigester) ConfigDigest(ctx context.Context, cc types
 	return configDigest, nil
 }
 
-func (d CosmosOffchainConfigDigester) ConfigDigestPrefix(ctx context.Context) (types.ConfigDigestPrefix, error) {
+func (d CosmosOffchainConfigDigester) ConfigDigestPrefix() (types.ConfigDigestPrefix, error) {
 	return ConfigDigestPrefixCosmos, nil
 }
 
