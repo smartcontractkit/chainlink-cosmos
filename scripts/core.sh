@@ -73,6 +73,7 @@ for ((i = 1; i <= NODE_COUNT; i++)); do
 		"echo -e \"${api_email}\\n${api_password}\" > /tmp/api_credentials && chainlink node start --api /tmp/api_credentials"
 
 	echo "Waiting for core container to become ready.."
+docker logs -f "${container_name}.$i"
 	start_time=$(date +%s)
 	prev_output=""
 	while true; do
