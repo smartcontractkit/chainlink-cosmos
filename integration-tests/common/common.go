@@ -181,17 +181,23 @@ func (c *Common) SetLocalEnvironment(t *testing.T) {
 	log.Info().Msg("Starting wasmd container...")
 	err := exec.Command("../scripts/wasmd.sh").Run()
 	require.NoError(t, err, "Could not start wasmd container")
+
 	log.Info().Msg("Starting postgres container...")
 	err = exec.Command("../scripts/postgres.sh").Run()
 	require.NoError(t, err, "Could not start postgres container")
+
 	log.Info().Msg("Starting mock adapter...")
 	err = exec.Command("../scripts/mock-adapter.sh").Run()
 	require.NoError(t, err, "Could not start mock adapter")
+
 	log.Info().Msg("Starting core nodes...")
 	cmd := exec.Command("../scripts/core.sh")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("CL_CONFIG=%s", c.ChainlinkConfig))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	require.NoError(t, err, "Could not start core nodes")
+
 	log.Info().Msg("Set up local stack complete.")
 
 	// Set ChainlinkNodeDetails
