@@ -15,19 +15,19 @@ import (
 // ORM manages the data model for cosmos tx management.
 type ORM struct {
 	chainID string
-	db      sqlutil.Queryer
+	ds      sqlutil.DataSource
 }
 
 // NewORM creates an ORM scoped to chainID.
-func NewORM(chainID string, db sqlutil.Queryer) *ORM {
+func NewORM(chainID string, ds sqlutil.DataSource) *ORM {
 	return &ORM{
 		chainID: chainID,
-		db:      db,
+		ds:      ds,
 	}
 }
 
 func (o *ORM) Transaction(ctx context.Context, fn func(*ORM) error) (err error) {
-	return sqlutil.Transact(ctx, o.new, o.db, nil, fn)
+	return sqlutil.Transact(ctx, o.new, o.ds, nil, fn)
 }
 
 // new returns a NewORM like o, but backed by q.
@@ -37,7 +37,7 @@ func (o *ORM) new(q sqlutil.Queryer) *ORM { return NewORM(o.chainID, q) }
 func (o *ORM) InsertMsg(ctx context.Context, contractID, typeURL string, msg []byte) (int64, error) {
 	var tm adapters.Msg
 
-	err := o.db.GetContext(ctx, &tm, `INSERT INTO cosmos_msgs (contract_id, type, raw, state, cosmos_chain_id, created_at, updated_at)
+	err := o.ds.GetContext(ctx, &tm, `INSERT INTO cosmos_msgs (contract_id, type, raw, state, cosmos_chain_id, created_at, updated_at)
 	VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING *`, contractID, typeURL, msg, db.Unstarted, o.chainID)
 	if err != nil {
 		return 0, err
@@ -47,7 +47,7 @@ func (o *ORM) InsertMsg(ctx context.Context, contractID, typeURL string, msg []b
 
 // UpdateMsgsContract updates messages for the given contract.
 func (o *ORM) UpdateMsgsContract(ctx context.Context, contractID string, from, to db.State) error {
-	_, err := o.db.ExecContext(ctx, `UPDATE cosmos_msgs SET state = $1, updated_at = NOW()
+	_, err := o.ds.ExecContext(ctx, `UPDATE cosmos_msgs SET state = $1, updated_at = NOW()
 	WHERE cosmos_chain_id = $2 AND contract_id = $3 AND state = $4`, to, o.chainID, contractID, from)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (o *ORM) GetMsgsState(ctx context.Context, state db.State, limit int64) (ad
 		return adapters.Msgs{}, errors.New("limit must be greater than 0")
 	}
 	var msgs adapters.Msgs
-	if err := o.db.SelectContext(ctx, &msgs, `SELECT * FROM cosmos_msgs WHERE state = $1 AND cosmos_chain_id = $2 ORDER BY id ASC LIMIT $3`, state, o.chainID, limit); err != nil {
+	if err := o.ds.SelectContext(ctx, &msgs, `SELECT * FROM cosmos_msgs WHERE state = $1 AND cosmos_chain_id = $2 ORDER BY id ASC LIMIT $3`, state, o.chainID, limit); err != nil {
 		return nil, err
 	}
 	return msgs, nil
@@ -70,7 +70,7 @@ func (o *ORM) GetMsgsState(ctx context.Context, state db.State, limit int64) (ad
 // GetMsgs returns any messages matching ids.
 func (o *ORM) GetMsgs(ctx context.Context, ids ...int64) (adapters.Msgs, error) {
 	var msgs adapters.Msgs
-	if err := o.db.SelectContext(ctx, &msgs, `SELECT * FROM cosmos_msgs WHERE id = ANY($1)`, ids); err != nil {
+	if err := o.ds.SelectContext(ctx, &msgs, `SELECT * FROM cosmos_msgs WHERE id = ANY($1)`, ids); err != nil {
 		return nil, err
 	}
 	return msgs, nil
@@ -85,9 +85,9 @@ func (o *ORM) UpdateMsgs(ctx context.Context, ids []int64, state db.State, txHas
 	var res sql.Result
 	var err error
 	if state == db.Broadcasted {
-		res, err = o.db.ExecContext(ctx, `UPDATE cosmos_msgs SET state = $1, updated_at = NOW(), tx_hash = $2 WHERE id = ANY($3)`, state, *txHash, ids)
+		res, err = o.ds.ExecContext(ctx, `UPDATE cosmos_msgs SET state = $1, updated_at = NOW(), tx_hash = $2 WHERE id = ANY($3)`, state, *txHash, ids)
 	} else {
-		res, err = o.db.ExecContext(ctx, `UPDATE cosmos_msgs SET state = $1, updated_at = NOW() WHERE id = ANY($2)`, state, ids)
+		res, err = o.ds.ExecContext(ctx, `UPDATE cosmos_msgs SET state = $1, updated_at = NOW() WHERE id = ANY($2)`, state, ids)
 	}
 	if err != nil {
 		return err
