@@ -127,3 +127,7 @@ func (r *Relayer) NewAutomationProvider(rargs types.RelayArgs, pargs types.Plugi
 func (r *Relayer) NewPluginProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.PluginProvider, error) {
 	return nil, errors.New("plugin provider is not supported for cosmos")
 }
+
+func (r *Relayer) NewOCR3CapabilityProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.OCR3CapabilityProvider, error) {
+	return nil, errors.New("ocr3 capability provider is not supported for cosmos")
+}
