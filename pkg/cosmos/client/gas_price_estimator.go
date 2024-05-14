@@ -1,12 +1,12 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/smartcontractkit/chainlink-common/pkg/fee"
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
-	"go.uber.org/multierr"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -124,7 +124,7 @@ func (gpe *ComposedGasPriceEstimator) GasPrices() map[string]sdk.DecCoin {
 	for _, estimator := range gpe.estimators {
 		latestPrices, err := estimator.GasPrices()
 		if err != nil {
-			finalError = multierr.Combine(finalError, err)
+			finalError = errors.Join(finalError, err)
 			gpe.lggr.Warnf("error using estimator, trying next one, err %v", err)
 			continue
 		}

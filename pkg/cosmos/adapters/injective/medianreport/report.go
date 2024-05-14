@@ -1,4 +1,4 @@
-package median_report
+package medianreport
 
 import (
 	"errors"
@@ -86,7 +86,7 @@ func ParseReport(data []byte) (*injectivetypes.Report, error) {
 	var reportRaw injectivetypes.Report
 
 	if err := proto.Unmarshal(data, &reportRaw); err != nil {
-		err = fmt.Errorf("failed to unmarshal data as median_report.Report: %w", err)
+		err = fmt.Errorf("failed to unmarshal data as medianreport.Report: %w", err)
 		return nil, err
 	}
 

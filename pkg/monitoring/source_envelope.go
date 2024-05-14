@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"sort"
@@ -12,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
-	"go.uber.org/multierr"
+
+	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/cosmwasm"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
@@ -89,7 +90,7 @@ func (e *envelopeSource) Fetch(ctx context.Context) (interface{}, error) {
 		envelopeMu.Lock()
 		defer envelopeMu.Unlock()
 		if err != nil {
-			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to fetch transmission: %w", err))
+			envelopeErr = errors.Join(envelopeErr, fmt.Errorf("failed to fetch transmission: %w", err))
 			return
 		}
 		envelope.ConfigDigest = data.configDigest
@@ -109,7 +110,7 @@ func (e *envelopeSource) Fetch(ctx context.Context) (interface{}, error) {
 		envelopeMu.Lock()
 		defer envelopeMu.Unlock()
 		if err != nil {
-			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to fetch config: %w", err))
+			envelopeErr = errors.Join(envelopeErr, fmt.Errorf("failed to fetch config: %w", err))
 			return
 		}
 		envelope.ContractConfig = contractConfig
@@ -120,7 +121,7 @@ func (e *envelopeSource) Fetch(ctx context.Context) (interface{}, error) {
 		envelopeMu.Lock()
 		defer envelopeMu.Unlock()
 		if err != nil {
-			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to fetch link balance: %w", err))
+			envelopeErr = errors.Join(envelopeErr, fmt.Errorf("failed to fetch link balance: %w", err))
 			return
 		}
 		envelope.LinkBalance = balance
@@ -131,7 +132,7 @@ func (e *envelopeSource) Fetch(ctx context.Context) (interface{}, error) {
 		envelopeMu.Lock()
 		defer envelopeMu.Unlock()
 		if err != nil {
-			envelopeErr = multierr.Combine(envelopeErr, fmt.Errorf("failed to fetch link balance: %w", err))
+			envelopeErr = errors.Join(envelopeErr, fmt.Errorf("failed to fetch link balance: %w", err))
 			return
 		}
 		envelope.LinkAvailableForPayment = amount

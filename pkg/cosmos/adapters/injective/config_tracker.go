@@ -15,14 +15,14 @@ import (
 var _ types.ContractConfigTracker = &CosmosModuleConfigTracker{}
 
 type CosmosModuleConfigTracker struct {
-	feedId                  string
+	feedID                  string
 	injectiveClient         chaintypes.QueryClient
 	tendermintServiceClient tmtypes.ServiceClient
 }
 
-func NewCosmosModuleConfigTracker(feedId string, queryClient chaintypes.QueryClient, serviceClient tmtypes.ServiceClient) *CosmosModuleConfigTracker {
+func NewCosmosModuleConfigTracker(feedID string, queryClient chaintypes.QueryClient, serviceClient tmtypes.ServiceClient) *CosmosModuleConfigTracker {
 	return &CosmosModuleConfigTracker{
-		feedId:                  feedId,
+		feedID:                  feedID,
 		injectiveClient:         queryClient,
 		tendermintServiceClient: serviceClient,
 	}
@@ -49,14 +49,14 @@ func (c *CosmosModuleConfigTracker) LatestConfigDetails(
 	err error,
 ) {
 	resp, err := c.injectiveClient.FeedConfigInfo(ctx, &chaintypes.QueryFeedConfigInfoRequest{
-		FeedId: c.feedId,
+		FeedId: c.feedID,
 	})
 	if err != nil {
 		return 0, types.ConfigDigest{}, err
 	}
 
 	if resp.FeedConfigInfo == nil {
-		err = fmt.Errorf("feed config not found: %s", c.feedId)
+		err = fmt.Errorf("feed config not found: %s", c.feedID)
 		return 0, types.ConfigDigest{}, err
 	}
 
@@ -71,7 +71,7 @@ func (c *CosmosModuleConfigTracker) LatestConfig(
 	changedInBlock uint64,
 ) (types.ContractConfig, error) {
 	resp, err := c.injectiveClient.FeedConfig(ctx, &chaintypes.QueryFeedConfigRequest{
-		FeedId: c.feedId,
+		FeedId: c.feedID,
 	})
 	if err != nil {
 		return types.ContractConfig{}, err
@@ -91,7 +91,7 @@ func (c *CosmosModuleConfigTracker) LatestConfig(
 
 	config := types.ContractConfig{
 		ConfigDigest:          configDigestFromBytes(resp.FeedConfigInfo.LatestConfigDigest),
-		ConfigCount:           uint64(resp.FeedConfigInfo.ConfigCount),
+		ConfigCount:           resp.FeedConfigInfo.ConfigCount,
 		Signers:               signers,
 		Transmitters:          transmitters,
 		F:                     uint8(resp.FeedConfig.F),

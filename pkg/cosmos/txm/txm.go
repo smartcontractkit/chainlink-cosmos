@@ -4,13 +4,13 @@ import (
 	"cmp"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/pkg/errors"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -153,7 +153,7 @@ func unmarshalMsg(msgType string, raw []byte) (sdk.Msg, string, error) {
 		}
 		return &ms, ms.Sender, nil
 	}
-	return nil, "", errors.Errorf("unrecognized message type: %s", msgType)
+	return nil, "", fmt.Errorf("unrecognized message type: %s", msgType)
 }
 
 type msgValidator struct {
@@ -265,7 +265,6 @@ func (txm *Txm) sendMsgBatch(ctx context.Context) {
 			return
 		}
 	}
-
 }
 
 func (txm *Txm) sendMsgBatchFromAddress(ctx context.Context, gasPrice sdk.DecCoin, sender sdk.AccAddress, msgs adapters.Msgs) error {

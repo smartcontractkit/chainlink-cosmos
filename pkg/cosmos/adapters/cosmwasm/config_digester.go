@@ -74,7 +74,7 @@ func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.C
 		}
 	}
 
-	if err := binary.Write(buf, binary.BigEndian, byte(cfg.F)); err != nil {
+	if err := binary.Write(buf, binary.BigEndian, cfg.F); err != nil {
 		return digest, err
 	}
 

@@ -141,15 +141,15 @@ lint-go: lint-go-ops lint-go-relayer lint-go-test
 
 .PHONY: lint-go-ops
 lint-go-ops:
-	cd ./ops && golangci-lint --color=always run
+	cd ./ops && golangci-lint --max-issues-per-linter 0 --max-same-issues 0 --color=always run
 
 .PHONY: lint-go-relayer
 lint-go-relayer:
-	cd ./pkg && golangci-lint --color=always run
+	cd ./pkg && golangci-lint --max-issues-per-linter 0 --max-same-issues 0 --color=always run
 
 .PHONY: lint-go-test
 lint-go-test:
-	cd ./integration-tests && golangci-lint --color=always --exclude=dot-imports run
+	cd ./integration-tests && golangci-lint --max-issues-per-linter 0 --max-same-issues 0 --color=always --exclude=dot-imports run
 
 .PHONY: test-integration-prep
 test-integration-prep:

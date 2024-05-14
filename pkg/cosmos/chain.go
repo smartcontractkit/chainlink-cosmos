@@ -3,16 +3,14 @@ package cosmos
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
 
-	"github.com/pelletier/go-toml/v2"
-	"github.com/pkg/errors"
-	"go.uber.org/multierr"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/pelletier/go-toml/v2"
 
 	"github.com/smartcontractkit/chainlink-common/pkg/chains"
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
@@ -51,13 +49,13 @@ func (o *ChainOpts) Validate() (err error) {
 		return fmt.Errorf("%s is required", s)
 	}
 	if o.Logger == nil {
-		err = multierr.Append(err, required("Logger'"))
+		err = errors.Join(err, required("Logger'"))
 	}
 	if o.DS == nil {
-		err = multierr.Append(err, required("DataSource"))
+		err = errors.Join(err, required("DataSource"))
 	}
 	if o.KeyStore == nil {
-		err = multierr.Append(err, required("KeyStore"))
+		err = errors.Join(err, required("KeyStore"))
 	}
 	return
 }
@@ -179,7 +177,7 @@ func (c *chain) Close() error {
 }
 
 func (c *chain) Ready() error {
-	return multierr.Combine(
+	return errors.Join(
 		c.StateMachine.Ready(),
 		c.txm.Ready(),
 	)
@@ -292,7 +290,7 @@ func validateBalance(reader client.Reader, gasPrice sdk.DecCoin, fromAddr sdk.Ac
 	need := coin.Amount.Add(fee)
 
 	if balance.Amount.LT(need) {
-		return errors.Errorf("balance %q is too low for this transaction to be executed: need %s total, including %s fee", balance, need, fee)
+		return fmt.Errorf("balance %q is too low for this transaction to be executed: need %s total, including %s fee", balance, need, fee)
 	}
 	return nil
 }
