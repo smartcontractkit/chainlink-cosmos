@@ -4,13 +4,13 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"sync"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/ripemd160" //nolint: staticcheck
 
 	"github.com/smartcontractkit/chainlink-common/pkg/loop"

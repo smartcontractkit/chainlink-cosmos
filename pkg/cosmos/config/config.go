@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"slices"
@@ -9,7 +10,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/shopspring/decimal"
-	"go.uber.org/multierr"
 
 	"github.com/smartcontractkit/chainlink-common/pkg/config"
 
@@ -138,12 +138,12 @@ type Node struct {
 
 func (n *Node) ValidateConfig() (err error) {
 	if n.Name == nil {
-		err = multierr.Append(err, config.ErrMissing{Name: "Name", Msg: "required for all nodes"})
+		err = errors.Join(err, config.ErrMissing{Name: "Name", Msg: "required for all nodes"})
 	} else if *n.Name == "" {
-		err = multierr.Append(err, config.ErrEmpty{Name: "Name", Msg: "required for all nodes"})
+		err = errors.Join(err, config.ErrEmpty{Name: "Name", Msg: "required for all nodes"})
 	}
 	if n.TendermintURL == nil {
-		err = multierr.Append(err, config.ErrMissing{Name: "TendermintURL", Msg: "required for all nodes"})
+		err = errors.Join(err, config.ErrMissing{Name: "TendermintURL", Msg: "required for all nodes"})
 	}
 	return
 }
@@ -155,7 +155,7 @@ func (cs TOMLConfigs) validateKeys() (err error) {
 	chainIDs := config.UniqueStrings{}
 	for i, c := range cs {
 		if chainIDs.IsDupe(c.ChainID) {
-			err = multierr.Append(err, config.NewErrDuplicate(fmt.Sprintf("%d.ChainID", i), *c.ChainID))
+			err = errors.Join(err, config.NewErrDuplicate(fmt.Sprintf("%d.ChainID", i), *c.ChainID))
 		}
 	}
 
@@ -164,7 +164,7 @@ func (cs TOMLConfigs) validateKeys() (err error) {
 	for i, c := range cs {
 		for j, n := range c.Nodes {
 			if names.IsDupe(n.Name) {
-				err = multierr.Append(err, config.NewErrDuplicate(fmt.Sprintf("%d.Nodes.%d.Name", i, j), *n.Name))
+				err = errors.Join(err, config.NewErrDuplicate(fmt.Sprintf("%d.Nodes.%d.Name", i, j), *n.Name))
 			}
 		}
 	}
@@ -175,12 +175,11 @@ func (cs TOMLConfigs) validateKeys() (err error) {
 		for j, n := range c.Nodes {
 			u := (*url.URL)(n.TendermintURL)
 			if urls.IsDupeFmt(u) {
-				err = multierr.Append(err, config.NewErrDuplicate(fmt.Sprintf("%d.Nodes.%d.TendermintURL", i, j), u.String()))
+				err = errors.Join(err, config.NewErrDuplicate(fmt.Sprintf("%d.Nodes.%d.TendermintURL", i, j), u.String()))
 			}
 		}
 	}
 	return
-
 }
 
 func (cs TOMLConfigs) ValidateConfig() (err error) {
@@ -299,13 +298,13 @@ func setFromChain(c, f *Chain) {
 
 func (c *TOMLConfig) ValidateConfig() (err error) {
 	if c.ChainID == nil {
-		err = multierr.Append(err, config.ErrMissing{Name: "ChainID", Msg: "required for all chains"})
+		err = errors.Join(err, config.ErrMissing{Name: "ChainID", Msg: "required for all chains"})
 	} else if *c.ChainID == "" {
-		err = multierr.Append(err, config.ErrEmpty{Name: "ChainID", Msg: "required for all chains"})
+		err = errors.Join(err, config.ErrEmpty{Name: "ChainID", Msg: "required for all chains"})
 	}
 
 	if len(c.Nodes) == 0 {
-		err = multierr.Append(err, config.ErrMissing{Name: "Nodes", Msg: "must have at least one node"})
+		err = errors.Join(err, config.ErrMissing{Name: "Nodes", Msg: "must have at least one node"})
 	}
 
 	return

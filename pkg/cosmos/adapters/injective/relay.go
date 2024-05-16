@@ -14,7 +14,7 @@ import (
 	"github.com/smartcontractkit/chainlink-common/pkg/utils"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/median_report"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/medianreport"
 	injectivetypes "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/types"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 )
@@ -108,7 +108,7 @@ func NewMedianProvider(lggr logger.Logger, chain adapters.Chain, rargs relaytype
 		return nil, err
 	}
 
-	reportCodec := median_report.ReportCodec{}
+	reportCodec := medianreport.ReportCodec{}
 	injectiveClient := configProvider.injectiveClient
 	contract := NewCosmosMedianReporter(configProvider.feedID, injectiveClient)
 	senderAddr, err := cosmosSDK.AccAddressFromBech32(pargs.TransmitterID)

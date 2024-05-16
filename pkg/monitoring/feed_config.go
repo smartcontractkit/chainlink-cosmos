@@ -7,6 +7,7 @@ import (
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
 )
 
@@ -87,7 +88,7 @@ func (t CosmosFeedConfig) ToMapping() map[string]interface{} {
 		"feed_name":               t.Name,
 		"feed_path":               t.Path,
 		"symbol":                  t.Symbol,
-		"heartbeat_sec":           int64(t.HeartbeatSec),
+		"heartbeat_sec":           t.HeartbeatSec,
 		"contract_type":           t.ContractType,
 		"contract_status":         t.ContractStatus,
 		"contract_address":        t.ContractAddress.Bytes(),

@@ -20,7 +20,7 @@ func New(
 	return &client{
 		fcdURL,
 		&http.Client{},
-		ratelimit.New(int(requestsPerSec),
+		ratelimit.New(requestsPerSec,
 			ratelimit.Per(1*time.Second), // the interval to count requests is 1 sec.
 			ratelimit.WithoutSlack,       // don't accumulate previously "unspent" requests for future bursts
 		),
