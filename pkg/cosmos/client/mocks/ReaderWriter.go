@@ -13,7 +13,7 @@ import (
 
 	query "github.com/cosmos/cosmos-sdk/types/query"
 
-	tmservice "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	cmtservice "github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 
 	tx "github.com/cosmos/cosmos-sdk/types/tx"
 
@@ -109,19 +109,19 @@ func (_m *ReaderWriter) BatchSimulateUnsigned(msgs client.SimMsgs, sequence uint
 }
 
 // BlockByHeight provides a mock function with given fields: height
-func (_m *ReaderWriter) BlockByHeight(height int64) (*tmservice.GetBlockByHeightResponse, error) {
+func (_m *ReaderWriter) BlockByHeight(height int64) (*cmtservice.GetBlockByHeightResponse, error) {
 	ret := _m.Called(height)
 
-	var r0 *tmservice.GetBlockByHeightResponse
+	var r0 *cmtservice.GetBlockByHeightResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(int64) (*tmservice.GetBlockByHeightResponse, error)); ok {
+	if rf, ok := ret.Get(0).(func(int64) (*cmtservice.GetBlockByHeightResponse, error)); ok {
 		return rf(height)
 	}
-	if rf, ok := ret.Get(0).(func(int64) *tmservice.GetBlockByHeightResponse); ok {
+	if rf, ok := ret.Get(0).(func(int64) *cmtservice.GetBlockByHeightResponse); ok {
 		r0 = rf(height)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tmservice.GetBlockByHeightResponse)
+			r0 = ret.Get(0).(*cmtservice.GetBlockByHeightResponse)
 		}
 	}
 
@@ -229,19 +229,19 @@ func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence
 }
 
 // LatestBlock provides a mock function with given fields:
-func (_m *ReaderWriter) LatestBlock() (*tmservice.GetLatestBlockResponse, error) {
+func (_m *ReaderWriter) LatestBlock() (*cmtservice.GetLatestBlockResponse, error) {
 	ret := _m.Called()
 
-	var r0 *tmservice.GetLatestBlockResponse
+	var r0 *cmtservice.GetLatestBlockResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func() (*tmservice.GetLatestBlockResponse, error)); ok {
+	if rf, ok := ret.Get(0).(func() (*cmtservice.GetLatestBlockResponse, error)); ok {
 		return rf()
 	}
-	if rf, ok := ret.Get(0).(func() *tmservice.GetLatestBlockResponse); ok {
+	if rf, ok := ret.Get(0).(func() *cmtservice.GetLatestBlockResponse); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tmservice.GetLatestBlockResponse)
+			r0 = ret.Get(0).(*cmtservice.GetLatestBlockResponse)
 		}
 	}
 
