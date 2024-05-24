@@ -1,19 +1,17 @@
 package main
 
 import (
-	"context"
 	"log"
 
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
+	"github.com/smartcontractkit/chainlink-common/pkg/services"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
 )
 
 func main() {
-	ctx := context.Background()
-
 	l, err := logger.New()
 	if err != nil {
 		log.Fatalln(err)
@@ -43,7 +41,7 @@ func main() {
 	)
 
 	monitor, err := relayMonitoring.NewMonitor(
-		ctx,
+		make(services.StopRChan),
 		l,
 		cosmosConfig,
 		envelopeSourceFactory,
