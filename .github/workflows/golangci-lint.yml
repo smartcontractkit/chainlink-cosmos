@@ -12,7 +12,7 @@ jobs:
       - uses: smartcontractkit/tool-versions-to-env-action@v1.0.7
         id: tool-versions
       - name: Setup go ${{ steps.tool-versions.outputs.golang_version }}
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version: ${{ steps.tool-versions.outputs.golang_version }}
       - name: golangci-lint
