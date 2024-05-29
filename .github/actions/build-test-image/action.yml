@@ -53,7 +53,7 @@ runs:
       run: make contracts_compile
     - name: Upload Artifacts
       if: steps.check-image.outputs.exists == 'false'
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
       with:
         name: artifacts
         path: ${{ inputs.artifacts_path }}
