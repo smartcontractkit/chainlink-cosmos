@@ -88,7 +88,7 @@ jobs:
           name: chainlink-cosmos
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - name: Cache Wasmd Artifacts
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         id: cache-wasmd-artifacts
         env:
           cache-name: cache-wasmd-artifacts
