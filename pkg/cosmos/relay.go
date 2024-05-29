@@ -135,3 +135,7 @@ func (r *Relayer) NewOCR3CapabilityProvider(rargs types.RelayArgs, pargs types.P
 func (r *Relayer) NewContractReader(_ []byte) (types.ContractReader, error) {
 	return nil, errors.New("contract reader is not supported for cosmos")
 }
+
+func (r *Relayer) NewContractStateReader(config []byte) (types.ContractStateReader, error) {
+	return nil, errors.New("contract state reader is not supported for cosmos")
+}
