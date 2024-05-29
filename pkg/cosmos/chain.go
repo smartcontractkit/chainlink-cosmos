@@ -3,30 +3,27 @@ package cosmos
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
 
-	"github.com/pelletier/go-toml/v2"
-	"github.com/pkg/errors"
-	"go.uber.org/multierr"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/pelletier/go-toml/v2"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/smartcontractkit/chainlink-common/pkg/chains"
+	"github.com/smartcontractkit/chainlink-common/pkg/logger"
+	"github.com/smartcontractkit/chainlink-common/pkg/loop"
+	"github.com/smartcontractkit/chainlink-common/pkg/services"
+	"github.com/smartcontractkit/chainlink-common/pkg/sqlutil"
+	"github.com/smartcontractkit/chainlink-common/pkg/types"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/config"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/txm"
-
-	"github.com/smartcontractkit/chainlink-common/pkg/chains"
-	"github.com/smartcontractkit/chainlink-common/pkg/logger"
-	"github.com/smartcontractkit/chainlink-common/pkg/loop"
-	"github.com/smartcontractkit/chainlink-common/pkg/services"
-	"github.com/smartcontractkit/chainlink-common/pkg/types"
 )
 
 // defaultRequestTimeout is the default Cosmos client timeout.
@@ -43,7 +40,7 @@ type Chain = adapters.Chain
 // ChainOpts holds options for configuring a Chain.
 type ChainOpts struct {
 	Logger   logger.Logger
-	DB       *sqlx.DB
+	DS       sqlutil.DataSource
 	KeyStore loop.Keystore
 }
 
@@ -52,13 +49,13 @@ func (o *ChainOpts) Validate() (err error) {
 		return fmt.Errorf("%s is required", s)
 	}
 	if o.Logger == nil {
-		err = multierr.Append(err, required("Logger'"))
+		err = errors.Join(err, required("Logger'"))
 	}
-	if o.DB == nil {
-		err = multierr.Append(err, required("DB"))
+	if o.DS == nil {
+		err = errors.Join(err, required("DataSource"))
 	}
 	if o.KeyStore == nil {
-		err = multierr.Append(err, required("KeyStore"))
+		err = errors.Join(err, required("KeyStore"))
 	}
 	return
 }
@@ -67,7 +64,7 @@ func NewChain(cfg *config.TOMLConfig, opts ChainOpts) (adapters.Chain, error) {
 	if !cfg.IsEnabled() {
 		return nil, fmt.Errorf("cannot create new chain with ID %s, the chain is disabled", *cfg.ChainID)
 	}
-	c, err := newChain(*cfg.ChainID, cfg, opts.DB, opts.KeyStore, opts.Logger)
+	c, err := newChain(*cfg.ChainID, cfg, opts.DS, opts.KeyStore, opts.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +81,7 @@ type chain struct {
 	lggr logger.Logger
 }
 
-func newChain(id string, cfg *config.TOMLConfig, db *sqlx.DB, ks loop.Keystore, lggr logger.Logger) (*chain, error) {
+func newChain(id string, cfg *config.TOMLConfig, ds sqlutil.DataSource, ks loop.Keystore, lggr logger.Logger) (*chain, error) {
 	lggr = logger.With(lggr, "cosmosChainID", id)
 	var ch = chain{
 		id:   id,
@@ -101,7 +98,7 @@ func newChain(id string, cfg *config.TOMLConfig, db *sqlx.DB, ks loop.Keystore, 
 			}, nil
 		}),
 	}, lggr)
-	ch.txm = txm.NewTxm(db, tc, *gpe, ch.id, cfg, ks, lggr)
+	ch.txm = txm.NewTxm(ds, tc, *gpe, ch.id, cfg, ks, lggr)
 
 	return &ch, nil
 }
@@ -180,7 +177,7 @@ func (c *chain) Close() error {
 }
 
 func (c *chain) Ready() error {
-	return multierr.Combine(
+	return errors.Join(
 		c.StateMachine.Ready(),
 		c.txm.Ready(),
 	)
@@ -293,7 +290,7 @@ func validateBalance(reader client.Reader, gasPrice sdk.DecCoin, fromAddr sdk.Ac
 	need := coin.Amount.Add(fee)
 
 	if balance.Amount.LT(need) {
-		return errors.Errorf("balance %q is too low for this transaction to be executed: need %s total, including %s fee", balance, need, fee)
+		return fmt.Errorf("balance %q is too low for this transaction to be executed: need %s total, including %s fee", balance, need, fee)
 	}
 	return nil
 }

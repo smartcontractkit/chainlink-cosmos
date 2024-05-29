@@ -1,7 +1,6 @@
-package median_report
+package medianreport
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -20,7 +19,7 @@ var _ median.ReportCodec = ReportCodec{}
 
 type ReportCodec struct{}
 
-func (ReportCodec) BuildReport(ctx context.Context, observations []median.ParsedAttributedObservation) (types.Report, error) {
+func (ReportCodec) BuildReport(observations []median.ParsedAttributedObservation) (types.Report, error) {
 	if len(observations) == 0 {
 		err := errors.New("cannot build report from empty attributed observations")
 		return nil, err
@@ -61,13 +60,13 @@ func (ReportCodec) BuildReport(ctx context.Context, observations []median.Parsed
 	return types.Report(reportBytes), err
 }
 
-func (ReportCodec) MaxReportLength(ctx context.Context, n int) (int, error) {
+func (ReportCodec) MaxReportLength(n int) (int, error) {
 	// TODO:
 	return 0, nil
 	// return prefixSizeBytes + (n * observationSizeBytes) + juelsPerFeeCoinSizeBytes
 }
 
-func (ReportCodec) MedianFromReport(ctx context.Context, report types.Report) (*big.Int, error) {
+func (ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
 	reportRaw, err := ParseReport([]byte(report))
 	if err != nil {
 		return nil, err
@@ -87,7 +86,7 @@ func ParseReport(data []byte) (*injectivetypes.Report, error) {
 	var reportRaw injectivetypes.Report
 
 	if err := proto.Unmarshal(data, &reportRaw); err != nil {
-		err = fmt.Errorf("failed to unmarshal data as median_report.Report: %w", err)
+		err = fmt.Errorf("failed to unmarshal data as medianreport.Report: %w", err)
 		return nil, err
 	}
 

@@ -19,9 +19,9 @@ type CosmosMedianReporter struct {
 	queryClient chaintypes.QueryClient
 }
 
-func NewCosmosMedianReporter(feedId string, queryClient chaintypes.QueryClient) *CosmosMedianReporter {
+func NewCosmosMedianReporter(feedID string, queryClient chaintypes.QueryClient) *CosmosMedianReporter {
 	return &CosmosMedianReporter{
-		feedId,
+		feedID,
 		queryClient,
 	}
 }
@@ -44,7 +44,7 @@ func (c *CosmosMedianReporter) LatestTransmissionDetails(
 	}
 
 	if resp.ConfigDigest == nil {
-		err = fmt.Errorf("unable to receive config digest for for feedId=%s", c.feedID)
+		err = fmt.Errorf("unable to receive config digest for for feedID=%s", c.feedID)
 		return
 	}
 

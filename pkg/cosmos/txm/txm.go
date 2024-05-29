@@ -4,14 +4,13 @@ import (
 	"cmp"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/jmoiron/sqlx"
-	"github.com/pkg/errors"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -19,15 +18,16 @@ import (
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 
+	"github.com/smartcontractkit/chainlink-common/pkg/logger"
+	"github.com/smartcontractkit/chainlink-common/pkg/loop"
+	"github.com/smartcontractkit/chainlink-common/pkg/services"
+	"github.com/smartcontractkit/chainlink-common/pkg/sqlutil"
+	"github.com/smartcontractkit/chainlink-common/pkg/utils"
+
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/config"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
-
-	"github.com/smartcontractkit/chainlink-common/pkg/logger"
-	"github.com/smartcontractkit/chainlink-common/pkg/loop"
-	"github.com/smartcontractkit/chainlink-common/pkg/services"
-	"github.com/smartcontractkit/chainlink-common/pkg/utils"
 )
 
 var (
@@ -49,11 +49,11 @@ type Txm struct {
 }
 
 // NewTxm creates a txm. Uses simulation so should only be used to send txes to trusted contracts i.e. OCR.
-func NewTxm(db *sqlx.DB, tc func() (client.ReaderWriter, error), gpe client.ComposedGasPriceEstimator, chainID string, cfg config.Config, ks loop.Keystore, lggr logger.Logger) *Txm {
+func NewTxm(ds sqlutil.DataSource, tc func() (client.ReaderWriter, error), gpe client.ComposedGasPriceEstimator, chainID string, cfg config.Config, ks loop.Keystore, lggr logger.Logger) *Txm {
 	keystoreAdapter := newKeystoreAdapter(ks, cfg.Bech32Prefix())
 	return &Txm{
 		newMsgs:         make(chan struct{}, 1), // buffered to hold one pending request while unblocking callers
-		orm:             NewORM(chainID, db),
+		orm:             NewORM(chainID, ds),
 		lggr:            logger.Sugared(lggr).Named("Txm"),
 		tc:              tc,
 		keystoreAdapter: keystoreAdapter,
@@ -153,7 +153,7 @@ func unmarshalMsg(msgType string, raw []byte) (sdk.Msg, string, error) {
 		}
 		return &ms, ms.Sender, nil
 	}
-	return nil, "", errors.Errorf("unrecognized message type: %s", msgType)
+	return nil, "", fmt.Errorf("unrecognized message type: %s", msgType)
 }
 
 type msgValidator struct {
@@ -265,7 +265,6 @@ func (txm *Txm) sendMsgBatch(ctx context.Context) {
 			return
 		}
 	}
-
 }
 
 func (txm *Txm) sendMsgBatchFromAddress(ctx context.Context, gasPrice sdk.DecCoin, sender sdk.AccAddress, msgs adapters.Msgs) error {

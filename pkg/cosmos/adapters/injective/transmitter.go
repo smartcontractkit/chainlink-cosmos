@@ -9,7 +9,7 @@ import (
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters"
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/median_report"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/medianreport"
 	chaintypes "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/types"
 )
 
@@ -25,21 +25,21 @@ type CosmosModuleTransmitter struct {
 
 func NewCosmosModuleTransmitter(
 	queryClient chaintypes.QueryClient,
-	feedId string,
+	feedID string,
 	sender cosmosSDK.AccAddress,
 	msgEnqueuer adapters.MsgEnqueuer,
 	lggr logger.Logger,
 ) *CosmosModuleTransmitter {
 	return &CosmosModuleTransmitter{
 		lggr:        lggr,
-		feedID:      feedId,
+		feedID:      feedID,
 		queryClient: queryClient,
 		msgEnqueuer: msgEnqueuer,
 		sender:      sender,
 	}
 }
 
-func (c *CosmosModuleTransmitter) FromAccount(ctx context.Context) (types.Account, error) {
+func (c *CosmosModuleTransmitter) FromAccount() (types.Account, error) {
 	return types.Account(c.sender.String()), nil
 }
 
@@ -52,7 +52,7 @@ func (c *CosmosModuleTransmitter) Transmit(
 ) error {
 	// TODO: design how to decouple Cosmos reporting from reportingplugins of OCR2
 	// The reports are not necessarily numeric (see: titlerequest).
-	report, err := median_report.ParseReport(rawReport)
+	report, err := medianreport.ParseReport(rawReport)
 	if err != nil {
 		return err
 	}

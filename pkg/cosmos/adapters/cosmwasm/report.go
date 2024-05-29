@@ -1,7 +1,6 @@
 package cosmwasm
 
 import (
-	"context"
 	"encoding/binary"
 	"fmt"
 	"math/big"
@@ -35,7 +34,7 @@ var _ median.ReportCodec = (*ReportCodec)(nil)
 
 type ReportCodec struct{}
 
-func (c ReportCodec) BuildReport(ctx context.Context, oo []median.ParsedAttributedObservation) (types.Report, error) {
+func (c ReportCodec) BuildReport(oo []median.ParsedAttributedObservation) (types.Report, error) {
 	n := len(oo)
 	if n == 0 {
 		return nil, fmt.Errorf("cannot build report from empty attributed observations")
@@ -96,11 +95,11 @@ func (c ReportCodec) BuildReport(ctx context.Context, oo []median.ParsedAttribut
 	return report, nil
 }
 
-func (c ReportCodec) MaxReportLength(ctx context.Context, n int) (int, error) {
+func (c ReportCodec) MaxReportLength(n int) (int, error) {
 	return prefixSizeBytes + (n * observationSizeBytes) + juelsPerFeeCoinSizeBytes, nil
 }
 
-func (c ReportCodec) MedianFromReport(ctx context.Context, report types.Report) (*big.Int, error) {
+func (c ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
 	// report should at least be able to contain timestamp, observers, observations length
 	rLen := len(report)
 	if rLen < prefixSizeBytes {

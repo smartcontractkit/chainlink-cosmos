@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
+
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
@@ -212,7 +213,7 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 	if err != nil {
 		return nil, err
 	}
-	gasLimitBuffered := uint64(math.Ceil(float64(gasLimit) * float64(gasLimitMultiplier)))
+	gasLimitBuffered := uint64(math.Ceil(float64(gasLimit) * gasLimitMultiplier))
 	txBuilder.SetGasLimit(gasLimitBuffered)
 	gasFee := sdk.NewCoin(gasPrice.Denom, gasPrice.Amount.MulInt64(int64(gasLimitBuffered)).Ceil().RoundInt())
 	txBuilder.SetFeeAmount(sdk.NewCoins(gasFee))
@@ -345,23 +346,22 @@ func (c *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSim
 		if err != nil && !containsFailure {
 			return nil, err
 		}
-		if containsFailure {
-			failed = append(failed, toSim[failureIndex])
-			succeeded = append(succeeded, toSim[:failureIndex]...)
-			// remove offending msg and retry
-			if failureIndex == len(toSim)-1 {
-				// we're done, last one failed
-				c.log.Warnf("simulation error found in last msg, failure %v, index %v, err %v", toSim[failureIndex], failureIndex, err)
-				break
-			}
-			// otherwise there may be more to sim
-			c.log.Warnf("simulation error found in a msg, retrying with %v, failure %v, index %v, err %v", toSim[failureIndex+1:], toSim[failureIndex], failureIndex, err)
-			toSim = toSim[failureIndex+1:]
-		} else {
+		if !containsFailure {
 			// we're done they all succeeded
 			succeeded = append(succeeded, toSim...)
 			break
 		}
+		failed = append(failed, toSim[failureIndex])
+		succeeded = append(succeeded, toSim[:failureIndex]...)
+		// remove offending msg and retry
+		if failureIndex == len(toSim)-1 {
+			// we're done, last one failed
+			c.log.Warnf("simulation error found in last msg, failure %v, index %v, err %v", toSim[failureIndex], failureIndex, err)
+			break
+		}
+		// otherwise there may be more to sim
+		c.log.Warnf("simulation error found in a msg, retrying with %v, failure %v, index %v, err %v", toSim[failureIndex+1:], toSim[failureIndex], failureIndex, err)
+		toSim = toSim[failureIndex+1:]
 	}
 	return &BatchSimResults{
 		Failed:    failed,
