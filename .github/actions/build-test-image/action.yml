@@ -28,7 +28,7 @@ runs:
   steps:
     - name: Check if image exists
       id: check-image
-      uses: smartcontractkit/chainlink-github-actions/docker/image-exists@8489879838862929f43f7d7cd1b33903965cf507 # v2.1.6
+      uses: smartcontractkit/chainlink-github-actions/docker/image-exists@e29366cdecfe6befff9ab8c3cfe4825218505d58 # v2.3.16
       with:
         repository: chainlink-cosmos-tests
         tag: ${{ inputs.tag }}
@@ -37,13 +37,13 @@ runs:
 
     - name: Cache cargo registry
       if: steps.check-image.outputs.exists == 'false'
-      uses: actions/cache@v2.1.7
+      uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
       with:
         path: ~/.cargo/registry
         key: ${{ runner.os }}-v2-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
     - name: Cache cargo index
       if: steps.check-image.outputs.exists == 'false'
-      uses: actions/cache@v2.1.7
+      uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
       with:
         path: ~/.cargo/git
         key: ${{ runner.os }}-v2-cargo-index-${{ hashFiles('**/Cargo.lock') }}
@@ -53,14 +53,14 @@ runs:
       run: make contracts_compile
     - name: Upload Artifacts
       if: steps.check-image.outputs.exists == 'false'
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
       with:
         name: artifacts
         path: ${{ inputs.artifacts_path }}
 
     - name: Build and Publish Test Runner
       if: steps.check-image.outputs.exists == 'false'
-      uses: smartcontractkit/chainlink-github-actions/docker/build-push@8489879838862929f43f7d7cd1b33903965cf507 # v2.1.6
+      uses: smartcontractkit/chainlink-github-actions/docker/build-push@e29366cdecfe6befff9ab8c3cfe4825218505d58 # v2.3.16
       with:
         tags: |
           ${{ inputs.QA_AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ inputs.QA_AWS_REGION }}.amazonaws.com/chainlink-cosmos-tests:${{ inputs.tag }}
