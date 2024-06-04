@@ -41,7 +41,7 @@ jobs:
           fetch-depth: 0 # fetches all history for all tags and branches to provide more metadata for sonar reports
 
       - name: Download Golangci report
-        uses: dawidd6/action-download-artifact@09f2f74827fd3a8607589e5ad7f9398816f540fe # v3.1.4
+        uses: dawidd6/action-download-artifact@93c629661111aae296c04004b30ae3ba22ed46f3 # v5
         with:
           workflow: golangci-lint.yml
           workflow_conclusion: ""
@@ -49,7 +49,7 @@ jobs:
           if_no_artifact_found: warn
 
       - name: Download relay test reports
-        uses: dawidd6/action-download-artifact@09f2f74827fd3a8607589e5ad7f9398816f540fe # v3.1.4
+        uses: dawidd6/action-download-artifact@93c629661111aae296c04004b30ae3ba22ed46f3 # v5
         with:
           workflow: relay.yml
           workflow_conclusion: ""
@@ -57,7 +57,7 @@ jobs:
           if_no_artifact_found: warn
       
       - name: Download gauntlet test reports
-        uses: dawidd6/action-download-artifact@09f2f74827fd3a8607589e5ad7f9398816f540fe # v3.1.4
+        uses: dawidd6/action-download-artifact@93c629661111aae296c04004b30ae3ba22ed46f3 # v5
         with:
           workflow: gauntlet.yml
           workflow_conclusion: ""
@@ -66,7 +66,7 @@ jobs:
           if_no_artifact_found: warn
 
       - name: Download gauntlet eslint reports
-        uses: dawidd6/action-download-artifact@09f2f74827fd3a8607589e5ad7f9398816f540fe # v3.1.4
+        uses: dawidd6/action-download-artifact@93c629661111aae296c04004b30ae3ba22ed46f3 # v5
         with:
           workflow: gauntlet.yml
           workflow_conclusion: ""
