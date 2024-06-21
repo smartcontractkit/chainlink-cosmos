@@ -135,3 +135,11 @@ func (r *Relayer) NewOCR3CapabilityProvider(rargs types.RelayArgs, pargs types.P
 func (r *Relayer) NewContractReader(_ []byte) (types.ContractReader, error) {
 	return nil, errors.New("contract reader is not supported for cosmos")
 }
+
+func (r *Relayer) NewCCIPCommitProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.CCIPCommitProvider, error) {
+	return nil, errors.New("ccip.commit is not supported for cosmos")
+}
+
+func (r *Relayer) NewCCIPExecProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.CCIPExecProvider, error) {
+	return nil, errors.New("ccip.exec is not supported for cosmos")
+}
