@@ -8,15 +8,15 @@ jobs:
     name: Golang Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
-      - uses: smartcontractkit/tool-versions-to-env-action@v1.0.7
+      - uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - uses: smartcontractkit/tool-versions-to-env-action@aabd5efbaf28005284e846c5cf3a02f2cba2f4c2 # v1.0.8
         id: tool-versions
       - name: Setup go ${{ steps.tool-versions.outputs.golang_version }}
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version: ${{ steps.tool-versions.outputs.golang_version }}
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@a4f60bb28d35aeee14e6880718e0c85ff1882e64 # v6.0.1
         with:
           version: v${{ steps.tool-versions.outputs.golangci-lint_version }}
           args: --timeout=5m0s --tests=false --out-format checkstyle:golangci-lint-report.xml
@@ -26,7 +26,7 @@ jobs:
         run: test -f golangci-lint-report.xml && cat golangci-lint-report.xml || true
       - name: Store lint report artifact
         if: always()
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # v3.1.0
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           name: golangci-lint-report
           path: golangci-lint-report.xml
