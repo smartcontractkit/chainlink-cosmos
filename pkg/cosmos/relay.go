@@ -136,6 +136,10 @@ func (r *Relayer) NewContractReader(_ []byte) (types.ContractReader, error) {
 	return nil, errors.New("contract reader is not supported for cosmos")
 }
 
+func (r *Relayer) NewChainWriter(_ context.Context, _ []byte) (types.ChainWriter, error) {
+	return nil, errors.New("chain writer is not supported for cosmos")
+}
+
 func (r *Relayer) NewCCIPCommitProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.CCIPCommitProvider, error) {
 	return nil, errors.New("ccip.commit is not supported for cosmos")
 }
