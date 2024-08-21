@@ -41,11 +41,11 @@ func (cd OffchainConfigDigester) ConfigDigest(cfg types.ContractConfig) (types.C
 		return digest, err
 	}
 
-	if _, err := buf.Write([]byte(cd.chainID)); err != nil {
+	if _, err := buf.WriteString(cd.chainID); err != nil {
 		return digest, err
 	}
 
-	if _, err := buf.Write([]byte(cd.contract.String())); err != nil {
+	if _, err := buf.WriteString(cd.contract.String()); err != nil {
 		return digest, err
 	}
 
