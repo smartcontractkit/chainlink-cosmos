@@ -171,7 +171,7 @@ require (
 	github.com/gtank/ristretto255 v0.1.2 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
-	github.com/hashicorp/go-plugin v1.6.0 // indirect
+	github.com/hashicorp/go-plugin v1.6.2-0.20240829161738-06afb6d7ae99 // indirect
 	github.com/hashicorp/golang-lru v0.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
@@ -356,9 +356,6 @@ require (
 
 replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-
-	// until merged upstream: https://github.com/hashicorp/go-plugin/pull/257
-	github.com/hashicorp/go-plugin => github.com/smartcontractkit/go-plugin v0.0.0-20231003134350-e49dad63b306
 
 	// until merged upstream: https://github.com/mwitkow/grpc-proxy/pull/69
 	github.com/mwitkow/grpc-proxy => github.com/smartcontractkit/grpc-proxy v0.0.0-20230731113816-f1be6620749f
