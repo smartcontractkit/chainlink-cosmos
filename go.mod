@@ -1,6 +1,8 @@
 module github.com/smartcontractkit/chainlink-cosmos
 
-go 1.21.7
+go 1.22
+
+toolchain go1.22.7
 
 require (
 	cosmossdk.io/errors v1.0.0
