@@ -194,7 +194,6 @@ func (c *chain) LatestHead(_ context.Context) (types.Head, error) {
 	reader, err := c.Reader("")
 	if err != nil {
 		return types.Head{}, fmt.Errorf("chain unreachable: %v", err)
-
 	}
 
 	latestBlock, err := reader.LatestBlock()
