@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -189,6 +190,24 @@ func (c *chain) HealthReport() map[string]error {
 	return m
 }
 
+func (c *chain) LatestHead(_ context.Context) (types.Head, error) {
+	reader, err := c.Reader("")
+	if err != nil {
+		return types.Head{}, fmt.Errorf("chain unreachable: %v", err)
+	}
+
+	latestBlock, err := reader.LatestBlock()
+	if err != nil {
+		return types.Head{}, err
+	}
+
+	return types.Head{
+		Height:    strconv.FormatInt(latestBlock.SdkBlock.Header.Height, 10),
+		Hash:      latestBlock.BlockId.Hash,
+		Timestamp: uint64(latestBlock.SdkBlock.Header.Time.Unix()),
+	}, nil
+}
+
 // ChainService interface
 func (c *chain) GetChainStatus(ctx context.Context) (types.ChainStatus, error) {
 	toml, err := c.cfg.TOMLString()
@@ -201,6 +220,7 @@ func (c *chain) GetChainStatus(ctx context.Context) (types.ChainStatus, error) {
 		Config:  toml,
 	}, nil
 }
+
 func (c *chain) ListNodeStatuses(ctx context.Context, pageSize int32, pageToken string) (stats []types.NodeStatus, nextPageToken string, total int, err error) {
 	return chains.ListNodeStatuses(int(pageSize), pageToken, c.listNodeStatuses)
 }
