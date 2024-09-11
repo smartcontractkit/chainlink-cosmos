@@ -72,6 +72,10 @@ func (r *Relayer) HealthReport() map[string]error {
 	return hp
 }
 
+func (r *Relayer) LatestHead(ctx context.Context) (types.Head, error) {
+	return r.chain.LatestHead(ctx)
+}
+
 func (r *Relayer) GetChainStatus(ctx context.Context) (types.ChainStatus, error) {
 	return r.chain.GetChainStatus(ctx)
 }
