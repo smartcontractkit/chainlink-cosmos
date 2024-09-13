@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
 	github.com/rs/zerolog v1.32.0
-	github.com/smartcontractkit/chainlink-common v0.2.2-0.20240911152814-4836d1d7f16b
+	github.com/smartcontractkit/chainlink-common v0.2.2-0.20240913194736-b21460c94acb
 	github.com/smartcontractkit/chainlink-cosmos v0.4.1-0.20240911160024-c1da28250122
 	github.com/smartcontractkit/chainlink-cosmos/ops v0.0.0-20231206164210-03f8b219402e
 	github.com/smartcontractkit/chainlink-testing-framework v1.33.0
@@ -42,7 +42,7 @@ require (
 	github.com/NethermindEth/juno v0.3.1 // indirect
 	github.com/NethermindEth/starknet.go v0.7.1-0.20240401080518-34a506f3cfdb // indirect
 	github.com/VictoriaMetrics/fastcache v1.12.1 // indirect
-	github.com/XSAM/otelsql v0.27.0 // indirect
+	github.com/XSAM/otelsql v0.29.0 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
@@ -190,7 +190,7 @@ require (
 	github.com/jackc/pgproto3/v2 v2.3.3 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgtype v1.14.0 // indirect
-	github.com/jackc/pgx/v4 v4.18.2 // indirect
+	github.com/jackc/pgx/v4 v4.18.3 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
