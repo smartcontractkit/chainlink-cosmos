@@ -2,6 +2,7 @@ package cosmwasm
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -15,6 +16,17 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/chains/evmutil"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
+
+// A Uint128 is an unsigned 128-bit number.
+type Uint128 struct {
+	Lo, Hi uint64
+}
+
+// Big endian order
+func (u Uint128) Bytes(b []byte) {
+	binary.BigEndian.PutUint64(b[:8], u.Hi)
+	binary.BigEndian.PutUint64(b[8:], u.Lo)
+}
 
 var _ types.ContractTransmitter = (*ContractTransmitter)(nil)
 
@@ -61,7 +73,7 @@ func (ct *ContractTransmitter) Transmit(
 	for _, r := range reportContext {
 		msgStruct.Transmit.ReportContext = append(msgStruct.Transmit.ReportContext, r[:]...)
 	}
-	msgStruct.Transmit.Report = []byte(report)
+
 	for _, sig := range sigs {
 		msgStruct.Transmit.Signatures = append(msgStruct.Transmit.Signatures, sig.Signature)
 	}

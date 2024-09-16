@@ -107,6 +107,7 @@ fn transmit_report(
         report.extend_from_slice(&bytes); // observation
     }
     report.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0]); // juels per atom (1 with 18 decimal places)
+    report.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 13, 224, 182, 179, 167, 100, 0, 0]); // gas_price (1 with 18 decimal places)
 
     // Generate report context
     let mut report_context = vec![0; 96];
