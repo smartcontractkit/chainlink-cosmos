@@ -57,7 +57,7 @@ func (r *Relayer) Start(ctx context.Context) error {
 	if r.chain == nil {
 		return errors.New("Cosmos unavailable")
 	}
-	return nil
+	return r.chain.Start(ctx)
 }
 
 func (r *Relayer) Close() error { return nil }
@@ -88,26 +88,26 @@ func (r *Relayer) Transact(ctx context.Context, from, to string, amount *big.Int
 	return r.chain.Transact(ctx, from, to, amount, balanceCheck)
 }
 
-func (r *Relayer) NewMercuryProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.MercuryProvider, error) {
+func (r *Relayer) NewMercuryProvider(ctx context.Context, rargs types.RelayArgs, pargs types.PluginArgs) (types.MercuryProvider, error) {
 	return nil, errors.New("mercury is not supported for cosmos")
 }
 
-func (r *Relayer) NewLLOProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.LLOProvider, error) {
+func (r *Relayer) NewLLOProvider(ctx context.Context, rargs types.RelayArgs, pargs types.PluginArgs) (types.LLOProvider, error) {
 	return nil, errors.New("data streams is not supported for cosmos")
 }
 
-func (r *Relayer) NewFunctionsProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.FunctionsProvider, error) {
+func (r *Relayer) NewFunctionsProvider(ctx context.Context, rargs types.RelayArgs, pargs types.PluginArgs) (types.FunctionsProvider, error) {
 	return nil, errors.New("functions are not supported for cosmos")
 }
 
-func (r *Relayer) NewConfigProvider(args types.RelayArgs) (types.ConfigProvider, error) {
+func (r *Relayer) NewConfigProvider(ctx context.Context, args types.RelayArgs) (types.ConfigProvider, error) {
 	var configProvider types.ConfigProvider
 	var err error
 	if r.chain.Config().Bech32Prefix() == InjectivePrefix {
-		configProvider, err = injective.NewConfigProvider(r.lggr, r.chain, args)
+		configProvider, err = injective.NewConfigProvider(ctx, r.lggr, r.chain, args)
 	} else {
 		// Default to cosmwasm adapter
-		configProvider, err = cosmwasm.NewConfigProvider(r.lggr, r.chain, args)
+		configProvider, err = cosmwasm.NewConfigProvider(ctx, r.lggr, r.chain, args)
 	}
 	if err != nil {
 		return nil, err
@@ -116,27 +116,27 @@ func (r *Relayer) NewConfigProvider(args types.RelayArgs) (types.ConfigProvider,
 	return configProvider, err
 }
 
-func (r *Relayer) NewMedianProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.MedianProvider, error) {
-	configProvider, err := cosmwasm.NewMedianProvider(r.lggr, r.chain, rargs, pargs)
+func (r *Relayer) NewMedianProvider(ctx context.Context, rargs types.RelayArgs, pargs types.PluginArgs) (types.MedianProvider, error) {
+	configProvider, err := cosmwasm.NewMedianProvider(ctx, r.lggr, r.chain, rargs, pargs)
 	if err != nil {
 		return nil, err
 	}
 	return configProvider, err
 }
 
-func (r *Relayer) NewAutomationProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.AutomationProvider, error) {
+func (r *Relayer) NewAutomationProvider(ctx context.Context, rargs types.RelayArgs, pargs types.PluginArgs) (types.AutomationProvider, error) {
 	return nil, errors.New("automation is not supported for cosmos")
 }
 
-func (r *Relayer) NewPluginProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.PluginProvider, error) {
+func (r *Relayer) NewPluginProvider(ctx context.Context, rargs types.RelayArgs, pargs types.PluginArgs) (types.PluginProvider, error) {
 	return nil, errors.New("plugin provider is not supported for cosmos")
 }
 
-func (r *Relayer) NewOCR3CapabilityProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.OCR3CapabilityProvider, error) {
+func (r *Relayer) NewOCR3CapabilityProvider(ctx context.Context, rargs types.RelayArgs, pargs types.PluginArgs) (types.OCR3CapabilityProvider, error) {
 	return nil, errors.New("ocr3 capability provider is not supported for cosmos")
 }
 
-func (r *Relayer) NewContractReader(_ []byte) (types.ContractReader, error) {
+func (r *Relayer) NewContractReader(ctx context.Context, _ []byte) (types.ContractReader, error) {
 	return nil, errors.New("contract reader is not supported for cosmos")
 }
 
@@ -144,10 +144,10 @@ func (r *Relayer) NewChainWriter(_ context.Context, _ []byte) (types.ChainWriter
 	return nil, errors.New("chain writer is not supported for cosmos")
 }
 
-func (r *Relayer) NewCCIPCommitProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.CCIPCommitProvider, error) {
+func (r *Relayer) NewCCIPCommitProvider(ctx context.Context, rargs types.RelayArgs, pargs types.PluginArgs) (types.CCIPCommitProvider, error) {
 	return nil, errors.New("ccip.commit is not supported for cosmos")
 }
 
-func (r *Relayer) NewCCIPExecProvider(rargs types.RelayArgs, pargs types.PluginArgs) (types.CCIPExecProvider, error) {
+func (r *Relayer) NewCCIPExecProvider(ctx context.Context, rargs types.RelayArgs, pargs types.PluginArgs) (types.CCIPExecProvider, error) {
 	return nil, errors.New("ccip.exec is not supported for cosmos")
 }

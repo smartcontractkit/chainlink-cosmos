@@ -79,6 +79,6 @@ func (ct *ContractTransmitter) Transmit(
 	return err
 }
 
-func (ct *ContractTransmitter) FromAccount() (types.Account, error) {
+func (ct *ContractTransmitter) FromAccount(ctx context.Context) (types.Account, error) {
 	return types.Account(ct.sender.String()), nil
 }
