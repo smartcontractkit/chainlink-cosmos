@@ -60,7 +60,7 @@ func (r *Relayer) Start(ctx context.Context) error {
 	return r.chain.Start(ctx)
 }
 
-func (r *Relayer) Close() error { return nil }
+func (r *Relayer) Close() error { return r.chain.Close() }
 
 func (r *Relayer) Ready() error {
 	return r.chain.Ready()
