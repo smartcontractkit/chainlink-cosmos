@@ -273,7 +273,7 @@ func (txm *Txm) sendMsgBatchFromAddress(ctx context.Context, gasPrice sdk.DecCoi
 		txm.lggr.Criticalw("unable to get client", "err", err)
 		return err
 	}
-	an, sn, err := tc.Account(sender)
+	an, sn, err := tc.Account(ctx, sender)
 	if err != nil {
 		txm.lggr.Warnw("unable to read account", "err", err, "from", sender.String())
 		// If we can't read the account, assume transient api issues and leave msgs unstarted
@@ -282,7 +282,7 @@ func (txm *Txm) sendMsgBatchFromAddress(ctx context.Context, gasPrice sdk.DecCoi
 	}
 
 	txm.lggr.Debugw("simulating batch", "from", sender, "msgs", msgs, "seqnum", sn)
-	simResults, err := tc.BatchSimulateUnsigned(msgs.GetSimMsgs(), sn)
+	simResults, err := tc.BatchSimulateUnsigned(ctx, msgs.GetSimMsgs(), sn)
 	if err != nil {
 		txm.lggr.Warnw("unable to simulate", "err", err, "from", sender.String())
 		// If we can't simulate assume transient api issue and retry on next poll.
@@ -305,7 +305,7 @@ func (txm *Txm) sendMsgBatchFromAddress(ctx context.Context, gasPrice sdk.DecCoi
 		return errors.New("all sim msgs errored")
 	}
 	// Get the gas limit for the successful batch
-	s, err := tc.SimulateUnsigned(simResults.Succeeded.GetMsgs(), sn)
+	s, err := tc.SimulateUnsigned(ctx, simResults.Succeeded.GetMsgs(), sn)
 	if err != nil {
 		// In the OCR context this should only happen upon stale report
 		txm.lggr.Warnw("unexpected failure after successful simulation", "err", err)
@@ -313,7 +313,7 @@ func (txm *Txm) sendMsgBatchFromAddress(ctx context.Context, gasPrice sdk.DecCoi
 	}
 	gasLimit := s.GasInfo.GasUsed
 
-	lb, err := tc.LatestBlock()
+	lb, err := tc.LatestBlock(ctx)
 	if err != nil {
 		txm.lggr.Warnw("unable to get latest block", "err", err, "from", sender.String())
 		// Assume transient api issue and retry.
@@ -347,7 +347,7 @@ func (txm *Txm) sendMsgBatchFromAddress(ctx context.Context, gasPrice sdk.DecCoi
 		}
 
 		txm.lggr.Infow("broadcasting tx", "from", sender, "msgs", simResults.Succeeded, "gasLimit", gasLimit, "gasPrice", gasPrice.String(), "timeoutHeight", timeoutHeight, "hash", txHash)
-		resp, err = tc.Broadcast(signedTx, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+		resp, err = tc.Broadcast(ctx, signedTx, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		if err != nil {
 			// Rollback marking as broadcasted
 			// Note can happen if the node's mempool is full, where we expect errCode 20.
@@ -407,7 +407,7 @@ func (txm *Txm) confirmTx(ctx context.Context, tc client.Reader, txHash string, 
 		}
 		// Confirm that this tx is onchain, ensuring the sequence number has incremented
 		// so we can build a new batch
-		tx, err := tc.Tx(txHash)
+		tx, err := tc.Tx(ctx, txHash)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				txm.lggr.Infow("txhash not found yet, still confirming", "hash", txHash)

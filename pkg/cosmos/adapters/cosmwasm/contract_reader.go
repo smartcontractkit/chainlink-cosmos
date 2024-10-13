@@ -12,8 +12,9 @@ import (
 
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+
+	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 )
@@ -34,6 +35,7 @@ func NewOCR2Reader(addess cosmosSDK.AccAddress, chainReader client.Reader, lggr 
 
 func (r *OCR2Reader) LatestConfigDetails(ctx context.Context) (changedInBlock uint64, configDigest types.ConfigDigest, err error) {
 	resp, err := r.chainReader.ContractState(
+		ctx,
 		r.address,
 		[]byte(`{"latest_config_details":{}}`),
 	)
@@ -54,7 +56,7 @@ func (r *OCR2Reader) LatestConfig(ctx context.Context, changedInBlock uint64) (t
 	// work with wasmd 0.41.0, which is at cosmos-sdk v0.47.4, which contains the following regex for each event query string:
 	// https://github.com/cosmos/cosmos-sdk/blob/3b509c187e1643757f5ef8a0b5ae3decca0c7719/x/auth/tx/service.go#L49
 	query := []string{fmt.Sprintf("tx.height=%d", changedInBlock), fmt.Sprintf("wasm._contract_address='%s'", r.address)}
-	res, err := r.chainReader.TxsEvents(query, nil)
+	res, err := r.chainReader.TxsEvents(ctx, query, nil)
 	if err != nil {
 		return types.ContractConfig{}, err
 	}
@@ -228,7 +230,7 @@ func (r *OCR2Reader) LatestTransmissionDetails(ctx context.Context) (
 	latestTimestamp time.Time,
 	err error,
 ) {
-	resp, err := r.chainReader.ContractState(r.address, []byte(`{"latest_transmission_details":{}}`))
+	resp, err := r.chainReader.ContractState(ctx, r.address, []byte(`{"latest_transmission_details":{}}`))
 	if err != nil {
 		// Handle the 500 error that occurs when there has not been a submission
 		// "rpc error: code = Unknown desc = ocr2::state::Transmission not found: contract query failed: unknown request"
@@ -338,7 +340,7 @@ func (r *OCR2Reader) LatestConfigDigestAndEpoch(ctx context.Context) (
 	err error,
 ) {
 	resp, err := r.chainReader.ContractState(
-		r.address, []byte(`{"latest_config_digest_and_epoch":{}}`),
+		ctx, r.address, []byte(`{"latest_config_digest_and_epoch":{}}`),
 	)
 	if err != nil {
 		return types.ConfigDigest{}, 0, err

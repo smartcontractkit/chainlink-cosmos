@@ -30,7 +30,7 @@ func (ct *ContractTracker) Notify() <-chan struct{} {
 // TODO: seems heavy to fetch whole block rather than rpc.Status() -> SyncInfo.LatestBlockHeight
 // LatestBlockHeight returns the height of the most recent block in the chain.
 func (ct *ContractTracker) LatestBlockHeight(ctx context.Context) (blockHeight uint64, err error) {
-	b, err := ct.chainReader.LatestBlock()
+	b, err := ct.chainReader.LatestBlock(ctx)
 	if err != nil {
 		return 0, err
 	}
