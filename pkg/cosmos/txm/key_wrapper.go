@@ -33,7 +33,7 @@ func (a *KeyWrapper) Sign(msg []byte) ([]byte, error) {
 }
 
 func (a *KeyWrapper) PubKey() cryptotypes.PubKey {
-	pubKey, err := a.adapter.PubKey(a.account)
+	pubKey, err := a.adapter.PubKey(context.Background(), a.account)
 	if err != nil {
 		// return an empty pubkey if it's not found.
 		return &secp256k1.PubKey{Key: []byte{}}

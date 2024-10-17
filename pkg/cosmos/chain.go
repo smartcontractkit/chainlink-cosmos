@@ -190,13 +190,13 @@ func (c *chain) HealthReport() map[string]error {
 	return m
 }
 
-func (c *chain) LatestHead(_ context.Context) (types.Head, error) {
+func (c *chain) LatestHead(ctx context.Context) (types.Head, error) {
 	reader, err := c.Reader("")
 	if err != nil {
 		return types.Head{}, fmt.Errorf("chain unreachable: %v", err)
 	}
 
-	latestBlock, err := reader.LatestBlock()
+	latestBlock, err := reader.LatestBlock(ctx)
 	if err != nil {
 		return types.Head{}, err
 	}
@@ -249,7 +249,7 @@ func (c *chain) Transact(ctx context.Context, from, to string, amount *big.Int, 
 			return fmt.Errorf("gas price unavailable: %v", err2)
 		}
 
-		err = validateBalance(reader, gasPrice, fromAcc, coin)
+		err = validateBalance(ctx, reader, gasPrice, fromAcc, coin)
 		if err != nil {
 			return fmt.Errorf("failed to validate balance: %v", err)
 		}
@@ -300,8 +300,8 @@ func nodeStatus(n *config.Node, id string) (types.NodeStatus, error) {
 const maxGasUsedTransfer = 100_000
 
 // validateBalance validates that fromAddr's balance can cover coin, including fees at gasPrice.
-func validateBalance(reader client.Reader, gasPrice sdk.DecCoin, fromAddr sdk.AccAddress, coin sdk.Coin) error {
-	balance, err := reader.Balance(fromAddr, coin.GetDenom())
+func validateBalance(ctx context.Context, reader client.Reader, gasPrice sdk.DecCoin, fromAddr sdk.AccAddress, coin sdk.Coin) error {
+	balance, err := reader.Balance(ctx, fromAddr, coin.GetDenom())
 	if err != nil {
 		return err
 	}

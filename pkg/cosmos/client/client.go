@@ -38,13 +38,13 @@ type ReaderWriter interface {
 
 // Reader provides methods for reading from a cosmos chain.
 type Reader interface {
-	Account(address sdk.AccAddress) (uint64, uint64, error)
-	ContractState(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
-	TxsEvents(events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error)
-	Tx(hash string) (*txtypes.GetTxResponse, error)
-	LatestBlock() (*tmtypes.GetLatestBlockResponse, error)
-	BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse, error)
-	Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error)
+	Account(ctx context.Context, address sdk.AccAddress) (uint64, uint64, error)
+	ContractState(ctx context.Context, contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
+	TxsEvents(ctx context.Context, events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error)
+	Tx(ctx context.Context, hash string) (*txtypes.GetTxResponse, error)
+	LatestBlock(context.Context) (*tmtypes.GetLatestBlockResponse, error)
+	BlockByHeight(ctx context.Context, height int64) (*tmtypes.GetBlockByHeightResponse, error)
+	Balance(ctx context.Context, addr sdk.AccAddress, denom string) (*sdk.Coin, error)
 	// TODO: escape hatch for injective client
 	Context() *cosmosclient.Context
 }
@@ -54,11 +54,11 @@ type Reader interface {
 // We may want to support multiple from addresses + signers if a use case arises.
 type Writer interface {
 	// TODO: SignAndBroadcast is only used for testing, remove it
-	SignAndBroadcast(msgs []sdk.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
-	Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
-	Simulate(txBytes []byte) (*txtypes.SimulateResponse, error)
-	BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSimResults, error)
-	SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error)
+	SignAndBroadcast(ctx context.Context, msgs []sdk.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
+	Broadcast(ctx context.Context, txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
+	Simulate(ctx context.Context, txBytes []byte) (*txtypes.SimulateResponse, error)
+	BatchSimulateUnsigned(ctx context.Context, msgs SimMsgs, sequence uint64) (*BatchSimResults, error)
+	SimulateUnsigned(ctx context.Context, msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error)
 	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error)
 }
 
@@ -146,8 +146,8 @@ func (c *Client) Context() *cosmosclient.Context {
 
 // Account read the account address for the account number and sequence number.
 // !!Note only one sequence number can be used per account per block!!
-func (c *Client) Account(addr sdk.AccAddress) (uint64, uint64, error) {
-	r, err := c.authClient.Account(context.Background(), &authtypes.QueryAccountRequest{Address: addr.String()})
+func (c *Client) Account(ctx context.Context, addr sdk.AccAddress) (uint64, uint64, error) {
+	r, err := c.authClient.Account(ctx, &authtypes.QueryAccountRequest{Address: addr.String()})
 	if err != nil {
 		return 0, 0, err
 	}
@@ -160,8 +160,8 @@ func (c *Client) Account(addr sdk.AccAddress) (uint64, uint64, error) {
 }
 
 // ContractState reads from a WASM contract store
-func (c *Client) ContractState(contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
-	s, err := c.wasmClient.SmartContractState(context.Background(), &wasmtypes.QuerySmartContractStateRequest{
+func (c *Client) ContractState(ctx context.Context, contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
+	s, err := c.wasmClient.SmartContractState(ctx, &wasmtypes.QuerySmartContractStateRequest{
 		Address:   contractAddress.String(),
 		QueryData: queryMsg,
 	})
@@ -176,8 +176,8 @@ func (c *Client) ContractState(contractAddress sdk.AccAddress, queryMsg []byte) 
 // Each event is ANDed together and follows the query language defined
 // https://docs.cosmos.network/master/core/events.html
 // Note one current issue https://github.com/cosmos/cosmos-sdk/issues/10448
-func (c *Client) TxsEvents(events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error) {
-	e, err := c.cosmosServiceClient.GetTxsEvent(context.Background(), &txtypes.GetTxsEventRequest{
+func (c *Client) TxsEvents(ctx context.Context, events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error) {
+	e, err := c.cosmosServiceClient.GetTxsEvent(ctx, &txtypes.GetTxsEventRequest{
 		Events:     events,
 		Pagination: paginationParams,
 		OrderBy:    txtypes.OrderBy_ORDER_BY_DESC,
@@ -186,21 +186,21 @@ func (c *Client) TxsEvents(events []string, paginationParams *query.PageRequest)
 }
 
 // Tx gets a tx by hash
-func (c *Client) Tx(hash string) (*txtypes.GetTxResponse, error) {
-	e, err := c.cosmosServiceClient.GetTx(context.Background(), &txtypes.GetTxRequest{
+func (c *Client) Tx(ctx context.Context, hash string) (*txtypes.GetTxResponse, error) {
+	e, err := c.cosmosServiceClient.GetTx(ctx, &txtypes.GetTxRequest{
 		Hash: hash,
 	})
 	return e, err
 }
 
 // LatestBlock returns the latest block
-func (c *Client) LatestBlock() (*tmtypes.GetLatestBlockResponse, error) {
-	return c.tendermintServiceClient.GetLatestBlock(context.Background(), &tmtypes.GetLatestBlockRequest{})
+func (c *Client) LatestBlock(ctx context.Context) (*tmtypes.GetLatestBlockResponse, error) {
+	return c.tendermintServiceClient.GetLatestBlock(ctx, &tmtypes.GetLatestBlockRequest{})
 }
 
 // BlockByHeight gets a block by height
-func (c *Client) BlockByHeight(height int64) (*tmtypes.GetBlockByHeightResponse, error) {
-	return c.tendermintServiceClient.GetBlockByHeight(context.Background(), &tmtypes.GetBlockByHeightRequest{Height: height})
+func (c *Client) BlockByHeight(ctx context.Context, height int64) (*tmtypes.GetBlockByHeightResponse, error) {
+	return c.tendermintServiceClient.GetBlockByHeight(ctx, &tmtypes.GetBlockByHeightRequest{Height: height})
 }
 
 // CreateAndSign creates and signs a transaction
@@ -336,12 +336,12 @@ func (c *Client) failedMsgIndex(err error) (bool, int) {
 // Note that the error from simulating indicates the first
 // msg in the slice which failed (it simply loops over the msgs
 // and simulates them one by one, breaking at the first failure).
-func (c *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSimResults, error) {
+func (c *Client) BatchSimulateUnsigned(ctx context.Context, msgs SimMsgs, sequence uint64) (*BatchSimResults, error) {
 	var succeeded []SimMsg
 	var failed []SimMsg
 	toSim := msgs
 	for {
-		_, err := c.SimulateUnsigned(toSim.GetMsgs(), sequence)
+		_, err := c.SimulateUnsigned(ctx, toSim.GetMsgs(), sequence)
 		containsFailure, failureIndex := c.failedMsgIndex(err)
 		if err != nil && !containsFailure {
 			return nil, err
@@ -370,7 +370,7 @@ func (c *Client) BatchSimulateUnsigned(msgs SimMsgs, sequence uint64) (*BatchSim
 }
 
 // SimulateUnsigned simulates an unsigned msg
-func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error) {
+func (c *Client) SimulateUnsigned(ctx context.Context, msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error) {
 	txConfig := params.ClientTxConfig()
 	txBuilder := txConfig.NewTxBuilder()
 	if err := txBuilder.SetMsgs(msgs...); err != nil {
@@ -393,23 +393,23 @@ func (c *Client) SimulateUnsigned(msgs []sdk.Msg, sequence uint64) (*txtypes.Sim
 	if err != nil {
 		return nil, err
 	}
-	s, err := c.cosmosServiceClient.Simulate(context.Background(), &txtypes.SimulateRequest{
+	s, err := c.cosmosServiceClient.Simulate(ctx, &txtypes.SimulateRequest{
 		TxBytes: txBytes,
 	})
 	return s, err
 }
 
 // Simulate simulates a signed transaction
-func (c *Client) Simulate(txBytes []byte) (*txtypes.SimulateResponse, error) {
-	s, err := c.cosmosServiceClient.Simulate(context.Background(), &txtypes.SimulateRequest{
+func (c *Client) Simulate(ctx context.Context, txBytes []byte) (*txtypes.SimulateResponse, error) {
+	s, err := c.cosmosServiceClient.Simulate(ctx, &txtypes.SimulateRequest{
 		TxBytes: txBytes,
 	})
 	return s, err
 }
 
 // Broadcast broadcasts a tx
-func (c *Client) Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
-	res, err := c.cosmosServiceClient.BroadcastTx(context.Background(), &txtypes.BroadcastTxRequest{
+func (c *Client) Broadcast(ctx context.Context, txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
+	res, err := c.cosmosServiceClient.BroadcastTx(ctx, &txtypes.BroadcastTxRequest{
 		Mode:    mode,
 		TxBytes: txBytes,
 	})
@@ -426,8 +426,8 @@ func (c *Client) Broadcast(txBytes []byte, mode txtypes.BroadcastMode) (*txtypes
 }
 
 // SignAndBroadcast signs and broadcasts a group of msgs.
-func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
-	sim, err := c.SimulateUnsigned(msgs, sequence)
+func (c *Client) SignAndBroadcast(ctx context.Context, msgs []sdk.Msg, account uint64, sequence uint64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
+	sim, err := c.SimulateUnsigned(ctx, msgs, sequence)
 	if err != nil {
 		return nil, err
 	}
@@ -436,12 +436,12 @@ func (c *Client) SignAndBroadcast(msgs []sdk.Msg, account uint64, sequence uint6
 	if err != nil {
 		return nil, err
 	}
-	return c.Broadcast(txBytes, mode)
+	return c.Broadcast(ctx, txBytes, mode)
 }
 
 // Balance returns the balance of an address
-func (c *Client) Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error) {
-	b, err := c.bankClient.Balance(context.Background(), &banktypes.QueryBalanceRequest{Address: addr.String(), Denom: denom})
+func (c *Client) Balance(ctx context.Context, addr sdk.AccAddress, denom string) (*sdk.Coin, error) {
+	b, err := c.bankClient.Balance(ctx, &banktypes.QueryBalanceRequest{Address: addr.String(), Denom: denom})
 	if err != nil {
 		return nil, err
 	}

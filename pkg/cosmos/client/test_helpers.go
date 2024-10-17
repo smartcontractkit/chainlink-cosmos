@@ -14,10 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tidwall/gjson"
-
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/testutil"
-
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -25,6 +21,11 @@ import (
 	"github.com/pelletier/go-toml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
+
+	"github.com/smartcontractkit/chainlink-common/pkg/utils/tests"
+
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/testutil"
 )
 
 type Account struct {
@@ -156,6 +157,7 @@ func SetupLocalCosmosNode(t *testing.T, chainID string, token string) ([]Account
 
 // DeployTestContract deploys a test contract.
 func DeployTestContract(t *testing.T, tendermintURL, chainID string, token string, deployAccount, ownerAccount Account, tc *Client, testdir, wasmTestContractPath string) sdk.AccAddress {
+	ctx := tests.Context(t)
 	minGasPrice := sdk.NewDecCoinFromDec(token, defaultCoin)
 	//nolint:gosec
 	submitResp, err2 := exec.Command("wasmd", "tx", "wasm", "store", wasmTestContractPath, "--node", tendermintURL,
@@ -173,9 +175,9 @@ func DeployTestContract(t *testing.T, tendermintURL, chainID string, token strin
 	codeID, err := strconv.ParseUint(storeCodeLog.GetEvents()[1].Attributes[1].Value, 10, 64)
 	require.NoError(t, err, "failed to parse code id from tx receipt")
 
-	accountNumber, sequenceNumber, err := tc.Account(ownerAccount.Address)
+	accountNumber, sequenceNumber, err := tc.Account(ctx, ownerAccount.Address)
 	require.NoError(t, err)
-	deployTx, err3 := tc.SignAndBroadcast([]sdk.Msg{
+	deployTx, err3 := tc.SignAndBroadcast(ctx, []sdk.Msg{
 		&wasmtypes.MsgInstantiateContract{
 			Sender: ownerAccount.Address.String(),
 			Admin:  "",
@@ -221,8 +223,9 @@ func mustRandomPort() int {
 
 // AwaitTxCommitted waits for a transaction to be committed on chain and returns the tx receipt
 func AwaitTxCommitted(t *testing.T, tc *Client, txHash string) (response *txtypes.GetTxResponse, success bool) {
+	ctx := tests.Context(t)
 	for i := 0; i < 10; i++ { // max poll attempts to wait for tx commitment
-		txReceipt, err := tc.Tx(txHash)
+		txReceipt, err := tc.Tx(ctx, txHash)
 		if err == nil {
 			return txReceipt, true
 		}
