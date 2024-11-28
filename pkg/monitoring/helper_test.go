@@ -1,22 +1,25 @@
 package monitoring
 
 import (
-	"context"
 	cryptoRand "crypto/rand"
 	"fmt"
 	"math/big"
 	"math/rand"
+	"testing"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
+
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
-	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
 )
 
 // Generators
 
-func generateChainConfig() CosmosConfig {
-	address, _ := sdk.AccAddressFromBech32("wasm106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
+func generateChainConfig(t *testing.T) CosmosConfig {
+	address, err := sdk.AccAddressFromBech32(randBech32())
+	require.NoError(t, err)
 	return CosmosConfig{
 		TendermintURL:    "https://some-tendermint-url.com",
 		FCDURL:           "https://fcd.terra.dev",
@@ -29,11 +32,13 @@ func generateChainConfig() CosmosConfig {
 	}
 }
 
-func generateFeedConfig() CosmosFeedConfig {
+func generateFeedConfig(t *testing.T) CosmosFeedConfig {
 	coins := []string{"btc", "eth", "matic", "link", "avax", "ftt", "srm", "usdc", "sol", "ray"}
 	coin := coins[rand.Intn(len(coins))]
-	address, _ := sdk.AccAddressFromBech32("wasm106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
-	proxyAddress, _ := sdk.AccAddressFromBech32("wasm106x8mk9asfnptt5rqw5kx6hs8f75fseqa8rfz2")
+	address, err := sdk.AccAddressFromBech32(randBech32())
+	require.NoError(t, err)
+	proxyAddress, err := sdk.AccAddressFromBech32(randBech32())
+	require.NoError(t, err)
 	return CosmosFeedConfig{
 		Name:           fmt.Sprintf("%s / usd", coin),
 		Path:           fmt.Sprintf("%s-usd", coin),
@@ -70,40 +75,10 @@ func generateProxyData() ProxyData {
 
 // Sources
 
-// NewFakeProxySourceFactory makes a source that generates random proxy data.
-func NewFakeProxySourceFactory(log relayMonitoring.Logger) relayMonitoring.SourceFactory {
-	return &fakeProxySourceFactory{log}
-}
-
-type fakeProxySourceFactory struct {
-	log relayMonitoring.Logger
-}
-
-func (f *fakeProxySourceFactory) NewSource(
-	_ relayMonitoring.ChainConfig,
-	_ relayMonitoring.FeedConfig,
-) (relayMonitoring.Source, error) {
-	return &fakeProxySource{f.log}, nil
-}
-
-func (f *fakeProxySourceFactory) GetType() string {
-	return "fake-proxy"
-}
-
-type fakeProxySource struct {
-	log relayMonitoring.Logger
-}
-
-func (f *fakeProxySource) Fetch(ctx context.Context) (interface{}, error) {
-	return generateProxyData(), nil
-}
-
 func newNullLogger() logger.Logger {
 	return logger.Nop()
 }
 
-var (
-	_ = newNullLogger()
-	_ = generateChainConfig()
-	_ = generateFeedConfig()
-)
+func randBech32() string {
+	return sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address().Bytes()).String()
+}

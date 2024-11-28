@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/smartcontractkit/chainlink-common/pkg/utils/tests"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
@@ -66,10 +67,11 @@ func TestBatchSim(t *testing.T) {
 	var fail sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), Msg: []byte(`{"blah":{"count":5}}`)}
 
 	t.Run("single success", func(t *testing.T) {
-		_, sn, err := tc.Account(accounts[0].Address)
+		ctx := tests.Context(t)
+		_, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		t.Cleanup(assertLogsLen(t, 0))
-		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}}, sn)
+		res, err := tc.BatchSimulateUnsigned(ctx, []SimMsg{{ID: int64(1), Msg: succeed}}, sn)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(res.Succeeded))
 		assert.Equal(t, int64(1), res.Succeeded[0].ID)
@@ -77,10 +79,11 @@ func TestBatchSim(t *testing.T) {
 	})
 
 	t.Run("single failure", func(t *testing.T) {
-		_, sn, err := tc.Account(accounts[0].Address)
+		ctx := tests.Context(t)
+		_, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		t.Cleanup(assertLogsLen(t, 1))
-		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: fail}}, sn)
+		res, err := tc.BatchSimulateUnsigned(ctx, []SimMsg{{ID: int64(1), Msg: fail}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(res.Succeeded))
 		require.Equal(t, 1, len(res.Failed))
@@ -88,10 +91,11 @@ func TestBatchSim(t *testing.T) {
 	})
 
 	t.Run("multi failure", func(t *testing.T) {
-		_, sn, err := tc.Account(accounts[0].Address)
+		ctx := tests.Context(t)
+		_, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		t.Cleanup(assertLogsLen(t, 2))
-		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
+		res, err := tc.BatchSimulateUnsigned(ctx, []SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(res.Succeeded))
 		assert.Equal(t, int64(1), res.Succeeded[0].ID)
@@ -101,30 +105,33 @@ func TestBatchSim(t *testing.T) {
 	})
 
 	t.Run("multi succeed", func(t *testing.T) {
-		_, sn, err := tc.Account(accounts[0].Address)
+		ctx := tests.Context(t)
+		_, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		t.Cleanup(assertLogsLen(t, 1))
-		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: fail}}, sn)
+		res, err := tc.BatchSimulateUnsigned(ctx, []SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: fail}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 2, len(res.Succeeded))
 		assert.Equal(t, 1, len(res.Failed))
 	})
 
 	t.Run("all succeed", func(t *testing.T) {
-		_, sn, err := tc.Account(accounts[0].Address)
+		ctx := tests.Context(t)
+		_, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		t.Cleanup(assertLogsLen(t, 0))
-		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: succeed}}, sn)
+		res, err := tc.BatchSimulateUnsigned(ctx, []SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: succeed}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 3, len(res.Succeeded))
 		assert.Equal(t, 0, len(res.Failed))
 	})
 
 	t.Run("all fail", func(t *testing.T) {
-		_, sn, err := tc.Account(accounts[0].Address)
+		ctx := tests.Context(t)
+		_, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		t.Cleanup(assertLogsLen(t, 3))
-		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: fail}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
+		res, err := tc.BatchSimulateUnsigned(ctx, []SimMsg{{ID: int64(1), Msg: fail}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(res.Succeeded))
 		assert.Equal(t, 3, len(res.Failed))
@@ -146,59 +153,62 @@ func TestCosmosClient(t *testing.T) {
 	contract := DeployTestContract(t, tendermintURL, "42", "ucosm", accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 
 	t.Run("send tx between accounts", func(t *testing.T) {
+		ctx := tests.Context(t)
 		// Assert balance before
-		b, err := tc.Balance(accounts[1].Address, "ucosm")
+		b, err := tc.Balance(ctx, accounts[1].Address, "ucosm")
 		require.NoError(t, err)
 		assert.Equal(t, "100000000", b.Amount.String())
 
 		// Send a ucosm from one account to another and ensure balances update
-		an, sn, err := tc.Account(accounts[0].Address)
+		an, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		fund := banktypes.NewMsgSend(accounts[0].Address, accounts[1].Address, sdk.NewCoins(sdk.NewInt64Coin("ucosm", 1)))
-		gasLimit, err := tc.SimulateUnsigned([]sdk.Msg{fund}, sn)
+		gasLimit, err := tc.SimulateUnsigned(ctx, []sdk.Msg{fund}, sn)
 		require.NoError(t, err)
 		gasPrices, err := gpe.GasPrices()
 		require.NoError(t, err)
 		txBytes, err := tc.CreateAndSign([]sdk.Msg{fund}, an, sn, gasLimit.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrices["ucosm"], accounts[0].PrivateKey, 0)
 		require.NoError(t, err)
-		_, err = tc.Simulate(txBytes)
+		_, err = tc.Simulate(ctx, txBytes)
 		require.NoError(t, err)
-		resp, err := tc.Broadcast(txBytes, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+		resp, err := tc.Broadcast(ctx, txBytes, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err)
 		tx, success := AwaitTxCommitted(t, tc, resp.TxResponse.TxHash)
 		require.True(t, success)
 		require.Equal(t, types.CodeTypeOK, tx.TxResponse.Code)
 
 		// Assert balance changed
-		b, err = tc.Balance(accounts[1].Address, "ucosm")
+		b, err = tc.Balance(ctx, accounts[1].Address, "ucosm")
 		require.NoError(t, err)
 		assert.Equal(t, "100000001", b.Amount.String())
 
 		// Invalid tx should error
-		_, err = tc.Tx("1234")
+		_, err = tc.Tx(ctx, "1234")
 		require.Error(t, err)
 
 		// Ensure we can read back the tx with Query
-		tr, err := tc.TxsEvents([]string{fmt.Sprintf("tx.height=%v", tx.TxResponse.Height)}, nil)
+		tr, err := tc.TxsEvents(ctx, []string{fmt.Sprintf("tx.height=%v", tx.TxResponse.Height)}, nil)
 		require.NoError(t, err)
 		assert.Equal(t, 1, len(tr.TxResponses))
 		assert.Equal(t, tx.TxResponse.TxHash, tr.TxResponses[0].TxHash)
 		// And also Tx
-		getTx, err := tc.Tx(tx.TxResponse.TxHash)
+		getTx, err := tc.Tx(ctx, tx.TxResponse.TxHash)
 		require.NoError(t, err)
 		assert.Equal(t, getTx.TxResponse.TxHash, tx.TxResponse.TxHash)
 	})
 
 	t.Run("can get height", func(t *testing.T) {
 		// Check getting the height works
-		latestBlock, err := tc.LatestBlock()
+		latestBlock, err := tc.LatestBlock(tests.Context(t))
 		require.NoError(t, err)
 		assert.True(t, latestBlock.SdkBlock.Header.Height > 1)
 	})
 
 	t.Run("contract event querying", func(t *testing.T) {
+		ctx := tests.Context(t)
 		// Query initial contract state
 		count, err := tc.ContractState(
+			ctx,
 			contract,
 			[]byte(`{"get_count":{}}`),
 		)
@@ -206,6 +216,7 @@ func TestCosmosClient(t *testing.T) {
 		assert.Equal(t, `{"count":0}`, string(count))
 		// Query invalid state should give an error
 		count, err = tc.ContractState(
+			ctx,
 			contract,
 			[]byte(`{"blah":{}}`),
 		)
@@ -219,11 +230,11 @@ func TestCosmosClient(t *testing.T) {
 			Msg:      []byte(`{"reset":{"count":5}}`),
 			Funds:    sdk.Coins{},
 		}
-		an, sn, err := tc.Account(accounts[0].Address)
+		an, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		gasPrices, err := gpe.GasPrices()
 		require.NoError(t, err)
-		resp1, err := tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+		resp1, err := tc.SignAndBroadcast(ctx, []sdk.Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err)
 		tx1, success := AwaitTxCommitted(t, tc, resp1.TxResponse.TxHash)
 		require.True(t, success)
@@ -236,9 +247,9 @@ func TestCosmosClient(t *testing.T) {
 			Msg:      []byte(`{"reset":{"count":4}}`),
 			Funds:    sdk.Coins{},
 		}
-		an, sn, err = tc.Account(accounts[0].Address)
+		an, sn, err = tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
-		resp2, err := tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+		resp2, err := tc.SignAndBroadcast(ctx, []sdk.Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err)
 		tx2, success := AwaitTxCommitted(t, tc, resp2.TxResponse.TxHash)
 		require.True(t, success)
@@ -246,6 +257,7 @@ func TestCosmosClient(t *testing.T) {
 
 		// Observe changed contract state
 		count, err = tc.ContractState(
+			ctx,
 			contract,
 			[]byte(`{"get_count":{}}`),
 		)
@@ -254,7 +266,7 @@ func TestCosmosClient(t *testing.T) {
 
 		// Check events querying works
 		// TxEvents sorts in a descending manner, so latest txes are first
-		ev, err := tc.TxsEvents([]string{"wasm.action='reset'", fmt.Sprintf("wasm._contract_address='%s'", contract.String())}, nil)
+		ev, err := tc.TxsEvents(ctx, []string{"wasm.action='reset'", fmt.Sprintf("wasm._contract_address='%s'", contract.String())}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 2, len(ev.TxResponses))
 		foundContract := false
@@ -283,10 +295,10 @@ func TestCosmosClient(t *testing.T) {
 		assert.True(t, foundContract)
 
 		// Ensure the height filtering works
-		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height=%d", tx2.TxResponse.Height), "wasm.action='reset'", fmt.Sprintf("wasm._contract_address='%s'", contract.String())}, nil)
+		ev, err = tc.TxsEvents(ctx, []string{fmt.Sprintf("tx.height=%d", tx2.TxResponse.Height), "wasm.action='reset'", fmt.Sprintf("wasm._contract_address='%s'", contract.String())}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(ev.TxResponses))
-		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height=%d", tx1.TxResponse.Height), "wasm.action='reset'", fmt.Sprintf("wasm._contract_address='%s'", contract)}, nil)
+		ev, err = tc.TxsEvents(ctx, []string{fmt.Sprintf("tx.height=%d", tx1.TxResponse.Height), "wasm.action='reset'", fmt.Sprintf("wasm._contract_address='%s'", contract)}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(ev.TxResponses))
 		for _, ev := range ev.TxResponses[0].Logs[0].Events {
@@ -335,10 +347,11 @@ func TestCosmosClient(t *testing.T) {
 			},
 		} {
 			t.Run(tt.name, func(t *testing.T) {
+				ctx := tests.Context(t)
 				t.Log("Gas price:", tt.gasPrice)
-				an, sn, err := tc.Account(accounts[0].Address)
+				an, sn, err := tc.Account(ctx, accounts[0].Address)
 				require.NoError(t, err)
-				resp, err := tc.SignAndBroadcast([]sdk.Msg{rawMsg}, an, sn, tt.gasPrice, accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+				resp, err := tc.SignAndBroadcast(ctx, []sdk.Msg{rawMsg}, an, sn, tt.gasPrice, accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 				require.NotNil(t, resp)
 
 				if tt.expCode == 0 {

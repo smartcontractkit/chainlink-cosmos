@@ -3,8 +3,11 @@
 package mocks
 
 import (
-	cosmos_sdkclient "github.com/cosmos/cosmos-sdk/client"
+	context "context"
+
 	client "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
+
+	cosmos_sdkclient "github.com/cosmos/cosmos-sdk/client"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
@@ -24,9 +27,9 @@ type ReaderWriter struct {
 	mock.Mock
 }
 
-// Account provides a mock function with given fields: address
-func (_m *ReaderWriter) Account(address types.AccAddress) (uint64, uint64, error) {
-	ret := _m.Called(address)
+// Account provides a mock function with given fields: ctx, address
+func (_m *ReaderWriter) Account(ctx context.Context, address types.AccAddress) (uint64, uint64, error) {
+	ret := _m.Called(ctx, address)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Account")
@@ -35,23 +38,23 @@ func (_m *ReaderWriter) Account(address types.AccAddress) (uint64, uint64, error
 	var r0 uint64
 	var r1 uint64
 	var r2 error
-	if rf, ok := ret.Get(0).(func(types.AccAddress) (uint64, uint64, error)); ok {
-		return rf(address)
+	if rf, ok := ret.Get(0).(func(context.Context, types.AccAddress) (uint64, uint64, error)); ok {
+		return rf(ctx, address)
 	}
-	if rf, ok := ret.Get(0).(func(types.AccAddress) uint64); ok {
-		r0 = rf(address)
+	if rf, ok := ret.Get(0).(func(context.Context, types.AccAddress) uint64); ok {
+		r0 = rf(ctx, address)
 	} else {
 		r0 = ret.Get(0).(uint64)
 	}
 
-	if rf, ok := ret.Get(1).(func(types.AccAddress) uint64); ok {
-		r1 = rf(address)
+	if rf, ok := ret.Get(1).(func(context.Context, types.AccAddress) uint64); ok {
+		r1 = rf(ctx, address)
 	} else {
 		r1 = ret.Get(1).(uint64)
 	}
 
-	if rf, ok := ret.Get(2).(func(types.AccAddress) error); ok {
-		r2 = rf(address)
+	if rf, ok := ret.Get(2).(func(context.Context, types.AccAddress) error); ok {
+		r2 = rf(ctx, address)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -59,9 +62,9 @@ func (_m *ReaderWriter) Account(address types.AccAddress) (uint64, uint64, error
 	return r0, r1, r2
 }
 
-// Balance provides a mock function with given fields: addr, denom
-func (_m *ReaderWriter) Balance(addr types.AccAddress, denom string) (*types.Coin, error) {
-	ret := _m.Called(addr, denom)
+// Balance provides a mock function with given fields: ctx, addr, denom
+func (_m *ReaderWriter) Balance(ctx context.Context, addr types.AccAddress, denom string) (*types.Coin, error) {
+	ret := _m.Called(ctx, addr, denom)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Balance")
@@ -69,19 +72,19 @@ func (_m *ReaderWriter) Balance(addr types.AccAddress, denom string) (*types.Coi
 
 	var r0 *types.Coin
 	var r1 error
-	if rf, ok := ret.Get(0).(func(types.AccAddress, string) (*types.Coin, error)); ok {
-		return rf(addr, denom)
+	if rf, ok := ret.Get(0).(func(context.Context, types.AccAddress, string) (*types.Coin, error)); ok {
+		return rf(ctx, addr, denom)
 	}
-	if rf, ok := ret.Get(0).(func(types.AccAddress, string) *types.Coin); ok {
-		r0 = rf(addr, denom)
+	if rf, ok := ret.Get(0).(func(context.Context, types.AccAddress, string) *types.Coin); ok {
+		r0 = rf(ctx, addr, denom)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.Coin)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(types.AccAddress, string) error); ok {
-		r1 = rf(addr, denom)
+	if rf, ok := ret.Get(1).(func(context.Context, types.AccAddress, string) error); ok {
+		r1 = rf(ctx, addr, denom)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -89,9 +92,9 @@ func (_m *ReaderWriter) Balance(addr types.AccAddress, denom string) (*types.Coi
 	return r0, r1
 }
 
-// BatchSimulateUnsigned provides a mock function with given fields: msgs, sequence
-func (_m *ReaderWriter) BatchSimulateUnsigned(msgs client.SimMsgs, sequence uint64) (*client.BatchSimResults, error) {
-	ret := _m.Called(msgs, sequence)
+// BatchSimulateUnsigned provides a mock function with given fields: ctx, msgs, sequence
+func (_m *ReaderWriter) BatchSimulateUnsigned(ctx context.Context, msgs client.SimMsgs, sequence uint64) (*client.BatchSimResults, error) {
+	ret := _m.Called(ctx, msgs, sequence)
 
 	if len(ret) == 0 {
 		panic("no return value specified for BatchSimulateUnsigned")
@@ -99,19 +102,19 @@ func (_m *ReaderWriter) BatchSimulateUnsigned(msgs client.SimMsgs, sequence uint
 
 	var r0 *client.BatchSimResults
 	var r1 error
-	if rf, ok := ret.Get(0).(func(client.SimMsgs, uint64) (*client.BatchSimResults, error)); ok {
-		return rf(msgs, sequence)
+	if rf, ok := ret.Get(0).(func(context.Context, client.SimMsgs, uint64) (*client.BatchSimResults, error)); ok {
+		return rf(ctx, msgs, sequence)
 	}
-	if rf, ok := ret.Get(0).(func(client.SimMsgs, uint64) *client.BatchSimResults); ok {
-		r0 = rf(msgs, sequence)
+	if rf, ok := ret.Get(0).(func(context.Context, client.SimMsgs, uint64) *client.BatchSimResults); ok {
+		r0 = rf(ctx, msgs, sequence)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*client.BatchSimResults)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(client.SimMsgs, uint64) error); ok {
-		r1 = rf(msgs, sequence)
+	if rf, ok := ret.Get(1).(func(context.Context, client.SimMsgs, uint64) error); ok {
+		r1 = rf(ctx, msgs, sequence)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -119,9 +122,9 @@ func (_m *ReaderWriter) BatchSimulateUnsigned(msgs client.SimMsgs, sequence uint
 	return r0, r1
 }
 
-// BlockByHeight provides a mock function with given fields: height
-func (_m *ReaderWriter) BlockByHeight(height int64) (*tmservice.GetBlockByHeightResponse, error) {
-	ret := _m.Called(height)
+// BlockByHeight provides a mock function with given fields: ctx, height
+func (_m *ReaderWriter) BlockByHeight(ctx context.Context, height int64) (*tmservice.GetBlockByHeightResponse, error) {
+	ret := _m.Called(ctx, height)
 
 	if len(ret) == 0 {
 		panic("no return value specified for BlockByHeight")
@@ -129,19 +132,19 @@ func (_m *ReaderWriter) BlockByHeight(height int64) (*tmservice.GetBlockByHeight
 
 	var r0 *tmservice.GetBlockByHeightResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(int64) (*tmservice.GetBlockByHeightResponse, error)); ok {
-		return rf(height)
+	if rf, ok := ret.Get(0).(func(context.Context, int64) (*tmservice.GetBlockByHeightResponse, error)); ok {
+		return rf(ctx, height)
 	}
-	if rf, ok := ret.Get(0).(func(int64) *tmservice.GetBlockByHeightResponse); ok {
-		r0 = rf(height)
+	if rf, ok := ret.Get(0).(func(context.Context, int64) *tmservice.GetBlockByHeightResponse); ok {
+		r0 = rf(ctx, height)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*tmservice.GetBlockByHeightResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(int64) error); ok {
-		r1 = rf(height)
+	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {
+		r1 = rf(ctx, height)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -149,9 +152,9 @@ func (_m *ReaderWriter) BlockByHeight(height int64) (*tmservice.GetBlockByHeight
 	return r0, r1
 }
 
-// Broadcast provides a mock function with given fields: txBytes, mode
-func (_m *ReaderWriter) Broadcast(txBytes []byte, mode tx.BroadcastMode) (*tx.BroadcastTxResponse, error) {
-	ret := _m.Called(txBytes, mode)
+// Broadcast provides a mock function with given fields: ctx, txBytes, mode
+func (_m *ReaderWriter) Broadcast(ctx context.Context, txBytes []byte, mode tx.BroadcastMode) (*tx.BroadcastTxResponse, error) {
+	ret := _m.Called(ctx, txBytes, mode)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Broadcast")
@@ -159,19 +162,19 @@ func (_m *ReaderWriter) Broadcast(txBytes []byte, mode tx.BroadcastMode) (*tx.Br
 
 	var r0 *tx.BroadcastTxResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func([]byte, tx.BroadcastMode) (*tx.BroadcastTxResponse, error)); ok {
-		return rf(txBytes, mode)
+	if rf, ok := ret.Get(0).(func(context.Context, []byte, tx.BroadcastMode) (*tx.BroadcastTxResponse, error)); ok {
+		return rf(ctx, txBytes, mode)
 	}
-	if rf, ok := ret.Get(0).(func([]byte, tx.BroadcastMode) *tx.BroadcastTxResponse); ok {
-		r0 = rf(txBytes, mode)
+	if rf, ok := ret.Get(0).(func(context.Context, []byte, tx.BroadcastMode) *tx.BroadcastTxResponse); ok {
+		r0 = rf(ctx, txBytes, mode)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*tx.BroadcastTxResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func([]byte, tx.BroadcastMode) error); ok {
-		r1 = rf(txBytes, mode)
+	if rf, ok := ret.Get(1).(func(context.Context, []byte, tx.BroadcastMode) error); ok {
+		r1 = rf(ctx, txBytes, mode)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -199,9 +202,9 @@ func (_m *ReaderWriter) Context() *cosmos_sdkclient.Context {
 	return r0
 }
 
-// ContractState provides a mock function with given fields: contractAddress, queryMsg
-func (_m *ReaderWriter) ContractState(contractAddress types.AccAddress, queryMsg []byte) ([]byte, error) {
-	ret := _m.Called(contractAddress, queryMsg)
+// ContractState provides a mock function with given fields: ctx, contractAddress, queryMsg
+func (_m *ReaderWriter) ContractState(ctx context.Context, contractAddress types.AccAddress, queryMsg []byte) ([]byte, error) {
+	ret := _m.Called(ctx, contractAddress, queryMsg)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ContractState")
@@ -209,19 +212,19 @@ func (_m *ReaderWriter) ContractState(contractAddress types.AccAddress, queryMsg
 
 	var r0 []byte
 	var r1 error
-	if rf, ok := ret.Get(0).(func(types.AccAddress, []byte) ([]byte, error)); ok {
-		return rf(contractAddress, queryMsg)
+	if rf, ok := ret.Get(0).(func(context.Context, types.AccAddress, []byte) ([]byte, error)); ok {
+		return rf(ctx, contractAddress, queryMsg)
 	}
-	if rf, ok := ret.Get(0).(func(types.AccAddress, []byte) []byte); ok {
-		r0 = rf(contractAddress, queryMsg)
+	if rf, ok := ret.Get(0).(func(context.Context, types.AccAddress, []byte) []byte); ok {
+		r0 = rf(ctx, contractAddress, queryMsg)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(types.AccAddress, []byte) error); ok {
-		r1 = rf(contractAddress, queryMsg)
+	if rf, ok := ret.Get(1).(func(context.Context, types.AccAddress, []byte) error); ok {
+		r1 = rf(ctx, contractAddress, queryMsg)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -259,9 +262,9 @@ func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence
 	return r0, r1
 }
 
-// LatestBlock provides a mock function with given fields:
-func (_m *ReaderWriter) LatestBlock() (*tmservice.GetLatestBlockResponse, error) {
-	ret := _m.Called()
+// LatestBlock provides a mock function with given fields: _a0
+func (_m *ReaderWriter) LatestBlock(_a0 context.Context) (*tmservice.GetLatestBlockResponse, error) {
+	ret := _m.Called(_a0)
 
 	if len(ret) == 0 {
 		panic("no return value specified for LatestBlock")
@@ -269,19 +272,19 @@ func (_m *ReaderWriter) LatestBlock() (*tmservice.GetLatestBlockResponse, error)
 
 	var r0 *tmservice.GetLatestBlockResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func() (*tmservice.GetLatestBlockResponse, error)); ok {
-		return rf()
+	if rf, ok := ret.Get(0).(func(context.Context) (*tmservice.GetLatestBlockResponse, error)); ok {
+		return rf(_a0)
 	}
-	if rf, ok := ret.Get(0).(func() *tmservice.GetLatestBlockResponse); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(context.Context) *tmservice.GetLatestBlockResponse); ok {
+		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*tmservice.GetLatestBlockResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(_a0)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -289,9 +292,9 @@ func (_m *ReaderWriter) LatestBlock() (*tmservice.GetLatestBlockResponse, error)
 	return r0, r1
 }
 
-// SignAndBroadcast provides a mock function with given fields: msgs, accountNum, sequence, gasPrice, signer, mode
-func (_m *ReaderWriter) SignAndBroadcast(msgs []types.Msg, accountNum uint64, sequence uint64, gasPrice types.DecCoin, signer cryptotypes.PrivKey, mode tx.BroadcastMode) (*tx.BroadcastTxResponse, error) {
-	ret := _m.Called(msgs, accountNum, sequence, gasPrice, signer, mode)
+// SignAndBroadcast provides a mock function with given fields: ctx, msgs, accountNum, sequence, gasPrice, signer, mode
+func (_m *ReaderWriter) SignAndBroadcast(ctx context.Context, msgs []types.Msg, accountNum uint64, sequence uint64, gasPrice types.DecCoin, signer cryptotypes.PrivKey, mode tx.BroadcastMode) (*tx.BroadcastTxResponse, error) {
+	ret := _m.Called(ctx, msgs, accountNum, sequence, gasPrice, signer, mode)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SignAndBroadcast")
@@ -299,19 +302,19 @@ func (_m *ReaderWriter) SignAndBroadcast(msgs []types.Msg, accountNum uint64, se
 
 	var r0 *tx.BroadcastTxResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func([]types.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) (*tx.BroadcastTxResponse, error)); ok {
-		return rf(msgs, accountNum, sequence, gasPrice, signer, mode)
+	if rf, ok := ret.Get(0).(func(context.Context, []types.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) (*tx.BroadcastTxResponse, error)); ok {
+		return rf(ctx, msgs, accountNum, sequence, gasPrice, signer, mode)
 	}
-	if rf, ok := ret.Get(0).(func([]types.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) *tx.BroadcastTxResponse); ok {
-		r0 = rf(msgs, accountNum, sequence, gasPrice, signer, mode)
+	if rf, ok := ret.Get(0).(func(context.Context, []types.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) *tx.BroadcastTxResponse); ok {
+		r0 = rf(ctx, msgs, accountNum, sequence, gasPrice, signer, mode)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*tx.BroadcastTxResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func([]types.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) error); ok {
-		r1 = rf(msgs, accountNum, sequence, gasPrice, signer, mode)
+	if rf, ok := ret.Get(1).(func(context.Context, []types.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) error); ok {
+		r1 = rf(ctx, msgs, accountNum, sequence, gasPrice, signer, mode)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -319,9 +322,9 @@ func (_m *ReaderWriter) SignAndBroadcast(msgs []types.Msg, accountNum uint64, se
 	return r0, r1
 }
 
-// Simulate provides a mock function with given fields: txBytes
-func (_m *ReaderWriter) Simulate(txBytes []byte) (*tx.SimulateResponse, error) {
-	ret := _m.Called(txBytes)
+// Simulate provides a mock function with given fields: ctx, txBytes
+func (_m *ReaderWriter) Simulate(ctx context.Context, txBytes []byte) (*tx.SimulateResponse, error) {
+	ret := _m.Called(ctx, txBytes)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Simulate")
@@ -329,19 +332,19 @@ func (_m *ReaderWriter) Simulate(txBytes []byte) (*tx.SimulateResponse, error) {
 
 	var r0 *tx.SimulateResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func([]byte) (*tx.SimulateResponse, error)); ok {
-		return rf(txBytes)
+	if rf, ok := ret.Get(0).(func(context.Context, []byte) (*tx.SimulateResponse, error)); ok {
+		return rf(ctx, txBytes)
 	}
-	if rf, ok := ret.Get(0).(func([]byte) *tx.SimulateResponse); ok {
-		r0 = rf(txBytes)
+	if rf, ok := ret.Get(0).(func(context.Context, []byte) *tx.SimulateResponse); ok {
+		r0 = rf(ctx, txBytes)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*tx.SimulateResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func([]byte) error); ok {
-		r1 = rf(txBytes)
+	if rf, ok := ret.Get(1).(func(context.Context, []byte) error); ok {
+		r1 = rf(ctx, txBytes)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -349,9 +352,9 @@ func (_m *ReaderWriter) Simulate(txBytes []byte) (*tx.SimulateResponse, error) {
 	return r0, r1
 }
 
-// SimulateUnsigned provides a mock function with given fields: msgs, sequence
-func (_m *ReaderWriter) SimulateUnsigned(msgs []types.Msg, sequence uint64) (*tx.SimulateResponse, error) {
-	ret := _m.Called(msgs, sequence)
+// SimulateUnsigned provides a mock function with given fields: ctx, msgs, sequence
+func (_m *ReaderWriter) SimulateUnsigned(ctx context.Context, msgs []types.Msg, sequence uint64) (*tx.SimulateResponse, error) {
+	ret := _m.Called(ctx, msgs, sequence)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SimulateUnsigned")
@@ -359,19 +362,19 @@ func (_m *ReaderWriter) SimulateUnsigned(msgs []types.Msg, sequence uint64) (*tx
 
 	var r0 *tx.SimulateResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func([]types.Msg, uint64) (*tx.SimulateResponse, error)); ok {
-		return rf(msgs, sequence)
+	if rf, ok := ret.Get(0).(func(context.Context, []types.Msg, uint64) (*tx.SimulateResponse, error)); ok {
+		return rf(ctx, msgs, sequence)
 	}
-	if rf, ok := ret.Get(0).(func([]types.Msg, uint64) *tx.SimulateResponse); ok {
-		r0 = rf(msgs, sequence)
+	if rf, ok := ret.Get(0).(func(context.Context, []types.Msg, uint64) *tx.SimulateResponse); ok {
+		r0 = rf(ctx, msgs, sequence)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*tx.SimulateResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func([]types.Msg, uint64) error); ok {
-		r1 = rf(msgs, sequence)
+	if rf, ok := ret.Get(1).(func(context.Context, []types.Msg, uint64) error); ok {
+		r1 = rf(ctx, msgs, sequence)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -379,9 +382,9 @@ func (_m *ReaderWriter) SimulateUnsigned(msgs []types.Msg, sequence uint64) (*tx
 	return r0, r1
 }
 
-// Tx provides a mock function with given fields: hash
-func (_m *ReaderWriter) Tx(hash string) (*tx.GetTxResponse, error) {
-	ret := _m.Called(hash)
+// Tx provides a mock function with given fields: ctx, hash
+func (_m *ReaderWriter) Tx(ctx context.Context, hash string) (*tx.GetTxResponse, error) {
+	ret := _m.Called(ctx, hash)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Tx")
@@ -389,19 +392,19 @@ func (_m *ReaderWriter) Tx(hash string) (*tx.GetTxResponse, error) {
 
 	var r0 *tx.GetTxResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*tx.GetTxResponse, error)); ok {
-		return rf(hash)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*tx.GetTxResponse, error)); ok {
+		return rf(ctx, hash)
 	}
-	if rf, ok := ret.Get(0).(func(string) *tx.GetTxResponse); ok {
-		r0 = rf(hash)
+	if rf, ok := ret.Get(0).(func(context.Context, string) *tx.GetTxResponse); ok {
+		r0 = rf(ctx, hash)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*tx.GetTxResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(hash)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, hash)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -409,9 +412,9 @@ func (_m *ReaderWriter) Tx(hash string) (*tx.GetTxResponse, error) {
 	return r0, r1
 }
 
-// TxsEvents provides a mock function with given fields: events, paginationParams
-func (_m *ReaderWriter) TxsEvents(events []string, paginationParams *query.PageRequest) (*tx.GetTxsEventResponse, error) {
-	ret := _m.Called(events, paginationParams)
+// TxsEvents provides a mock function with given fields: ctx, events, paginationParams
+func (_m *ReaderWriter) TxsEvents(ctx context.Context, events []string, paginationParams *query.PageRequest) (*tx.GetTxsEventResponse, error) {
+	ret := _m.Called(ctx, events, paginationParams)
 
 	if len(ret) == 0 {
 		panic("no return value specified for TxsEvents")
@@ -419,19 +422,19 @@ func (_m *ReaderWriter) TxsEvents(events []string, paginationParams *query.PageR
 
 	var r0 *tx.GetTxsEventResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func([]string, *query.PageRequest) (*tx.GetTxsEventResponse, error)); ok {
-		return rf(events, paginationParams)
+	if rf, ok := ret.Get(0).(func(context.Context, []string, *query.PageRequest) (*tx.GetTxsEventResponse, error)); ok {
+		return rf(ctx, events, paginationParams)
 	}
-	if rf, ok := ret.Get(0).(func([]string, *query.PageRequest) *tx.GetTxsEventResponse); ok {
-		r0 = rf(events, paginationParams)
+	if rf, ok := ret.Get(0).(func(context.Context, []string, *query.PageRequest) *tx.GetTxsEventResponse); ok {
+		r0 = rf(ctx, events, paginationParams)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*tx.GetTxsEventResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func([]string, *query.PageRequest) error); ok {
-		r1 = rf(events, paginationParams)
+	if rf, ok := ret.Get(1).(func(context.Context, []string, *query.PageRequest) error); ok {
+		r1 = rf(ctx, events, paginationParams)
 	} else {
 		r1 = ret.Error(1)
 	}

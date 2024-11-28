@@ -9,8 +9,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 	"go.uber.org/ratelimit"
+
+	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 
 	pkgClient "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 )
@@ -45,7 +46,7 @@ type chainReader struct {
 	rateLimiter     ratelimit.Limiter
 }
 
-func (c *chainReader) TxsEvents(_ context.Context, events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error) {
+func (c *chainReader) TxsEvents(ctx context.Context, events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error) {
 	c.globalSequencer.Lock()
 	defer c.globalSequencer.Unlock()
 	client, err := pkgClient.NewClient(
@@ -58,10 +59,10 @@ func (c *chainReader) TxsEvents(_ context.Context, events []string, paginationPa
 		return nil, fmt.Errorf("failed to create a cosmos client: %w", err)
 	}
 	_ = c.rateLimiter.Take()
-	return client.TxsEvents(events, paginationParams)
+	return client.TxsEvents(ctx, events, paginationParams)
 }
 
-func (c *chainReader) ContractState(_ context.Context, contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
+func (c *chainReader) ContractState(ctx context.Context, contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error) {
 	c.globalSequencer.Lock()
 	defer c.globalSequencer.Unlock()
 	client, err := pkgClient.NewClient(
@@ -74,5 +75,5 @@ func (c *chainReader) ContractState(_ context.Context, contractAddress sdk.AccAd
 		return nil, fmt.Errorf("failed to create a cosmos client: %w", err)
 	}
 	_ = c.rateLimiter.Take()
-	return client.ContractState(contractAddress, queryMsg)
+	return client.ContractState(ctx, contractAddress, queryMsg)
 }

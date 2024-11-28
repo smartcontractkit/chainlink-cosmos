@@ -37,20 +37,14 @@ func generateExecuteMsg(msg []byte, from, to cosmostypes.AccAddress) cosmostypes
 	}
 }
 
-func newReaderWriterMock(t *testing.T) *mocks.ReaderWriter {
-	tc := new(mocks.ReaderWriter)
-	tc.Test(t)
-	t.Cleanup(func() { tc.AssertExpectations(t) })
-	return tc
-}
-
 func TestTxm(t *testing.T) {
+	ctx := tests.Context(t)
 	lggr := logger.Test(t)
 	db := NewDB(t)
 	ks := newKeystore(4)
 
 	adapter := newKeystoreAdapter(ks, "wasm")
-	accounts, err := adapter.Accounts()
+	accounts, err := adapter.Accounts(ctx)
 	require.NoError(t, err)
 	require.Equal(t, len(accounts), 4)
 
@@ -81,7 +75,7 @@ func TestTxm(t *testing.T) {
 
 	t.Run("single msg", func(t *testing.T) {
 		ctx := tests.Context(t)
-		tc := newReaderWriterMock(t)
+		tc := mocks.NewReaderWriter(t)
 		tcFn := func() (client.ReaderWriter, error) { return tc, nil }
 		loopKs := newKeystore(1)
 		txm := NewTxm(db, tcFn, *gpe, chainID, cfg, loopKs, lggr)
@@ -119,7 +113,7 @@ func TestTxm(t *testing.T) {
 
 	t.Run("two msgs different accounts", func(t *testing.T) {
 		ctx := tests.Context(t)
-		tc := newReaderWriterMock(t)
+		tc := mocks.NewReaderWriter(t)
 		tcFn := func() (client.ReaderWriter, error) { return tc, nil }
 		loopKs := newKeystore(1)
 		txm := NewTxm(db, tcFn, *gpe, chainID, cfg, loopKs, lggr)
@@ -176,7 +170,7 @@ func TestTxm(t *testing.T) {
 
 	t.Run("two msgs different contracts", func(t *testing.T) {
 		ctx := tests.Context(t)
-		tc := newReaderWriterMock(t)
+		tc := mocks.NewReaderWriter(t)
 		tcFn := func() (client.ReaderWriter, error) { return tc, nil }
 		loopKs := newKeystore(1)
 		txm := NewTxm(db, tcFn, *gpe, chainID, cfg, loopKs, lggr)
@@ -237,7 +231,7 @@ func TestTxm(t *testing.T) {
 
 	t.Run("failed to confirm", func(t *testing.T) {
 		ctx := tests.Context(t)
-		tc := newReaderWriterMock(t)
+		tc := mocks.NewReaderWriter(t)
 		tc.On("Tx", mock.Anything).Return(&txtypes.GetTxResponse{
 			Tx:         &txtypes.Tx{},
 			TxResponse: &cosmostypes.TxResponse{TxHash: "0x123"},
@@ -264,7 +258,7 @@ func TestTxm(t *testing.T) {
 		txHash1 := "0x1234"
 		txHash2 := "0x1235"
 		txHash3 := "0xabcd"
-		tc := newReaderWriterMock(t)
+		tc := mocks.NewReaderWriter(t)
 		tc.On("Tx", txHash1).Return(&txtypes.GetTxResponse{
 			TxResponse: &cosmostypes.TxResponse{TxHash: txHash1},
 		}, nil).Once()

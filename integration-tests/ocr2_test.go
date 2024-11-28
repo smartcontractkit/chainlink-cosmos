@@ -11,6 +11,7 @@ import (
 	"time"
 
 	relaylogger "github.com/smartcontractkit/chainlink-common/pkg/logger"
+	"github.com/smartcontractkit/chainlink-common/pkg/utils/tests"
 
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/common"
 	"github.com/smartcontractkit/chainlink-cosmos/integration-tests/gauntlet"
@@ -32,6 +33,7 @@ import (
 )
 
 func TestOCRBasic(t *testing.T) {
+	ctx := tests.Context(t)
 	// Set up test environment
 	logger := common.GetTestLogger(t)
 	commonConfig := common.NewCommon(t)
@@ -62,13 +64,13 @@ func TestOCRBasic(t *testing.T) {
 
 	gasPrice := types.NewDecCoinFromDec("ucosm", types.MustNewDecFromStr("1"))
 	amount := []types.Coin{types.NewCoin("ucosm", types.NewInt(int64(10000000)))}
-	accountNumber, sequenceNumber, err := cosmosClient.Account(testAccount)
+	accountNumber, sequenceNumber, err := cosmosClient.Account(ctx, testAccount)
 	require.NoError(t, err, "Could not get account")
 
 	for i, nodeAddr := range chainlinkClient.GetNodeAddresses() {
 		to := types.MustAccAddressFromBech32(nodeAddr)
 		msgSend := banktypes.NewMsgSend(testAccount, to, amount)
-		resp, err2 := cosmosClient.SignAndBroadcast([]types.Msg{msgSend}, accountNumber, sequenceNumber+uint64(i), gasPrice, privateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+		resp, err2 := cosmosClient.SignAndBroadcast(ctx, []types.Msg{msgSend}, accountNumber, sequenceNumber+uint64(i), gasPrice, privateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err2, "Could not send tokens")
 		logger.Info().Str("from", testAccount.String()).
 			Str("to", nodeAddr).
@@ -79,7 +81,7 @@ func TestOCRBasic(t *testing.T) {
 		tx, success := client.AwaitTxCommitted(t, cosmosClient, resp.TxResponse.TxHash)
 		require.True(t, success)
 		require.Equal(t, cometbfttypes.CodeTypeOK, tx.TxResponse.Code)
-		balance, err2 := cosmosClient.Balance(to, "ucosm")
+		balance, err2 := cosmosClient.Balance(ctx, to, "ucosm")
 		require.NoError(t, err2, "Could not fetch ucosm balance")
 		require.Equal(t, balance.String(), "10000000ucosm")
 	}
@@ -218,6 +220,7 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 	stuckCount := 0
 	var positive bool
 	resp, err := cosmosClient.ContractState(
+		ctx,
 		ocrAddress,
 		[]byte(`{"link_available_for_payment":{}}`),
 	)
@@ -332,7 +335,7 @@ func validateRounds(t *testing.T, cosmosClient *client.Client, ocrAddress types.
 
 	// Test proxy reading
 	// TODO: would be good to test proxy switching underlying feeds
-	resp, err = cosmosClient.ContractState(ocrProxyAddress, []byte(`{"latest_round_data":{}}`))
+	resp, err = cosmosClient.ContractState(ctx, ocrProxyAddress, []byte(`{"latest_round_data":{}}`))
 	if !isSoak {
 		require.NoError(t, err, "Reading round data from proxy should not fail")
 		//assert.Equal(t, len(roundDataRaw), 5, "Round data from proxy should match expected size")

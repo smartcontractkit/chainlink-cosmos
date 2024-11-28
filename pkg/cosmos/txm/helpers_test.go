@@ -1,11 +1,15 @@
 package txm
 
-import "golang.org/x/exp/maps"
+import (
+	"context"
 
-func (ka *keystoreAdapter) Accounts() ([]string, error) {
+	"golang.org/x/exp/maps"
+)
+
+func (ka *keystoreAdapter) Accounts(ctx context.Context) ([]string, error) {
 	ka.mutex.Lock()
 	defer ka.mutex.Unlock()
-	err := ka.updateMappingLocked()
+	err := ka.updateMappingLocked(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -7,9 +7,10 @@ import (
 	"testing"
 	"time"
 
-	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
 	fcdclientmocks "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient/mocks"
@@ -20,8 +21,8 @@ func TestTxResultsSource(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
-		chainConfig := generateChainConfig()
-		feedConfig := generateFeedConfig()
+		chainConfig := generateChainConfig(t)
+		feedConfig := generateFeedConfig(t)
 
 		fcdClient := new(fcdclientmocks.Client)
 		factory := NewTxResultsSourceFactory(fcdClient)

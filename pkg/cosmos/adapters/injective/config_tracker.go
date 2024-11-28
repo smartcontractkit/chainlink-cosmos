@@ -111,7 +111,7 @@ func (c *CosmosModuleConfigTracker) LatestBlockHeight(
 	blockHeight uint64,
 	err error,
 ) {
-	b, err := c.tendermintServiceClient.GetLatestBlock(context.Background(), &tmtypes.GetLatestBlockRequest{})
+	b, err := c.tendermintServiceClient.GetLatestBlock(ctx, &tmtypes.GetLatestBlockRequest{})
 	if err != nil {
 		return 0, err
 	}

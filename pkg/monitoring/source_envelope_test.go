@@ -1,29 +1,70 @@
 package monitoring
 
 import (
-	"context"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/cosmos/btcutil/bech32"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ocr2types "github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	ocr2types "github.com/smartcontractkit/libocr/offchainreporting2/types"
+
+	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
+	"github.com/smartcontractkit/chainlink-common/pkg/utils/tests"
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
 	fcdclientmocks "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient/mocks"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/mocks"
 )
 
+const bech32Prefix = "wasm"
+
+func TestMain(m *testing.M) {
+	// these are hardcoded in test_helpers.go.
+	params.InitCosmosSdk(
+		bech32Prefix,
+		/* token= */ "cosm",
+	)
+	os.Exit(m.Run())
+}
+
+// accAddressFromBech32 is like [sdk.AccAdressFromBech32], but does not validate the checksum.
+// Deprecated: Don't use this. It was just required to patch a test.
+func accAddressFromBech32(t *testing.T, addr string) sdk.AccAddress {
+	t.Helper()
+	if len(strings.TrimSpace(addr)) == 0 {
+		t.Fatal("empty address string is not allowed")
+	}
+
+	_, err := bech32.Normalize(&addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, b, _, err := bech32.DecodeUnsafe(addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	converted, err := bech32.ConvertBits(b, 5, 8, false)
+	if err != nil {
+		t.Fatalf("decoding bech32 failed: %s", err)
+	}
+
+	return converted
+}
+
 func TestEnvelopeSource(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-	defer cancel()
+	ctx := tests.Context(t)
 
 	// Setup API responses
 	balanceRes := []byte(`{"balance":"1234567890987654321"}`)
@@ -39,14 +80,14 @@ func TestEnvelopeSource(t *testing.T) {
 	require.NoError(t, json.Unmarshal(getTxsRaw, &getTxsRes))
 
 	// Configurations.
-	feedConfig := generateFeedConfig()
+	feedConfig := generateFeedConfig(t)
 	feedConfig.ContractAddressBech32 = "wasm10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"
-	feedConfig.ContractAddress, _ = sdk.AccAddressFromBech32("wasm10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf")
-	chainConfig := generateChainConfig()
+	feedConfig.ContractAddress = accAddressFromBech32(t, feedConfig.ContractAddressBech32)
+	chainConfig := generateChainConfig(t)
 
 	// Setup mocks.
 	rpcClient := mocks.NewChainReader(t)
-	fcdClient := new(fcdclientmocks.Client)
+	fcdClient := fcdclientmocks.NewClient(t)
 	// Transmission
 	fcdClient.On("GetTxList",
 		mock.Anything, // context
@@ -66,7 +107,7 @@ func TestEnvelopeSource(t *testing.T) {
 	rpcClient.On("ContractState",
 		mock.Anything, // context
 		chainConfig.LinkTokenAddress,
-		[]byte(`{"balance":{"address":"wasm10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"}}`),
+		[]byte(fmt.Sprintf(`{"balance":{"address":"%s"}}`, feedConfig.ContractAddressBech32)),
 	).Return(balanceRes, nil).Once()
 	// LINK available for payment.
 	rpcClient.On("ContractState",
@@ -76,7 +117,7 @@ func TestEnvelopeSource(t *testing.T) {
 	).Return(linkAvailableForPaymentRes, nil).Once()
 
 	// Execute Fetch()
-	factory := NewEnvelopeSourceFactory(rpcClient, fcdClient, newNullLogger())
+	factory := NewEnvelopeSourceFactory(rpcClient, fcdClient, logger.Test(t))
 	source, err := factory.NewSource(chainConfig, feedConfig)
 	require.NoError(t, err)
 	rawEnvelope, err := source.Fetch(ctx)
@@ -154,7 +195,7 @@ func TestEnvelopeSource(t *testing.T) {
 	rpcClient.On("ContractState",
 		mock.Anything, // context
 		feedConfig.ContractAddress,
-		[]byte(`"latest_config_details"`),
+		[]byte(`{"latest_config_details":{}}`),
 	).Return(latestConfigDetailsRes, nil).Once()
 	// Transmission
 	fcdClient.On("GetTxList",
@@ -165,7 +206,7 @@ func TestEnvelopeSource(t *testing.T) {
 	rpcClient.On("ContractState",
 		mock.Anything, // context
 		chainConfig.LinkTokenAddress,
-		[]byte(`{"balance":{"address":"wasm10kc4n52rk4xqny3hdew3ggjfk9r420pqxs9ylf"}}`),
+		[]byte(fmt.Sprintf(`{"balance":{"address":"%s"}}`, feedConfig.ContractAddressBech32)),
 	).Return(balanceRes, nil).Once()
 	// LINK available for payment.
 	rpcClient.On("ContractState",

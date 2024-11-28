@@ -37,8 +37,8 @@ func newKeystoreAdapter(keystore loop.Keystore, accountPrefix string) *keystoreA
 	}
 }
 
-func (ka *keystoreAdapter) updateMappingLocked() error {
-	accounts, err := ka.keystore.Accounts(context.Background())
+func (ka *keystoreAdapter) updateMappingLocked(ctx context.Context) error {
+	accounts, err := ka.keystore.Accounts(ctx)
 	if err != nil {
 		return err
 	}
@@ -90,14 +90,14 @@ func (ka *keystoreAdapter) updateMappingLocked() error {
 	return nil
 }
 
-func (ka *keystoreAdapter) lookup(id string) (*accountInfo, error) {
+func (ka *keystoreAdapter) lookup(ctx context.Context, id string) (*accountInfo, error) {
 	ka.mutex.RLock()
 	ai, ok := ka.addressToPubKey[id]
 	ka.mutex.RUnlock()
 	if !ok {
 		// try updating the mapping once, incase there was an update on the keystore.
 		ka.mutex.Lock()
-		err := ka.updateMappingLocked()
+		err := ka.updateMappingLocked(ctx)
 		if err != nil {
 			ka.mutex.Unlock()
 			return nil, err
@@ -112,7 +112,7 @@ func (ka *keystoreAdapter) lookup(id string) (*accountInfo, error) {
 }
 
 func (ka *keystoreAdapter) Sign(ctx context.Context, id string, hash []byte) ([]byte, error) {
-	accountInfo, err := ka.lookup(id)
+	accountInfo, err := ka.lookup(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -120,8 +120,8 @@ func (ka *keystoreAdapter) Sign(ctx context.Context, id string, hash []byte) ([]
 }
 
 // Returns the cosmos PubKey associated with the prefixed address.
-func (ka *keystoreAdapter) PubKey(address string) (cryptotypes.PubKey, error) {
-	accountInfo, err := ka.lookup(address)
+func (ka *keystoreAdapter) PubKey(ctx context.Context, address string) (cryptotypes.PubKey, error) {
+	accountInfo, err := ka.lookup(ctx, address)
 	if err != nil {
 		return nil, err
 	}

@@ -4,13 +4,14 @@ import (
 	"context"
 	"math/big"
 	"testing"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/smartcontractkit/chainlink-common/pkg/logger"
+	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
+	"github.com/smartcontractkit/chainlink-common/pkg/utils/tests"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/mocks"
 )
 
@@ -22,22 +23,22 @@ func TestProxyMonitoring(t *testing.T) {
 		// It does so by using a mock ChainReader to return values that the real proxy would return.
 		// Then it uses a mock Metrics object to record the data exported to prometheus.
 
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-		defer cancel()
+		ctx := tests.Context(t)
 
-		chainConfig := generateChainConfig()
-		feedConfig := generateFeedConfig()
+		chainConfig := generateChainConfig(t)
+		feedConfig := generateFeedConfig(t)
 		feedConfig.Multiply = big.NewInt(100)
 		nodes := []relayMonitoring.NodeConfig{}
 
 		chainReader := mocks.NewChainReader(t)
 		metrics := mocks.NewMetrics(t)
 
-		sourceFactory := NewProxySourceFactory(chainReader, newNullLogger())
+		lggr := logger.Test(t)
+		sourceFactory := NewProxySourceFactory(chainReader, lggr)
 		source, err := sourceFactory.NewSource(chainConfig, feedConfig)
 		require.NoError(t, err)
 
-		exporterFactory := NewPrometheusExporterFactory(newNullLogger(), metrics)
+		exporterFactory := NewPrometheusExporterFactory(lggr, metrics)
 		exporter, err := exporterFactory.NewExporter(relayMonitoring.ExporterParams{ChainConfig: chainConfig, FeedConfig: feedConfig, Nodes: nodes})
 		require.NoError(t, err)
 
@@ -94,14 +95,14 @@ func TestProxyMonitoring(t *testing.T) {
 	})
 
 	t.Run("contract without a proxy are not monitored by the proxy source", func(t *testing.T) {
-		chainConfig := generateChainConfig()
-		feedConfig := generateFeedConfig()
+		chainConfig := generateChainConfig(t)
+		feedConfig := generateFeedConfig(t)
 		feedConfig.ProxyAddressBech32 = ""
 		feedConfig.ProxyAddress = sdk.AccAddress{}
 
 		chainReader := mocks.NewChainReader(t)
 
-		sourceFactory := NewProxySourceFactory(chainReader, newNullLogger())
+		sourceFactory := NewProxySourceFactory(chainReader, logger.Test(t))
 		source, err := sourceFactory.NewSource(chainConfig, feedConfig)
 		require.NoError(t, err)
 
