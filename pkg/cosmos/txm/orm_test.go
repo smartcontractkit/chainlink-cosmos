@@ -13,7 +13,9 @@ import (
 )
 
 func TestORM(t *testing.T) {
+	//nolint:staticcheck // SA4006
 	ctx := tests.Context(t)
+	//nolint:staticcheck // SA4006
 	chainID := RandomChainID()
 	db := NewDB(t)
 	o := NewORM(chainID, db)

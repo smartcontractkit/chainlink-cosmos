@@ -12,16 +12,15 @@ import (
 
 	"github.com/cosmos/btcutil/bech32"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	ocr2types "github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-
-	ocr2types "github.com/smartcontractkit/libocr/offchainreporting2/types"
 
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 	relayMonitoring "github.com/smartcontractkit/chainlink-common/pkg/monitoring"
 	"github.com/smartcontractkit/chainlink-common/pkg/utils/tests"
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 
+	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient"
 	fcdclientmocks "github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient/mocks"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/mocks"
