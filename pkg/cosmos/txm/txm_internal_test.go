@@ -38,9 +38,7 @@ func generateExecuteMsg(msg []byte, from, to cosmostypes.AccAddress) cosmostypes
 }
 
 func TestTxm(t *testing.T) {
-	//nolint:staticcheck // SA4006
 	ctx := tests.Context(t)
-	//nolint:staticcheck // SA4006
 	lggr := logger.Test(t)
 	db := NewDB(t)
 	ks := newKeystore(4)

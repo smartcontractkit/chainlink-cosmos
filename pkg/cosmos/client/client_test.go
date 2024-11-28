@@ -15,10 +15,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 	"github.com/smartcontractkit/chainlink-common/pkg/utils/tests"
-
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
+
+	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 )
 
 func TestMain(m *testing.M) {

@@ -1,6 +1,7 @@
 package monitoring
 
 import (
+	cryptoRand "crypto/rand"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -10,6 +11,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 )
 
 // Generators
@@ -52,7 +55,29 @@ func generateFeedConfig(t *testing.T) CosmosFeedConfig {
 	}
 }
 
+func generateBigInt(bitSize uint8) *big.Int {
+	maxBigInt := new(big.Int)
+	maxBigInt.Exp(big.NewInt(2), big.NewInt(int64(bitSize)), nil).Sub(maxBigInt, big.NewInt(1))
+
+	//Generate cryptographically strong pseudo-random between 0 - max
+	num, err := cryptoRand.Int(cryptoRand.Reader, maxBigInt)
+	if err != nil {
+		panic(fmt.Sprintf("failed to generate a really big number: %v", err))
+	}
+	return num
+}
+
+func generateProxyData() ProxyData {
+	return ProxyData{
+		Answer: generateBigInt(128),
+	}
+}
+
 // Sources
+
+func newNullLogger() logger.Logger {
+	return logger.Nop()
+}
 
 func randBech32() string {
 	return sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address().Bytes()).String()

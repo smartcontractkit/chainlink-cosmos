@@ -140,7 +140,7 @@ func (r *Relayer) NewContractReader(ctx context.Context, _ []byte) (types.Contra
 	return nil, errors.New("contract reader is not supported for cosmos")
 }
 
-func (r *Relayer) NewContractWriter(_ context.Context, _ []byte) (types.ContractWriter, error) {
+func (r *Relayer) NewContractWriter(ctx context.Context, _ []byte) (types.ContractWriter, error) {
 	return nil, errors.New("contract writer is not supported for cosmos")
 }
 
