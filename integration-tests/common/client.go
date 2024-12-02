@@ -12,7 +12,7 @@ import (
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/smartcontractkit/chainlink-testing-framework/lib/k8s/environment"
-	"github.com/smartcontractkit/chainlink/integration-tests/client"
+	"github.com/smartcontractkit/chainlink/deployment/environment/nodeclient"
 	"github.com/smartcontractkit/chainlink/v2/core/services/job"
 	"github.com/smartcontractkit/chainlink/v2/core/services/relay"
 
@@ -21,10 +21,10 @@ import (
 
 type ChainlinkClient struct {
 	bech32Prefix   string
-	ChainlinkNodes []*client.ChainlinkClient
-	NodeKeys       []client.NodeKeysBundle
-	bTypeAttr      *client.BridgeTypeAttributes
-	bootstrapPeers []client.P2PData
+	ChainlinkNodes []*nodeclient.ChainlinkClient
+	NodeKeys       []nodeclient.NodeKeysBundle
+	bTypeAttr      *nodeclient.BridgeTypeAttributes
+	bootstrapPeers []nodeclient.P2PData
 }
 
 var _ ChainlinkClient = ChainlinkClient{bTypeAttr: nil} // fix "field `bTypeAttr` is unused" lint
@@ -40,7 +40,7 @@ func NewChainlinkClient(env *environment.Environment, nodeName string, chainId s
 		return nil, errors.New("No connected nodes")
 	}
 
-	nodeKeys, _, err := client.CreateNodeKeysBundle(nodes, chainName, chainId)
+	nodeKeys, _, err := nodeclient.CreateNodeKeysBundle(nodes, chainName, chainId)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (cc *ChainlinkClient) LoadOCR2Config(proposalId string) (*OCR2Config, error
 // CreateJobsForContract Creates and sets up the boostrap jobs as well as OCR jobs
 func (cc *ChainlinkClient) CreateJobsForContract(chainId, nodeName, p2pPort, mockUrl string, juelsPerFeeCoinSource string, ocrControllerAddress string) error {
 	// Define node[0] as bootstrap node
-	cc.bootstrapPeers = []client.P2PData{
+	cc.bootstrapPeers = []nodeclient.P2PData{
 		{
 			InternalIP:   cc.ChainlinkNodes[0].InternalIP(),
 			InternalPort: p2pPort,
@@ -119,7 +119,7 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, nodeName, p2pPort, moc
 		ContractConfigConfirmations: 1, // don't wait for confirmation on devnet
 	}
 	// Setting up bootstrap node
-	jobSpec := &client.OCR2TaskJobSpec{
+	jobSpec := &nodeclient.OCR2TaskJobSpec{
 		Name:           fmt.Sprintf("cosmos-OCRv2-%s-%s", "bootstrap", uuid.NewString()),
 		JobType:        "bootstrap",
 		OCR2OracleSpec: oracleSpec,
@@ -136,7 +136,7 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, nodeName, p2pPort, moc
 		p2pBootstrappers = append(p2pBootstrappers, cc.bootstrapPeers[i].P2PV2Bootstrapper())
 	}
 
-	sourceValueBridge := &client.BridgeTypeAttributes{
+	sourceValueBridge := &nodeclient.BridgeTypeAttributes{
 		Name:        "mockserver-bridge",
 		URL:         fmt.Sprintf("%s/%s", mockUrl, "five"),
 		RequestData: "{}",
@@ -170,11 +170,11 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, nodeName, p2pPort, moc
 			},
 		}
 
-		jobSpec = &client.OCR2TaskJobSpec{
+		jobSpec = &nodeclient.OCR2TaskJobSpec{
 			Name:              fmt.Sprintf("cosmos-OCRv2-%d-%s", nIdx, uuid.NewString()),
 			JobType:           "offchainreporting2",
 			OCR2OracleSpec:    oracleSpec,
-			ObservationSource: client.ObservationSourceSpecBridge(sourceValueBridge),
+			ObservationSource: nodeclient.ObservationSourceSpecBridge(sourceValueBridge),
 		}
 
 		_, err = n.MustCreateJob(jobSpec)
@@ -188,10 +188,10 @@ func (cc *ChainlinkClient) CreateJobsForContract(chainId, nodeName, p2pPort, moc
 // connectChainlinkNodes creates a chainlink client for each node in the environment
 // This is a non k8s version of the function in chainlink_k8s.go
 // https://github.com/smartcontractkit/chainlink/blob/cosmos-test-keys/integration-tests/client/chainlink_k8s.go#L77
-func connectChainlinkNodes(e *environment.Environment) ([]*client.ChainlinkClient, error) {
-	var clients []*client.ChainlinkClient
+func connectChainlinkNodes(e *environment.Environment) ([]*nodeclient.ChainlinkClient, error) {
+	var clients []*nodeclient.ChainlinkClient
 	for _, nodeDetails := range e.ChainlinkNodeDetails {
-		c, err := client.NewChainlinkClient(&client.ChainlinkConfig{
+		c, err := nodeclient.NewChainlinkClient(&nodeclient.ChainlinkConfig{
 			URL:        nodeDetails.LocalIP,
 			Email:      "notreal@fakeemail.ch",
 			Password:   "fj293fbBnlQ!f9vNs",
