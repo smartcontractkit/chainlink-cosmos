@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/smartcontractkit/chainlink-common/pkg/fee"
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
+	"github.com/smartcontractkit/chainlink-framework/chains/fees"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -55,7 +55,7 @@ func (gpe *FixedGasPriceEstimator) CalculateBumpGasPrice(
 	bumpMin sdk.DecCoin,
 	bumpPercent uint16,
 ) (sdk.DecCoin, error) {
-	bumpedGasPrice, err := fee.CalculateBumpedFee(
+	bumpedGasPrice, err := fees.CalculateBumpedFee(
 		gpe.lggr,
 		currentGasPrice.Amount.BigInt(),
 		originalGasPrice.Amount.BigInt(),

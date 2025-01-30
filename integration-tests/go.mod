@@ -8,12 +8,12 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
 	github.com/rs/zerolog v1.33.0
-	github.com/smartcontractkit/chainlink-common v0.4.2-0.20250121141917-62443f4b3c30
-	github.com/smartcontractkit/chainlink-cosmos v0.5.2-0.20241202195413-82468150ac1e
+	github.com/smartcontractkit/chainlink-common v0.4.2-0.20250127125541-a8fa42cc0f36
+	github.com/smartcontractkit/chainlink-cosmos v0.5.2-0.20250121210000-2a9675d7a1b4
 	github.com/smartcontractkit/chainlink-cosmos/ops v0.0.0-20231206164210-03f8b219402e
 	github.com/smartcontractkit/chainlink-testing-framework/lib v1.50.17
-	github.com/smartcontractkit/chainlink/deployment v0.0.0-20250121172542-e1f60142bd9a
-	github.com/smartcontractkit/chainlink/v2 v2.19.0-ccip1.5.16-alpha.0
+	github.com/smartcontractkit/chainlink/deployment v0.0.0-20250130104408-4bb66a771d59
+	github.com/smartcontractkit/chainlink/v2 v2.19.0-ccip1.5.16-alpha.0.0.20250130104408-4bb66a771d59
 	github.com/smartcontractkit/libocr v0.0.0-20241223215956-e5b78d8e3919
 	github.com/stretchr/testify v1.10.0
 	gopkg.in/guregu/null.v4 v4.0.0
@@ -58,7 +58,7 @@ require (
 	github.com/blendle/zapdriver v1.3.1 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
-	github.com/bytecodealliance/wasmtime-go/v23 v23.0.0 // indirect
+	github.com/bytecodealliance/wasmtime-go/v28 v28.0.0 // indirect
 	github.com/bytedance/sonic v1.12.3 // indirect
 	github.com/bytedance/sonic/loader v0.2.0 // indirect
 	github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2 v2.7.5 // indirect
@@ -277,7 +277,9 @@ require (
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/smartcontractkit/chainlink-framework/multinode v0.0.0-20250115203616-a2ea5e50b260 // indirect
+	github.com/smartcontractkit/chainlink-framework/chains v0.0.0-20250124205858-500edf2db981 // indirect
+	github.com/smartcontractkit/chainlink-framework/multinode v0.0.0-20250121205514-f73e2f86c23b // indirect
+	github.com/smartcontractkit/chainlink-protos/svr v0.0.0-20250123084029-58cce9b32112 // indirect
 	github.com/smartcontractkit/grpc-proxy v0.0.0-20240830132753-a7e17fec5ab7 // indirect
 	github.com/smartcontractkit/wsrpc v0.8.3 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
@@ -360,7 +362,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20241104194629-dd2ea8efbc28 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28 // indirect
 	google.golang.org/grpc v1.67.1 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.36.4 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
