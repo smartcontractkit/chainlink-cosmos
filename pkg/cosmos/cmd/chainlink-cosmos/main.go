@@ -54,10 +54,8 @@ type pluginRelayer struct {
 func (c *pluginRelayer) NewRelayer(ctx context.Context, config string, keystore loop.Keystore, capRegistry core.CapabilitiesRegistry) (loop.Relayer, error) {
 	d := toml.NewDecoder(strings.NewReader(config))
 	d.DisallowUnknownFields()
-	var cfg struct {
-		Cosmos coscfg.TOMLConfig
-	}
 
+	var cfg coscfg.TOMLConfig
 	if err := d.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to decode config toml: %w:\n\t%s", err, config)
 	}
@@ -67,7 +65,7 @@ func (c *pluginRelayer) NewRelayer(ctx context.Context, config string, keystore 
 		KeyStore: keystore,
 		DS:       c.ds,
 	}
-	chain, err := cosmos.NewChain(&cfg.Cosmos, opts)
+	chain, err := cosmos.NewChain(&cfg, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create chain: %w", err)
 	}
