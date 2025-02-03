@@ -59,13 +59,22 @@ func (c *pluginRelayer) NewRelayer(ctx context.Context, config string, keystore 
 	if err := d.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to decode config toml: %w:\n\t%s", err, config)
 	}
+	cfg.SetDefaults()
+	if err := cfg.ValidateConfig(); err != nil {
+		return nil, fmt.Errorf("config is invalid: %w", err)
+	}
 
-	opts := cosmos.ChainOpts{
+	cfgStr, err := cfg.TOMLString()
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize config: %w", err)
+	}
+	c.Logger.Infow("Creating relayer", "config", cfgStr)
+
+	chain, err := cosmos.NewChain(&cfg, cosmos.ChainOpts{
 		Logger:   c.Logger,
 		KeyStore: keystore,
 		DS:       c.ds,
-	}
-	chain, err := cosmos.NewChain(&cfg, opts)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create chain: %w", err)
 	}
