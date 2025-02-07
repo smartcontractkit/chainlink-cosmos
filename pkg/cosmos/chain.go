@@ -216,7 +216,7 @@ func (c *chain) GetChainStatus(ctx context.Context) (types.ChainStatus, error) {
 	}
 	return types.ChainStatus{
 		ID:      c.id,
-		Enabled: *c.cfg.Enabled,
+		Enabled: c.cfg.IsEnabled(),
 		Config:  toml,
 	}, nil
 }
