@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"

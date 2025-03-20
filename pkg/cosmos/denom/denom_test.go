@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
@@ -26,18 +27,18 @@ func TestConvertDecCoinToDenomRegistered(t *testing.T) {
 		exp   string
 	}{
 		// simple conversions
-		{sdk.NewDecCoin("uatom", sdk.NewInt(0)), "atom", "0atom"},
-		{sdk.NewDecCoin("atom", sdk.NewInt(1)), "atom", "1atom"},
-		{sdk.NewDecCoin("matom", sdk.NewInt(1)), "uatom", "1000uatom"},
-		{sdk.NewDecCoin("atom", sdk.NewInt(1)), "matom", "1000matom"},
-		{sdk.NewDecCoin("atom", sdk.NewInt(1)), "uatom", "1000000uatom"},
+		{sdk.NewDecCoin("uatom", sdkmath.NewInt(0)), "atom", "0atom"},
+		{sdk.NewDecCoin("atom", sdkmath.NewInt(1)), "atom", "1atom"},
+		{sdk.NewDecCoin("matom", sdkmath.NewInt(1)), "uatom", "1000uatom"},
+		{sdk.NewDecCoin("atom", sdkmath.NewInt(1)), "matom", "1000matom"},
+		{sdk.NewDecCoin("atom", sdkmath.NewInt(1)), "uatom", "1000000uatom"},
 		// truncations (rounded down, remainder discarded)
-		{sdk.NewDecCoin("uatom", sdk.NewInt(1)), "atom", "0atom"},
-		{sdk.NewDecCoin("matom", sdk.NewInt(1)), "atom", "0atom"},
-		{sdk.NewDecCoin("uatom", sdk.NewInt(1000000)), "atom", "1atom"},
-		{sdk.NewDecCoin("matom", sdk.NewInt(1000000)), "atom", "1000atom"},
-		{sdk.NewDecCoin("uatom", sdk.NewInt(123456789)), "atom", "123atom"},
-		{sdk.NewDecCoin("matom", sdk.NewInt(123456789)), "atom", "123456atom"},
+		{sdk.NewDecCoin("uatom", sdkmath.NewInt(1)), "atom", "0atom"},
+		{sdk.NewDecCoin("matom", sdkmath.NewInt(1)), "atom", "0atom"},
+		{sdk.NewDecCoin("uatom", sdkmath.NewInt(1000000)), "atom", "1atom"},
+		{sdk.NewDecCoin("matom", sdkmath.NewInt(1000000)), "atom", "1000atom"},
+		{sdk.NewDecCoin("uatom", sdkmath.NewInt(123456789)), "atom", "123atom"},
+		{sdk.NewDecCoin("matom", sdkmath.NewInt(123456789)), "atom", "123456atom"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.coin.String(), func(t *testing.T) {
@@ -54,8 +55,8 @@ func TestConvertDecCoinToDenomUnregistered(t *testing.T) {
 		denom     string
 		expErrStr string
 	}{
-		{sdk.NewDecCoin("zatom", sdk.NewInt(1)), "atom", "source denom not registered: zatom"},
-		{sdk.NewDecCoin("atom", sdk.NewInt(1)), "xatom", "destination denom not registered: xatom"},
+		{sdk.NewDecCoin("zatom", sdkmath.NewInt(1)), "atom", "source denom not registered: zatom"},
+		{sdk.NewDecCoin("atom", sdkmath.NewInt(1)), "xatom", "destination denom not registered: xatom"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.coin.String(), func(t *testing.T) {

@@ -24,6 +24,7 @@ import (
 	// "github.com/smartcontractkit/chainlink/integration-tests/actions"
 	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting2/types"
 
+	sdkmath "cosmossdk.io/math"
 	cometbfttypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
@@ -62,15 +63,15 @@ func TestOCRBasic(t *testing.T) {
 	require.NoError(t, err, "Could not create private key from mnemonic")
 	logger.Info().Str("from", testAccount.String()).Msg("Funding nodes")
 
-	gasPrice := types.NewDecCoinFromDec("ucosm", types.MustNewDecFromStr("1"))
-	amount := []types.Coin{types.NewCoin("ucosm", types.NewInt(int64(10000000)))}
+	gasPrice := types.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("1"))
+	amount := []types.Coin{types.NewCoin("ucosm", sdkmath.NewInt(int64(10000000)))}
 	accountNumber, sequenceNumber, err := cosmosClient.Account(ctx, testAccount)
 	require.NoError(t, err, "Could not get account")
 
 	for i, nodeAddr := range chainlinkClient.GetNodeAddresses() {
 		to := types.MustAccAddressFromBech32(nodeAddr)
 		msgSend := banktypes.NewMsgSend(testAccount, to, amount)
-		resp, err2 := cosmosClient.SignAndBroadcast(ctx, []types.Msg{msgSend}, accountNumber, sequenceNumber+uint64(i), gasPrice, privateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+		resp, err2 := cosmosClient.SignAndBroadcast(ctx, []client.Msg{msgSend}, accountNumber, sequenceNumber+uint64(i), gasPrice, privateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err2, "Could not send tokens")
 		logger.Info().Str("from", testAccount.String()).
 			Str("to", nodeAddr).

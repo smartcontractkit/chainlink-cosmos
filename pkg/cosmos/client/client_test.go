@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -63,8 +64,8 @@ func TestBatchSim(t *testing.T) {
 	}
 
 	contract := DeployTestContract(t, tendermintURL, "42", "ucosm", accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
-	var succeed sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), Msg: []byte(`{"reset":{"count":5}}`)}
-	var fail sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), Msg: []byte(`{"blah":{"count":5}}`)}
+	var succeed Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), Msg: []byte(`{"reset":{"count":5}}`)}
+	var fail Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), Msg: []byte(`{"blah":{"count":5}}`)}
 
 	t.Run("single success", func(t *testing.T) {
 		ctx := tests.Context(t)
@@ -149,7 +150,7 @@ func TestCosmosClient(t *testing.T) {
 		DefaultTimeout,
 		lggr)
 	require.NoError(t, err)
-	gpe := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{"ucosm": sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.01"))}, lggr)
+	gpe := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{"ucosm": sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.01"))}, lggr)
 	contract := DeployTestContract(t, tendermintURL, "42", "ucosm", accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 
 	t.Run("send tx between accounts", func(t *testing.T) {
@@ -163,11 +164,11 @@ func TestCosmosClient(t *testing.T) {
 		an, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		fund := banktypes.NewMsgSend(accounts[0].Address, accounts[1].Address, sdk.NewCoins(sdk.NewInt64Coin("ucosm", 1)))
-		gasLimit, err := tc.SimulateUnsigned(ctx, []sdk.Msg{fund}, sn)
+		gasLimit, err := tc.SimulateUnsigned(ctx, []Msg{fund}, sn)
 		require.NoError(t, err)
 		gasPrices, err := gpe.GasPrices()
 		require.NoError(t, err)
-		txBytes, err := tc.CreateAndSign([]sdk.Msg{fund}, an, sn, gasLimit.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrices["ucosm"], accounts[0].PrivateKey, 0)
+		txBytes, err := tc.CreateAndSign(ctx, []Msg{fund}, an, sn, gasLimit.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrices["ucosm"], accounts[0].PrivateKey, 0)
 		require.NoError(t, err)
 		_, err = tc.Simulate(ctx, txBytes)
 		require.NoError(t, err)
@@ -234,7 +235,7 @@ func TestCosmosClient(t *testing.T) {
 		require.NoError(t, err)
 		gasPrices, err := gpe.GasPrices()
 		require.NoError(t, err)
-		resp1, err := tc.SignAndBroadcast(ctx, []sdk.Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+		resp1, err := tc.SignAndBroadcast(ctx, []Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err)
 		tx1, success := AwaitTxCommitted(t, tc, resp1.TxResponse.TxHash)
 		require.True(t, success)
@@ -249,7 +250,7 @@ func TestCosmosClient(t *testing.T) {
 		}
 		an, sn, err = tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
-		resp2, err := tc.SignAndBroadcast(ctx, []sdk.Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+		resp2, err := tc.SignAndBroadcast(ctx, []Msg{rawMsg}, an, sn, gasPrices["ucosm"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 		require.NoError(t, err)
 		tx2, success := AwaitTxCommitted(t, tc, resp2.TxResponse.TxHash)
 		require.True(t, success)
@@ -332,7 +333,7 @@ func TestCosmosClient(t *testing.T) {
 			},
 			{
 				"below-min",
-				sdk.NewDecCoinFromDec("ucosm", sdk.NewDecWithPrec(1, 4)),
+				sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyNewDecWithPrec(1, 4)),
 				sdkerrors.ErrInsufficientFee.ABCICode(),
 			},
 			{
@@ -351,7 +352,7 @@ func TestCosmosClient(t *testing.T) {
 				t.Log("Gas price:", tt.gasPrice)
 				an, sn, err := tc.Account(ctx, accounts[0].Address)
 				require.NoError(t, err)
-				resp, err := tc.SignAndBroadcast(ctx, []sdk.Msg{rawMsg}, an, sn, tt.gasPrice, accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
+				resp, err := tc.SignAndBroadcast(ctx, []Msg{rawMsg}, an, sn, tt.gasPrice, accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_SYNC)
 				require.NotNil(t, resp)
 
 				if tt.expCode == 0 {

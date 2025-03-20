@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/pelletier/go-toml/v2"
@@ -234,7 +235,7 @@ func (c *chain) Transact(ctx context.Context, from, to string, amount *big.Int, 
 	if err != nil {
 		return fmt.Errorf("failed to parse from account: %s", toAcc)
 	}
-	coin := sdk.Coin{Amount: sdk.NewIntFromBigInt(amount), Denom: c.Config().GasToken()}
+	coin := sdk.Coin{Amount: sdkmath.NewIntFromBigInt(amount), Denom: c.Config().GasToken()}
 
 	txm := c.TxManager()
 

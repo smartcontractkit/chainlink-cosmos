@@ -18,7 +18,7 @@ import (
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	libclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
-	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -49,17 +49,20 @@ type Reader interface {
 	Context() *cosmosclient.Context
 }
 
+// This is necessary for mockery to work, since sdk.Msg has inlined interfaces
+type Msg sdk.Msg
+
 // Writer provides methods for writing to a cosmos chain.
 // Assumes all msgs are for the same from address.
 // We may want to support multiple from addresses + signers if a use case arises.
 type Writer interface {
 	// TODO: SignAndBroadcast is only used for testing, remove it
-	SignAndBroadcast(ctx context.Context, msgs []sdk.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
+	SignAndBroadcast(ctx context.Context, msgs []Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Broadcast(ctx context.Context, txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
 	Simulate(ctx context.Context, txBytes []byte) (*txtypes.SimulateResponse, error)
 	BatchSimulateUnsigned(ctx context.Context, msgs SimMsgs, sequence uint64) (*BatchSimResults, error)
-	SimulateUnsigned(ctx context.Context, msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error)
-	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error)
+	SimulateUnsigned(ctx context.Context, msgs []Msg, sequence uint64) (*txtypes.SimulateResponse, error)
+	CreateAndSign(ctx context.Context, msgs []Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error)
 }
 
 var _ ReaderWriter = (*Client)(nil)
@@ -204,12 +207,16 @@ func (c *Client) BlockByHeight(ctx context.Context, height int64) (*tmtypes.GetB
 }
 
 // CreateAndSign creates and signs a transaction
-func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error) {
+func (c *Client) CreateAndSign(ctx context.Context, msgs []Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error) {
 	// https://github.com/cosmos/cosmos-sdk/blob/a785bf5af602525cf7a5c5ea097056597e2eb7ef/client/tx/tx.go#L63-L117
 	// https://docs.cosmos.network/main/run-node/txs#signing-a-transaction-1
 	txConfig := params.ClientTxConfig()
 	txBuilder := txConfig.NewTxBuilder()
-	err := txBuilder.SetMsgs(msgs...)
+	messages := make([]sdk.Msg, len(msgs))
+	for i, msg := range msgs {
+		messages[i] = sdk.Msg(msg)
+	}
+	err := txBuilder.SetMsgs(messages...)
 	if err != nil {
 		return nil, err
 	}
@@ -257,6 +264,7 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 
 	// Sign those bytes
 	signature, err := tx.SignWithPrivKey(
+		ctx,
 		signMode,
 		signerData,
 		txBuilder,
@@ -280,15 +288,15 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 // SimMsg binds an ID to a msg
 type SimMsg struct {
 	ID  int64
-	Msg sdk.Msg
+	Msg Msg
 }
 
 // SimMsgs is a slice of SimMsg
 type SimMsgs []SimMsg
 
 // GetMsgs extracts all msgs from SimMsgs
-func (simMsgs SimMsgs) GetMsgs() []sdk.Msg {
-	msgs := make([]sdk.Msg, len(simMsgs))
+func (simMsgs SimMsgs) GetMsgs() []Msg {
+	msgs := make([]Msg, len(simMsgs))
 	for i := range simMsgs {
 		msgs[i] = simMsgs[i].Msg
 	}
@@ -370,10 +378,14 @@ func (c *Client) BatchSimulateUnsigned(ctx context.Context, msgs SimMsgs, sequen
 }
 
 // SimulateUnsigned simulates an unsigned msg
-func (c *Client) SimulateUnsigned(ctx context.Context, msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error) {
+func (c *Client) SimulateUnsigned(ctx context.Context, msgs []Msg, sequence uint64) (*txtypes.SimulateResponse, error) {
 	txConfig := params.ClientTxConfig()
 	txBuilder := txConfig.NewTxBuilder()
-	if err := txBuilder.SetMsgs(msgs...); err != nil {
+	messages := make([]sdk.Msg, len(msgs))
+	for i, msg := range msgs {
+		messages[i] = sdk.Msg(msg)
+	}
+	if err := txBuilder.SetMsgs(messages...); err != nil {
 		return nil, err
 	}
 	// Create an empty signature literal as the ante handler will populate with a
@@ -426,13 +438,13 @@ func (c *Client) Broadcast(ctx context.Context, txBytes []byte, mode txtypes.Bro
 }
 
 // SignAndBroadcast signs and broadcasts a group of msgs.
-func (c *Client) SignAndBroadcast(ctx context.Context, msgs []sdk.Msg, account uint64, sequence uint64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
+func (c *Client) SignAndBroadcast(ctx context.Context, msgs []Msg, account uint64, sequence uint64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error) {
 	sim, err := c.SimulateUnsigned(ctx, msgs, sequence)
 	if err != nil {
 		return nil, err
 	}
 	// TODO: replace with BroadcastTx()?
-	txBytes, err := c.CreateAndSign(msgs, account, sequence, sim.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrice, signer, 0)
+	txBytes, err := c.CreateAndSign(ctx, msgs, account, sequence, sim.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrice, signer, 0)
 	if err != nil {
 		return nil, err
 	}

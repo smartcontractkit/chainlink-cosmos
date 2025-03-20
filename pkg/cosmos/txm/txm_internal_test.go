@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	tmservicetypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	tmservicetypes "github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cosmostypes "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
@@ -67,7 +68,7 @@ func TestTxm(t *testing.T) {
 	cfg.SetDefaults()
 	gpe := client.NewMustGasPriceEstimator([]client.GasPricesEstimator{
 		client.NewFixedGasPriceEstimator(map[string]cosmostypes.DecCoin{
-			cfg.GasToken(): cosmostypes.NewDecCoinFromDec(cfg.GasToken(), cosmostypes.MustNewDecFromStr("0.01")),
+			cfg.GasToken(): cosmostypes.NewDecCoinFromDec(cfg.GasToken(), sdkmath.LegacyMustNewDecFromStr("0.01")),
 		},
 			lggr.(logger.SugaredLogger),
 		),
@@ -97,7 +98,7 @@ func TestTxm(t *testing.T) {
 		tc.On("LatestBlock").Return(&tmservicetypes.GetLatestBlockResponse{SdkBlock: &tmservicetypes.Block{
 			Header: tmservicetypes.Header{Height: 1},
 		}}, nil)
-		tc.On("CreateAndSign", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte{0x01}, nil)
+		tc.On("CreateAndSign", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte{0x01}, nil)
 
 		txResp := &cosmostypes.TxResponse{TxHash: "4BF5122F344554C53BDE2EBB8CD2B7E3D1600AD631C385A5D7CCE23C7785459A"}
 		tc.On("Broadcast", mock.Anything, mock.Anything).Return(&txtypes.BroadcastTxResponse{TxResponse: txResp}, nil)
@@ -154,7 +155,7 @@ func TestTxm(t *testing.T) {
 		tc.On("LatestBlock").Return(&tmservicetypes.GetLatestBlockResponse{SdkBlock: &tmservicetypes.Block{
 			Header: tmservicetypes.Header{Height: 1},
 		}}, nil).Once()
-		tc.On("CreateAndSign", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte{0x01}, nil).Once()
+		tc.On("CreateAndSign", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte{0x01}, nil).Once()
 		txResp := &cosmostypes.TxResponse{TxHash: "4BF5122F344554C53BDE2EBB8CD2B7E3D1600AD631C385A5D7CCE23C7785459A"}
 		tc.On("Broadcast", mock.Anything, mock.Anything).Return(&txtypes.BroadcastTxResponse{TxResponse: txResp}, nil).Once()
 		tc.On("Tx", mock.Anything).Return(&txtypes.GetTxResponse{Tx: &txtypes.Tx{}, TxResponse: txResp}, nil).Once()
@@ -214,7 +215,7 @@ func TestTxm(t *testing.T) {
 			tc.On("LatestBlock").Return(&tmservicetypes.GetLatestBlockResponse{SdkBlock: &tmservicetypes.Block{
 				Header: tmservicetypes.Header{Height: 1},
 			}}, nil).Once()
-			tc.On("CreateAndSign", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte{0x01}, nil).Once()
+			tc.On("CreateAndSign", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte{0x01}, nil).Once()
 		}
 		txResp := &cosmostypes.TxResponse{TxHash: "4BF5122F344554C53BDE2EBB8CD2B7E3D1600AD631C385A5D7CCE23C7785459A"}
 		tc.On("Broadcast", mock.Anything, mock.Anything).Return(&txtypes.BroadcastTxResponse{TxResponse: txResp}, nil).Twice()
@@ -351,7 +352,7 @@ func TestTxm(t *testing.T) {
 		tc.On("LatestBlock").Return(&tmservicetypes.GetLatestBlockResponse{SdkBlock: &tmservicetypes.Block{
 			Header: tmservicetypes.Header{Height: 1},
 		}}, nil)
-		tc.On("CreateAndSign", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte{0x01}, nil)
+		tc.On("CreateAndSign", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte{0x01}, nil)
 		txResp := &cosmostypes.TxResponse{TxHash: "4BF5122F344554C53BDE2EBB8CD2B7E3D1600AD631C385A5D7CCE23C7785459A"}
 		tc.On("Broadcast", mock.Anything, mock.Anything).Return(&txtypes.BroadcastTxResponse{TxResponse: txResp}, nil)
 		tc.On("Tx", mock.Anything).Return(&txtypes.GetTxResponse{Tx: &txtypes.Tx{}, TxResponse: txResp}, nil)

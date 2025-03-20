@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
@@ -89,7 +90,7 @@ func initCosmosSdk(bech32Prefix, token string) {
 		{"u" + token, 6},
 		{"n" + token, 9},
 	} {
-		dec := sdk.NewDecWithPrec(1, d.decimals)
+		dec := math.LegacyNewDecWithPrec(1, d.decimals)
 		if err := sdk.RegisterDenom(d.denom, dec); err != nil {
 			panic(fmt.Errorf("failed to register denomination %q: %w", d.denom, err))
 		}

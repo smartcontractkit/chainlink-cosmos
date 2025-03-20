@@ -10,7 +10,7 @@ import (
 	math "math"
 	math_bits "math/bits"
 
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	cosmossdk_io_math "cosmossdk.io/math"
 	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
@@ -114,9 +114,9 @@ type MsgUpdateFeed struct {
 	// transmitters ith element is address ith oracle uses to transmit a report via the transmit method
 	Transmitters []string `protobuf:"bytes,4,rep,name=transmitters,proto3" json:"transmitters,omitempty"`
 	// Fixed LINK reward for each observer
-	LinkPerObservation *github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,5,opt,name=link_per_observation,json=linkPerObservation,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"link_per_observation,omitempty"`
+	LinkPerObservation *cosmossdk_io_math.Int `protobuf:"bytes,5,opt,name=link_per_observation,json=linkPerObservation,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"link_per_observation,omitempty"`
 	// Fixed LINK reward for transmitter
-	LinkPerTransmission *github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,6,opt,name=link_per_transmission,json=linkPerTransmission,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"link_per_transmission,omitempty"`
+	LinkPerTransmission *cosmossdk_io_math.Int `protobuf:"bytes,6,opt,name=link_per_transmission,json=linkPerTransmission,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"link_per_transmission,omitempty"`
 	// Native denom for LINK coin in the bank keeper
 	LinkDenom string `protobuf:"bytes,7,opt,name=link_denom,json=linkDenom,proto3" json:"link_denom,omitempty"`
 	// feed administrator
@@ -2392,7 +2392,7 @@ func (m *MsgUpdateFeed) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			var v github_com_cosmos_cosmos_sdk_types.Int
+			var v cosmossdk_io_math.Int
 			m.LinkPerObservation = &v
 			if err := m.LinkPerObservation.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -2428,7 +2428,7 @@ func (m *MsgUpdateFeed) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			var v github_com_cosmos_cosmos_sdk_types.Int
+			var v cosmossdk_io_math.Int
 			m.LinkPerTransmission = &v
 			if err := m.LinkPerTransmission.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

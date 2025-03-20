@@ -3,9 +3,10 @@
 package mocks
 
 import (
-	context "context"
-
+	cmtservice "github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	client "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
+
+	context "context"
 
 	cosmos_sdkclient "github.com/cosmos/cosmos-sdk/client"
 
@@ -14,8 +15,6 @@ import (
 	mock "github.com/stretchr/testify/mock"
 
 	query "github.com/cosmos/cosmos-sdk/types/query"
-
-	tmservice "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 
 	tx "github.com/cosmos/cosmos-sdk/types/tx"
 
@@ -123,23 +122,23 @@ func (_m *ReaderWriter) BatchSimulateUnsigned(ctx context.Context, msgs client.S
 }
 
 // BlockByHeight provides a mock function with given fields: ctx, height
-func (_m *ReaderWriter) BlockByHeight(ctx context.Context, height int64) (*tmservice.GetBlockByHeightResponse, error) {
+func (_m *ReaderWriter) BlockByHeight(ctx context.Context, height int64) (*cmtservice.GetBlockByHeightResponse, error) {
 	ret := _m.Called(ctx, height)
 
 	if len(ret) == 0 {
 		panic("no return value specified for BlockByHeight")
 	}
 
-	var r0 *tmservice.GetBlockByHeightResponse
+	var r0 *cmtservice.GetBlockByHeightResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, int64) (*tmservice.GetBlockByHeightResponse, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int64) (*cmtservice.GetBlockByHeightResponse, error)); ok {
 		return rf(ctx, height)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, int64) *tmservice.GetBlockByHeightResponse); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int64) *cmtservice.GetBlockByHeightResponse); ok {
 		r0 = rf(ctx, height)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tmservice.GetBlockByHeightResponse)
+			r0 = ret.Get(0).(*cmtservice.GetBlockByHeightResponse)
 		}
 	}
 
@@ -232,9 +231,9 @@ func (_m *ReaderWriter) ContractState(ctx context.Context, contractAddress types
 	return r0, r1
 }
 
-// CreateAndSign provides a mock function with given fields: msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight
-func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice types.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error) {
-	ret := _m.Called(msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight)
+// CreateAndSign provides a mock function with given fields: ctx, msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight
+func (_m *ReaderWriter) CreateAndSign(ctx context.Context, msgs []client.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice types.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error) {
+	ret := _m.Called(ctx, msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateAndSign")
@@ -242,19 +241,19 @@ func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence
 
 	var r0 []byte
 	var r1 error
-	if rf, ok := ret.Get(0).(func([]types.Msg, uint64, uint64, uint64, float64, types.DecCoin, cryptotypes.PrivKey, uint64) ([]byte, error)); ok {
-		return rf(msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight)
+	if rf, ok := ret.Get(0).(func(context.Context, []client.Msg, uint64, uint64, uint64, float64, types.DecCoin, cryptotypes.PrivKey, uint64) ([]byte, error)); ok {
+		return rf(ctx, msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight)
 	}
-	if rf, ok := ret.Get(0).(func([]types.Msg, uint64, uint64, uint64, float64, types.DecCoin, cryptotypes.PrivKey, uint64) []byte); ok {
-		r0 = rf(msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight)
+	if rf, ok := ret.Get(0).(func(context.Context, []client.Msg, uint64, uint64, uint64, float64, types.DecCoin, cryptotypes.PrivKey, uint64) []byte); ok {
+		r0 = rf(ctx, msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func([]types.Msg, uint64, uint64, uint64, float64, types.DecCoin, cryptotypes.PrivKey, uint64) error); ok {
-		r1 = rf(msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight)
+	if rf, ok := ret.Get(1).(func(context.Context, []client.Msg, uint64, uint64, uint64, float64, types.DecCoin, cryptotypes.PrivKey, uint64) error); ok {
+		r1 = rf(ctx, msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -263,23 +262,23 @@ func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence
 }
 
 // LatestBlock provides a mock function with given fields: _a0
-func (_m *ReaderWriter) LatestBlock(_a0 context.Context) (*tmservice.GetLatestBlockResponse, error) {
+func (_m *ReaderWriter) LatestBlock(_a0 context.Context) (*cmtservice.GetLatestBlockResponse, error) {
 	ret := _m.Called(_a0)
 
 	if len(ret) == 0 {
 		panic("no return value specified for LatestBlock")
 	}
 
-	var r0 *tmservice.GetLatestBlockResponse
+	var r0 *cmtservice.GetLatestBlockResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (*tmservice.GetLatestBlockResponse, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context) (*cmtservice.GetLatestBlockResponse, error)); ok {
 		return rf(_a0)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) *tmservice.GetLatestBlockResponse); ok {
+	if rf, ok := ret.Get(0).(func(context.Context) *cmtservice.GetLatestBlockResponse); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tmservice.GetLatestBlockResponse)
+			r0 = ret.Get(0).(*cmtservice.GetLatestBlockResponse)
 		}
 	}
 
@@ -293,7 +292,7 @@ func (_m *ReaderWriter) LatestBlock(_a0 context.Context) (*tmservice.GetLatestBl
 }
 
 // SignAndBroadcast provides a mock function with given fields: ctx, msgs, accountNum, sequence, gasPrice, signer, mode
-func (_m *ReaderWriter) SignAndBroadcast(ctx context.Context, msgs []types.Msg, accountNum uint64, sequence uint64, gasPrice types.DecCoin, signer cryptotypes.PrivKey, mode tx.BroadcastMode) (*tx.BroadcastTxResponse, error) {
+func (_m *ReaderWriter) SignAndBroadcast(ctx context.Context, msgs []client.Msg, accountNum uint64, sequence uint64, gasPrice types.DecCoin, signer cryptotypes.PrivKey, mode tx.BroadcastMode) (*tx.BroadcastTxResponse, error) {
 	ret := _m.Called(ctx, msgs, accountNum, sequence, gasPrice, signer, mode)
 
 	if len(ret) == 0 {
@@ -302,10 +301,10 @@ func (_m *ReaderWriter) SignAndBroadcast(ctx context.Context, msgs []types.Msg, 
 
 	var r0 *tx.BroadcastTxResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, []types.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) (*tx.BroadcastTxResponse, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, []client.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) (*tx.BroadcastTxResponse, error)); ok {
 		return rf(ctx, msgs, accountNum, sequence, gasPrice, signer, mode)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, []types.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) *tx.BroadcastTxResponse); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, []client.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) *tx.BroadcastTxResponse); ok {
 		r0 = rf(ctx, msgs, accountNum, sequence, gasPrice, signer, mode)
 	} else {
 		if ret.Get(0) != nil {
@@ -313,7 +312,7 @@ func (_m *ReaderWriter) SignAndBroadcast(ctx context.Context, msgs []types.Msg, 
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, []types.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, []client.Msg, uint64, uint64, types.DecCoin, cryptotypes.PrivKey, tx.BroadcastMode) error); ok {
 		r1 = rf(ctx, msgs, accountNum, sequence, gasPrice, signer, mode)
 	} else {
 		r1 = ret.Error(1)
@@ -353,7 +352,7 @@ func (_m *ReaderWriter) Simulate(ctx context.Context, txBytes []byte) (*tx.Simul
 }
 
 // SimulateUnsigned provides a mock function with given fields: ctx, msgs, sequence
-func (_m *ReaderWriter) SimulateUnsigned(ctx context.Context, msgs []types.Msg, sequence uint64) (*tx.SimulateResponse, error) {
+func (_m *ReaderWriter) SimulateUnsigned(ctx context.Context, msgs []client.Msg, sequence uint64) (*tx.SimulateResponse, error) {
 	ret := _m.Called(ctx, msgs, sequence)
 
 	if len(ret) == 0 {
@@ -362,10 +361,10 @@ func (_m *ReaderWriter) SimulateUnsigned(ctx context.Context, msgs []types.Msg, 
 
 	var r0 *tx.SimulateResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, []types.Msg, uint64) (*tx.SimulateResponse, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, []client.Msg, uint64) (*tx.SimulateResponse, error)); ok {
 		return rf(ctx, msgs, sequence)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, []types.Msg, uint64) *tx.SimulateResponse); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, []client.Msg, uint64) *tx.SimulateResponse); ok {
 		r0 = rf(ctx, msgs, sequence)
 	} else {
 		if ret.Get(0) != nil {
@@ -373,7 +372,7 @@ func (_m *ReaderWriter) SimulateUnsigned(ctx context.Context, msgs []types.Msg, 
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, []types.Msg, uint64) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, []client.Msg, uint64) error); ok {
 		r1 = rf(ctx, msgs, sequence)
 	} else {
 		r1 = ret.Error(1)

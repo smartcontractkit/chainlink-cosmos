@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -35,7 +36,7 @@ type Account struct {
 }
 
 // 0.001
-var defaultCoin = sdk.NewDecWithPrec(1, 3)
+var defaultCoin = sdkmath.LegacyNewDecWithPrec(1, 3)
 
 // SetupLocalCosmosNode sets up a local terra node via wasmd, and returns pre-funded accounts, the test directory, and the url.
 // Token name is for both staking and fee coin
@@ -177,7 +178,7 @@ func DeployTestContract(t *testing.T, tendermintURL, chainID string, token strin
 
 	accountNumber, sequenceNumber, err := tc.Account(ctx, ownerAccount.Address)
 	require.NoError(t, err)
-	deployTx, err3 := tc.SignAndBroadcast(ctx, []sdk.Msg{
+	deployTx, err3 := tc.SignAndBroadcast(ctx, []Msg{
 		&wasmtypes.MsgInstantiateContract{
 			Sender: ownerAccount.Address.String(),
 			Admin:  "",

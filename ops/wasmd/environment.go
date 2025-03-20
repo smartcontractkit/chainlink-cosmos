@@ -54,6 +54,12 @@ func (m Chart) GetValues() *map[string]any {
 	return m.HelmProps.Values
 }
 
+func (m Chart) GetLabels() map[string]string {
+	return map[string]string{
+		"chain.link/component": "cosmos",
+	}
+}
+
 func (m Chart) ExportData(e *environment.Environment) error {
 	netLocal, err := e.Fwd.FindPort("wasmd:0", "wasmd", "tendermint-rpc").As(client.LocalConnection, client.HTTP)
 	if err != nil {
