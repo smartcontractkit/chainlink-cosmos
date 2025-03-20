@@ -49,19 +49,12 @@ jobs:
         with:
           go-version: ${{ steps.tool_versions.outputs.GO_VERSION }}
 
-      - name: Update chainlink-cosmos sha
+      - name: Build chainlink image
         env:
           COMMIT_SHA: ${{ github.event_name == 'push' && github.sha || github.event.pull_request.head.sha }}
         run: |
           cd temp/chainlink
-          sed -i -E "/.*\/chainlink-cosmos \S+/ s/(.*\/chainlink-cosmos) \S+/\1 ${COMMIT_SHA}/g" go.mod
-          GIT_PAGER= git diff
-          make gomodtidy
-
-      - name: Build chainlink image
-        run: |
-          cd temp/chainlink
-          docker buildx build --build-arg COMMIT_SHA=$(git rev-parse HEAD) -t local_chainlink -f core/chainlink.Dockerfile .
+          docker buildx build --build-arg COMMIT_SHA=$(git rev-parse HEAD) --build-arg COSMOS_SHA=${COMMIT_SHA} -t local_chainlink -f plugins/chainlink.Dockerfile .
 
       - name: Checkout sources
         uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
