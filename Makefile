@@ -94,24 +94,28 @@ build: build_js build_contracts
 
 # Common build step
 build_relay:
-	go build -v ./pkg/cosmos/...
+	go build -v ./relayer/...
 
 # Unit test without race detection
 test_relay_unit: build_relay
-	go test -v -covermode=atomic ./pkg/cosmos/... -coverpkg=./... -coverprofile=unit_coverage.txt
+	go test -v -covermode=atomic ./relayer/... -coverpkg=./... -coverprofile=unit_coverage.txt
 
 # Unit test with race detection
 test_relay_unit_race: build_relay
-	go test -v -covermode=atomic ./pkg/cosmos/... -race -count=10 -coverpkg=./... -coverprofile=race_coverage.txt
+	go test -v -covermode=atomic ./relayer/... -race -count=10 -coverpkg=./... -coverprofile=race_coverage.txt
 
 
 # copied over from starknet, replace as needed
 .PHONY: build-go
-build-go: build-go-relayer build-go-ops build-go-integration-tests
+build-go: build-go-relayer build-go-monitoring build-go-ops build-go-integration-tests
 
 .PHONY: build-go-relayer
 build-go-relayer:
-	cd pkg/ && go build ./...
+	cd relayer/ && go build ./...
+
+.PHONY: build-go-monitoring
+build-go-monitoring:
+	cd monitoring/ && go build ./...
 
 .PHONY: build-go-ops
 build-go-ops:
@@ -126,7 +130,8 @@ format-go: format-go-fmt gomodtidy
 
 .PHONY: format-go-fmt
 format-go-fmt:
-	cd ./pkg && go fmt ./...
+	cd ./relayer && go fmt ./...
+	cd ./monitoring && go fmt ./...
 	cd ./ops && go fmt ./...
 	cd ./integration-tests && go fmt ./...
 
@@ -151,7 +156,7 @@ generate: mockery gomods
 	gomods -w go generate -x ./...
 
 .PHONY: lint-go
-lint-go: lint-go-ops lint-go-relayer lint-go-test
+lint-go: lint-go-ops lint-go-relayer lint-go-monitoring lint-go-test
 
 .PHONY: lint-go-ops
 lint-go-ops:
@@ -159,7 +164,11 @@ lint-go-ops:
 
 .PHONY: lint-go-relayer
 lint-go-relayer:
-	cd ./pkg && golangci-lint --max-issues-per-linter 0 --max-same-issues 0 --color=always run
+	cd ./relayer && golangci-lint --max-issues-per-linter 0 --max-same-issues 0 --color=always run
+
+.PHONY: lint-go-monitoring
+lint-go-monitoring:
+	cd ./monitoring && golangci-lint --max-issues-per-linter 0 --max-same-issues 0 --color=always run
 
 .PHONY: lint-go-test
 lint-go-test:
@@ -177,14 +186,21 @@ test-go: test-unit-go test-integration-go
 test-unit: test-unit-go
 
 .PHONY: test-unit-go
-test-unit-go:
-	cd ./pkg && go test -v ./...
-	cd ./pkg && go test -v ./... -race -count=10
+test-unit-go: test-unit-monitoring test-unit-relayer
+
+.PHONY: test-unit-monitoring
+test-unit-monitoring:
+	cd ./monitoring && go test -v ./...
+
+.PHONY: test-unit-relayer
+test-unit-relayer:
+	cd ./relayer && go test -v ./...
+	cd ./relayer && go test -v ./... -race -count=10
 
 .PHONY: test-integration-go
 # only runs tests with TestIntegration_* + //go:build integration
 test-integration-go:
-	cd ./pkg && go test -v ./... -run TestIntegration -tags integration
+	cd ./relayer && go test -v ./... -run TestIntegration -tags integration
 
 .PHONY: test-integration-smoke
 test-integration-smoke: test-integration-prep
