@@ -33,7 +33,7 @@ ifeq ($(OSFLAG),$(OSX))
 	@echo
 	brew install asdf
 	asdf plugin add golang || true
-	asdf plugin-add rust || true
+	asdf plugin add rust || true
 	asdf plugin add nodejs || true
 	asdf plugin add python || true
 	asdf plugin add mockery || true
