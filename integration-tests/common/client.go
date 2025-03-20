@@ -16,7 +16,7 @@ import (
 	"github.com/smartcontractkit/chainlink/v2/core/services/job"
 	"github.com/smartcontractkit/chainlink/v2/core/services/relay"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/params"
+	"github.com/smartcontractkit/chainlink-cosmos/relayer/params"
 )
 
 type ChainlinkClient struct {

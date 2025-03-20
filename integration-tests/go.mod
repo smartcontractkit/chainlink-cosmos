@@ -12,8 +12,8 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/rs/zerolog v1.33.0
 	github.com/smartcontractkit/chainlink-common v0.5.1-0.20250314131019-e227d4e2dc2f
-	github.com/smartcontractkit/chainlink-cosmos v0.5.2-0.20250121210000-2a9675d7a1b4
 	github.com/smartcontractkit/chainlink-cosmos/ops v0.0.0-20231206164210-03f8b219402e
+	github.com/smartcontractkit/chainlink-cosmos/relayer v0.5.2-0.20250121210000-2a9675d7a1b4
 	github.com/smartcontractkit/chainlink-testing-framework/lib v1.50.22
 	github.com/smartcontractkit/chainlink/deployment v0.0.0-20250319015426-49b8e0535002
 	github.com/smartcontractkit/chainlink/v2 v2.19.0-ccip1.5.16-alpha.0.0.20250319015426-49b8e0535002
@@ -415,7 +415,7 @@ replace (
 	github.com/envoyproxy/go-control-plane/envoy => github.com/envoyproxy/go-control-plane v0.13.1
 
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	// Make sure we're working with the latest pkg and ops
-	github.com/smartcontractkit/chainlink-cosmos => ../
+	// Make sure we're working with the latest relayer and ops
 	github.com/smartcontractkit/chainlink-cosmos/ops => ../ops
+	github.com/smartcontractkit/chainlink-cosmos/relayer => ../relayer
 )
