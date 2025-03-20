@@ -39,7 +39,7 @@ jobs:
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Compile relay
-        run: nix develop -c go build -v ./pkg/cosmos/...
+        run: nix develop -c make build_relay
 
       - name: Run unit tests
         run: nix develop -c make test_relay_unit

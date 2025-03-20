@@ -94,15 +94,15 @@ build: build_js build_contracts
 
 # Common build step
 build_relay:
-	go build -v ./relayer/...
+	cd ./relayer && go build -v ./...
 
 # Unit test without race detection
 test_relay_unit: build_relay
-	go test -v -covermode=atomic ./relayer/... -coverpkg=./... -coverprofile=unit_coverage.txt
+	cd ./relayer && go test -v -covermode=atomic ./... -coverpkg=./... -coverprofile=unit_coverage.txt
 
 # Unit test with race detection
 test_relay_unit_race: build_relay
-	go test -v -covermode=atomic ./relayer/... -race -count=10 -coverpkg=./... -coverprofile=race_coverage.txt
+	cd ./relayer && go test -v -covermode=atomic ./... -race -count=10 -coverpkg=./... -coverprofile=race_coverage.txt
 
 
 # copied over from starknet, replace as needed

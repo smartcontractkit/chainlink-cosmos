@@ -3,9 +3,9 @@
 This repository is a monorepo of the various components required for Chainlink on Cosmos.
 
 - [Contracts](../contracts)
-- [CL Relay](../pkg/cosmos)
+- [CL Relay](../relayer)
 - [Gauntlet](../packages-ts)
-- [On-chain Monitoring](../pkg/monitoring)
+- [On-chain Monitoring](../monitoring)
 - [Ops](../ops)
 - [Integration/E2E Tests](../tests/e2e)
 - [Demos & Examples](../examples)

@@ -6,7 +6,7 @@ FROM golang:1.20-buster as build
 
 RUN mkdir -p /cosmos-monitoring/cmd
 COPY ./cmd/monitoring /cosmos-monitoring/cmd/monitoring
-COPY ./pkg /cosmos-monitoring/pkg
+COPY ./monitoring /cosmos-monitoring/monitoring
 COPY ./go.mod /cosmos-monitoring/
 COPY ./go.sum /cosmos-monitoring/
 
