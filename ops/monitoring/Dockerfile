@@ -19,7 +19,7 @@ RUN go get github.com/CosmWasm/wasmvm
 
 # Production image
 
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
 RUN apt-get update && apt-get install -y ca-certificates
 COPY --from=build /cosmos-monitoring/monitoring /monitoring
