@@ -208,6 +208,35 @@ func (c *chain) LatestHead(ctx context.Context) (types.Head, error) {
 	}, nil
 }
 
+func (c *chain) GetBalance(ctx context.Context, address string) (types.TokenBalance, error) {
+	acc, err := sdk.AccAddressFromBech32(address)
+	if err != nil {
+		return types.TokenBalance{}, err
+	}
+
+	reader, err := c.Reader("")
+	if err != nil {
+		return types.TokenBalance{}, err
+	}
+
+	denom := c.Config().GasToken()
+
+	balance, err := reader.Balance(ctx, acc, denom)
+	if err != nil {
+		return types.TokenBalance{}, err
+	}
+
+	meta, err := reader.DenomMetadata(ctx, denom)
+	if err != nil {
+		return types.TokenBalance{}, err
+	}
+
+	return types.TokenBalance{
+		Balance:  balance.Amount.BigInt(),
+		Decimals: meta.Metadata.DenomUnits[0].Exponent,
+	}, nil
+}
+
 // ChainService interface
 func (c *chain) GetChainStatus(ctx context.Context) (types.ChainStatus, error) {
 	toml, err := c.cfg.TOMLString()
@@ -261,6 +290,10 @@ func (c *chain) Transact(ctx context.Context, from, to string, amount *big.Int, 
 		return fmt.Errorf("failed to enqueue tx: %w", err)
 	}
 	return nil
+}
+
+func (c *chain) Replay(ctx context.Context, fromBlock string, args map[string]any) error {
+	return errors.New("unimplemented")
 }
 
 // TODO BCF-2602 statuses are static for non-evm chain and should be dynamic

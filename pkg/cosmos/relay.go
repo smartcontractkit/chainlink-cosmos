@@ -76,6 +76,10 @@ func (r *Relayer) LatestHead(ctx context.Context) (types.Head, error) {
 	return r.chain.LatestHead(ctx)
 }
 
+func (r *Relayer) GetBalance(ctx context.Context, address string) (types.TokenBalance, error) {
+	return r.chain.GetBalance(ctx, address)
+}
+
 func (r *Relayer) GetChainStatus(ctx context.Context) (types.ChainStatus, error) {
 	return r.chain.GetChainStatus(ctx)
 }
@@ -150,4 +154,8 @@ func (r *Relayer) NewCCIPCommitProvider(ctx context.Context, rargs types.RelayAr
 
 func (r *Relayer) NewCCIPExecProvider(ctx context.Context, rargs types.RelayArgs, pargs types.PluginArgs) (types.CCIPExecProvider, error) {
 	return nil, errors.New("ccip.exec is not supported for cosmos")
+}
+
+func (r *Relayer) Replay(ctx context.Context, fromBlock string, args map[string]any) error {
+	return errors.New("replay is not supported for cosmos")
 }

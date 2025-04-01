@@ -45,6 +45,7 @@ type Reader interface {
 	LatestBlock(context.Context) (*tmtypes.GetLatestBlockResponse, error)
 	BlockByHeight(ctx context.Context, height int64) (*tmtypes.GetBlockByHeightResponse, error)
 	Balance(ctx context.Context, addr sdk.AccAddress, denom string) (*sdk.Coin, error)
+	DenomMetadata(ctx context.Context, denom string) (*banktypes.QueryDenomMetadataResponse, error)
 	// TODO: escape hatch for injective client
 	Context() *cosmosclient.Context
 }
@@ -446,4 +447,13 @@ func (c *Client) Balance(ctx context.Context, addr sdk.AccAddress, denom string)
 		return nil, err
 	}
 	return b.Balance, nil
+}
+
+func (c *Client) DenomMetadata(ctx context.Context, denom string) (*banktypes.QueryDenomMetadataResponse, error) {
+	d, err := c.bankClient.DenomMetadata(ctx, &banktypes.QueryDenomMetadataRequest{Denom: denom})
+	if err != nil {
+		return nil, err
+	}
+
+	return d, nil
 }
