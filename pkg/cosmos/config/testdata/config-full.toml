@@ -1,0 +1,17 @@
+ChainID = 'Ibiza-808'
+Enabled = true
+Bech32Prefix = 'wasm'
+BlockRate = '1m0s'
+BlocksUntilTxTimeout = 12
+ConfirmPollPeriod = '1s'
+FallbackGasPrice = '0.001'
+GasToken = 'ucosm'
+GasLimitMultiplier = '1.2'
+MaxMsgsPerBatch = 17
+OCR2CachePollPeriod = '1m0s'
+OCR2CacheTTL = '1h0m0s'
+TxMsgTimeout = '1s'
+
+[[Nodes]]
+Name = 'primary'
+TendermintURL = 'http://columbus.cosmos.com'
