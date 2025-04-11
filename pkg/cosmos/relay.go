@@ -3,6 +3,7 @@ package cosmos
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
@@ -29,6 +30,10 @@ var _ types.Relayer = &Relayer{} //nolint:staticcheck
 type Relayer struct {
 	lggr  logger.Logger
 	chain adapters.Chain
+}
+
+func (r *Relayer) Replay(ctx context.Context, fromBlock string, args map[string]any) error {
+	return fmt.Errorf("implement me")
 }
 
 // Note: constructed in core
