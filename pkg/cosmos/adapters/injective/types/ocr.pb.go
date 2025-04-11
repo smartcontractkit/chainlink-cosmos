@@ -10,7 +10,7 @@ import (
 	math_bits "math/bits"
 	time "time"
 
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
 	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
@@ -273,13 +273,13 @@ type ModuleParams struct {
 	// feed_id is an unique ID for the target of this config
 	FeedId string `protobuf:"bytes,1,opt,name=feed_id,json=feedId,proto3" json:"feed_id,omitempty"`
 	// lowest answer the median of a report is allowed to be
-	MinAnswer github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,2,opt,name=min_answer,json=minAnswer,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"min_answer"`
+	MinAnswer sdkmath.LegacyDec `protobuf:"bytes,2,opt,name=min_answer,json=minAnswer,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"min_answer"`
 	// highest answer the median of a report is allowed to be
-	MaxAnswer github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,3,opt,name=max_answer,json=maxAnswer,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"max_answer"`
+	MaxAnswer sdkmath.LegacyDec `protobuf:"bytes,3,opt,name=max_answer,json=maxAnswer,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"max_answer"`
 	// Fixed LINK reward for each observer
-	LinkPerObservation github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,4,opt,name=link_per_observation,json=linkPerObservation,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"link_per_observation"`
+	LinkPerObservation sdkmath.Int `protobuf:"bytes,4,opt,name=link_per_observation,json=linkPerObservation,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"link_per_observation"`
 	// Fixed LINK reward for transmitter
-	LinkPerTransmission github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,5,opt,name=link_per_transmission,json=linkPerTransmission,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"link_per_transmission"`
+	LinkPerTransmission sdkmath.Int `protobuf:"bytes,5,opt,name=link_per_transmission,json=linkPerTransmission,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"link_per_transmission"`
 	// Native denom for LINK coin in the bank keeper
 	LinkDenom string `protobuf:"bytes,6,opt,name=link_denom,json=linkDenom,proto3" json:"link_denom,omitempty"`
 	// Enables unique reports
@@ -517,13 +517,13 @@ type FeedProperties struct {
 	// offchain_config serialized data used by oracles to configure their offchain operation
 	OffchainConfig []byte `protobuf:"bytes,5,opt,name=offchain_config,json=offchainConfig,proto3" json:"offchain_config,omitempty"`
 	// lowest answer the median of a report is allowed to be
-	MinAnswer github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,6,opt,name=min_answer,json=minAnswer,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"min_answer"`
+	MinAnswer sdkmath.LegacyDec `protobuf:"bytes,6,opt,name=min_answer,json=minAnswer,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"min_answer"`
 	// highest answer the median of a report is allowed to be
-	MaxAnswer github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,7,opt,name=max_answer,json=maxAnswer,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"max_answer"`
+	MaxAnswer sdkmath.LegacyDec `protobuf:"bytes,7,opt,name=max_answer,json=maxAnswer,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"max_answer"`
 	// Fixed LINK reward for each observer
-	LinkPerObservation github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,8,opt,name=link_per_observation,json=linkPerObservation,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"link_per_observation"`
+	LinkPerObservation sdkmath.Int `protobuf:"bytes,8,opt,name=link_per_observation,json=linkPerObservation,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"link_per_observation"`
 	// Fixed LINK reward for transmitter
-	LinkPerTransmission github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,9,opt,name=link_per_transmission,json=linkPerTransmission,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"link_per_transmission"`
+	LinkPerTransmission sdkmath.Int `protobuf:"bytes,9,opt,name=link_per_transmission,json=linkPerTransmission,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"link_per_transmission"`
 	// Enables unique reports
 	UniqueReports bool `protobuf:"varint,10,opt,name=unique_reports,json=uniqueReports,proto3" json:"unique_reports,omitempty"`
 	// short human-readable description of observable this feed's answers pertain to
@@ -801,7 +801,7 @@ func (m *Payee) GetPaymentAddr() string {
 // Transmission records the median answer from the transmit transaction at
 // time timestamp
 type Transmission struct {
-	Answer                github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=answer,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"answer"`
+	Answer                sdkmath.LegacyDec `protobuf:"bytes,1,opt,name=answer,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"answer"`
 	ObservationsTimestamp int64                                  `protobuf:"varint,2,opt,name=observations_timestamp,json=observationsTimestamp,proto3" json:"observations_timestamp,omitempty"`
 	TransmissionTimestamp int64                                  `protobuf:"varint,3,opt,name=transmission_timestamp,json=transmissionTimestamp,proto3" json:"transmission_timestamp,omitempty"`
 }
@@ -908,7 +908,7 @@ func (m *EpochAndRound) GetRound() uint64 {
 type Report struct {
 	ObservationsTimestamp int64                                    `protobuf:"varint,1,opt,name=observations_timestamp,json=observationsTimestamp,proto3" json:"observations_timestamp,omitempty"`
 	Observers             []byte                                   `protobuf:"bytes,2,opt,name=observers,proto3" json:"observers,omitempty"`
-	Observations          []github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,3,rep,name=observations,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"observations"`
+	Observations          []sdkmath.LegacyDec `protobuf:"bytes,3,rep,name=observations,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"observations"`
 }
 
 func (m *Report) Reset()         { *m = Report{} }
@@ -1096,8 +1096,8 @@ func (m *EventOraclePaid) GetAmount() types.Coin {
 }
 
 type EventAnswerUpdated struct {
-	Current   github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,1,opt,name=current,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"current"`
-	RoundId   github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,2,opt,name=round_id,json=roundId,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"round_id"`
+	Current   sdkmath.Int `protobuf:"bytes,1,opt,name=current,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"current"`
+	RoundId   sdkmath.Int `protobuf:"bytes,2,opt,name=round_id,json=roundId,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"round_id"`
 	UpdatedAt time.Time                              `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3,stdtime" json:"updated_at"`
 }
 
@@ -1142,7 +1142,7 @@ func (m *EventAnswerUpdated) GetUpdatedAt() time.Time {
 }
 
 type EventNewRound struct {
-	RoundId github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,1,opt,name=round_id,json=roundId,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"round_id"`
+	RoundId sdkmath.Int `protobuf:"bytes,1,opt,name=round_id,json=roundId,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"round_id"`
 	// address of starter
 	StartedBy string    `protobuf:"bytes,2,opt,name=started_by,json=startedBy,proto3" json:"started_by,omitempty"`
 	StartedAt time.Time `protobuf:"bytes,3,opt,name=started_at,json=startedAt,proto3,stdtime" json:"started_at"`
@@ -1250,10 +1250,10 @@ func (m *EventTransmitted) GetEpoch() uint64 {
 type EventNewTransmission struct {
 	FeedId                string                                   `protobuf:"bytes,1,opt,name=feed_id,json=feedId,proto3" json:"feed_id,omitempty"`
 	AggregatorRoundId     uint32                                   `protobuf:"varint,2,opt,name=aggregator_round_id,json=aggregatorRoundId,proto3" json:"aggregator_round_id,omitempty"`
-	Answer                github_com_cosmos_cosmos_sdk_types.Dec   `protobuf:"bytes,3,opt,name=answer,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"answer"`
+	Answer                sdkmath.LegacyDec   `protobuf:"bytes,3,opt,name=answer,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"answer"`
 	Transmitter           string                                   `protobuf:"bytes,4,opt,name=transmitter,proto3" json:"transmitter,omitempty"`
 	ObservationsTimestamp int64                                    `protobuf:"varint,5,opt,name=observations_timestamp,json=observationsTimestamp,proto3" json:"observations_timestamp,omitempty"`
-	Observations          []github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,6,rep,name=observations,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"observations"`
+	Observations          []sdkmath.LegacyDec `protobuf:"bytes,6,rep,name=observations,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"observations"`
 	Observers             []byte                                   `protobuf:"bytes,7,opt,name=observers,proto3" json:"observers,omitempty"`
 	ConfigDigest          []byte                                   `protobuf:"bytes,8,opt,name=config_digest,json=configDigest,proto3" json:"config_digest,omitempty"`
 	EpochAndRound         *EpochAndRound                           `protobuf:"bytes,9,opt,name=epoch_and_round,json=epochAndRound,proto3" json:"epoch_and_round,omitempty"`
@@ -5898,7 +5898,7 @@ func (m *Report) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			var v github_com_cosmos_cosmos_sdk_types.Dec
+			var v sdkmath.LegacyDec
 			m.Observations = append(m.Observations, v)
 			if err := m.Observations[len(m.Observations)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -6860,7 +6860,7 @@ func (m *EventNewTransmission) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			var v github_com_cosmos_cosmos_sdk_types.Dec
+			var v sdkmath.LegacyDec
 			m.Observations = append(m.Observations, v)
 			if err := m.Observations[len(m.Observations)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

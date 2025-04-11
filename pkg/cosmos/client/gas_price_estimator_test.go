@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
+
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 
 	"go.uber.org/zap"
@@ -23,7 +25,7 @@ func TestGasPriceEstimators(t *testing.T) {
 
 	t.Run("fixed", func(t *testing.T) {
 		gpeFixed := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
-			"ucosm": sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("10")),
+			"ucosm": sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("10")),
 		}, sugaredLggr)
 		p, err := gpeFixed.GasPrices()
 		require.NoError(t, err)
@@ -35,7 +37,7 @@ func TestGasPriceEstimators(t *testing.T) {
 
 	t.Run("caching", func(t *testing.T) {
 		responses := []sdk.DecCoin{
-			sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("10")),
+			sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("10")),
 		}
 		gpe := NewClosureGasPriceEstimator(func() (map[string]sdk.DecCoin, error) {
 			if len(responses) == 0 {
@@ -63,7 +65,7 @@ func TestGasPriceEstimators(t *testing.T) {
 	t.Run("closure", func(t *testing.T) {
 		gpe := NewClosureGasPriceEstimator(func() (map[string]sdk.DecCoin, error) {
 			return map[string]sdk.DecCoin{
-				"ucosm": sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("10")),
+				"ucosm": sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("10")),
 			}, nil
 		})
 		p, err := gpe.GasPrices()
@@ -88,7 +90,7 @@ func TestGasPriceEstimators(t *testing.T) {
 		})
 		cachingGpe := NewCachingGasPriceEstimator(closureGpe, lggr)
 		gpeFixed := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
-			"ucosm": sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("10")),
+			"ucosm": sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("10")),
 		}, sugaredLggr)
 		gpe := NewMustGasPriceEstimator([]GasPricesEstimator{cachingGpe, gpeFixed}, lggr)
 		t.Cleanup(assertLogsLen(t, 1))
@@ -97,7 +99,7 @@ func TestGasPriceEstimators(t *testing.T) {
 		assert.True(t, ok)
 		assert.Equal(t, "10.000000000000000000", ucosm.Amount.String())
 		// If the url starts working, it should use that.
-		responses = append(responses, sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("9")))
+		responses = append(responses, sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("9")))
 		gpePrices := gpe.GasPrices()
 		ucosm, ok = gpePrices["ucosm"]
 		assert.True(t, ok)
@@ -121,28 +123,28 @@ func TestFixedPriceGasEstimator(t *testing.T) {
 		}{
 			{
 				name:             "Bump the gas price by minimum as bumpPercent is less than bumpMin",
-				currentGasPrice:  sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.001")),
-				originalGasPrice: sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.001")),
-				maxGasPrice:      sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.02")),
-				maxBumpPrice:     sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.3")),
-				minBumpPrice:     sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.0005")),
+				currentGasPrice:  sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.001")),
+				originalGasPrice: sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.001")),
+				maxGasPrice:      sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.02")),
+				maxBumpPrice:     sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.3")),
+				minBumpPrice:     sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.0005")),
 				bumpPercent:      30,
-				want:             sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.0015")),
+				want:             sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.0015")),
 			},
 			{
 				name:             "Bump the gas price by 30% as bumpPercent is greater than bumpMin",
-				currentGasPrice:  sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.0010")),
-				originalGasPrice: sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.001")),
-				maxGasPrice:      sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.02")),
-				maxBumpPrice:     sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.3")),
-				minBumpPrice:     sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.00005")),
+				currentGasPrice:  sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.0010")),
+				originalGasPrice: sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.001")),
+				maxGasPrice:      sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.02")),
+				maxBumpPrice:     sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.3")),
+				minBumpPrice:     sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.00005")),
 				bumpPercent:      30,
-				want:             sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.0013")),
+				want:             sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.0013")),
 			},
 		}
 
 		gpeFixed := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
-			"ucosm": sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.001")),
+			"ucosm": sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.001")),
 		}, lggr)
 
 		for _, tt := range tests {

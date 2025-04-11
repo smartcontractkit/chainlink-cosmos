@@ -326,7 +326,7 @@ func (txm *Txm) sendMsgBatchFromAddress(ctx context.Context, gasPrice sdk.DecCoi
 		return fmt.Errorf("invalid negative blocks until tx timeout: %d", timeout)
 	}
 	timeoutHeight := uint64(header) + uint64(timeout)
-	signedTx, err := tc.CreateAndSign(simResults.Succeeded.GetMsgs(), an, sn, gasLimit, txm.cfg.GasLimitMultiplier(),
+	signedTx, err := tc.CreateAndSign(ctx, simResults.Succeeded.GetMsgs(), an, sn, gasLimit, txm.cfg.GasLimitMultiplier(),
 		gasPrice, NewKeyWrapper(txm.keystoreAdapter, sender.String()), timeoutHeight)
 	if err != nil {
 		txm.lggr.Errorw("unable to sign tx", "err", err, "from", sender.String())

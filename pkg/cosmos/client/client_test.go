@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -149,7 +150,7 @@ func TestCosmosClient(t *testing.T) {
 		DefaultTimeout,
 		lggr)
 	require.NoError(t, err)
-	gpe := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{"ucosm": sdk.NewDecCoinFromDec("ucosm", sdk.MustNewDecFromStr("0.01"))}, lggr)
+	gpe := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{"ucosm": sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("0.01"))}, lggr)
 	contract := DeployTestContract(t, tendermintURL, "42", "ucosm", accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 
 	t.Run("send tx between accounts", func(t *testing.T) {
@@ -167,7 +168,7 @@ func TestCosmosClient(t *testing.T) {
 		require.NoError(t, err)
 		gasPrices, err := gpe.GasPrices()
 		require.NoError(t, err)
-		txBytes, err := tc.CreateAndSign([]sdk.Msg{fund}, an, sn, gasLimit.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrices["ucosm"], accounts[0].PrivateKey, 0)
+		txBytes, err := tc.CreateAndSign(ctx, []sdk.Msg{fund}, an, sn, gasLimit.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrices["ucosm"], accounts[0].PrivateKey, 0)
 		require.NoError(t, err)
 		_, err = tc.Simulate(ctx, txBytes)
 		require.NoError(t, err)
@@ -332,7 +333,7 @@ func TestCosmosClient(t *testing.T) {
 			},
 			{
 				"below-min",
-				sdk.NewDecCoinFromDec("ucosm", sdk.NewDecWithPrec(1, 4)),
+				sdk.NewDecCoinFromDec("ucosm", sdkmath.LegacyNewDecWithPrec(1, 4)),
 				sdkerrors.ErrInsufficientFee.ABCICode(),
 			},
 			{

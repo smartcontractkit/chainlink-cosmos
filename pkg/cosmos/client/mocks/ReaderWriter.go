@@ -15,7 +15,7 @@ import (
 
 	query "github.com/cosmos/cosmos-sdk/types/query"
 
-	tmservice "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	tmservice "github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 
 	tx "github.com/cosmos/cosmos-sdk/types/tx"
 
@@ -233,7 +233,7 @@ func (_m *ReaderWriter) ContractState(ctx context.Context, contractAddress types
 }
 
 // CreateAndSign provides a mock function with given fields: msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight
-func (_m *ReaderWriter) CreateAndSign(msgs []types.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice types.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error) {
+func (_m *ReaderWriter) CreateAndSign(ctx context.Context, msgs []types.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice types.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error) {
 	ret := _m.Called(msgs, account, sequence, gasLimit, gasLimitMultiplier, gasPrice, signer, timeoutHeight)
 
 	if len(ret) == 0 {

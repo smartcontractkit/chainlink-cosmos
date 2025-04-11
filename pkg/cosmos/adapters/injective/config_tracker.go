@@ -6,7 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
 	chaintypes "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/types"
@@ -17,10 +17,10 @@ var _ types.ContractConfigTracker = &CosmosModuleConfigTracker{}
 type CosmosModuleConfigTracker struct {
 	feedID                  string
 	injectiveClient         chaintypes.QueryClient
-	tendermintServiceClient tmtypes.ServiceClient
+	tendermintServiceClient cmtservice.ServiceClient
 }
 
-func NewCosmosModuleConfigTracker(feedID string, queryClient chaintypes.QueryClient, serviceClient tmtypes.ServiceClient) *CosmosModuleConfigTracker {
+func NewCosmosModuleConfigTracker(feedID string, queryClient chaintypes.QueryClient, serviceClient cmtservice.ServiceClient) *CosmosModuleConfigTracker {
 	return &CosmosModuleConfigTracker{
 		feedID:                  feedID,
 		injectiveClient:         queryClient,
@@ -111,7 +111,7 @@ func (c *CosmosModuleConfigTracker) LatestBlockHeight(
 	blockHeight uint64,
 	err error,
 ) {
-	b, err := c.tendermintServiceClient.GetLatestBlock(ctx, &tmtypes.GetLatestBlockRequest{})
+	b, err := c.tendermintServiceClient.GetLatestBlock(ctx, &cmtservice.GetLatestBlockRequest{})
 	if err != nil {
 		return 0, err
 	}

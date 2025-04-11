@@ -18,7 +18,7 @@ import (
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	libclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
-	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -42,8 +42,8 @@ type Reader interface {
 	ContractState(ctx context.Context, contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
 	TxsEvents(ctx context.Context, events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error)
 	Tx(ctx context.Context, hash string) (*txtypes.GetTxResponse, error)
-	LatestBlock(context.Context) (*tmtypes.GetLatestBlockResponse, error)
-	BlockByHeight(ctx context.Context, height int64) (*tmtypes.GetBlockByHeightResponse, error)
+	LatestBlock(context.Context) (*cmtservice.GetLatestBlockResponse, error)
+	BlockByHeight(ctx context.Context, height int64) (*cmtservice.GetBlockByHeightResponse, error)
 	Balance(ctx context.Context, addr sdk.AccAddress, denom string) (*sdk.Coin, error)
 	// TODO: escape hatch for injective client
 	Context() *cosmosclient.Context
@@ -59,7 +59,7 @@ type Writer interface {
 	Simulate(ctx context.Context, txBytes []byte) (*txtypes.SimulateResponse, error)
 	BatchSimulateUnsigned(ctx context.Context, msgs SimMsgs, sequence uint64) (*BatchSimResults, error)
 	SimulateUnsigned(ctx context.Context, msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error)
-	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error)
+	CreateAndSign(ctx context.Context, msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error)
 }
 
 var _ ReaderWriter = (*Client)(nil)
@@ -90,7 +90,7 @@ type Client struct {
 	authClient              authtypes.QueryClient
 	wasmClient              wasmtypes.QueryClient
 	bankClient              banktypes.QueryClient
-	tendermintServiceClient tmtypes.ServiceClient
+	tendermintServiceClient cmtservice.ServiceClient
 	log                     logger.Logger
 }
 
@@ -125,7 +125,7 @@ func NewClient(chainID string,
 	cosmosServiceClient := txtypes.NewServiceClient(clientCtx)
 	authClient := authtypes.NewQueryClient(clientCtx)
 	wasmClient := wasmtypes.NewQueryClient(clientCtx)
-	tendermintServiceClient := tmtypes.NewServiceClient(clientCtx)
+	tendermintServiceClient := cmtservice.NewServiceClient(clientCtx)
 	bankClient := banktypes.NewQueryClient(clientCtx)
 
 	return &Client{
@@ -194,17 +194,17 @@ func (c *Client) Tx(ctx context.Context, hash string) (*txtypes.GetTxResponse, e
 }
 
 // LatestBlock returns the latest block
-func (c *Client) LatestBlock(ctx context.Context) (*tmtypes.GetLatestBlockResponse, error) {
-	return c.tendermintServiceClient.GetLatestBlock(ctx, &tmtypes.GetLatestBlockRequest{})
+func (c *Client) LatestBlock(ctx context.Context) (*cmtservice.GetLatestBlockResponse, error) {
+	return c.tendermintServiceClient.GetLatestBlock(ctx, &cmtservice.GetLatestBlockRequest{})
 }
 
 // BlockByHeight gets a block by height
-func (c *Client) BlockByHeight(ctx context.Context, height int64) (*tmtypes.GetBlockByHeightResponse, error) {
-	return c.tendermintServiceClient.GetBlockByHeight(ctx, &tmtypes.GetBlockByHeightRequest{Height: height})
+func (c *Client) BlockByHeight(ctx context.Context, height int64) (*cmtservice.GetBlockByHeightResponse, error) {
+	return c.tendermintServiceClient.GetBlockByHeight(ctx, &cmtservice.GetBlockByHeightRequest{Height: height})
 }
 
 // CreateAndSign creates and signs a transaction
-func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error) {
+func (c *Client) CreateAndSign(ctx context.Context, msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error) {
 	// https://github.com/cosmos/cosmos-sdk/blob/a785bf5af602525cf7a5c5ea097056597e2eb7ef/client/tx/tx.go#L63-L117
 	// https://docs.cosmos.network/main/run-node/txs#signing-a-transaction-1
 	txConfig := params.ClientTxConfig()
@@ -257,6 +257,7 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 
 	// Sign those bytes
 	signature, err := tx.SignWithPrivKey(
+		ctx,
 		signMode,
 		signerData,
 		txBuilder,
@@ -432,7 +433,7 @@ func (c *Client) SignAndBroadcast(ctx context.Context, msgs []sdk.Msg, account u
 		return nil, err
 	}
 	// TODO: replace with BroadcastTx()?
-	txBytes, err := c.CreateAndSign(msgs, account, sequence, sim.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrice, signer, 0)
+	txBytes, err := c.CreateAndSign(ctx, msgs, account, sequence, sim.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrice, signer, 0)
 	if err != nil {
 		return nil, err
 	}

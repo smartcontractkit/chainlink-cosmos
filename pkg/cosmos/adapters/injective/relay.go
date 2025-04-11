@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	cosmosSDK "github.com/cosmos/cosmos-sdk/types"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
@@ -49,7 +49,7 @@ func NewConfigProvider(ctx context.Context, lggr logger.Logger, chain adapters.C
 	}
 	clientCtx := reader.Context()
 	injectiveClient := injectivetypes.NewQueryClient(clientCtx)
-	tendermintServiceClient := tmtypes.NewServiceClient(clientCtx)
+	tendermintServiceClient := cmtservice.NewServiceClient(clientCtx)
 
 	tracker := NewCosmosModuleConfigTracker(feedID, injectiveClient, tendermintServiceClient)
 	digester := NewCosmosOffchainConfigDigester(relayConfig.ChainID, feedID)
