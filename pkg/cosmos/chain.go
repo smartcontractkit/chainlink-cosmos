@@ -82,6 +82,10 @@ type chain struct {
 	lggr logger.Logger
 }
 
+func (c *chain) Replay(ctx context.Context, fromBlock string, args map[string]any) error {
+	return fmt.Errorf("not implemented")
+}
+
 func newChain(id string, cfg *config.TOMLConfig, ds sqlutil.DataSource, ks loop.Keystore, lggr logger.Logger) (*chain, error) {
 	lggr = logger.With(lggr, "cosmosChainID", id)
 	var ch = chain{
