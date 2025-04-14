@@ -30,7 +30,6 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
-//go:generate mockery --name ReaderWriter --output ./mocks/
 type ReaderWriter interface {
 	Writer
 	Reader

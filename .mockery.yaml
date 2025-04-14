@@ -1,0 +1,24 @@
+dir: "{{ .InterfaceDir }}/mocks"
+mockname: "{{ .InterfaceName }}"
+outpkg: mocks
+filename: "{{ .InterfaceName | snakecase }}.go"
+fail-on-missing: true
+resolve-type-alias: false
+disable-version-string: true
+packages:
+  github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client:
+    config:
+      filename: "{{ .InterfaceName }}.go"
+    interfaces:
+      ReaderWriter:
+  github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring:
+    config:
+      filename: "{{ .InterfaceName }}.go"
+    interfaces:
+      ChainReader:
+      Metrics:
+  github.com/smartcontractkit/chainlink-cosmos/pkg/monitoring/fcdclient:
+    config:
+      filename: "{{ .InterfaceName }}.go"
+    interfaces:
+      Client:
