@@ -140,8 +140,7 @@ gomodtidy: gomods
 
 .PHONY: mockery
 mockery: $(mockery) ## Install mockery.
-	go install github.com/vektra/mockery/v2@v2.53.3 && \
-	mockery
+	go install github.com/vektra/mockery/v2@v2.53.3
 
 .PHONY: rm-mocked
 rm-mocked:
@@ -150,6 +149,7 @@ rm-mocked:
 .PHONY: generate
 generate: mockery gomods
 	gomods -w go generate -x ./...
+	find . -type f -name .mockery.yaml -execdir mockery \; ## Execute mockery for all .mockery.yaml files
 
 .PHONY: lint-go
 lint-go: lint-go-ops lint-go-relayer lint-go-test
