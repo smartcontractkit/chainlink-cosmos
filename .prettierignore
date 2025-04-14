@@ -8,3 +8,4 @@ target
 dist
 tests
 *.yml
+/.mockery.yaml
