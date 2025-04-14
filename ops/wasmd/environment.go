@@ -79,6 +79,10 @@ func (m Chart) ExportData(e *environment.Environment) error {
 	return nil
 }
 
+func (m Chart) GetLabels() map[string]string {
+	return map[string]string{}
+}
+
 func defaultProps() map[string]any {
 	return map[string]any{
 		"replicas": "1",
