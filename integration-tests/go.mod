@@ -5,6 +5,7 @@ go 1.24.1
 toolchain go1.24.2
 
 require (
+	cosmossdk.io/math v1.5.3
 	github.com/cometbft/cometbft v0.38.17
 	github.com/cosmos/cosmos-sdk v0.50.13
 	github.com/google/uuid v1.6.0
@@ -28,7 +29,6 @@ require (
 	cosmossdk.io/depinject v1.1.0 // indirect
 	cosmossdk.io/errors v1.0.1 // indirect
 	cosmossdk.io/log v1.5.0 // indirect
-	cosmossdk.io/math v1.5.3 // indirect
 	cosmossdk.io/store v1.1.1 // indirect
 	cosmossdk.io/x/tx v0.13.7 // indirect
 	cosmossdk.io/x/upgrade v0.1.4 // indirect

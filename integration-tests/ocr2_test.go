@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
 	relaylogger "github.com/smartcontractkit/chainlink-common/pkg/logger"
 	"github.com/smartcontractkit/chainlink-common/pkg/utils/tests"
 
@@ -25,6 +24,7 @@ import (
 	// "github.com/smartcontractkit/chainlink/integration-tests/actions"
 	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting2/types"
 
+	"cosmossdk.io/math"
 	cometbfttypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
@@ -63,7 +63,7 @@ func TestOCRBasic(t *testing.T) {
 	require.NoError(t, err, "Could not create private key from mnemonic")
 	logger.Info().Str("from", testAccount.String()).Msg("Funding nodes")
 
-	gasPrice := types.NewDecCoin("ucosm", math.NewInt(int64(10000000)))
+	gasPrice := types.NewDecCoinFromDec("ucosm", math.LegacyMustNewDecFromStr("1"))
 	amount := []types.Coin{types.NewCoin("ucosm", math.NewInt(int64(10000000)))}
 	accountNumber, sequenceNumber, err := cosmosClient.Account(ctx, testAccount)
 	require.NoError(t, err, "Could not get account")
