@@ -140,7 +140,8 @@ gomodtidy: gomods
 
 .PHONY: mockery
 mockery: $(mockery) ## Install mockery.
-	go install github.com/vektra/mockery/v2@v2.53.3
+	go install github.com/vektra/mockery/v2@v2.53.3 && \
+	mockery
 
 .PHONY: rm-mocked
 rm-mocked:
