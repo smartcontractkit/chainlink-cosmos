@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 container_name="chainlink-cosmos.wasmd"
-container_version="v0.55.0"
+container_version="v0.50.0"
 genesis_account="wasm1lsagfzrm4gz28he4wunt63sts5xzmczwda8vl6"
 
 set -euox pipefail
