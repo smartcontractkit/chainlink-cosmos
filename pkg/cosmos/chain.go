@@ -12,6 +12,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/pelletier/go-toml/v2"
+	chain_selectors "github.com/smartcontractkit/chain-selectors"
 
 	"github.com/smartcontractkit/chainlink-common/pkg/chains"
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
@@ -82,6 +83,15 @@ type chain struct {
 	lggr logger.Logger
 }
 
+func (c *chain) GetChainInfo(ctx context.Context) (types.ChainInfo, error) {
+	return types.ChainInfo{
+		FamilyName:      chain_selectors.FamilyCosmos,
+		ChainID:         c.id,
+		NetworkName:     "", //TODO
+		NetworkNameFull: "", //TODO
+	}, nil
+}
+
 func newChain(id string, cfg *config.TOMLConfig, ds sqlutil.DataSource, ks loop.Keystore, lggr logger.Logger) (*chain, error) {
 	lggr = logger.With(lggr, "cosmosChainID", id)
 	var ch = chain{
@@ -127,6 +137,8 @@ func (c *chain) TxManager() adapters.TxManager {
 func (c *chain) Reader(name string) (client.Reader, error) {
 	return c.getClient(name)
 }
+
+func (c *chain) Replay(context.Context, string, map[string]any) error { return nil }
 
 // getClient returns a client, optionally requiring a specific node by name.
 func (c *chain) getClient(name string) (client.ReaderWriter, error) {

@@ -3,8 +3,10 @@ package config
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/url"
 	"slices"
+	"strings"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,42 +14,22 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/smartcontractkit/chainlink-common/pkg/config"
+	"github.com/smartcontractkit/chainlink-common/pkg/config/configtest"
 
-	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/db"
 )
 
-// Global defaults.
-var defaultConfigSet = configSet{
-	BlockRate: 6 * time.Second,
-	// ~6s per block, so ~3m until we give up on the tx getting confirmed
-	// Anecdotally it appears anything more than 4 blocks would be an extremely long wait,
-	// In practice during the UST depegging and subsequent extreme congestion, we saw
-	// ~16 block FIFO lineups.
-	BlocksUntilTxTimeout: 30,
-	ConfirmPollPeriod:    time.Second,
-	FallbackGasPrice:     sdk.MustNewDecFromStr("0.015"),
-	// This is high since we simulate before signing the transaction.
-	// There's a chicken and egg problem: need to sign to simulate accurately
-	// but you need to specify a gas limit when signing.
-	// TODO: Determine how much gas a signature adds and then
-	// add that directly so we can be more accurate.
-	GasLimitMultiplier: client.DefaultGasLimitMultiplier,
-	// The max gas limit per block is 1_000_000_000
-	// https://github.com/terra-money/core/blob/d6037b9a12c8bf6b09fe861c8ad93456aac5eebb/app/legacy/migrate.go#L69.
-	// The max msg size is 10KB https://github.com/terra-money/core/blob/d6037b9a12c8bf6b09fe861c8ad93456aac5eebb/x/wasm/types/params.go#L15.
-	// Our msgs are only OCR reports for now, which will not exceed that size.
-	// There appears to be no gas limit per tx, only per block, so theoretically
-	// we could include 1000 msgs which use up to 1M gas.
-	// To be conservative and since the number of messages we'd
-	// have in a batch on average roughly corresponds to the number of terra ocr jobs we're running (do not expect more than 100),
-	// we can set a max msgs per batch of 100.
-	MaxMsgsPerBatch:     100,
-	OCR2CachePollPeriod: 4 * time.Second,
-	OCR2CacheTTL:        time.Minute,
-	TxMsgTimeout:        10 * time.Minute,
-	Bech32Prefix:        "wasm",  // note: this shouldn't be used outside of tests
-	GasToken:            "ucosm", // note: this shouldn't be used outside of tests
+var defaults TOMLConfig
+
+func init() {
+	if err := configtest.DocDefaultsOnly(strings.NewReader(docsTOML), &defaults, config.DecodeTOML); err != nil {
+		log.Fatalf("Failed to initialize defaults from docs: %v", err)
+	}
+}
+
+func Defaults() (c TOMLConfig) {
+	c.SetFrom(&defaults)
+	return
 }
 
 type Config interface {
@@ -91,44 +73,6 @@ type Chain struct {
 	OCR2CachePollPeriod  *config.Duration
 	OCR2CacheTTL         *config.Duration
 	TxMsgTimeout         *config.Duration
-}
-
-func (c *Chain) SetDefaults() {
-	if c.Bech32Prefix == nil {
-		c.Bech32Prefix = &defaultConfigSet.Bech32Prefix
-	}
-	if c.BlockRate == nil {
-		c.BlockRate = config.MustNewDuration(defaultConfigSet.BlockRate)
-	}
-	if c.BlocksUntilTxTimeout == nil {
-		c.BlocksUntilTxTimeout = &defaultConfigSet.BlocksUntilTxTimeout
-	}
-	if c.ConfirmPollPeriod == nil {
-		c.ConfirmPollPeriod = config.MustNewDuration(defaultConfigSet.ConfirmPollPeriod)
-	}
-	if c.FallbackGasPrice == nil {
-		d := decimal.NewFromBigInt(defaultConfigSet.FallbackGasPrice.BigInt(), -sdk.Precision)
-		c.FallbackGasPrice = &d
-	}
-	if c.GasToken == nil {
-		c.GasToken = &defaultConfigSet.GasToken
-	}
-	if c.GasLimitMultiplier == nil {
-		d := decimal.NewFromFloat(defaultConfigSet.GasLimitMultiplier)
-		c.GasLimitMultiplier = &d
-	}
-	if c.MaxMsgsPerBatch == nil {
-		c.MaxMsgsPerBatch = &defaultConfigSet.MaxMsgsPerBatch
-	}
-	if c.OCR2CachePollPeriod == nil {
-		c.OCR2CachePollPeriod = config.MustNewDuration(defaultConfigSet.OCR2CachePollPeriod)
-	}
-	if c.OCR2CacheTTL == nil {
-		c.OCR2CacheTTL = config.MustNewDuration(defaultConfigSet.OCR2CacheTTL)
-	}
-	if c.TxMsgTimeout == nil {
-		c.TxMsgTimeout = config.MustNewDuration(defaultConfigSet.TxMsgTimeout)
-	}
 }
 
 type Node struct {
@@ -247,6 +191,13 @@ type TOMLConfig struct {
 
 func (c *TOMLConfig) IsEnabled() bool {
 	return c.Enabled == nil || *c.Enabled
+}
+
+func (c *TOMLConfig) SetDefaults() {
+	def := Defaults()
+	def.SetFrom(c)
+	*c = def
+
 }
 
 func (c *TOMLConfig) SetFrom(f *TOMLConfig) {

@@ -20,6 +20,7 @@ import (
 
 	commoncfg "github.com/smartcontractkit/chainlink-common/pkg/config"
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
+	"github.com/smartcontractkit/chainlink-common/pkg/types/core"
 	"github.com/smartcontractkit/chainlink-common/pkg/utils/tests"
 
 	"github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/client"
@@ -423,6 +424,7 @@ func RandomChainID() string {
 }
 
 type keystore struct {
+	core.UnimplementedKeystore
 	accounts []string
 }
 
@@ -431,7 +433,7 @@ func newKeystore(count int) *keystore {
 	for i := 0; i < count; i++ {
 		accounts[i] = cosmostypes.AccAddress(secp256k1.GenPrivKey().PubKey().Address().Bytes()).String()
 	}
-	return &keystore{accounts}
+	return &keystore{accounts: accounts}
 }
 
 func (k *keystore) Accounts(ctx context.Context) (accounts []string, err error) {

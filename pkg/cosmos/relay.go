@@ -27,6 +27,7 @@ type ErrMsgUnsupported = txm.ErrMsgUnsupported
 var _ types.Relayer = &Relayer{} //nolint:staticcheck
 
 type Relayer struct {
+	types.UnimplementedRelayer
 	lggr  logger.Logger
 	chain adapters.Chain
 }
@@ -70,6 +71,9 @@ func (r *Relayer) HealthReport() map[string]error {
 	hp := map[string]error{r.Name(): nil}
 	services.CopyHealth(hp, r.chain.HealthReport())
 	return hp
+}
+func (r *Relayer) Replay(ctx context.Context, fromBlock string, args map[string]any) error {
+	return r.chain.Replay(ctx, fromBlock, args)
 }
 
 func (r *Relayer) LatestHead(ctx context.Context) (types.Head, error) {
