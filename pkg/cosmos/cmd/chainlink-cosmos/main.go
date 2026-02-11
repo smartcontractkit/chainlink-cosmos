@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"github.com/pelletier/go-toml/v2"
 
+	"github.com/smartcontractkit/chainlink-common/pkg/beholder"
 	"github.com/smartcontractkit/chainlink-common/pkg/loop"
 	"github.com/smartcontractkit/chainlink-common/pkg/sqlutil"
 	"github.com/smartcontractkit/chainlink-common/pkg/types/core"
@@ -51,7 +52,9 @@ type pluginRelayer struct {
 	ds sqlutil.DataSource
 }
 
-func (c *pluginRelayer) NewRelayer(ctx context.Context, config string, keystore loop.Keystore, capRegistry core.CapabilitiesRegistry) (loop.Relayer, error) {
+func (c *pluginRelayer) NewRelayer(ctx context.Context, config string, keystore, csaKeystore core.Keystore, capRegistry core.CapabilitiesRegistry) (loop.Relayer, error) {
+	_ = csaKeystore
+
 	d := toml.NewDecoder(strings.NewReader(config))
 	d.DisallowUnknownFields()
 
@@ -69,6 +72,28 @@ func (c *pluginRelayer) NewRelayer(ctx context.Context, config string, keystore 
 		return nil, fmt.Errorf("failed to serialize config: %w", err)
 	}
 	c.Logger.Infow("Creating relayer", "config", cfgStr)
+
+	rawNodes := make([]map[string]string, 0, len(cfg.Nodes))
+	for _, n := range cfg.Nodes {
+		if n == nil || n.TendermintURL == nil {
+			continue
+		}
+		rawNodes = append(rawNodes, map[string]string{"TendermintURL": n.TendermintURL.String()})
+	}
+	chainID := ""
+	if cfg.ChainID != nil {
+		chainID = *cfg.ChainID
+	}
+	emitter := loop.NewPluginRelayerConfigEmitter(
+		c.Logger,
+		beholder.GetClient().Config.AuthPublicKeyHex,
+		chainID,
+		rawNodes,
+	)
+	if err := emitter.Start(ctx); err != nil {
+		return nil, fmt.Errorf("failed to start plugin relayer config emitter: %w", err)
+	}
+	c.SubService(emitter)
 
 	chain, err := cosmos.NewChain(&cfg, cosmos.ChainOpts{
 		Logger:   c.Logger,

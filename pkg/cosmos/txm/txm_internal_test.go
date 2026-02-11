@@ -444,3 +444,10 @@ func (k *keystore) Sign(ctx context.Context, account string, data []byte) (signe
 	}
 	return data, nil
 }
+
+func (k *keystore) Decrypt(ctx context.Context, account string, encrypted []byte) (decrypted []byte, err error) {
+	if slices.Index(k.accounts, account) == -1 {
+		return nil, fmt.Errorf("account not found: %s", account)
+	}
+	return encrypted, nil
+}
