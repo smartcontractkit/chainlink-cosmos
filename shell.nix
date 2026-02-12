@@ -1,5 +1,8 @@
 { stdenv, pkgs, lib }:
 
+let
+  goPkg = pkgs.go_1_25;
+in
 pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
      (rust-bin.stable.latest.default.override {
@@ -18,7 +21,7 @@ pkgs.mkShell {
 
     # Golang
     # Keep this golang version in sync with the version in .tool-versions please
-    go_1_21
+    goPkg
     gopls
     delve
     golangci-lint
@@ -53,7 +56,7 @@ pkgs.mkShell {
     libusb1
   ];
   RUST_BACKTRACE = "1";
-  GOROOT="${pkgs.go_1_21}/share/go";
+  GOROOT="${goPkg}/share/go";
 
   # Avoids issues with delve
   CGO_CPPFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0";
