@@ -1,7 +1,7 @@
 { stdenv, pkgs, lib }:
 
 let
-  goPkg = pkgs.go_1_25;
+  goPkg = if pkgs ? go_1_25 then pkgs.go_1_25 else pkgs.go;
 in
 pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
@@ -56,7 +56,6 @@ pkgs.mkShell {
     libusb1
   ];
   RUST_BACKTRACE = "1";
-  GOROOT="${goPkg}/share/go";
 
   # Avoids issues with delve
   CGO_CPPFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0";
