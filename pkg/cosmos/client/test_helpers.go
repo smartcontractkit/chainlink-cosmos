@@ -40,6 +40,10 @@ var defaultCoin = sdk.NewDecWithPrec(1, 3)
 // SetupLocalCosmosNode sets up a local terra node via wasmd, and returns pre-funded accounts, the test directory, and the url.
 // Token name is for both staking and fee coin
 func SetupLocalCosmosNode(t *testing.T, chainID string, token string) ([]Account, string, string) {
+	if _, lookErr := exec.LookPath("wasmd"); lookErr != nil {
+		t.Skipf("skipping cosmos client tests: wasmd not found in PATH: %v", lookErr)
+	}
+
 	minGasPrice := sdk.NewDecCoinFromDec(token, defaultCoin)
 	testdir, err := os.MkdirTemp("", "integration-test")
 	require.NoError(t, err)

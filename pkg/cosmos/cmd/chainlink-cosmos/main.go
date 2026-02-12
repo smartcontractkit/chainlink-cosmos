@@ -90,7 +90,8 @@ func (c *pluginRelayer) NewRelayer(ctx context.Context, config string, keystore,
 		chainID,
 		rawNodes,
 	)
-	if err := emitter.Start(ctx); err != nil {
+	err = emitter.Start(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("failed to start plugin relayer config emitter: %w", err)
 	}
 	c.SubService(emitter)

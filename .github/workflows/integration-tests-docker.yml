@@ -77,7 +77,8 @@ jobs:
           cd integration-tests
           go mod edit -replace github.com/smartcontractkit/chainlink/v2=../temp/chainlink
           go mod edit -replace github.com/smartcontractkit/chainlink/deployment=../temp/chainlink/deployment
-          go mod tidy
+          # Keep going even if transitive/test-only deps in the replaced core module graph are unresolved.
+          go mod tidy -e
 
       - name: Run Test
         env:
