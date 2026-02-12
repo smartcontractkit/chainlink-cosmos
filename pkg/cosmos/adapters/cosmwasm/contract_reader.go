@@ -47,7 +47,7 @@ func (r *OCR2Reader) LatestConfigDetails(ctx context.Context) (changedInBlock ui
 		return
 	}
 	changedInBlock = config.BlockNumber
-	configDigest = config.ConfigDigest
+	configDigest = config.ConfigDigest.ConfigDigest()
 	return
 }
 
@@ -267,7 +267,7 @@ func (r *OCR2Reader) LatestTransmissionDetails(ctx context.Context) (
 		return types.ConfigDigest{}, 0, 0, big.NewInt(0), time.Now(), fmt.Errorf("Could not create *big.Int from %s", details.LatestAnswer)
 	}
 
-	return details.LatestConfigDigest, details.Epoch, details.Round, ans, time.Unix(details.LatestTimestamp, 0), nil
+	return details.LatestConfigDigest.ConfigDigest(), details.Epoch, details.Round, ans, time.Unix(details.LatestTimestamp, 0), nil
 }
 
 // LatestRoundRequested fetches the latest round requested by filtering event logs
@@ -351,5 +351,5 @@ func (r *OCR2Reader) LatestConfigDigestAndEpoch(ctx context.Context) (
 		return types.ConfigDigest{}, 0, err
 	}
 
-	return digest.ConfigDigest, digest.Epoch, nil
+	return digest.ConfigDigest.ConfigDigest(), digest.Epoch, nil
 }
