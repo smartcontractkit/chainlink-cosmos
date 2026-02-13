@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgres://postgres@localhost:5432/postgres?sslmode=disable
+      GOTOOLCHAIN: go1.25.7+auto
     services:
       postgres:
         image: postgres
@@ -26,11 +27,6 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
 
-      - name: Set up Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
-        with:
-          go-version-file: "go.mod"
-
       - name: Install Nix
         uses: cachix/install-nix-action@ba0dd844c9180cbf77aa72a116d6fbc515d0e87b # v27
         with:
@@ -44,10 +40,10 @@ jobs:
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Compile relay
-        run: go build -v ./pkg/cosmos/...
+        run: nix develop -c go build -v ./pkg/cosmos/...
 
       - name: Run unit tests
-        run: make test_relay_unit
+        run: nix develop -c make test_relay_unit
 
       - name: Verify wasmd binary is available
         run: nix develop -c wasmd version
@@ -56,7 +52,7 @@ jobs:
         run: nix develop -c go test -v ./pkg/cosmos/client -run TestIntegration -tags integration
 
       - name: Run tests with the race detector enabled
-        run: make test_relay_unit_race
+        run: nix develop -c make test_relay_unit_race
       
       - name: Upload Go test results
         if: always()
