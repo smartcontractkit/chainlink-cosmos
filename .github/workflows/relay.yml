@@ -44,6 +44,12 @@ jobs:
       - name: Run unit tests
         run: nix develop -c make test_relay_unit
 
+      - name: Verify wasmd binary is available
+        run: nix develop -c wasmd version
+
+      - name: Run integration-tagged tests
+        run: nix develop -c go test -v ./pkg/cosmos/client -run TestIntegration -tags integration
+
       - name: Run tests with the race detector enabled
         run: nix develop -c make test_relay_unit_race
       
