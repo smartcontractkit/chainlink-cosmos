@@ -576,8 +576,8 @@ pub fn execute_propose_config(
     proposal.f = f;
     proposal.oracles = signers
         .into_iter()
-        .zip(transmitters.into_iter())
-        .zip(payees.into_iter())
+        .zip(transmitters)
+        .zip(payees)
         .map(|((signers, transmitters), payees)| (signers, transmitters, payees))
         .collect();
 
