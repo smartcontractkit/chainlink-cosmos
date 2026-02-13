@@ -3,39 +3,36 @@ module github.com/smartcontractkit/chainlink-cosmos/integration-tests
 go 1.25.5
 
 require (
+	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
+	github.com/cloudevents/sdk-go/binding/format/protobuf/v2 v2.16.2 // indirect
+	github.com/cloudevents/sdk-go/v2 v2.16.2 // indirect
 	github.com/cometbft/cometbft v0.38.21
 	github.com/cosmos/cosmos-sdk v0.50.14
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.11.1
-	github.com/rs/zerolog v1.34.0
-	github.com/smartcontractkit/chainlink-common v0.9.6-0.20260211140822-b833b412cdd9
-	github.com/smartcontractkit/chainlink-cosmos v0.5.2-0.20250121210000-2a9675d7a1b4
-	github.com/smartcontractkit/chainlink-cosmos/ops v0.0.0-20231206164210-03f8b219402e
-	github.com/smartcontractkit/chainlink-testing-framework/lib v1.54.5
-	github.com/smartcontractkit/chainlink/deployment v0.0.0-20260212143642-133b15f1417b
-	github.com/smartcontractkit/chainlink/v2 v2.34.0-rc.0
-	github.com/smartcontractkit/libocr v0.0.0-20260130195252-6e18e2a30acc
-	github.com/stretchr/testify v1.11.1
-	gopkg.in/guregu/null.v4 v4.0.0
-)
-
-require (
-	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
-	github.com/cloudevents/sdk-go/binding/format/protobuf/v2 v2.16.2 // indirect
-	github.com/cloudevents/sdk-go/v2 v2.16.2 // indirect
 	github.com/pion/dtls/v2 v2.2.12 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/stun/v2 v2.0.0 // indirect
 	github.com/pion/transport/v2 v2.2.10 // indirect
 	github.com/pion/transport/v3 v3.0.1 // indirect
+	github.com/rs/zerolog v1.34.0
 	github.com/smartcontractkit/chain-selectors v1.0.91 // indirect
+	github.com/smartcontractkit/chainlink-common v0.9.6-0.20260211140822-b833b412cdd9
 	github.com/smartcontractkit/chainlink-common/pkg/chipingress v0.0.10 // indirect
+	github.com/smartcontractkit/chainlink-cosmos v0.5.2-0.20250121210000-2a9675d7a1b4
+	github.com/smartcontractkit/chainlink-cosmos/ops v0.0.0-20231206164210-03f8b219402e
 	github.com/smartcontractkit/chainlink-protos/cre/go v0.0.0-20260210221717-2546aed27ebe // indirect
 	github.com/smartcontractkit/chainlink-protos/linking-service/go v0.0.0-20251002192024-d2ad9222409b // indirect
 	github.com/smartcontractkit/chainlink-protos/node-platform v0.0.0-20260205130626-db2a2aab956b // indirect
+	github.com/smartcontractkit/chainlink-testing-framework/lib v1.54.5
+	github.com/smartcontractkit/chainlink/deployment v0.0.0-20260212143642-133b15f1417b
+	github.com/smartcontractkit/chainlink/v2 v2.34.0-rc.0
 	github.com/smartcontractkit/freeport v0.1.3-0.20250716200817-cb5dfd0e369e // indirect
+	github.com/smartcontractkit/libocr v0.0.0-20260130195252-6e18e2a30acc
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	golang.org/x/telemetry v0.0.0-20260109210033-bd525da824e2 // indirect
+	gopkg.in/guregu/null.v4 v4.0.0
 )
 
 require (
