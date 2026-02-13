@@ -1,6 +1,6 @@
 module github.com/smartcontractkit/chainlink-cosmos/integration-tests
 
-go 1.25.5
+go 1.25.7
 
 require (
 	github.com/cometbft/cometbft v0.38.21
