@@ -2,7 +2,12 @@
 
 let
   goPkg = if pkgs ? go_1_25 then pkgs.go_1_25 else pkgs.go;
-  nodejsPkg = if pkgs ? nodejs_18 then pkgs.nodejs_18 else if builtins.hasAttr "nodejs-18_x" pkgs then pkgs."nodejs-18_x" else pkgs.nodejs;
+  nodejsPkg =
+    if pkgs ? nodejs_20 then pkgs.nodejs_20
+    else if pkgs ? nodejs_18 then pkgs.nodejs_18
+    else if builtins.hasAttr "nodejs-20_x" pkgs then pkgs."nodejs-20_x"
+    else if builtins.hasAttr "nodejs-18_x" pkgs then pkgs."nodejs-18_x"
+    else pkgs.nodejs;
 in
 pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
