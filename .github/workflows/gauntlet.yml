@@ -21,6 +21,8 @@ jobs:
         with:
           name: chainlink-cosmos
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          useDaemon: false
+          skipAddingSubstituter: true
       - run: nix develop -c yarn install --frozen-lockfile
       - run: nix develop -c yarn build
 
@@ -41,6 +43,8 @@ jobs:
         with:
           name: chainlink-cosmos
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          useDaemon: false
+          skipAddingSubstituter: true
       - run: nix develop -c yarn install --frozen-lockfile
       - run: nix develop -c yarn lint:format
 
@@ -61,6 +65,8 @@ jobs:
         with:
           name: chainlink-cosmos
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          useDaemon: false
+          skipAddingSubstituter: true
       - run: nix develop -c yarn install --frozen-lockfile
       - run: nix develop -c yarn eslint
       - name: Upload eslint report
@@ -88,6 +94,8 @@ jobs:
         with:
           name: chainlink-cosmos
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          useDaemon: false
+          skipAddingSubstituter: true
       - name: Cache Wasmd Artifacts
         uses: actions/cache@v4
         id: cache-wasmd-artifacts
