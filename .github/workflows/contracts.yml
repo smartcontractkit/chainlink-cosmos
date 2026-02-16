@@ -70,9 +70,13 @@ jobs:
 
       - name: Run cargo check
         run: nix develop -c cargo check
+        env:
+          RUSTFLAGS: "--check-cfg=cfg(tarpaulin_include)"
 
       - name: Run cargo clippy
         run: nix develop -c cargo clippy -- -D warnings
+        env:
+          RUSTFLAGS: "--check-cfg=cfg(tarpaulin_include)"
 
       # TODO: Add schema checks
       # https://github.com/smartcontractkit/chainlink-terra/issues/17
