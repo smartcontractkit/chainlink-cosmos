@@ -37,7 +37,7 @@
     ],
     "outputPath": "bin",
     "assets": [
-      "node_modules/usb/prebuilds",
+      "node_modules/node-hid/prebuilds",
       "packages-ts/gauntlet-cosmos-contracts/codeIds",
       "packages-ts/gauntlet-cosmos-contracts/networks",
       "packages-ts/gauntlet-cosmos-contracts/artifacts",
