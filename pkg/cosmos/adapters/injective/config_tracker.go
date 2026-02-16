@@ -6,7 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 
 	chaintypes "github.com/smartcontractkit/chainlink-cosmos/pkg/cosmos/adapters/injective/types"

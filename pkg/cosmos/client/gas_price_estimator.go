@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/smartcontractkit/chainlink-common/pkg/logger"
 	"github.com/smartcontractkit/chainlink-framework/chains/fees"
 
@@ -68,7 +69,7 @@ func (gpe *FixedGasPriceEstimator) CalculateBumpGasPrice(
 	if err != nil {
 		return sdk.DecCoin{}, err
 	}
-	return sdk.NewDecCoinFromDec(coin, sdk.NewDecFromBigIntWithPrec(bumpedGasPrice, 18)), nil
+	return sdk.NewDecCoinFromDec(coin, sdkmath.LegacyNewDecFromBigIntWithPrec(bumpedGasPrice, 18)), nil
 }
 
 // Useful for hot reloads of configured prices
@@ -134,5 +135,5 @@ func (gpe *ComposedGasPriceEstimator) GasPrices() map[string]sdk.DecCoin {
 }
 
 func FormatGasPrice(gasPrice *big.Int) string {
-	return sdk.NewDecFromBigInt(gasPrice).String()
+	return sdkmath.LegacyNewDecFromBigInt(gasPrice).String()
 }

@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	tmservicetypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	tmservicetypes "github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cosmostypes "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
@@ -67,7 +68,7 @@ func TestTxm(t *testing.T) {
 	cfg.SetDefaults()
 	gpe := client.NewMustGasPriceEstimator([]client.GasPricesEstimator{
 		client.NewFixedGasPriceEstimator(map[string]cosmostypes.DecCoin{
-			cfg.GasToken(): cosmostypes.NewDecCoinFromDec(cfg.GasToken(), cosmostypes.MustNewDecFromStr("0.01")),
+			cfg.GasToken(): cosmostypes.NewDecCoinFromDec(cfg.GasToken(), sdkmath.LegacyMustNewDecFromStr("0.01")),
 		},
 			lggr.(logger.SugaredLogger),
 		),

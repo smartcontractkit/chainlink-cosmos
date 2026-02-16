@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"sort"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
@@ -44,12 +44,12 @@ func (ReportCodec) BuildReport(ctx context.Context, observations []median.Parsed
 	reportToPack := &injectivetypes.Report{
 		ObservationsTimestamp: int64(timestamp),
 		Observers:             make([]byte, 0, len(observations)),
-		Observations:          make([]sdk.Dec, 0, len(observations)),
+		Observations:          make([]sdkmath.LegacyDec, 0, len(observations)),
 	}
 
 	for _, observation := range observations {
 		reportToPack.Observers = append(reportToPack.Observers, byte(observation.Observer))
-		reportToPack.Observations = append(reportToPack.Observations, sdk.NewDecFromBigInt(observation.Value))
+		reportToPack.Observations = append(reportToPack.Observations, sdkmath.LegacyNewDecFromBigInt(observation.Value))
 	}
 
 	reportBytes, err := proto.Marshal(reportToPack)

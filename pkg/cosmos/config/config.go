@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/shopspring/decimal"
 
@@ -26,7 +26,7 @@ var defaultConfigSet = configSet{
 	// ~16 block FIFO lineups.
 	BlocksUntilTxTimeout: 30,
 	ConfirmPollPeriod:    time.Second,
-	FallbackGasPrice:     sdk.MustNewDecFromStr("0.015"),
+	FallbackGasPrice:     sdkmath.LegacyMustNewDecFromStr("0.015"),
 	// This is high since we simulate before signing the transaction.
 	// There's a chicken and egg problem: need to sign to simulate accurately
 	// but you need to specify a gas limit when signing.
@@ -55,7 +55,7 @@ type Config interface {
 	BlockRate() time.Duration
 	BlocksUntilTxTimeout() int64
 	ConfirmPollPeriod() time.Duration
-	FallbackGasPrice() sdk.Dec
+	FallbackGasPrice() sdkmath.LegacyDec
 	GasToken() string
 	GasLimitMultiplier() float64
 	MaxMsgsPerBatch() int64
@@ -70,7 +70,7 @@ type configSet struct {
 	BlockRate            time.Duration
 	BlocksUntilTxTimeout int64
 	ConfirmPollPeriod    time.Duration
-	FallbackGasPrice     sdk.Dec
+	FallbackGasPrice     sdkmath.LegacyDec
 	GasToken             string
 	GasLimitMultiplier   float64
 	MaxMsgsPerBatch      int64
@@ -107,7 +107,7 @@ func (c *Chain) SetDefaults() {
 		c.ConfirmPollPeriod = config.MustNewDuration(defaultConfigSet.ConfirmPollPeriod)
 	}
 	if c.FallbackGasPrice == nil {
-		d := decimal.NewFromBigInt(defaultConfigSet.FallbackGasPrice.BigInt(), -sdk.Precision)
+		d := decimal.RequireFromString(defaultConfigSet.FallbackGasPrice.String())
 		c.FallbackGasPrice = &d
 	}
 	if c.GasToken == nil {
@@ -336,7 +336,7 @@ func (c *TOMLConfig) ConfirmPollPeriod() time.Duration {
 	return c.Chain.ConfirmPollPeriod.Duration()
 }
 
-func (c *TOMLConfig) FallbackGasPrice() sdk.Dec {
+func (c *TOMLConfig) FallbackGasPrice() sdkmath.LegacyDec {
 	return sdkDecFromDecimal(c.Chain.FallbackGasPrice)
 }
 
@@ -364,9 +364,8 @@ func (c *TOMLConfig) TxMsgTimeout() time.Duration {
 	return c.Chain.TxMsgTimeout.Duration()
 }
 
-func sdkDecFromDecimal(d *decimal.Decimal) sdk.Dec {
-	i := d.Shift(sdk.Precision)
-	return sdk.NewDecFromBigIntWithPrec(i.BigInt(), sdk.Precision)
+func sdkDecFromDecimal(d *decimal.Decimal) sdkmath.LegacyDec {
+	return sdkmath.LegacyMustNewDecFromStr(d.String())
 }
 
 func (c *TOMLConfig) GetNode(name string) (db.Node, error) {

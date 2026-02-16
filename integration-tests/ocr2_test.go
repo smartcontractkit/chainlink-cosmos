@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	relaylogger "github.com/smartcontractkit/chainlink-common/pkg/logger"
 	"github.com/smartcontractkit/chainlink-common/pkg/utils/tests"
 
@@ -62,8 +63,8 @@ func TestOCRBasic(t *testing.T) {
 	require.NoError(t, err, "Could not create private key from mnemonic")
 	logger.Info().Str("from", testAccount.String()).Msg("Funding nodes")
 
-	gasPrice := types.NewDecCoinFromDec("ucosm", types.MustNewDecFromStr("1"))
-	amount := []types.Coin{types.NewCoin("ucosm", types.NewInt(int64(10000000)))}
+	gasPrice := types.NewDecCoinFromDec("ucosm", sdkmath.LegacyMustNewDecFromStr("1"))
+	amount := []types.Coin{types.NewCoin("ucosm", sdkmath.NewInt(int64(10000000)))}
 	accountNumber, sequenceNumber, err := cosmosClient.Account(ctx, testAccount)
 	require.NoError(t, err, "Could not get account")
 
