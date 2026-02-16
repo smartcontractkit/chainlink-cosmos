@@ -18,7 +18,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/prometheus/client_golang v1.22.0
 	github.com/shopspring/decimal v1.4.0
-	github.com/smartcontractkit/chainlink-common v0.9.6-0.20260211140822-b833b412cdd9
+	github.com/smartcontractkit/chainlink-common v0.10.1-0.20260217013856-dd1e16fa7183
 	github.com/smartcontractkit/chainlink-common/pkg/monitoring v0.0.0-20260210224143-41229b2c8113
 	github.com/smartcontractkit/chainlink-framework/chains v0.0.0-20250124205858-500edf2db981
 	github.com/smartcontractkit/libocr v0.0.0-20260130195252-6e18e2a30acc

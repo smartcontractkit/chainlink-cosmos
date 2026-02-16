@@ -9,7 +9,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.11.1
 	github.com/rs/zerolog v1.34.0
-	github.com/smartcontractkit/chainlink-common v0.9.6-0.20260211140822-b833b412cdd9
+	github.com/smartcontractkit/chainlink-common v0.10.1-0.20260217013856-dd1e16fa7183
 	github.com/smartcontractkit/chainlink-cosmos v0.5.2-0.20250121210000-2a9675d7a1b4
 	github.com/smartcontractkit/chainlink-cosmos/ops v0.0.0-20231206164210-03f8b219402e
 	github.com/smartcontractkit/chainlink-testing-framework/lib v1.54.5
