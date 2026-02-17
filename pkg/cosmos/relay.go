@@ -27,6 +27,7 @@ type ErrMsgUnsupported = txm.ErrMsgUnsupported
 var _ types.Relayer = &Relayer{} //nolint:staticcheck
 
 type Relayer struct {
+	types.UnimplementedRelayer
 	lggr  logger.Logger
 	chain adapters.Chain
 }
