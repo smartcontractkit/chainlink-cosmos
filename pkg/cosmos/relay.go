@@ -27,6 +27,7 @@ type ErrMsgUnsupported = txm.ErrMsgUnsupported
 var _ types.Relayer = &Relayer{} //nolint:staticcheck
 
 type Relayer struct {
+	types.UnimplementedRelayer
 	lggr  logger.Logger
 	chain adapters.Chain
 }
@@ -80,12 +81,32 @@ func (r *Relayer) GetChainStatus(ctx context.Context) (types.ChainStatus, error)
 	return r.chain.GetChainStatus(ctx)
 }
 
+func (r *Relayer) GetChainInfo(ctx context.Context) (types.ChainInfo, error) {
+	return r.chain.GetChainInfo(ctx)
+}
+
 func (r *Relayer) ListNodeStatuses(ctx context.Context, pageSize int32, pageToken string) (stats []types.NodeStatus, nextPageToken string, total int, err error) {
 	return r.chain.ListNodeStatuses(ctx, pageSize, pageToken)
 }
 
 func (r *Relayer) Transact(ctx context.Context, from, to string, amount *big.Int, balanceCheck bool) error {
 	return r.chain.Transact(ctx, from, to, amount, balanceCheck)
+}
+
+func (r *Relayer) Replay(ctx context.Context, fromBlock string, args map[string]any) error {
+	return r.chain.Replay(ctx, fromBlock, args)
+}
+
+func (r *Relayer) EVM() (types.EVMService, error) {
+	return nil, errors.New("evm is not supported for cosmos")
+}
+
+func (r *Relayer) TON() (types.TONService, error) {
+	return nil, errors.New("ton is not supported for cosmos")
+}
+
+func (r *Relayer) Solana() (types.SolanaService, error) {
+	return nil, errors.New("solana is not supported for cosmos")
 }
 
 func (r *Relayer) NewMercuryProvider(ctx context.Context, rargs types.RelayArgs, pargs types.PluginArgs) (types.MercuryProvider, error) {
@@ -150,4 +171,8 @@ func (r *Relayer) NewCCIPCommitProvider(ctx context.Context, rargs types.RelayAr
 
 func (r *Relayer) NewCCIPExecProvider(ctx context.Context, rargs types.RelayArgs, pargs types.PluginArgs) (types.CCIPExecProvider, error) {
 	return nil, errors.New("ccip.exec is not supported for cosmos")
+}
+
+func (r *Relayer) NewCCIPProvider(ctx context.Context, cargs types.CCIPProviderArgs) (types.CCIPProvider, error) {
+	return nil, errors.New("ccip is not supported for cosmos")
 }

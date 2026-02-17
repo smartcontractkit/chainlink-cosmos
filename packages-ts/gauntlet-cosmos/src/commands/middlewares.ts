@@ -24,7 +24,7 @@ export const withProvider: Middleware = async (c: CosmosCommand, next: Next) => 
     if (!!c.flags.gauntletTest) {
       throw new Error('No support for Ledger with Gauntlet Tests. Please disable Ledger')
     }
-    const TransportNodeHid = require('@ledgerhq/hw-transport-node-hid')
+    const TransportNodeHid = require('@ledgerhq/hw-transport-node-hid-noevents')
 
     // TODO: allow specifying custom path, using stringToPath. BIP44_ATOM_PATH was different for example
     // const rawPath = c.flags.ledgerPath || BIP44_ATOM_PATH

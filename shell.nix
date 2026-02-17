@@ -1,5 +1,14 @@
 { stdenv, pkgs, lib }:
 
+let
+  goPkg = if pkgs ? go_1_25 then pkgs.go_1_25 else pkgs.go;
+  nodejsPkg =
+    if pkgs ? nodejs_20 then pkgs.nodejs_20
+    else if pkgs ? nodejs_18 then pkgs.nodejs_18
+    else if builtins.hasAttr "nodejs-20_x" pkgs then pkgs."nodejs-20_x"
+    else if builtins.hasAttr "nodejs-18_x" pkgs then pkgs."nodejs-18_x"
+    else pkgs.nodejs;
+in
 pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
      (rust-bin.stable.latest.default.override {
@@ -18,7 +27,7 @@ pkgs.mkShell {
 
     # Golang
     # Keep this golang version in sync with the version in .tool-versions please
-    go_1_21
+    goPkg
     gopls
     delve
     golangci-lint
@@ -28,7 +37,7 @@ pkgs.mkShell {
     libiconv
 
     # needed for test
-    kube3d
+    (if pkgs ? k3d then k3d else kube3d)
     kubectl
     k9s
     kubernetes-helm
@@ -39,8 +48,8 @@ pkgs.mkShell {
     (pkgs.callPackage ./wasmd.nix {})
 
     # NodeJS + TS
-    nodejs-18_x
-    (yarn.override { nodejs = nodejs-18_x; })
+    nodejsPkg
+    (yarn.override { nodejs = nodejsPkg; })
     nodePackages.typescript
     nodePackages.typescript-language-server
     nodePackages.npm
@@ -53,7 +62,6 @@ pkgs.mkShell {
     libusb1
   ];
   RUST_BACKTRACE = "1";
-  GOROOT="${pkgs.go_1_21}/share/go";
 
   # Avoids issues with delve
   CGO_CPPFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0";

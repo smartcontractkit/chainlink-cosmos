@@ -21,6 +21,8 @@ jobs:
         with:
           name: chainlink-cosmos
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          useDaemon: false
+          skipAddingSubstituter: true
       - run: nix develop -c yarn install --frozen-lockfile
       - run: nix develop -c yarn build
 
@@ -41,6 +43,8 @@ jobs:
         with:
           name: chainlink-cosmos
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          useDaemon: false
+          skipAddingSubstituter: true
       - run: nix develop -c yarn install --frozen-lockfile
       - run: nix develop -c yarn lint:format
 
@@ -61,6 +65,8 @@ jobs:
         with:
           name: chainlink-cosmos
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          useDaemon: false
+          skipAddingSubstituter: true
       - run: nix develop -c yarn install --frozen-lockfile
       - run: nix develop -c yarn eslint
       - name: Upload eslint report
@@ -74,6 +80,7 @@ jobs:
     name: Gauntlet Run Tests
     env:
       CI: true
+      DOCKER_API_VERSION: "1.44"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
@@ -87,6 +94,8 @@ jobs:
         with:
           name: chainlink-cosmos
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          useDaemon: false
+          skipAddingSubstituter: true
       - name: Cache Wasmd Artifacts
         uses: actions/cache@v4
         id: cache-wasmd-artifacts
@@ -109,4 +118,3 @@ jobs:
         with:
           name: typescript-test-coverage
           path: ./coverage/lcov.info
-

@@ -18,7 +18,7 @@ import (
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	libclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
-	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	tmtypes "github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -30,10 +30,22 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
-//go:generate mockery --name ReaderWriter --output ./mocks/
 type ReaderWriter interface {
-	Writer
-	Reader
+	Account(ctx context.Context, address sdk.AccAddress) (uint64, uint64, error)
+	ContractState(ctx context.Context, contractAddress sdk.AccAddress, queryMsg []byte) ([]byte, error)
+	TxsEvents(ctx context.Context, events []string, paginationParams *query.PageRequest) (*txtypes.GetTxsEventResponse, error)
+	Tx(ctx context.Context, hash string) (*txtypes.GetTxResponse, error)
+	LatestBlock(context.Context) (*tmtypes.GetLatestBlockResponse, error)
+	BlockByHeight(ctx context.Context, height int64) (*tmtypes.GetBlockByHeightResponse, error)
+	Balance(ctx context.Context, addr sdk.AccAddress, denom string) (*sdk.Coin, error)
+	Context() *cosmosclient.Context
+
+	SignAndBroadcast(ctx context.Context, msgs []sdk.Msg, accountNum uint64, sequence uint64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
+	Broadcast(ctx context.Context, txBytes []byte, mode txtypes.BroadcastMode) (*txtypes.BroadcastTxResponse, error)
+	Simulate(ctx context.Context, txBytes []byte) (*txtypes.SimulateResponse, error)
+	BatchSimulateUnsigned(ctx context.Context, msgs SimMsgs, sequence uint64) (*BatchSimResults, error)
+	SimulateUnsigned(ctx context.Context, msgs []sdk.Msg, sequence uint64) (*txtypes.SimulateResponse, error)
+	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer cryptotypes.PrivKey, timeoutHeight uint64) ([]byte, error)
 }
 
 // Reader provides methods for reading from a cosmos chain.
@@ -257,6 +269,7 @@ func (c *Client) CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, 
 
 	// Sign those bytes
 	signature, err := tx.SignWithPrivKey(
+		context.TODO(),
 		signMode,
 		signerData,
 		txBuilder,

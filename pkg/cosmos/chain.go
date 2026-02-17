@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/pelletier/go-toml/v2"
@@ -221,6 +222,15 @@ func (c *chain) GetChainStatus(ctx context.Context) (types.ChainStatus, error) {
 	}, nil
 }
 
+func (c *chain) GetChainInfo(context.Context) (types.ChainInfo, error) {
+	return types.ChainInfo{
+		FamilyName:      "cosmos",
+		ChainID:         c.id,
+		NetworkName:     c.id,
+		NetworkNameFull: c.id,
+	}, nil
+}
+
 func (c *chain) ListNodeStatuses(ctx context.Context, pageSize int32, pageToken string) (stats []types.NodeStatus, nextPageToken string, total int, err error) {
 	return chains.ListNodeStatuses(int(pageSize), pageToken, c.listNodeStatuses)
 }
@@ -234,7 +244,7 @@ func (c *chain) Transact(ctx context.Context, from, to string, amount *big.Int, 
 	if err != nil {
 		return fmt.Errorf("failed to parse from account: %s", toAcc)
 	}
-	coin := sdk.Coin{Amount: sdk.NewIntFromBigInt(amount), Denom: c.Config().GasToken()}
+	coin := sdk.Coin{Amount: sdkmath.NewIntFromBigInt(amount), Denom: c.Config().GasToken()}
 
 	txm := c.TxManager()
 
@@ -261,6 +271,10 @@ func (c *chain) Transact(ctx context.Context, from, to string, amount *big.Int, 
 		return fmt.Errorf("failed to enqueue tx: %w", err)
 	}
 	return nil
+}
+
+func (c *chain) Replay(context.Context, string, map[string]any) error {
+	return errors.New("replay is not supported for cosmos")
 }
 
 // TODO BCF-2602 statuses are static for non-evm chain and should be dynamic

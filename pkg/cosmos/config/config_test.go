@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 
@@ -23,7 +23,7 @@ func Test_sdkDecFromDecimal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
 			val := decimal.RequireFromString(tt)
-			exp := sdk.MustNewDecFromStr(tt)
+			exp := sdkmath.LegacyMustNewDecFromStr(tt)
 			assert.Equal(t, exp, sdkDecFromDecimal(&val))
 		})
 	}

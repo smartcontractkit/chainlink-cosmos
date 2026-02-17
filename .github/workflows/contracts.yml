@@ -34,18 +34,16 @@ jobs:
       # https://github.com/smartcontractkit/chainlink-cosmos/issues/15
 
       - name: Run unit tests
-        run: nix develop -c cargo unit-test --locked
+        run: nix develop --option fallback true -c cargo unit-test --locked
         env:
           RUST_BACKTRACE: 1
 
       - name: Compile WASM contract
-        run: nix develop -c cargo wasm --locked
+        run: nix develop --option fallback true -c cargo wasm --locked
         env:
           RUSTFLAGS: "-C link-arg=-s"
 
   contracts_lint:
-    # TODO: reenable linting once we've updated contract syntax
-    if: false
     name: Contracts Lint
     runs-on: ubuntu-latest
     steps:
@@ -68,13 +66,17 @@ jobs:
         run: rm -rf ~/.cargo/bin
 
       - name: Run cargo fmt
-        run: nix develop -c cargo fmt --all -- --check
+        run: nix develop --option fallback true -c cargo fmt --all -- --check
 
       - name: Run cargo check
-        run: nix develop -c cargo check
+        run: nix develop --option fallback true -c cargo check
+        env:
+          RUSTFLAGS: "--check-cfg=cfg(tarpaulin_include)"
 
       - name: Run cargo clippy
-        run: nix develop -c cargo clippy -- -D warnings
+        run: nix develop --option fallback true -c cargo clippy -- -D warnings
+        env:
+          RUSTFLAGS: "--check-cfg=cfg(tarpaulin_include)"
 
       # TODO: Add schema checks
       # https://github.com/smartcontractkit/chainlink-terra/issues/17

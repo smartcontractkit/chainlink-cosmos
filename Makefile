@@ -98,11 +98,11 @@ build_relay:
 
 # Unit test without race detection
 test_relay_unit: build_relay
-	go test -v -covermode=atomic ./pkg/cosmos/... -coverpkg=./... -coverprofile=unit_coverage.txt
+	go test -v -covermode=atomic ./pkg/cosmos/... -coverprofile=unit_coverage.txt
 
 # Unit test with race detection
 test_relay_unit_race: build_relay
-	go test -v -covermode=atomic ./pkg/cosmos/... -race -count=10 -coverpkg=./... -coverprofile=race_coverage.txt
+	go test -v -covermode=atomic ./pkg/cosmos/... -race -count=10 -coverprofile=race_coverage.txt
 
 
 # copied over from starknet, replace as needed
@@ -140,7 +140,7 @@ gomodtidy: gomods
 
 .PHONY: mockery
 mockery: $(mockery) ## Install mockery.
-	go install github.com/vektra/mockery/v2@v2.43.2
+	go install github.com/vektra/mockery/v2@v2.53.5
 
 .PHONY: rm-mocked
 rm-mocked:

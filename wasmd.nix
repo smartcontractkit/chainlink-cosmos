@@ -2,6 +2,9 @@
 , fetchFromGitHub
 }:
 
+let
+  goPkg = if pkgs ? go_1_25 then pkgs.go_1_25 else pkgs.go;
+in
 stdenv.mkDerivation rec {
   name = "wasmd-${version}";
   version = "0.40.1";
@@ -13,7 +16,7 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-KBchSnIETM+HPngqHeajiqLYrhHhXY531C+Q/aSDzl4=";
   };
 
-  buildInputs = with pkgs; [ gnumake git go_1_21 which openssl cacert gcc ];
+  buildInputs = with pkgs; [ gnumake git goPkg which openssl cacert gcc ];
 
   buildPhase = ''
     export HOME=$out
