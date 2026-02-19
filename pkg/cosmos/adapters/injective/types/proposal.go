@@ -13,8 +13,9 @@ const (
 
 func init() {
 	gov.RegisterProposalType(ProposalTypeOcrSetConfig)
-	amino.RegisterConcrete(&SetConfigProposal{}, "injective/OcrSetConfigProposal", nil)
-	amino.RegisterConcrete(&SetBatchConfigProposal{}, "injective/OcrSetBatchConfigProposal", nil)
+	// Keep Amino concrete registration out of this init. The package-level
+	// LegacyAmino in codec.go is sealed during init, and registering here can
+	// trigger "panic: codec sealed" depending on init order.
 }
 
 // Implements Proposal Interface
