@@ -132,7 +132,7 @@ format-go-fmt:
 
 .PHONY: gomods
 gomods: ## Install gomods
-	go install github.com/jmank88/gomods@v0.1.3
+	go install github.com/jmank88/gomods@v0.1.7
 
 .PHONY: gomodtidy
 gomodtidy: gomods

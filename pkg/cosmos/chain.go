@@ -76,6 +76,7 @@ func NewChain(cfg *config.TOMLConfig, opts ChainOpts) (adapters.Chain, error) {
 var _ adapters.Chain = (*chain)(nil)
 
 type chain struct {
+	types.UnimplementedChainService
 	services.StateMachine
 	id   string
 	cfg  *config.TOMLConfig
